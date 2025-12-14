@@ -1,0 +1,143 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        // "name": "change-sk-shape-lite - build",
+        {
+            "name": "change-sk-shape-lite - build",
+            "type": "cppvsdbg",
+            "request": "launch",
+            // 要调试的程序路径:
+            "program": "E:/blender-git/ninja_lite_debug_change-socket-shape/bin/blender.exe",
+            "args": [
+                // "C:/Users/86166/Desktop/blender临时文件/几何节点-预览矢量.blend",
+                // "C:/Users/86166/Desktop/blender临时文件/几何节点-预览属性.blend",
+                // "C:/Users/86166/Desktop/blender临时文件/几何节点-工具提示翻译问题-二分法测试用.blend",
+                // "C:/Users/86166/Desktop/blender临时文件/节点-测试导航栏.blend",
+                // "C:/Users/86166/Desktop/blender临时文件/节点-auto link reroute.blend",
+            ],
+            // 是否在程序入口处暂停: false表示不暂停
+            "stopAtEntry": false,
+            // 工作目录: 设置为当前VS Code打开的文件夹
+            "cwd": "${workspaceFolder}",
+            // 环境变量: 如果需要, 可以在这里设置
+            "environment": [],
+            "console": "externalTerminal",
+            "logging": {
+                "engineLogging": false,
+                "moduleLoad": false
+            },
+            // 可视化文件 (Natvis): 调试时以更友好的方式显示Blender内置的数据类型(比如Vector, StringRef等).
+            "visualizerFile": "${workspaceFolder}/tools/utils_ide/natvis/Blender.natvis",
+            // 可选, 启动前执行的任务:
+            "preLaunchTask": "ninja_lite_debug_change-socket-shape"
+        },
+        // "name": "change-socket-shape-release",
+        {
+            "name": "change-socket-release",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "E:/blender-git/ninja_debug_change-socket-shape/bin/blender.exe",
+            "args": [
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal",
+            "logging": {
+                "engineLogging": false,
+                "moduleLoad": false
+            },
+            "visualizerFile": "${workspaceFolder}/tools/utils_ide/natvis/Blender.natvis",
+        },
+        // "name": "blender lite - rebuild",
+        {
+            "name": "blender lite - rebuild",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "E:/blender-git/blender_ninja_lite/bin/blender.exe",
+            "args": [
+            ],
+            // "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal",
+            "logging": {
+                "engineLogging": false,
+                "moduleLoad": false
+            },
+            "visualizerFile": "E:/blender-git/blender-change-socket-shape/tools/utils_ide/natvis/Blender.natvis",
+            "preLaunchTask": "blender_ninja_lite"
+        },
+        // "name": "blender lite debug - rebuild",
+        {
+            "name": "blender lite debug - rebuild",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "E:/blender-git/blender_ninja_lite_debug/bin/blender.exe",
+            "args": [
+            ],
+            // "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal",
+            "logging": {
+                "engineLogging": false,
+                "moduleLoad": false
+            },
+            "visualizerFile": "E:/blender-git/blender-change-socket-shape/tools/utils_ide/natvis/Blender.natvis",
+            "preLaunchTask": "blender_ninja_lite_debug"
+        },
+        // "name": "blender debug developer - rebuild",
+        {
+            "name": "blender debug developer - rebuild",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "E:/blender-git/blender_ninja_debug_developer/bin/blender.exe",
+            "args": [
+            ],
+            // "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal",
+            "logging": {
+                "engineLogging": false,
+                "moduleLoad": false
+            },
+            "visualizerFile": "E:/blender-git/blender-change-socket-shape/tools/utils_ide/natvis/Blender.natvis",
+            "preLaunchTask": "blender_ninja_debug_developer"
+        },
+        // "name": "blender lite - 不编译",
+        {
+            "name": "blender lite debug - 不编译",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "E:/blender-git/blender_ninja_lite_debug/bin/blender.exe",
+            "args": [
+            ],
+            // "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal",
+            "logging": {
+                "engineLogging": false,
+                "moduleLoad": false
+            },
+            "visualizerFile": "E:/blender-git/blender-change-socket-shape/tools/utils_ide/natvis/Blender.natvis",
+        },
+        {
+            "name": "Python: Attach to Blender",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "E:/blender-git/blender_ninja_lite_debug/bin/5.1/scripts",
+                }
+            ],
+            "justMyCode": false
+        }
+    ]
+}

@@ -1,0 +1,72 @@
+
+
+
+set Branch=geometry-nodes-lists
+set Branch=change-socket-shape
+
+set Branch=expression-test
+
+# 注意是否 debug
+set nj_Branch=E:\blender-git\ninja_lite_%Branch%
+set bl_Branch=E:\blender-git\blender-%Branch%
+
+# 跟踪远程仓库
+cd /d E:/blender-git/blender
+# 需要更改 E:\blender-git\blender\.git\config
+git remote add Hans https://projects.blender.org/HooglyBoogly/blender.git
+git remote add Lukas https://projects.blender.org/LukasTonne/blender.git
+
+# 远程分支更新
+cd %bl_Branch%
+# git fetch Hans %Branch%
+git fetch Lukas sandsim
+# git branch -f %Branch% Hans/%Branch%
+git reset --hard Hans/%Branch%
+
+# 初步建立工作树
+git worktree add %bl_Branch% %Branch%
+# git worktree add -b %Branch% %bl_Branch% main
+
+cd %bl_Branch%
+# blender\.git\worktrees\blender-branch\index 里的 lib/windows_x64这条记录打上了一个"请忽略改动"的标记.
+git update-index --skip-worktree lib/windows_x64
+# git update-index --no-skip-worktree lib/windows_x64
+
+rmdir /s /q lib  # 强制删除非空文件夹
+# rename lib lib-默认
+mklink /J "%bl_Branch%\lib" "E:\blender-git\blender\lib"
+mklink /J "%bl_Branch%\.vscode" "E:\blender-git\blender\.vscode"
+
+cd %bl_Branch%
+make nobuild ninja lite builddir %nj_Branch%
+cd %nj_Branch%
+code CMakeCache.txt
+# 启用 
+#   WITH_INTERNATIONAL 
+#   WITH_INPUT_IME 
+#   WITH_TBB 
+#   CMAKE_EXPORT_COMPILE_COMMANDS 
+#   CMAKE_VERBOSE_MAKEFILE
+ 
+rebuild -j8
+
+# 远程分支更新
+cd %bl_Branch%
+git fetch Hans %Branch%
+# git branch -f %Branch% Hans/%Branch%
+git reset --hard Hans/%Branch%
+
+# 重新编译
+cd %nj_Branch%
+rebuild -j8
+bin\blender
+
+
+cd \d E:\blender-git\blender-expression-test
+
+git remote add Dan-Eicher https://projects.blender.org/Dan-Eicher/projective-dynamics.git
+git fetch Dan-Eicher projective-dynamics
+git switch -c projective-dynamics Dan-Eicher/projective-dynamics
+
+cd ..\ninja_lite_expression-test\
+rebuild -j8

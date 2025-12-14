@@ -1,0 +1,79 @@
+{
+	"files": [
+		{
+			"path": "source/blender/draw/intern/draw_cache_impl_mesh.cc",
+			"bookmarks": [
+				{
+					"line": 969,
+					"column": 0,
+					"label": "绘制法向"
+				},
+				{
+					"line": 1587,
+					"column": 0,
+					"label": "绘制法向"
+				}
+			]
+		},
+		{
+			"path": "source/blender/draw/intern/draw_cache_extract_mesh.cc",
+			"bookmarks": [
+				{
+					"line": 258,
+					"column": 0,
+					"label": "绘制法向"
+				}
+			]
+		},
+		{
+			"path": "source/blender/draw/engines/overlay/overlay_mesh.hh",
+			"bookmarks": [
+				{
+					"line": 425,
+					"column": 0,
+					"label": "绘制法向"
+				}
+			]
+		},
+		{
+			"path": "source/blender/draw/intern/mesh_extractors/extract_mesh_vbo_fdots_nor.cc",
+			"bookmarks": [
+				{
+					"line": 59,
+					"column": 0,
+					"label": "绘制法向"
+				}
+			]
+		},
+		{
+			"path": "source/blender/editors/space_spreadsheet/spreadsheet_dataset_draw.cc",
+			"bookmarks": [
+				{
+					"line": 1135,
+					"column": 0,
+					"label": "为电子表格捆包面板添加图标"
+				}
+			]
+		},
+		{
+			"path": "source/blender/editors/space_node/drawnode.cc",
+			"bookmarks": [
+				{
+					"line": 1053,
+					"column": 0,
+					"label": "EmbossType::Emboss, 可重命名标签和字符串输入接口类似了"
+				}
+			]
+		},
+		{
+			"path": "source/blender/nodes/shader/nodes/node_shader_vector_math.cc",
+			"bookmarks": [
+				{
+					"line": 29,
+					"column": 0,
+					"label": "改成 inline 问题很多: gpu_shader_material_vector_math, 参数顺序不一致了"
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,94 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            // 最重要的: 任务的名字. 必须和 launch.json 里的 "preLaunchTask" 的值一样!
+            "label": "blender_ninja_lite_debug",
+            // 任务类型: "shell" 表示这是一个在终端(命令行)里执行的命令.
+            "type": "shell",
+            // ${workspaceFolder} : E:\blender-git\blender
+            // "command": "${workspaceFolder}/../blender_ninja_lite_debug/rebuild",
+            "command": "E:/blender-git/blender_ninja_lite_debug/rebuild",
+            "args": [
+                "-j8"
+            ],
+            "options": {
+                // 这个命令应该在哪个目录下执行? 必须是Blender构建目录.
+                "cwd": "E:/blender-git/blender_ninja_lite_debug/"
+            },
+            // 将这个任务标记为默认的"构建"任务.好处: 直接按 Ctrl+Shift+B 来随时执行它.
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+
+            // "问题匹配器": 识别解析编译器输出的警告错误.编译出错时,可以在"问题"面板看到错误,点击就能跳转
+            // "$msCompile" 是专门为微软C++编译器(MSVC)预设的匹配器.
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "blender_ninja_debug_developer",
+            "type": "shell",
+            "command": "E:/blender-git/blender_ninja_debug_developer/rebuild",
+            "args": [
+                "-j8"
+            ],
+            "options": {
+                "cwd": "E:/blender-git/blender_ninja_debug_developer/"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "blender_ninja_lite",
+            "type": "shell",
+            "command": "E:/blender-git/blender_ninja_lite/rebuild",
+            "args": [
+                "-j8"
+            ],
+            "options": {
+                "cwd": "E:/blender-git/blender_ninja_lite/"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "ninja_lite_debug_change-socket-shape",
+            "type": "shell",
+            "command": "E:/blender-git/ninja_lite_debug_change-socket-shape/rebuild",
+            "args": [
+                "-j8"
+            ],
+            "options": {
+                "cwd": "E:/blender-git/ninja_lite_debug_change-socket-shape/"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "Echo WorkspaceFolder",
+            "type": "shell",
+            "command": "echo", // echo 会把它后面的所有东西打印出来
+            "args": [
+                "${workspaceFolder}"
+            ]
+        }
+    ]
+}
