@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Blender uses CMake with convenience wrappers for common build configurations.
 
 ### Windows Build Commands
-在文件夹 E:/blender-git/blender_ninja_lite_debug/ 中执行: rebuild -j8 编译
+在文件夹 E:/blender-git/blender_ninja_lite_debug/ 中执行: rebuild -j8 或 powershell -Command "& .\rebuild.cmd"
 ```bash
 # Basic build (uses MSBuild or Ninja)
 make.bat
