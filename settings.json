@@ -99,6 +99,7 @@
 // todo TreeView 要和UIList 有点区分
 // todo 内直节点暴露菜单接口
 // todo 很多节点暴露菜单接口加的 is_default_link_socket() 不需要了
+// todo 手册里的接口提示移动到接口上
 
 // Regular
 // wcol_regular
