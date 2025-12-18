@@ -113,12 +113,16 @@
 // show_backface_culling
 //🌺 V3D_SHADING_BACKFACE_CULLING
 //🌺 DRW_STATE_CULL_BACK
+// 
 // 3D视图 Python api: show_viewer_attribute
 //🌺 V3D_OVERLAY_VIEWER_ATTRIBUTE
 //😭 show_attribute_viewer()
 //🌺 MBC_VIEWER_ATTRIBUTE_OVERLAY
 //  VBOType::AttrViewer
 //🌺 AttrViewer
+// 
+// 编辑模式法向绘制
+// show_face_nor = (edit_flag & V3D_OVERLAY_EDIT_FACE_NORMALS);
 //😭 show_wireframes
 //🌺 V3D_OVERLAY_WIREFRAMES
 //👊🏿 overlay_facing.hh
