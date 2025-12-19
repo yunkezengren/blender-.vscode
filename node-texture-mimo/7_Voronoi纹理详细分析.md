@@ -20,7 +20,7 @@
 
 ## 1. 概述
 
-Voronoi Texture（沃罗诺伊纹理）节点基于 **Worley Noise**（沃罗利噪声）算法生成细胞状图案。这种噪声由 Steven Worley 在 1996 年的论文 "A Cellular Texture Basis Function" 中首次提出。
+<span style="background-color:#3F51B5;color:white;font-weight:bold">Voronoi Texture</span>（沃罗诺伊纹理）节点基于 <span style="background-color:#E91E63;color:white;font-weight:bold">Worley Noise</span>（沃罗利噪声）算法生成细胞状图案。这种噪声由 Steven Worley 在 1996 年的论文 "A Cellular Texture Basis Function" 中首次提出。
 
 ### 1.1 基本原理
 
@@ -96,6 +96,76 @@ graph TD
 ```
 
 ### 2.2 Cell Grid 概念
+
+
+### 1.2 Voronoi 算法流程图
+
+```mermaid
+graph TD
+    Input[<span style="background-color:#2196F3;color:white">输入坐标</span>] --> Scale[<span style="background-color:#FF9800;color:white">× Scale</span>]
+    Scale --> Cell[<span style="background-color:#9C27B0;color:white">找到所在Cell</span>]
+    Cell --> Neighbors[<span style="background-color:#4CAF50;color:white">检查3×3×3邻域</span>]
+    Neighbors --> Hash[<span style="background-color:#E91E63;color:white">哈希计算特征点</span>]
+    Hash --> Distance[<span style="background-color:#00BCD4;color:white">计算距离</span>]
+    Distance --> Select[<span style="background-color:#FF5722;color:white">选择F1/F2/...</span>]
+    Select --> Output[<span style="background-color:#4CAF50;color:white;font-weight:bold">输出距离/颜色</span>]
+
+    style Output fill:#4CAF50,color:white
+```
+
+### 2.1 距离度量对比
+
+```mermaid
+graph LR
+    subgraph "距离度量"
+        Euclidean[<span style="background-color:#FF5722;color:white">欧几里得</span>] --> E1[√(x²+y²+z²)]
+        Manhattan[<span style="background-color:#2196F3;color:white">曼哈顿</span>] --> M1[|x|+|y|+|z|]
+        Chebychev[<span style="background-color:#4CAF50;color:white">切比雪夫</span>] --> C1[max(|x|,|y|,|z|)]
+        Minkowski[<span style="background-color:#9C27B0;color:white">闵可夫斯基</span>] --> N1[(|x|ⁿ+|y|ⁿ+|z|ⁿ)^(1/n)]
+    end
+
+    style Euclidean fill:#FF5722,color:white
+    style Manhattan fill:#2196F3,color:white
+    style Chebychev fill:#4CAF50,color:white
+    style Minkowski fill:#9C27B0,color:white
+```
+
+### 3.1 分形 Voronoi 流程
+
+```mermaid
+graph TD
+    Base[<span style="background-color:#FF5722;color:white">基础Voronoi</span>] --> Oct1[<span style="background-color:#2196F3;color:white">第1层</span>]
+    Oct1 --> Oct2[<span style="background-color:#4CAF50;color:white">第2层</span>]
+    Oct2 --> Oct3[<span style="background-color:#9C27B0;color:white">第3层</span>]
+    
+    Oct1 -->|× 1.0| Mix[<span style="background-color:#FF9800;color:white">混合</span>]
+    Oct2 -->|× 0.5| Mix
+    Oct3 -->|× 0.25| Mix
+    
+    Mix --> Norm[<span style="background-color:#00BCD4;color:white">归一化</span>]
+    Norm --> Final[<span style="background-color:#4CAF50;color:white;font-weight:bold">最终输出</span>]
+
+    style Final fill:#4CAF50,color:white
+```
+
+### 4.1 特征类型可视化
+
+```mermaid
+graph TB
+    subgraph "特征类型"
+        F1[<span style="background-color:#E91E63;color:white">F1 (最近)</span>] --> D1[到最近点距离]
+        F2[<span style="background-color:#9C27B0;color:white">F2 (第二近)</span>] --> D2[到第二近点距离]
+        Smooth[<span style="background-color:#4CAF50;color:white">Smooth F1</span>] --> D3[平滑F1]
+        Edge[<span style="background-color:#FF5722;color:white">距离到边缘</span>] --> D4[细胞边界]
+        Sphere[<span style="background-color:#2196F3;color:white">N-球体半径</span>] --> D5[球体半径]
+    end
+
+    style F1 fill:#E91E63,color:white
+    style F2 fill:#9C27B0,color:white
+    style Smooth fill:#4CAF50,color:white
+    style Edge fill:#FF5722,color:white
+    style Sphere fill:#2196F3,color:white
+```
 
 在 GLSL 代码中（`gpu_shader_material_voronoi.glsl:61-79`），我们看到：
 

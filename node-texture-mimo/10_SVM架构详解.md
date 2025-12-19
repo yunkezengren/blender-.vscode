@@ -29,13 +29,130 @@
 <a name="概述"></a>
 ## 1. 概述
 
-Shader Virtual Machine (SVM) 是Cycles渲染器的**着色器虚拟机**。它是一种在渲染时将节点图编译为字节码，然后在GPU/CPU上高效执行的机制。
+<span style="background-color:#E91E63;color:white;font-weight:bold">Shader Virtual Machine (SVM)</span> 是Cycles渲染器的<span style="background-color:#673AB7;color:white;font-weight:bold">着色器虚拟机</span>。它是一种在渲染时将节点图编译为字节码，然后在GPU/CPU上高效执行的机制。
 
 **核心特点:**
-- 节点图 → 字节码 → 解释执行
+- <span style="background-color:#2196F3;color:white">节点图 → 字节码 → 解释执行</span>
 - 固定大小的栈 (255个float)
 - 每个节点操作栈上的数据
 - 支持多平台（CPU/GPU）
+
+### SVM执行流程图
+
+```mermaid
+graph LR
+    subgraph "编译阶段"
+        A[ShaderNode图] --> B[SVMCompiler]
+        B --> C[节点遍历]
+        C --> D[生成字节码]
+        D --> E[写入1D纹理/数组]
+    end
+
+    subgraph "执行阶段"
+        F[渲染开始] --> G[加载字节码]
+        G --> H[初始化栈<br/>255 floats]
+        H --> I[解释器循环]
+
+        I --> J{读取节点}
+        J --> K[解析操作码]
+        K --> L[读取参数]
+        L --> M[执行计算]
+        M --> N[写入栈]
+        N --> O{下一个节点?}
+        O -->|是| J
+        O -->|否| P[输出结果]
+    end
+
+    style B fill:#9C27B0,stroke:#333
+    style I fill:#FF5722,stroke:#333
+    style P fill:#4CAF50,stroke:#333
+```
+
+
+### 1.1 SVM 执行流程
+
+```mermaid
+graph LR
+    subgraph "编译阶段"
+        Nodes[<span style="background-color:#2196F3;color:white">Shader Nodes</span>] --> Compiler[<span style="background-color:#9C27B0;color:white">SVM Compiler</span>]
+        Compiler --> Bytecode[<span style="background-color:#4CAF50;color:white">字节码生成</span>]
+        Bytecode --> Texture[<span style="background-color:#FF5722;color:white">1D纹理/数组</span>]
+    end
+    
+    subgraph "执行阶段"
+        Render[<span style="background-color:#FF9800;color:white">渲染开始</span>] --> Load[<span style="background-color:#E91E63;color:white">加载字节码</span>]
+        Load --> Stack[<span style="background-color:#00BCD4;color:white">初始化栈 255</span>]
+        Stack --> Loop[<span style="background-color:#795548;color:white">解释器循环</span>]
+        Loop --> Output[<span style="background-color:#4CAF50;color:white;font-weight:bold">最终输出</span>]
+    end
+
+    style Compiler fill:#9C27B0,color:white
+    style Output fill:#4CAF50,color:white
+```
+
+### 2.1 栈管理机制
+
+```mermaid
+graph LR
+    subgraph "栈布局 (255 floats)"
+        S0[0-2: Vector] --> S1[3: Scale]
+        S1 --> S2[4-6: Color1]
+        S2 --> S3[7-9: Color2]
+        S3 --> S4[10: Fac输出]
+        S4 --> S5[11-13: Color输出]
+    end
+    
+    subgraph "操作"
+        Load[<span style="background-color:#4CAF50;color:white">读取</span>] --> Store[<span style="background-color:#FF5722;color:white">写入</span>]
+    end
+
+    style Load fill:#4CAF50,color:white
+    style Store fill:#FF5722,color:white
+```
+
+### 3.1 节点分发流程
+
+```mermaid
+graph TD
+    Loop[<span style="background-color:#FF5722;color:white">While循环</span>] --> Read[<span style="background-color:#2196F3;color:white">读取int4节点</span>]
+    Read --> Switch{<span style="background-color:#9C27B0;color:white">switch(node.x)</span>}
+    
+    Switch -->|NODE_TEX_CHECKER| Checker[<span style="background-color:#4CAF50;color:white">svm_node_tex_checker</span>]
+    Switch -->|NODE_TEX_NOISE| Noise[<span style="background-color:#E91E63;color:white">svm_node_tex_noise</span>]
+    Switch -->|NODE_TEX_VORONOI| Voronoi[<span style="background-color:#FF9800;color:white">svm_node_tex_voronoi</span>]
+    Switch -->|NODE_END| End[<span style="background-color:#00BCD4;color:white">返回</span>]
+    
+    Checker --> Loop
+    Noise --> Loop
+    Voronoi --> Loop
+
+    style Loop fill:#FF5722,color:white
+    style End fill:#00BCD4,color:white
+```
+
+### 4.1 SVM vs OSL vs GLSL
+
+```mermaid
+graph TB
+    subgraph "SVM"
+        A1[<span style="background-color:#795548;color:white">GPU/CPU</span>] --> A2[所有节点]
+        A2 --> A3[字节码]
+    end
+    
+    subgraph "OSL"
+        B1[<span style="background-color:#607D8B;color:white">CPU Only</span>] --> B2[大部分节点]
+        B2 --> B3[解释执行]
+    end
+    
+    subgraph "GLSL"
+        C1[<span style="background-color:#FF5722;color:white">GPU Only</span>] --> C2[有限节点]
+        C2 --> C3[实时编译]
+    end
+
+    style A1 fill:#795548,color:white
+    style B1 fill:#607D8B,color:white
+    style C1 fill:#FF5722,color:white
+```
 
 ---
 
@@ -776,7 +893,7 @@ ccl_device VoronoiOutput voronoi_f1(const ccl_private VoronoiParams ¶ms, const 
 <a name="svm-vs-osl-vs-glsl对比"></a>
 ## 10. SVM vs OSL vs GLSL对比
 
-| **特性** | **SVM** | **OSL** | **GLSL** |
+| **特性** | <span style="background-color:#795548;color:white">SVM</span> | **OSL** | **GLSL** |
 |---------|---------|---------|----------|
 | **执行环境** | GPU/CPU | CPU-only | GPU-only |
 | **节点支持** | 所有节点 | 大部分节点 | 受限节点 |

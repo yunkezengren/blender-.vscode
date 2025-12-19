@@ -41,7 +41,7 @@
 
 ## 概述
 
-Gabor Texture节点是Blender 4.0中引入的一个高级纹理节点，基于**稀疏Gabor卷积(Sparse Gabor Convolution)**技术生成程序化噪声。与传统的Perlin或Simplex噪声不同，Gabor噪声通过在空间中分布**Gabor核(Gabor kernels)**来创建具有方向性和频率特征的纹理。
+<span style="background-color:#9C27B0;color:white;font-weight:bold">Gabor Texture节点</span>是Blender 4.0中引入的一个高级纹理节点，<span style="background-color:#673AB7;color:white;font-weight:bold">稀疏Gabor卷积</span>(Sparse Gabor Convolution)**技术生成程序化噪声。与传统的Perlin或Simplex噪声不同，Gabor噪声通过在空间中分布<span style="background-color:#3F51B5;color:white;font-weight:bold">Gabor核</span>(Gabor kernels)**来创建具有方向性和频率特征的纹理。
 
 **关键特性：**
 - ✅ 基于真实学术论文实现
@@ -51,13 +51,57 @@ Gabor Texture节点是Blender 4.0中引入的一个高级纹理节点，基于**
 
 **定义位置**: `E:\blender-git\blender\source\blender\nodes\shader\nodes\node_shader_tex_gabor.cc`
 
+### Gabor噪声可视化
+
+```mermaid
+graph TD
+    subgraph "Gabor核结构"
+        A[<span style="color:orange">高斯包络</span>] --> B[<span style="color:orange">× 复指数</span>]
+        C[<span style="color:orange">频率 f₀</span>] --> B
+        D[<span style="color:orange">方向 ω₀</span>] --> B
+        B --> E[<span style="color:orange">Gabor核</span>]
+    end
+
+    subgraph "空间分布"
+        F[<span style="color:orange">分层采样</span>] --> G[<span style="color:orange">3×3邻域</span>]
+        G --> H[<span style="color:orange">8个脉冲/Cell</span>]
+        H --> I[<span style="color:orange">累加求和</span>]
+    end
+
+    subgraph "输出"
+        I --> J[<span style="color:orange">Value</span>]
+        I --> K[<span style="color:orange">Phase</span>]
+        I --> L[<span style="color:orange">Intensity</span>]
+    end
+
+    style E fill:#FF5722,color:orange
+    style I fill:#00BCD4,color:orange
+```
+
+### 参数影响图
+
+```mermaid
+graph TB
+    Scale[<span style="color:orange">Scale</span>] -->|缩放| Freq[<span style="color:orange">有效频率</span>]
+    Freq[<span style="color:#2196F3">Frequency</span>] -->|波纹密度| Kernel[<span style="color:orange">Gabor核</span>]
+    Aniso[<span style="color:orange">Anisotropy</span>] -->|方向性| Orient[<span style="color:orange">方向随机度</span>]
+    Orient[<span style="color:#FF5722">Orientation</span>] -->|主方向| Kernel
+    Kernel -->|3x3循环| Sum[<span style="color:orange">累加</span>]
+    Sum -->|归一化| Output[<span style="color:orange">最终输出</span>]
+
+    style Kernel fill:#9C27B0,color:orange
+    style Output fill:#4CAF50,color:orange
+```
+
+---
+
 ---
 
 ## Gabor纹理核心概念
 
 ### Gabor噪声的数学基础
 
-Gabor噪声的核心是**Gabor核**，这是一个高斯包络乘以复指数函数：
+Gabor噪声的核心是<span style="background-color:#673AB7;color:white">Gabor核</span>，这是一个高斯包络乘以复指数函数：
 
 **2D Gabor核方程**：
 
@@ -935,7 +979,7 @@ node_shader_gpu_tex_mapping(material, node, in, out);  // 统一处理
 
 ## 总结
 
-Gabor Texture节点是Blender中数学最复杂的纹理节点之一，其核心价值在于：
+<span style="background-color:#9C27B0;color:white;font-weight:bold">Gabor Texture节点</span>是Blender中数学最复杂的纹理节点之一，其核心价值在于：
 
 1. **数学优美**: 基于严谨的信号处理理论
 2. **艺术控制**: 方向、频率、独立输出
