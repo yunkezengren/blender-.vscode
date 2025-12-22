@@ -46,6 +46,7 @@
 // todo(w) 电子表格: 预览器数据面板,选中域 Item,3D试图切换预览的属性, 显示预览的列而不是只能第一项
 // todo(w) 电子表格: Viewer 列显示所有连到预览器节点的值 column_display_name = column_id.name; 和 node_geo_viewer.cc
 // todo(w) 菜单切换整数时默认值 0->n-1
+// todo(w) 域/捕捉属性/预览器,获取不到属性时提示不存在该属性,将使用0
 // todo(w) 存储属性二维矢量时绘制二维
 // todo(w) 控制柄加到曲线节点
 // todo(w) 如果N面板只剩文本,再按N应该是展开而不是关闭?要能保留活动状态

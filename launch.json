@@ -75,7 +75,8 @@
             "request": "launch",
             "program": "E:/blender-git/blender_ninja_lite_debug/bin/blender.exe",
             "args": [
-                "C:/Users/86166/Desktop/blender临时文件/预览叠加层文本重叠.blend"
+                "C:/Users/86166/Desktop/blender临时文件/树视图多选.blend"
+                // "C:/Users/86166/Desktop/blender临时文件/预览叠加层文本重叠.blend"
             ],
             // "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
