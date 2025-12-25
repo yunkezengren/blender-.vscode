@@ -20,6 +20,8 @@
                 "_STL_COMPILER_PREPROCESSOR",
                 "WITH_OPENVDB",
                 "WITH_OPENVDB=1",
+                "RNA_RUNTIME",
+                "RNA_RUNTIME=1",
                 "GPU_SHADER",
             ],
             "cStandard": "c17",
