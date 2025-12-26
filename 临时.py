@@ -1,27 +1,100 @@
-def link_points(link, v2d, curv):
-    fs, ts = link.from_socket, link.to_socket
-    try:
-        if not (fs.enabled and ts.enabled):
-            return None
-        sf = BNodeSocket.from_address(fs.as_pointer())
-        st = BNodeSocket.from_address(ts.as_pointer())
-        if not (sf.runtime and st.runtime):
-            return None
-        rf, rt = sf.runtime.contents, st.runtime.contents
-        x1, y1 = rf.location[0], rf.location[1]
-        x2, y2 = rt.location[0], rt.location[1]
-    except:
-        return None
-    dx, dy = x2 - x1, y2 - y1
-    h = (dx if dx >= 0 else math.hypot(dx, dy)) * curv
-    p0, p1, p2, p3 = (x1, y1), (x1 + h, y1), (x2 - h, y2), (x2, y2)
-    v2r = v2d.view_to_region
-    r0, r3 = v2r(*p0, clip=False), v2r(*p3, clip=False)
-    approx = abs(r3[0] - r0[0]) + abs(r3[1] - r0[1])
-    seg = max(SEG_MIN, min(SEG_MAX, int(approx * 0.055)))
-    coeff, pts = _BEZIER_TABLE[seg], [None] * (seg + 1)
-    for i, (a, b, c, d) in enumerate(coeff):
-        x = a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0]
-        y = a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1]
-        pts[i] = v2r(x, y, clip=False)
-    return pts
+写第13个文档,
+详细解释这个文件 source\blender\editors\space_node\node_gizmo.cc 里用到的每一个函数,分别解释调用和定义
+axis_angle_to_mat3_single
+BKE_image_acquire_ibuf
+BKE_image_ensure_viewer
+BKE_image_release_ibuf
+BLI_assert
+BLI_rctf_cent_x
+BLI_rctf_cent_y
+BLI_rctf_isect
+BLI_rctf_recenter
+BLI_rctf_resize
+BLI_rctf_size_x
+BLI_rctf_size_y
+clamp
+const_cast
+copy_m4_m4
+copy_v2_v2
+CTX_data_main
+CTX_wm_region
+default_value_typed
+ensure_topology_cache
+epsilon
+fabsf
+gizmo_node_backdrop_prop_matrix_get
+gizmo_node_backdrop_prop_matrix_set
+gizmo_node_bbox_update
+gizmo_node_box_mask_prop_matrix_get
+gizmo_node_box_mask_prop_matrix_set
+gizmo_node_crop_prop_matrix_get
+gizmo_node_crop_prop_matrix_set
+gizmo_node_split_prop_matrix_get
+gizmo_node_split_prop_matrix_set
+is_any_zero
+is_directly_linked
+is_type
+LISTBASE_FOREACH
+loc_rot_size_to_mat4
+mat4_to_eul
+mat4_to_loc_rot_size
+mul_v3_fl
+MEM_new
+MEM_delete
+MEM_mallocN
+node_find_socket
+node_get_active
+NODE_GGT_backdrop_box_mask
+NODE_GGT_backdrop_corner_pin
+NODE_GGT_backdrop_crop
+NODE_GGT_backdrop_ellipse_mask
+NODE_GGT_backdrop_glare
+NODE_GGT_backdrop_split
+NODE_GGT_backdrop_transform
+node_gizmo_calc_matrix_space
+node_gizmo_calc_matrix_space_with_image_dims
+node_gizmo_is_set_visible
+node_gizmo_safe_calc_dims
+node_input_from_rect
+node_input_to_rect
+numeric_limits
+reinterpret_cast
+RNA_boolean_get
+RNA_enum_set
+RNA_float_set_array
+RNA_int_get
+RNA_int_set
+RNA_pointer_create_discrete
+RNA_property_update
+RNA_struct_find_property
+static_cast
+STR_ELEM
+STREQ
+unit_m4
+UNLIKELY
+WIDGETGROUP_bbox_draw_prepare
+WIDGETGROUP_node_box_mask_setup
+WIDGETGROUP_node_corner_pin_draw_prepare
+WIDGETGROUP_node_corner_pin_refresh
+WIDGETGROUP_node_corner_pin_setup
+WIDGETGROUP_node_crop_draw_prepare
+WIDGETGROUP_node_crop_refresh
+WIDGETGROUP_node_crop_setup
+WIDGETGROUP_node_ellipse_mask_setup
+WIDGETGROUP_node_glare_draw_prepare
+WIDGETGROUP_node_glare_refresh
+WIDGETGROUP_node_glare_setup
+WIDGETGROUP_node_mask_refresh
+WIDGETGROUP_node_split_poll
+WIDGETGROUP_node_split_refresh
+WIDGETGROUP_node_split_setup
+WIDGETGROUP_node_transform_poll
+WIDGETGROUP_node_transform_refresh
+WIDGETGROUP_node_transform_setup
+WM_gizmo_new
+WM_gizmo_new_ptr
+WM_gizmo_set_flag
+WM_gizmo_set_matrix_location
+WM_gizmo_target_property_def_func
+WM_gizmo_target_property_def_rna
+WM_gizmotype_find
