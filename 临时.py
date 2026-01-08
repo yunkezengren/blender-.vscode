@@ -1,35 +1,18 @@
 import bpy
+# tree = bpy.context.space_data.edit_tree
+tree = bpy.data.node_groups["Instance on .001"]
+interface = tree.interface
+items = interface.items_tree
+print("=" * 50)
 
-ui_scale = bpy.context.preferences.system.dpi / 72
-nodes = bpy.data.node_groups["Geometry Nodes"].nodes
+# interface.active = items[5]
+# interface.active_index = 100
+# print(interface.active)
+# print(interface.active_index)
 
-nodes_l = list(nodes)
-for node in nodes_l:
-    print(node.name)
-    reroute1 = nodes.new(type="NodeReroute")
-    reroute2 = nodes.new(type="NodeReroute")
-    reroute1.location = node.location
-    reroute2.location = node.location
-    height = node.dimensions.y / ui_scale
-    if node.hide:
-        reroute1.location.y -= (height / 2 + 9)
-        reroute2.location.y += (height / 2 - 9)
-    else:
-        reroute1.location.y -= height
-
-
-def node_top_y(node: bpy.types.Node):
-    height = node.dimensions.y / ui_scale
-    if node.hide:
-        return node.location.y - (height / 2 + 9)
-    else:
-        return node.location.y
-
-def node_bottom_y(node: bpy.types.Node):
-    height = node.dimensions.y / ui_scale
-    if node.hide:
-        return node.location.y + (height / 2 - 9)
-    else:
-        return node.location.y - height
-
-
+for i in items:
+    #    print(f"{i.index:2} {i.position:2} {i.item_type:6} {i.select:2} {i.name:6}")
+    # print(f"{i.index:2} {i.position:2} {i.item_type:6} parent.index:{i.parent.index:2} {i.parent.parent is None}")
+    select = "选中项" if i.select else "无    "
+    active = "活动项" if i == interface.active else "无    "
+    print(f"{i.index:2} {i.position:2} 父索引:{i.parent.index:2} {i.item_type:6} {select} {active} {i.name}")

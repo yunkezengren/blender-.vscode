@@ -244,5 +244,4 @@
     "editor.rename.enablePreview": true,
     "editor.stickyScroll.defaultModel": "foldingProviderModel",
     "editor.stickyScroll.enabled": true,
-    "editor.stickyScroll.maxLineCount": 5,
 }
