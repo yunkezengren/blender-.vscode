@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Converts one (or several) .ninja_log files into chrome's about:tracing format.
 
 If clang -ftime-trace .json files are found adjacent to generated files they
@@ -28,8 +27,7 @@ import os
 import optparse
 import re
 import sys
-from typing import TextIO, Any, Iterator, Optional
-
+from typing import TextIO, Any, Iterator
 
 class Target:
     """Represents a single line read for a .ninja_log file. Start and end times
@@ -39,7 +37,6 @@ class Target:
         self.start = int(start)
         self.end = int(end)
         self.targets: list[str] = []
-
 
 def read_targets(log: TextIO, show_all: bool) -> list[Target]:
     """Reads all targets from .ninja_log file |log_file|, sorted by start
@@ -68,7 +65,6 @@ def read_targets(log: TextIO, show_all: bool) -> list[Target]:
         targets.setdefault(cmdhash, Target(start, end)).targets.append(name)
     return sorted(targets.values(), key=lambda job: job.end, reverse=True)
 
-
 class Threads:
     """Tries to reconstruct the parallelism from a .ninja_log"""
 
@@ -84,7 +80,6 @@ class Threads:
         self.workers.append(target.start)
         return len(self.workers) - 1
 
-
 def read_events(trace: TextIO, options: dict[str, Any]) -> list[dict[str, Any]]:
     """Reads all events from time-trace json file |trace|."""
     trace_data = json.load(trace)
@@ -92,12 +87,9 @@ def read_events(trace: TextIO, options: dict[str, Any]) -> list[dict[str, Any]]:
     def include_event(event: dict[str, Any], options: dict[str, Any]) -> bool:
         """Only include events if they are complete events, are longer than
         granularity, and are not totals."""
-        return ((event['ph'] == 'X') and
-                (event['dur'] >= options['granularity']) and
-                (not event['name'].startswith('Total')))
+        return ((event['ph'] == 'X') and (event['dur'] >= options['granularity']) and (not event['name'].startswith('Total')))
 
     return [x for x in trace_data['traceEvents'] if include_event(x, options)]
-
 
 def trace_to_dicts(target: Target, trace: TextIO, options: dict[str, Any], pid: int, tid: int) -> Iterator[dict[str, Any]]:
     """Read a file-like object |trace| containing -ftime-trace data and yields
@@ -119,7 +111,6 @@ def trace_to_dicts(target: Target, trace: TextIO, options: dict[str, Any], pid: 
 
         yield event
 
-
 def embed_time_trace(ninja_log_dir: str, target: Target, pid: int, tid: int, options: dict[str, Any]) -> Iterator[dict[str, Any]]:
     """Produce time trace output for the specified ninja target. Expects
     time-trace file to be in .json file named based on .o file."""
@@ -128,12 +119,10 @@ def embed_time_trace(ninja_log_dir: str, target: Target, pid: int, tid: int, opt
         json_trace_path = os.path.splitext(o_path)[0] + '.json'
         try:
             with open(json_trace_path, 'r') as trace:
-                for time_trace_event in trace_to_dicts(target, trace, options,
-                                                       pid, tid):
+                for time_trace_event in trace_to_dicts(target, trace, options, pid, tid):
                     yield time_trace_event
         except IOError:
             pass
-
 
 def log_to_dicts(log: TextIO, pid: int, options: dict[str, Any]) -> Iterator[dict[str, Any]]:
     """Reads a file-like object |log| containing a .ninja_log, and yields one
@@ -143,10 +132,14 @@ def log_to_dicts(log: TextIO, pid: int, options: dict[str, Any]) -> Iterator[dic
         tid = threads.alloc(target)
 
         yield {
-            'name': '%0s' % ', '.join(target.targets), 'cat': 'targets',
-            'ph': 'X', 'ts': (target.start * 1000),
+            'name': '%0s' % ', '.join(target.targets),
+            'cat': 'targets',
+            'ph': 'X',
+            'ts': (target.start * 1000),
             'dur': ((target.end - target.start) * 1000),
-            'pid': pid, 'tid': tid, 'args': {},
+            'pid': pid,
+            'tid': tid,
+            'args': {},
         }
         if options.get('embed_time_trace', False):
             # Add time-trace information into the ninja trace.
@@ -154,40 +147,46 @@ def log_to_dicts(log: TextIO, pid: int, options: dict[str, Any]) -> Iterator[dic
                 ninja_log_dir = os.path.dirname(log.name)
             except AttributeError:
                 continue
-            for time_trace in embed_time_trace(ninja_log_dir, target, pid,
-                                               tid, options):
+            for time_trace in embed_time_trace(ninja_log_dir, target, pid, tid, options):
                 yield time_trace
-
 
 def main(argv: list[str]) -> int:
     usage = __doc__
     parser = optparse.OptionParser(usage)
-    parser.add_option('-a', '--showall', action='store_true', dest='showall',
+    parser.add_option('-a',
+                      '--showall',
+                      action='store_true',
+                      dest='showall',
                       default=False,
                       help='report on last build step for all outputs. Default '
                       'is to report just on the last (possibly incremental) '
                       'build')
-    parser.add_option('-g', '--granularity', type='int', default=50000,
+    parser.add_option('-g',
+                      '--granularity',
+                      type='int',
+                      default=50000,
                       dest='granularity',
                       help='minimum length time-trace event to embed in '
                       'microseconds. Default: %default')
-    parser.add_option('-e', '--embed-time-trace', action='store_true',
-                      default=False, dest='embed_time_trace',
+    parser.add_option('-e',
+                      '--embed-time-trace',
+                      action='store_true',
+                      default=False,
+                      dest='embed_time_trace',
                       help='embed clang -ftime-trace json file found adjacent '
                       'to a target file')
     (options, args) = parser.parse_args()
 
     if len(args) == 0:
-      print('Must specify at least one .ninja_log file')
-      parser.print_help()
-      return 1
+        print('Must specify at least one .ninja_log file')
+        parser.print_help()
+        return 1
 
     entries = []
     for pid, log_file in enumerate(args):
         with open(log_file, 'r') as log:
             entries += list(log_to_dicts(log, pid, vars(options)))
     json.dump(entries, sys.stdout)
-
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
