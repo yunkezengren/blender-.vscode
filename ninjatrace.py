@@ -28,18 +28,20 @@ import os
 import optparse
 import re
 import sys
+from typing import TextIO, Any, Iterator, Optional
 
 
 class Target:
     """Represents a single line read for a .ninja_log file. Start and end times
     are milliseconds."""
-    def __init__(self, start, end):
+
+    def __init__(self, start: int, end: int) -> None:
         self.start = int(start)
         self.end = int(end)
-        self.targets = []
+        self.targets: list[str] = []
 
 
-def read_targets(log, show_all):
+def read_targets(log: TextIO, show_all: bool) -> list[Target]:
     """Reads all targets from .ninja_log file |log_file|, sorted by start
     time"""
     header = log.readline()
@@ -56,7 +58,7 @@ def read_targets(log, show_all):
     for line in log:
         if line.startswith('#'):
             continue
-        start, end, _, name, cmdhash = line.strip().split('\t') # Ignore restat.
+        start, end, _, name, cmdhash = line.strip().split('\t')  # Ignore restat.
         if not show_all and int(end) < last_end_seen:
             # An earlier time stamp means that this step is the first in a new
             # build, possibly an incremental build. Throw away the previous data
@@ -69,10 +71,11 @@ def read_targets(log, show_all):
 
 class Threads:
     """Tries to reconstruct the parallelism from a .ninja_log"""
-    def __init__(self):
-        self.workers = []  # Maps thread id to time that thread is occupied for.
 
-    def alloc(self, target):
+    def __init__(self) -> None:
+        self.workers: list[int] = []  # Maps thread id to time that thread is occupied for.
+
+    def alloc(self, target: Target) -> int:
         """Places target in an available thread, or adds a new thread."""
         for worker in range(len(self.workers)):
             if self.workers[worker] >= target.end:
@@ -82,11 +85,11 @@ class Threads:
         return len(self.workers) - 1
 
 
-def read_events(trace, options):
+def read_events(trace: TextIO, options: dict[str, Any]) -> list[dict[str, Any]]:
     """Reads all events from time-trace json file |trace|."""
     trace_data = json.load(trace)
 
-    def include_event(event, options):
+    def include_event(event: dict[str, Any], options: dict[str, Any]) -> bool:
         """Only include events if they are complete events, are longer than
         granularity, and are not totals."""
         return ((event['ph'] == 'X') and
@@ -96,7 +99,7 @@ def read_events(trace, options):
     return [x for x in trace_data['traceEvents'] if include_event(x, options)]
 
 
-def trace_to_dicts(target, trace, options, pid, tid):
+def trace_to_dicts(target: Target, trace: TextIO, options: dict[str, Any], pid: int, tid: int) -> Iterator[dict[str, Any]]:
     """Read a file-like object |trace| containing -ftime-trace data and yields
     about:tracing dict per eligible event in that log."""
     ninja_time = (target.end - target.start) * 1000
@@ -117,7 +120,7 @@ def trace_to_dicts(target, trace, options, pid, tid):
         yield event
 
 
-def embed_time_trace(ninja_log_dir, target, pid, tid, options):
+def embed_time_trace(ninja_log_dir: str, target: Target, pid: int, tid: int, options: dict[str, Any]) -> Iterator[dict[str, Any]]:
     """Produce time trace output for the specified ninja target. Expects
     time-trace file to be in .json file named based on .o file."""
     for t in target.targets:
@@ -132,7 +135,7 @@ def embed_time_trace(ninja_log_dir, target, pid, tid, options):
             pass
 
 
-def log_to_dicts(log, pid, options):
+def log_to_dicts(log: TextIO, pid: int, options: dict[str, Any]) -> Iterator[dict[str, Any]]:
     """Reads a file-like object |log| containing a .ninja_log, and yields one
     about:tracing dict per command found in the log."""
     threads = Threads()
@@ -144,7 +147,7 @@ def log_to_dicts(log, pid, options):
             'ph': 'X', 'ts': (target.start * 1000),
             'dur': ((target.end - target.start) * 1000),
             'pid': pid, 'tid': tid, 'args': {},
-            }
+        }
         if options.get('embed_time_trace', False):
             # Add time-trace information into the ninja trace.
             try:
@@ -156,7 +159,7 @@ def log_to_dicts(log, pid, options):
                 yield time_trace
 
 
-def main(argv):
+def main(argv: list[str]) -> int:
     usage = __doc__
     parser = optparse.OptionParser(usage)
     parser.add_option('-a', '--showall', action='store_true', dest='showall',
