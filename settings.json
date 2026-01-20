@@ -82,6 +82,7 @@
         "GNUmakefile": true,
         // "make.bat": true,
         "README.md": true,
+        "nul": true,
         // "pyproject.toml": true,
         // "CMakeLists.txt": true,
     },
