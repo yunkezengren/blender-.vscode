@@ -31,9 +31,9 @@
     //     },
     //     "cpp": [
     //         {
-    //             "begin": "\\{",
-    //             "end": "\\}"
-    //         },
+        //             "begin": "\\{",
+        //             "end": "\\}"
+        //         },
     //         // {
     //         //     "begin": "\\(",
     //         //     "end": "\\)"
@@ -44,6 +44,7 @@
     "files.exclude": { //隐藏文件和文件夹
         // "**/temp": true,     //隐藏temp文件夹
         // "*.settings": true,
+        ".history": true,
         "**/.history": false,
         "**/__pycache__": true,
         ".well-known": true,
@@ -58,14 +59,14 @@
         "**/*.idb": true,
         ".gitea": true,
         ".github": true,
-        ".history": true,
-        // "assets": true,
+        "assets": true,
         // "build_files": true,
         // "doc": true,
         // "extern": true,
         // "intern": true,
         // "lib": true,
         // "locale": true,
+        "out": true,
         // "release": true,
         // "scripts": true,
         // "tests": true,
@@ -82,9 +83,22 @@
         "GNUmakefile": true,
         // "make.bat": true,
         "README.md": true,
-        "nul": true,
         // "pyproject.toml": true,
         // "CMakeLists.txt": true,
+        // ===================================
+        "nul": true,
+        ".claude": true,
+        ".halo": true,
+        ".jj": true,
+        // ".markdown": true,
+        // ".opencode": true,
+        ".serena": true,
+        ".trae": true,
+        ".vs": true,
+        ".vscode/.claude": true,
+        ".vscode/.jj": true,
+        ".vscode/bookmarks.json": true,
+        ".vscode/bookmarksh_data.json": true,
     },
     // "search.exclude": { //隐藏文件和文件夹
     //     // "**/temp": true,     //隐藏temp文件夹

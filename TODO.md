@@ -252,3 +252,6 @@ scripts\startup\bl_ui\__init__.py
 // show_extra_face_angle
 //🌺 V3D_OVERLAY_EDIT_FACE_ANG
 ```
+
+### 改进注释: 存多点
+- AttrDomain::Point 也可以针对蜡笔的点吗? source/blender/blenkernel/BKE_attribute.hh:72~73
