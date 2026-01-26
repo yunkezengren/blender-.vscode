@@ -5,12 +5,12 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 // "E:/blender-git/blender_ninja_lite_debug/source/blender/makesrna",
-                // "E:/blender-git/ninja_lite_debug_change-socket-shape/source/blender",
-                // "E:/blender-git/ninja_lite_debug_change-socket-shape/source/blender",
-                "E:/blender-git/ninja_lite_debug_change-socket-shape/source/blender/makesrna",
+                // "E:/blender-git/blender_ninja_lite_debug/source/blender",
+                // "E:/blender-git/blender_ninja_lite_debug/source/blender",
+                "E:/blender-git/blender_ninja_lite_debug/source/blender/makesrna",
                 // 好像能递归包含,好像不行
-                // "E:/blender-git/ninja_lite_debug_change-socket-shape/source/blender/makesrna/**",
-                // "E:/blender-git/ninja_lite_debug_change-socket-shape/source/blender/makesdna/intern"
+                // "E:/blender-git/blender_ninja_lite_debug/source/blender/makesrna/**",
+                // "E:/blender-git/blender_ninja_lite_debug/source/blender/makesdna/intern"
             ],
             "defines": [
                 "_DEBUG",

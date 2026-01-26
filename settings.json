@@ -93,7 +93,7 @@
         // ".markdown": true,
         // ".opencode": true,
         ".serena": true,
-        ".trae": true,
+        // ".trae": true,
         ".vs": true,
         ".vscode/.claude": true,
         ".vscode/.jj": true,
@@ -259,4 +259,5 @@
     "editor.rename.enablePreview": true,
     "editor.stickyScroll.defaultModel": "foldingProviderModel",
     "editor.stickyScroll.enabled": true,
+    "basedpyright.disableLanguageServices": true,
 }
