@@ -1,5 +1,7 @@
 <details>
-<summary> <span style="background-color: #007acc; color: white; padding: 2px 5px; border-radius: 10px;"> c++ 耗时 </span> </summary>
+<summary> <span style="padding: 2px 5px; border-radius: 10px;"> c++ 耗时 </span> </summary>
+
+style="background-color: #007acc; color: white; padding: 2px 5px; border-radius: 10px;"
 
 ```cpp
 #include <chrono>
@@ -16,6 +18,14 @@ int main() {
   return 0;
 }
 ```
+</details>
+
+<details>
+<summary> <span > Issue with double-click </span> </summary>
+<video src="attachments/70f0c806-0281-4eec-9f66-4f550eb628b6" title="doubleclick.mp4" controls></video>
+The issue seems to stem from `interface/interface_handlers.cc:4745~4752` . 
+I create a report #153636 for this.
+I'm unsure if this should be addressed in the current PR or how best to solve it. 
 </details>
 
 ---

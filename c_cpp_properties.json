@@ -24,9 +24,10 @@
                 "RNA_RUNTIME=1",
                 "GPU_SHADER",
             ],
-            "cStandard": "c17",
-            "cppStandard": "gnu++17",
-            "intelliSenseMode": "windows-gcc-x64",
+            "cStandard": "c99",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "gcc-x64",
+            // "intelliSenseMode": "windows-gcc-x64",
             "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],
