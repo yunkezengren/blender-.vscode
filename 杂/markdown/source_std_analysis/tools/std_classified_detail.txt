@@ -1,0 +1,1214 @@
+# Blender std:: 组件分类详细映射
+
+
+## std::string (总计: 5121)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::string | 5031 |
+| std::string::npos | 81 |
+| std::string::traits_type::length | 7 |
+| std::string::size_type | 2 |
+
+## std::optional (总计: 3220)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::optional | 3220 |
+
+## std::algorithms (总计: 2973)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::max | 1003 |
+| std::min | 736 |
+| std::swap | 417 |
+| std::clamp | 227 |
+| std::sort | 108 |
+| std::any_of | 68 |
+| std::destroy_at | 50 |
+| std::all_of | 34 |
+| std::copy | 29 |
+| std::copy_n | 28 |
+| std::stable_sort | 23 |
+| std::fill_n | 23 |
+| std::accumulate | 18 |
+| std::reverse | 17 |
+| std::find_if | 17 |
+| std::is_sorted | 14 |
+| std::replace | 12 |
+| std::max_element | 11 |
+| std::iota | 11 |
+| std::equal | 11 |
+| std::count | 11 |
+| std::upper_bound | 9 |
+| std::count_if | 9 |
+| std::min_element | 7 |
+| std::find | 7 |
+| std::rotate | 5 |
+| std::reduce | 5 |
+| std::uninitialized_copy_n | 4 |
+| std::transform | 4 |
+| std::set_union | 4 |
+| std::set_difference | 4 |
+| std::remove_if | 4 |
+| std::none_of | 4 |
+| std::lower_bound | 4 |
+| std::set_intersection | 3 |
+| std::fill | 3 |
+| std::partition | 2 |
+| std::lexicographical_compare | 2 |
+| std::find_if_not | 2 |
+| std::copy_if | 2 |
+| std::adjacent_find | 2 |
+| std::uninitialized_move_n | 1 |
+| std::uninitialized_fill_n | 1 |
+| std::uninitialized_default_construct_n | 1 |
+| std::stable_partition | 1 |
+| std::shuffle | 1 |
+| std::replace_if | 1 |
+| std::remove | 1 |
+| std::push_heap | 1 |
+| std::pop_heap | 1 |
+| std::partial_sort | 1 |
+| std::nth_element | 1 |
+| std::midpoint | 1 |
+| std::make_heap | 1 |
+| std::lcm | 1 |
+| std::gcd | 1 |
+| std::for_each | 1 |
+| std::destroy_n | 1 |
+| std::copy_backward | 1 |
+| std::binary_search | 1 |
+
+## std::nullopt (总计: 2383)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::nullopt | 2383 |
+
+## std::move (总计: 1705)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::move | 1705 |
+
+## std::memory (总计: 1427)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::make_unique | 716 |
+| std::get | 237 |
+| std::make_shared | 223 |
+| std::get_if | 146 |
+| std::holds_alternative | 50 |
+| std::visit | 32 |
+| std::monostate | 16 |
+| std::dynamic_pointer_cast | 5 |
+| std::static_pointer_cast | 2 |
+
+## std::unique_ptr (总计: 1353)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::unique_ptr | 1353 |
+
+## std::cout (总计: 690)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::cout | 690 |
+
+## std::array (总计: 653)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::array | 653 |
+
+## std::type_traits (总计: 612)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::is_same_v | 194 |
+| std::decay_t | 55 |
+| std::is_same | 33 |
+| std::is_void_v | 31 |
+| std::is_base_of_v | 22 |
+| std::is_convertible_v | 21 |
+| std::is_trivially_destructible_v | 20 |
+| std::is_trivial_v | 20 |
+| std::is_floating_point_v | 19 |
+| std::is_nothrow_move_constructible_v | 16 |
+| std::is_integral_v | 16 |
+| std::is_trivially_copyable_v | 15 |
+| std::is_invocable_r_v | 14 |
+| std::index_sequence | 13 |
+| std::conditional_t | 12 |
+| std::make_index_sequence | 8 |
+| std::true_type | 7 |
+| std::remove_reference_t | 7 |
+| std::remove_pointer_t | 7 |
+| std::is_pointer_v | 7 |
+| std::is_trivially_move_constructible_v | 6 |
+| std::is_copy_constructible_v | 6 |
+| std::false_type | 6 |
+| std::is_arithmetic_v | 5 |
+| std::enable_if_t | 5 |
+| std::is_trivially_copy_constructible_v | 4 |
+| std::is_enum_v | 4 |
+| std::is_trivially_constructible_v | 3 |
+| std::tuple_element_t | 2 |
+| std::remove_cv_t | 2 |
+| std::remove_const_t | 2 |
+| std::is_unsigned_v | 2 |
+| std::is_trivially_move_assignable_v | 2 |
+| std::is_signed_v | 2 |
+| std::is_scalar_v | 2 |
+| std::is_rvalue_reference_v | 2 |
+| std::is_move_constructible_v | 2 |
+| std::is_move_assignable_v | 2 |
+| std::is_lvalue_reference_v | 2 |
+| std::is_destructible_v | 2 |
+| std::is_copy_assignable_v | 2 |
+| std::void_t | 1 |
+| std::remove_reference | 1 |
+| std::make_unsigned_t | 1 |
+| std::is_standard_layout_v | 1 |
+| std::is_invocable_v | 1 |
+| std::is_default_constructible_v | 1 |
+| std::is_constructible_v | 1 |
+| std::is_const_v | 1 |
+| std::integral_constant | 1 |
+| std::enable_if | 1 |
+
+## std::endl (总计: 356)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::endl | 356 |
+
+## std::vector (总计: 346)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::vector | 336 |
+| std::vector::push_back | 2 |
+| std::vector::erase | 2 |
+| std::vector::empty | 2 |
+| std::vector::emplace_back | 2 |
+| std::vector::pop_back | 1 |
+| std::vector::insert | 1 |
+
+## std::math (总计: 339)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::abs | 98 |
+| std::sqrt | 52 |
+| std::pow | 29 |
+| std::round | 22 |
+| std::sin | 20 |
+| std::cos | 20 |
+| std::trunc | 12 |
+| std::isnan | 11 |
+| std::ceil | 10 |
+| std::floor | 9 |
+| std::isfinite | 8 |
+| std::tan | 7 |
+| std::modf | 7 |
+| std::log | 5 |
+| std::exp | 4 |
+| std::fmod | 3 |
+| std::atan | 3 |
+| std::lround | 2 |
+| std::log2 | 2 |
+| std::fabs | 2 |
+| std::exp2 | 2 |
+| std::copysign | 2 |
+| std::atan2 | 2 |
+| std::asin | 2 |
+| std::acos | 2 |
+| std::nextafter | 1 |
+| std::isinf | 1 |
+| std::hypot | 1 |
+
+## std::shared_ptr (总计: 334)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::shared_ptr | 334 |
+
+## std::ostream (总计: 298)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::ostream | 298 |
+
+## std::pair (总计: 294)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::pair | 294 |
+
+## std::stringstream (总计: 265)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::stringstream | 265 |
+
+## std::numeric_limits (总计: 246)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::numeric_limits | 246 |
+
+## std::string_conversion (总计: 208)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::to_string | 199 |
+| std::stoi | 5 |
+| std::stoll | 2 |
+| std::stol | 1 |
+| std::stof | 1 |
+
+## std::lock_guard (总计: 167)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::lock_guard | 167 |
+
+## std::utility (总计: 162)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::forward | 148 |
+| std::exchange | 6 |
+| std::declval | 4 |
+| std::as_const | 3 |
+| std::addressof | 1 |
+
+## std::scoped_lock (总计: 138)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::scoped_lock | 138 |
+
+## std::atomic (总计: 137)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::atomic | 137 |
+
+## std::function (总计: 129)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::function | 129 |
+
+## std::string_view (总计: 103)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::string_view | 101 |
+| std::string_view::npos | 2 |
+
+## std::ios (总计: 87)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::ios::binary | 26 |
+| std::ios::out | 17 |
+| std::ios::in | 12 |
+| std::ios::ate | 6 |
+| std::ios_base::binary | 5 |
+| std::ios::beg | 5 |
+| std::ios_base::openmode | 4 |
+| std::ios_base::app | 4 |
+| std::ios_base::in | 3 |
+| std::ios_base::end | 2 |
+| std::ios_base::fmtflags | 1 |
+| std::ios_base::beg | 1 |
+| std::ios::trunc | 1 |
+
+## std::cerr (总计: 84)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::cerr | 84 |
+
+## std::memory_order_relaxed (总计: 77)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::memory_order_relaxed | 77 |
+
+## std::complex (总计: 76)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::complex | 76 |
+
+## std::variant (总计: 75)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::variant | 75 |
+
+## std::byte (总计: 61)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::byte | 61 |
+
+## std::io_manipulators (总计: 56)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::setw | 17 |
+| std::hex | 12 |
+| std::fixed | 10 |
+| std::setfill | 7 |
+| std::setprecision | 6 |
+| std::dec | 2 |
+| std::showbase | 1 |
+| std::left | 1 |
+
+## std::c_compat (总计: 53)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::memcpy | 18 |
+| std::memcmp | 5 |
+| std::strerror | 4 |
+| std::memchr | 3 |
+| std::fclose | 3 |
+| std::time | 2 |
+| std::mktime | 2 |
+| std::memset | 2 |
+| std::memmove | 2 |
+| std::free | 2 |
+| std::fprintf | 2 |
+| std::atoi | 2 |
+| std::tmpnam | 1 |
+| std::strncmp | 1 |
+| std::strcmp | 1 |
+| std::sscanf | 1 |
+| std::rand | 1 |
+| std::aligned_alloc | 1 |
+
+## std::iterator (总计: 48)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::distance | 11 |
+| std::make_move_iterator | 8 |
+| std::end | 8 |
+| std::size | 7 |
+| std::begin | 6 |
+| std::next | 5 |
+| std::prev | 3 |
+
+## std::unique_lock (总计: 42)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::unique_lock | 42 |
+
+## std::functional (总计: 41)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::reference_wrapper | 38 |
+| std::ref | 3 |
+
+## std::mutex (总计: 33)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::mutex | 33 |
+
+## std::unordered_set (总计: 33)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::unordered_set | 25 |
+| std::unordered_set::insert | 2 |
+| std::unordered_set::find | 2 |
+| std::unordered_set::erase | 2 |
+| std::unordered_set::end | 2 |
+
+## std::unordered_map (总计: 31)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::unordered_map | 25 |
+| std::unordered_map::insert_or_assign | 1 |
+| std::unordered_map::insert | 1 |
+| std::unordered_map::find | 1 |
+| std::unordered_map::erase | 1 |
+| std::unordered_map::empty | 1 |
+| std::unordered_map::contains | 1 |
+
+## std::tuple (总计: 30)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::tuple | 30 |
+
+## std::runtime_error (总计: 30)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::runtime_error | 30 |
+
+## std::map (总计: 30)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::map | 30 |
+
+## std::make_optional (总计: 27)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::make_optional | 27 |
+
+## std::make_pair (总计: 25)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::make_pair | 25 |
+
+## std::chrono::duration (总计: 25)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::chrono::nanoseconds | 14 |
+| std::chrono::microseconds | 5 |
+| std::chrono::milliseconds | 4 |
+| std::chrono::seconds::period | 1 |
+| std::chrono::duration | 1 |
+
+## std::reverse_iterator (总计: 24)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::reverse_iterator | 24 |
+
+## std::deque (总计: 22)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::deque | 22 |
+
+## std::size_t (总计: 21)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::size_t | 21 |
+
+## std::ofstream (总计: 21)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::ofstream | 15 |
+| std::ofstream::out | 3 |
+| std::ofstream::binary | 3 |
+
+## std::queue (总计: 20)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::queue | 20 |
+
+## std::errc (总计: 19)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::errc::result_out_of_range | 8 |
+| std::errc::invalid_argument | 8 |
+| std::errc | 3 |
+
+## std::istringstream (总计: 18)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::istringstream | 18 |
+
+## std::ostringstream (总计: 17)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::ostringstream | 17 |
+
+## std::wstring (总计: 16)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::wstring | 16 |
+
+## std::make_tuple (总计: 16)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::make_tuple | 16 |
+
+## std::list (总计: 16)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::list | 16 |
+
+## std::initializer_list (总计: 16)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::initializer_list | 16 |
+
+## std::ctype (总计: 16)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::isdigit | 5 |
+| std::isalnum | 5 |
+| std::isspace | 2 |
+| std::isprint | 2 |
+| std::tolower | 1 |
+| std::isalpha | 1 |
+
+## std::in_place_type (总计: 15)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::in_place_type | 15 |
+
+## std::chrono::clock (总计: 15)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::chrono::steady_clock | 6 |
+| std::chrono::high_resolution_clock::now | 4 |
+| std::chrono::steady_clock::now | 2 |
+| std::chrono::steady_clock::time_point | 1 |
+| std::chrono::high_resolution_clock::time_point | 1 |
+| std::chrono::high_resolution_clock | 1 |
+
+## std::ptrdiff_t (总计: 14)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::ptrdiff_t | 14 |
+
+## std::regex (总计: 12)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::regex | 12 |
+
+## std::exception (总计: 12)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::exception | 12 |
+
+## std::istream (总计: 11)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::istream | 11 |
+
+## std::set (总计: 10)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::set | 10 |
+
+## std::system_error (总计: 9)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::system_error | 9 |
+
+## std::fstream (总计: 9)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::fstream | 7 |
+| std::fstream::open | 2 |
+
+## std::thread (总计: 9)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::thread | 5 |
+| std::thread::id | 4 |
+
+## std::span (总计: 8)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::span | 8 |
+
+## std::multiset (总计: 8)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::multiset | 8 |
+
+## std::ifstream (总计: 8)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::ifstream | 8 |
+
+## std::derived_from (总计: 8)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::derived_from | 8 |
+
+## std::this_thread::get_id (总计: 7)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::this_thread::get_id | 7 |
+
+## std::regex_replace (总计: 7)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::regex_replace | 7 |
+
+## std::memory_order_acquire (总计: 7)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::memory_order_acquire | 7 |
+
+## std::from_chars (总计: 7)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::from_chars | 7 |
+
+## std::forward_iterator_tag (总计: 7)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::forward_iterator_tag | 7 |
+
+## std::bitset (总计: 7)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::bitset | 7 |
+
+## std::weak_ptr (总计: 6)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::weak_ptr | 6 |
+
+## std::polar (总计: 6)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::polar | 6 |
+
+## std::from_chars_result (总计: 6)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::from_chars_result | 6 |
+
+## std::filesystem::path (总计: 6)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::filesystem::path | 6 |
+
+## std::back_inserter (总计: 6)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::back_inserter | 6 |
+
+## std::tie (总计: 5)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::tie | 5 |
+
+## std::streamsize (总计: 5)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::streamsize | 5 |
+
+## std::plus (总计: 5)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::plus | 5 |
+
+## std::mt19937 (总计: 5)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::mt19937 | 5 |
+
+## std::condition_variable (总计: 5)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::condition_variable | 5 |
+
+## std::system_category (总计: 4)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::system_category | 4 |
+
+## std::string_literals (总计: 4)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::string_literals | 4 |
+
+## std::recursive_mutex (总计: 4)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::recursive_mutex | 4 |
+
+## std::nullptr_t (总计: 4)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::nullptr_t | 4 |
+
+## std::memory_order_release (总计: 4)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::memory_order_release | 4 |
+
+## std::logical_or (总计: 4)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::logical_or | 4 |
+
+## std::greater (总计: 4)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::greater | 4 |
+
+## std::getline (总计: 4)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::getline | 4 |
+
+## std::erase_if (总计: 4)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::erase_if | 4 |
+
+## std::arg (总计: 4)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::arg | 4 |
+
+## std::stack (总计: 4)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::stack | 3 |
+| std::stack::emplace | 1 |
+
+## std::mt19937_64 (总计: 4)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::mt19937_64 | 2 |
+| std::mt19937_64::min | 1 |
+| std::mt19937_64::max | 1 |
+
+## std::filesystem (总计: 4)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::filesystem::create_directories | 2 |
+| std::filesystem::exists | 1 |
+| std::filesystem | 1 |
+
+## std::regex_search (总计: 3)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::regex_search | 3 |
+
+## std::priority_queue (总计: 3)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::priority_queue | 3 |
+
+## std::memory_order_acq_rel (总计: 3)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::memory_order_acq_rel | 3 |
+
+## std::hash (总计: 3)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::hash | 3 |
+
+## std::forward_list (总计: 3)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::forward_list | 3 |
+
+## std::error_code (总计: 3)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::error_code | 3 |
+
+## std::chrono::time_point (总计: 3)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::chrono::time_point | 3 |
+
+## std::chrono::duration_cast (总计: 3)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::chrono::duration_cast | 3 |
+
+## std::char_traits (总计: 3)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::char_traits | 3 |
+
+## std::bad_cast (总计: 3)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::bad_cast | 3 |
+
+## std::type_info (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::type_info | 2 |
+
+## std::tm (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::tm | 2 |
+
+## std::time_t (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::time_t | 2 |
+
+## std::streamoff (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::streamoff | 2 |
+
+## std::nothrow (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::nothrow | 2 |
+
+## std::locale (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::locale | 2 |
+
+## std::less (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::less | 2 |
+
+## std::invalid_argument (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::invalid_argument | 2 |
+
+## std::in_place_type_t (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::in_place_type_t | 2 |
+
+## std::greater_equal (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::greater_equal | 2 |
+
+## std::fmaxf (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::fmaxf | 2 |
+
+## std::condition_variable_any (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::condition_variable_any | 2 |
+
+## std::cmatch (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::cmatch | 2 |
+
+## std::chrono (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::chrono | 2 |
+
+## std::bit_cast (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::bit_cast | 2 |
+
+## std::bidirectional_iterator_tag (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::bidirectional_iterator_tag | 2 |
+
+## std::atomic_bool (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::atomic_bool | 2 |
+
+## std::any (总计: 2)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::any | 2 |
+
+## std::uniform_int_distribution (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::uniform_int_distribution | 1 |
+
+## std::this_thread::yield (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::this_thread::yield | 1 |
+
+## std::this_thread::sleep_for (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::this_thread::sleep_for | 1 |
+
+## std::terminate (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::terminate | 1 |
+
+## std::strings (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::strings | 1 |
+
+## std::string_view: (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::string_view: | 1 |
+
+## std::smatch (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::smatch | 1 |
+
+## std::roundf (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::roundf | 1 |
+
+## std::rotl (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::rotl | 1 |
+
+## std::regex_match (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::regex_match | 1 |
+
+## std::random_device (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::random_device | 1 |
+
+## std::random_access_iterator_tag (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::random_access_iterator_tag | 1 |
+
+## std::out_of_range (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::out_of_range | 1 |
+
+## std::norm (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::norm | 1 |
+
+## std::noopt (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::noopt | 1 |
+
+## std::nexttowardf (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::nexttowardf | 1 |
+
+## std::multi_map (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::multi_map | 1 |
+
+## std::logical_and (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::logical_and | 1 |
+
+## std::is_layout_compatible (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::is_layout_compatible | 1 |
+
+## std::is_bounded_array_v (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::is_bounded_array_v | 1 |
+
+## std::integer_sequence (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::integer_sequence | 1 |
+
+## std::input_iterator_tag (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::input_iterator_tag | 1 |
+
+## std::has_unique_object_representations_v (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::has_unique_object_representations_v | 1 |
+
+## std::fminf (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::fminf | 1 |
+
+## std::filesystem::recursive_directory_iterator (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::filesystem::recursive_directory_iterator | 1 |
+
+## std::filesystem::directory_iterator (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::filesystem::directory_iterator | 1 |
+
+## std::equal_to (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::equal_to | 1 |
+
+## std::endian::native (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::endian::native | 1 |
+
+## std::default_random_engine (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::default_random_engine | 1 |
+
+## std::conj (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::conj | 1 |
+
+## std::atomic_thread_fence (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::atomic_thread_fence | 1 |
+
+## std::atomic_size_t (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::atomic_size_t | 1 |
+
+## std::allocator (总计: 1)
+
+| 原始组件 | 使用次数 |
+|----------|----------|
+| std::allocator | 1 |
