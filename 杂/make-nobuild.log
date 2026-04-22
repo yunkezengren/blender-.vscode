@@ -1,0 +1,132 @@
+make nobuild ninja lite debug builddir %nj_Branch%
+No explicit msvc version requested, autodetecting version.
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.27
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+[vcvarsall.bat] Environment initialized for: 'x64'
+Compiler Detection successful, detected VS2022
+Building blender with VS2022 for x64 in E:\blender-git\blender_ninja_lite_debug
+loading initial cache file E:\blender-git\blender\\build_files\cmake\config\blender_lite.cmake
+-- The C compiler identification is MSVC 19.44.35223.0
+-- The CXX compiler identification is MSVC 19.44.35223.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: D:/Soft/Visual Studio/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: D:/Soft/Visual Studio/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Looking for malloc_stats
+-- Looking for malloc_stats - not found
+-- Visual Studio 2022 detected.
+-- Performing Test SUPPORTS_NEON_BUILD
+-- Performing Test SUPPORTS_NEON_BUILD - Failed
+-- Using NINJA_POOL_JOBS:
+--   NINJA_MAX_NUM_PARALLEL_LINK_JOBS: max concurrent linking jobs (computed): 1
+--   NINJA_MAX_NUM_PARALLEL_COMPILE_HEAVY_JOBS: max concurrent heavy compile jobs (computed): 6
+--   NINJA_MAX_NUM_PARALLEL_COMPILE_JOBS: max concurrent regular compile jobs (computed): 7
+-- Tests: Using Python executable: E:/blender-git/blender/lib/windows_x64/python/313/bin/python$<$<CONFIG:Debug>:_d>.exe
+-- Found Git: D:/Soft/Git/cmd/git.exe (found version "2.40.1.windows.1")
+-- C Compiler:   "MSVC"
+-- C++ Compiler: "MSVC"
+--
+Blender Configuration
+=====================
+
+  Build Options:
+  - WITH_ALEMBIC                        OFF
+  - WITH_BULLET                         OFF
+  - WITH_CLANG                          OFF
+  - WITH_CYCLES                         OFF
+  - WITH_FFTW3                          OFF
+  - WITH_FREESTYLE                      OFF
+  - WITH_GMP                            OFF
+  - WITH_HARU                           OFF
+  - WITH_IK_ITASC                       OFF
+  - WITH_IK_SOLVER                      OFF
+  - WITH_INPUT_NDOF                     OFF
+  - WITH_INPUT_IME                      OFF
+  - WITH_INTERNATIONAL                  OFF
+  - WITH_MANIFOLD                       OFF
+  - WITH_OPENCOLORIO                    OFF
+  - WITH_OPENIMAGEDENOISE               OFF
+  - WITH_OPENSUBDIV                     OFF
+  - WITH_OPENVDB                        OFF
+  - WITH_POTRACE                        OFF
+  - WITH_PUGIXML                        OFF
+  - WITH_QUADRIFLOW                     OFF
+  - WITH_TBB                            ON
+  - WITH_USD                            OFF
+  - WITH_MATERIALX                      OFF
+  - WITH_XR_OPENXR                      OFF
+
+  Compiler Options:
+  - WITH_BUILDINFO                      OFF
+  - WITH_OPTIMIZED_BUILD_TOOLS          ON
+
+  System Options:
+  - WITH_INSTALL_PORTABLE
+  - WITH_TBB_MALLOC_PROXY               OFF
+  - WITH_MEM_VALGRIND                   OFF
+
+  GHOST Options:
+  - WITH_GHOST_DEBUG                    OFF
+  - WITH_GHOST_SDL                      OFF
+
+  Image Formats:
+  - WITH_IMAGE_CINEON                   OFF
+  - WITH_IMAGE_OPENEXR                  OFF
+  - WITH_IMAGE_OPENJPEG                 OFF
+
+  Audio:
+  - WITH_AUDASPACE                      OFF
+  - WITH_RUBBERBAND                     OFF
+  - WITH_CODEC_FFMPEG                   OFF
+  - WITH_CODEC_SNDFILE                  OFF
+  - WITH_COREAUDIO                      OFF
+  - WITH_JACK                           OFF
+  - WITH_JACK_DYNLOAD
+  - WITH_OPENAL                         OFF
+  - WITH_PULSEAUDIO                     OFF
+  - WITH_PULSEAUDIO_DYNLOAD
+  - WITH_SDL                            OFF
+  - WITH_WASAPI                         OFF
+
+  Python:
+  - WITH_PYTHON_INSTALL                 ON
+  - WITH_PYTHON_INSTALL_NUMPY           ON
+  - WITH_PYTHON_INSTALL_ZSTANDARD       ON
+  - WITH_PYTHON_MODULE                  OFF
+  - WITH_PYTHON_SAFETY                  OFF
+
+  Modifiers:
+  - WITH_MOD_FLUID                      OFF
+  - WITH_MOD_OCEANSIM                   OFF
+  - WITH_MOD_REMESH                     OFF
+
+  Rendering:
+  - WITH_HYDRA                          OFF
+
+  Tests:
+  - WITH_GTESTS                         OFF
+  - CYCLES_TEST_DEVICES                 CPU
+  - WITH_CYCLES_TEST_OSL                OFF
+  - WITH_GPU_RENDER_TESTS               OFF
+  - WITH_GPU_BACKEND_TESTS              OFF
+  - WITH_GPU_DRAW_TESTS                 OFF
+  - WITH_GPU_COMPOSITOR_TESTS           OFF
+  - WITH_GPU_MESH_PAINT_TESTS           OFF
+  - WITH_UI_TESTS                       OFF
+  - WITH_UI_TESTS_HEADLESS              OFF
+  - WITH_UI_TESTS_VULKAN                OFF
+  - WITH_GPU_RENDER_TESTS_VULKAN        OFF
+  - WITH_LINUX_OFFICIAL_RELEASE_TESTS   OFF
+
+
+-- Configuring done (9.0s)
+-- Generating done (3.6s)
+-- Build files have been written to: E:/blender-git/blender_ninja_lite_debug

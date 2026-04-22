@@ -61,6 +61,7 @@
 - 节点在框上,却不属于框,要特殊绘制?
 - 节点中的查找,有高亮效果更好
 - 菜单切换整数时默认值 0->n-1
+- **查看器添加快捷键标签 暴露到UI上**
 
 ### 隐藏接口
 - 隐藏接口的问题
@@ -262,3 +263,7 @@ scripts\startup\bl_ui\__init__.py
 
 ### 改进注释: 存多点
 - AttrDomain::Point 也可以针对蜡笔的点吗? source/blender/blenkernel/BKE_attribute.hh:72~73
+
+### 主题改进
+
+- todo: N面板等折叠后标识主题改进 (有贮藏)

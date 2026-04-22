@@ -1,0 +1,39 @@
+make update
+No explicit msvc version requested, autodetecting version.
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.27
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+[vcvarsall.bat] Environment initialized for: 'x64'
+Compiler Detection successful, detected VS2022
+D:\Soft\Git\cmd\git.exe lfs install --skip-repo
+Git LFS initialized.
+
+Updating Blender Git Repository
+===============================
+
+D:\Soft\Git\cmd\git.exe pull --rebase
+Already up to date.
+
+Updating Blender Git LFS
+========================
+
+D:\Soft\Git\cmd\git.exe lfs pull
+
+Configuring Precompiled Libraries
+=================================
+
+Detected platform     : windows
+Detected architecture : x64
+
+* Enabling precompiled libraries at lib/windows_x64
+
+Updating Libraries
+==================
+
+* Skipping lib\linux_x64
+* Skipping lib\macos_arm64
+* Updating lib\windows_x64 ...
+GIT_LFS_SKIP_SMUDGE=1 D:\Soft\Git\cmd\git.exe submodule update --init --progress lib\windows_x64
+D:\Soft\Git\cmd\git.exe -C lib\windows_x64 lfs pull
+* Skipping lib\windows_arm64

@@ -46,6 +46,7 @@ code CmakeCache.txt
 #   启用 echo: CMAKE_VERBOSE_MAKEFILE:
 #   启用 i18n: WITH_INTERNATIONAL
 #   启用 ime: WITH_INPUT_IME
+#   禁用 WITH_UNITY_BUILD:BOOL 如果使用Clangd的话
 
 #   CMAKE_BUILD_TYPE:STRING=
 
