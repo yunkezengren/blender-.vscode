@@ -16,3 +16,4 @@ for i in items:
     select = "选中项" if i.select else "无    "
     active = "活动项" if i == interface.active else "无    "
     print(f"{i.index:2} {i.position:2} 父索引:{i.parent.index:2} {i.item_type:6} {select} {active} {i.name}")
+

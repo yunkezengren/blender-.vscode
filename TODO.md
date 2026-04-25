@@ -170,7 +170,6 @@
 - 预览器数据面板,选中域 Item,3D试图切换预览的属性, 显示预览的列而不是只能第一项
 - Viewer 列显示所有连到预览器节点的值 column_display_name = column_id.name; 和 node_geo_viewer.cc
 - 加个选项 默认随预览器切换
-- 域视图网格为空时不灰显啊
 
 ### 悬浮与颜色
 ```
