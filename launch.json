@@ -1,6 +1,88 @@
 {
     "version": "0.2.0",
     "configurations": [
+        // "name": "blender lite debug - rebuild",
+        {
+            "name": "blender lite debug - rebuild",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "E:/blender-git/blender_ninja_lite_debug/bin/blender.exe",
+            "args": [
+                // "C:/Users/86166/Desktop/blender临时文件/几何节点-改进预览实例.blend",
+                // "C:/Users/86166/Desktop/blender临时文件/所有节点.blend",
+                // "C:/Users/86166/Desktop/blender临时文件/节点-测试导航栏.blend",
+                // "C:/Users/86166/Desktop/blender临时文件/节点-打组问题.blend",
+                // "C:/Users/86166/Desktop/blender临时文件/树视图多选.blend",
+                // "C:/Users/86166/Desktop/blender临时文件/电子表格-列排序.blend",
+                "C:/Users/86166/Desktop/blender临时文件/节点-双击重命名接口.blend",
+                // "C:/Users/86166/Desktop/blender临时文件/几何节点-新的Gizmo.blend",
+                // "C:/Users/86166/Desktop/blender临时文件/主题悬浮颜色.blend",
+                // "C:/Users/86166/Desktop/blender临时文件/预览叠加层文本重叠.blend"
+            ],
+            // "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal",
+            "logging": {
+                "engineLogging": false,
+                "moduleLoad": false
+            },
+            "visualizerFile": "E:/blender-git/blender-change-socket-shape/tools/utils_ide/natvis/Blender.natvis",
+            "preLaunchTask": "blender_ninja_lite_debug"
+        },
+        // "name": "blender debug developer - rebuild",
+        {
+            "name": "blender debug developer - rebuild",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "E:/blender-git/blender_ninja_debug_developer/bin/blender.exe",
+            "args": [],
+            // "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal",
+            "logging": {
+                "engineLogging": false,
+                "moduleLoad": false
+            },
+            "visualizerFile": "E:/blender-git/blender-change-socket-shape/tools/utils_ide/natvis/Blender.natvis",
+            "preLaunchTask": "blender_ninja_debug_developer"
+        },
+        // "name": "blender lite - 不编译",
+        {
+            "name": "blender lite debug - 不编译",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "E:/blender-git/blender_ninja_lite_debug/bin/blender.exe",
+            "args": [],
+            // "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal",
+            "logging": {
+                "engineLogging": false,
+                "moduleLoad": false
+            },
+            "visualizerFile": "E:/blender-git/blender-change-socket-shape/tools/utils_ide/natvis/Blender.natvis",
+        },
+        // "name": "blender lite - rebuild",
+        {
+            "name": "blender lite - rebuild",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "E:/blender-git/blender_ninja_lite/bin/blender.exe",
+            "args": [],
+            // "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal",
+            "logging": {
+                "engineLogging": false,
+                "moduleLoad": false
+            },
+            "visualizerFile": "E:/blender-git/blender-change-socket-shape/tools/utils_ide/natvis/Blender.natvis",
+            "preLaunchTask": "blender_ninja_lite"
+        },
         // "name": "change-sk-shape-lite - build",
         {
             "name": "change-sk-shape-lite - build",
@@ -10,10 +92,6 @@
             "program": "E:/blender-git/ninja_lite_debug_change-socket-shape/bin/blender.exe",
             "args": [
                 // "C:/Users/86166/Desktop/blender临时文件/几何节点-预览矢量.blend",
-                // "C:/Users/86166/Desktop/blender临时文件/几何节点-预览属性.blend",
-                // "C:/Users/86166/Desktop/blender临时文件/几何节点-工具提示翻译问题-二分法测试用.blend",
-                // "C:/Users/86166/Desktop/blender临时文件/节点-测试导航栏.blend",
-                // "C:/Users/86166/Desktop/blender临时文件/节点-auto link reroute.blend",
             ],
             // 是否在程序入口处暂停: false表示不暂停
             "stopAtEntry": false,
@@ -37,8 +115,7 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "E:/blender-git/ninja_debug_change-socket-shape/bin/blender.exe",
-            "args": [
-            ],
+            "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -48,90 +125,6 @@
                 "moduleLoad": false
             },
             "visualizerFile": "${workspaceFolder}/tools/utils_ide/natvis/Blender.natvis",
-        },
-        // "name": "blender lite - rebuild",
-        {
-            "name": "blender lite - rebuild",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "E:/blender-git/blender_ninja_lite/bin/blender.exe",
-            "args": [
-            ],
-            // "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "externalTerminal",
-            "logging": {
-                "engineLogging": false,
-                "moduleLoad": false
-            },
-            "visualizerFile": "E:/blender-git/blender-change-socket-shape/tools/utils_ide/natvis/Blender.natvis",
-            "preLaunchTask": "blender_ninja_lite"
-        },
-        // "name": "blender lite debug - rebuild",
-        {
-            "name": "blender lite debug - rebuild",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "E:/blender-git/blender_ninja_lite_debug/bin/blender.exe",
-            "args": [
-                // "C:/Users/86166/Desktop/blender临时文件/几何节点-改进预览实例.blend",
-                // "C:/Users/86166/Desktop/blender临时文件/所有节点.blend",
-                // "C:/Users/86166/Desktop/blender临时文件/节点-测试导航栏.blend",
-                // "C:/Users/86166/Desktop/blender临时文件/节点-打组问题.blend",
-                // "C:/Users/86166/Desktop/blender临时文件/树视图多选.blend",
-                "C:/Users/86166/Desktop/blender临时文件/电子表格-列排序.blend",
-                // "C:/Users/86166/Desktop/blender临时文件/几何节点-新的Gizmo.blend",
-                // "C:/Users/86166/Desktop/blender临时文件/主题悬浮颜色.blend",
-                // "C:/Users/86166/Desktop/blender临时文件/预览叠加层文本重叠.blend"
-            ],
-            // "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "externalTerminal",
-            "logging": {
-                "engineLogging": false,
-                "moduleLoad": false
-            },
-            "visualizerFile": "E:/blender-git/blender-change-socket-shape/tools/utils_ide/natvis/Blender.natvis",
-            "preLaunchTask": "blender_ninja_lite_debug"
-        },
-        // "name": "blender debug developer - rebuild",
-        {
-            "name": "blender debug developer - rebuild",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "E:/blender-git/blender_ninja_debug_developer/bin/blender.exe",
-            "args": [
-            ],
-            // "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "externalTerminal",
-            "logging": {
-                "engineLogging": false,
-                "moduleLoad": false
-            },
-            "visualizerFile": "E:/blender-git/blender-change-socket-shape/tools/utils_ide/natvis/Blender.natvis",
-            "preLaunchTask": "blender_ninja_debug_developer"
-        },
-        // "name": "blender lite - 不编译",
-        {
-            "name": "blender lite debug - 不编译",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "E:/blender-git/blender_ninja_lite_debug/bin/blender.exe",
-            "args": [
-            ],
-            // "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "externalTerminal",
-            "logging": {
-                "engineLogging": false,
-                "moduleLoad": false
-            },
-            "visualizerFile": "E:/blender-git/blender-change-socket-shape/tools/utils_ide/natvis/Blender.natvis",
         },
         {
             "name": "Python: Attach to Blender",
