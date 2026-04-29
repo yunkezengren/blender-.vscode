@@ -171,27 +171,6 @@
 - Viewer 列显示所有连到预览器节点的值 column_display_name = column_id.name; 和 node_geo_viewer.cc
 - 加个选项 默认随预览器切换
 
-### 悬浮与颜色
-```
-- 悬浮 -->
-菜单 item 的悬浮
-
-其他元素的悬浮会加亮,但是我已经是白色了啊 大纲视图,资产,文件视图
-列分割线也要能配置
-还有框选,还有编辑器区域移动/拆分/替换
-```
-
-```c++
-const float light_factor = (srgb_to_grayscale_byte(wt->wcol.text) > 96) ? 0.8f : 1.2f;
-color_mul_hsl_v3(wt->wcol.inner, 1.0f, 1.0f, light_factor);
-color_blend_v3_v3(wt->wcol.inner, wt->wcol.text, 0.2f);      // 不行,text是黑色时,导致混合的蓝色变暗
-color_blend_v3_v3(wt->wcol.inner, wt->wcol.text_sel, 0.2f);  // 不行,亮色的text_sel也亮才行
-color_blend_v3_v3(wt->wcol.inner, wt->wcol.inner_sel, 0.2f); // 不行,暗色主题不友好,无法保持现状
-copy_v4_v4_uchar(wt->wcol.inner, wt->wcol.inner_sel);        // 不行,菜单枚举 活动 和 选中 一个颜色了
-```
-
----
-
 ### 搜索改进
 ```
 # 获取扩展里面的搜索不好用啊,模糊搜索弱?
@@ -206,8 +185,6 @@ scripts\startup\bl_ui\__init__.py
 - 匹配字符串的标签不会自动更新了
 - 菜单接口拖动搜索 编号切换 要初始化
 ```
-
-
 
 ---
 
@@ -259,7 +236,30 @@ scripts\startup\bl_ui\__init__.py
 
 ### 主题改进
 
-- todo: N面板等折叠后标识主题改进 (有贮藏)
+- N面板等折叠后标识主题改进 (有贮藏)
+- **大纲视图 顶栏tab 区域拆分 等悬浮高亮颜色是加亮, 不适合亮色主题啊**
+
+#### 菜单悬浮颜色
+
+```
+- 悬浮 -->
+菜单 item 的悬浮
+
+其他元素的悬浮会加亮,但是我已经是白色了啊 大纲视图,资产,文件视图
+列分割线也要能配置
+还有框选,还有编辑器区域移动/拆分/替换
+```
+
+```c++
+const float light_factor = (srgb_to_grayscale_byte(wt->wcol.text) > 96) ? 0.8f : 1.2f;
+color_mul_hsl_v3(wt->wcol.inner, 1.0f, 1.0f, light_factor);
+color_blend_v3_v3(wt->wcol.inner, wt->wcol.text, 0.2f);      // 不行,text是黑色时,导致混合的蓝色变暗
+color_blend_v3_v3(wt->wcol.inner, wt->wcol.text_sel, 0.2f);  // 不行,亮色的text_sel也亮才行
+color_blend_v3_v3(wt->wcol.inner, wt->wcol.inner_sel, 0.2f); // 不行,暗色主题不友好,无法保持现状
+copy_v4_v4_uchar(wt->wcol.inner, wt->wcol.inner_sel);        // 不行,菜单枚举 活动 和 选中 一个颜色了
+```
+
+
 
 
 ### 表格交互
@@ -271,3 +271,10 @@ scripts\startup\bl_ui\__init__.py
 - 双击列表 物体 列 ,宽度自动调整不正确
 - 字符串需要悬浮提示
 - 字符串列需要悬浮提示 - 字符串接口悬浮提示文本显示不全
+
+
+### Gizmo
+
+- 合成器Gizmo 等比居中缩放
+- Cage Gizmo 尺寸为0时不可交互了
+- 合成器Gizmo 缺少 undo
