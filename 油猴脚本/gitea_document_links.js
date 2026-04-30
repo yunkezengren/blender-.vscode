@@ -13,6 +13,8 @@
 const SITE_ROOT = "https://projects.blender.org";
 const HEADER_BUTTON_CLASS = "special-greasemonkey-button";
 const HEADER_TOOLBAR_CLASS = "special-greasemonkey-toolbar";
+const HEADER_TOOLBAR_INLINE_CLASS = "special-greasemonkey-toolbar-inline";
+const HEADER_INLINE_HOST_CLASS = "special-greasemonkey-inline-host";
 const COMMENT_TOOLBAR_CLASS = "special-greasemonkey-comment-toolbar";
 const STYLE_ELEMENT_ID = "special-greasemonkey-toolbar-style";
 const BUTTON_FEEDBACK_MS = 1200;
@@ -22,22 +24,25 @@ const CONFIG = {
     package: false,
   },
   theme: {
+    mode: "dark",
     toolbar_gap: "0.35rem",
-    toolbar_margin: "0 0.5rem 0.35rem 0",
-    comment_toolbar_margin: "0 0 0.5rem",
-    button_padding: "0.28rem 0.65rem",
-    button_radius: "7px",
-    button_border: "#7f8b9d",
-    button_bg_start: "#f7f9fb",
-    button_bg_end: "#eef2f6",
-    button_text: "#4e5c70",
-    button_shadow: "0 1px 2px rgba(17, 24, 39, 0.08)",
-    button_hover_border: "#6f7b8d",
-    button_hover_bg_start: "#fbfcfd",
-    button_hover_bg_end: "#eef1f5",
-    button_hover_shadow: "0 2px 6px rgba(17, 24, 39, 0.10)",
-    button_font_size: "12px",
+    toolbar_margin: "0.38rem 0.5rem 0.25rem 0",
+    comment_toolbar_margin: "0.4rem 0 0.4rem",
+    button_padding: "0.18rem 0.5rem",
+    button_radius: "6px",
+    button_shadow: "0 1px 2px rgba(0, 0, 0, 0.18)",
+    button_hover_shadow: "0 1px 3px rgba(0, 0, 0, 0.22)",
+    button_font_size: "10px",
     button_font_weight: "600",
+    dark: {
+      button_border: "#424a57",
+      button_bg_start: "#2f3641",
+      button_bg_end: "#282f39",
+      button_text: "#f3f6fa",
+      button_hover_border: "#525c6b",
+      button_hover_bg_start: "#383f4b",
+      button_hover_bg_end: "#2d3440",
+    },
   },
 };
 
@@ -104,14 +109,30 @@ function ensure_styles() {
 
   const style = document.createElement("style");
   style.id = STYLE_ELEMENT_ID;
-  const theme = CONFIG.theme;
+  const theme = resolve_theme();
   style.textContent = `
     .${HEADER_TOOLBAR_CLASS} {
       display: flex;
       flex-wrap: wrap;
       gap: ${theme.toolbar_gap};
       align-items: center;
+      justify-content: flex-end;
+      width: 100%;
       margin: ${theme.toolbar_margin};
+    }
+
+    .${HEADER_TOOLBAR_CLASS}.${HEADER_TOOLBAR_INLINE_CLASS} {
+      width: auto;
+      margin: 0 0 0 auto;
+      flex: 0 0 auto;
+    }
+
+    .${HEADER_INLINE_HOST_CLASS} {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      row-gap: 0.25rem;
+      column-gap: 0.5rem;
     }
 
     .${COMMENT_TOOLBAR_CLASS} {
@@ -150,7 +171,7 @@ function ensure_styles() {
 
     .${HEADER_BUTTON_CLASS}:active {
       transform: translateY(0);
-      box-shadow: 0 2px 6px rgba(16, 45, 74, 0.16);
+      box-shadow: ${theme.button_hover_shadow};
     }
 
     .${HEADER_BUTTON_CLASS}:disabled {
@@ -176,6 +197,103 @@ function add_commit_button(button_text, page_info, url) {
   );
 }
 
+function resolve_theme() {
+  const theme_config = CONFIG.theme;
+  if (theme_config.mode === "dark") {
+    return {
+      ...theme_config,
+      ...theme_config.dark,
+    };
+  }
+
+  if (theme_config.mode === "follow") {
+    const page_theme = read_page_button_theme();
+    if (page_theme) {
+      return {
+        ...theme_config,
+        ...page_theme,
+      };
+    }
+  }
+
+  return {
+    ...theme_config,
+    ...theme_config.dark,
+  };
+}
+
+function read_page_button_theme() {
+  const source_button = find_theme_source_button();
+  if (!source_button) {
+    return null;
+  }
+
+  const style = window.getComputedStyle(source_button);
+  const background_color = style.backgroundColor;
+  const border_color = style.borderColor || background_color;
+  const text_color = style.color;
+
+  return {
+    button_border: border_color,
+    button_bg_start: background_color,
+    button_bg_end: shift_color(background_color, -8),
+    button_text: text_color,
+    button_hover_border: shift_color(border_color, 10),
+    button_hover_bg_start: shift_color(background_color, 6),
+    button_hover_bg_end: shift_color(background_color, -14),
+  };
+}
+
+function find_theme_source_button() {
+  const selectors = [
+    "#comment-form .ui.button",
+    ".issue-title-buttons .ui.button",
+    ".pull-desc form button",
+    ".ui.button",
+    "button",
+  ];
+
+  for (const selector of selectors) {
+    const candidates = document.querySelectorAll(selector);
+    for (const candidate of candidates) {
+      if (
+        candidate instanceof HTMLElement &&
+        !candidate.classList.contains(HEADER_BUTTON_CLASS)
+      ) {
+        return candidate;
+      }
+    }
+  }
+
+  return null;
+}
+
+function shift_color(color_value, amount) {
+  const rgb = parse_css_color(color_value);
+  if (!rgb) {
+    return color_value;
+  }
+
+  return `rgb(${clamp_channel(rgb.r + amount)} ${clamp_channel(rgb.g + amount)} ${clamp_channel(rgb.b + amount)})`;
+}
+
+function parse_css_color(color_value) {
+  const match = color_value?.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    r: Number(match[1]),
+    g: Number(match[2]),
+    b: Number(match[3]),
+  };
+}
+
+function clamp_channel(value) {
+  return Math.max(0, Math.min(255, value));
+}
+
 function find_commit_author_name() {
   const author_elt = document.getElementsByClassName("author")[0];
   const author_link = author_elt?.getElementsByTagName("a")[0];
@@ -196,26 +314,59 @@ function ensure_header_button_toolbar() {
 
   toolbar = document.createElement("div");
   toolbar.className = HEADER_TOOLBAR_CLASS;
+  toolbar.setAttribute("translate", "no");
+  toolbar.classList.add("notranslate");
 
-  let sibling = null;
-  for (const child_node of button_parent_elt.childNodes) {
-    if (
-      child_node.className &&
-      child_node.className.includes("issue-title-buttons")
-    ) {
-      sibling = child_node;
-      break;
+  const inline_host = find_header_toolbar_inline_host();
+  if (inline_host) {
+    inline_host.classList.add(HEADER_INLINE_HOST_CLASS);
+    toolbar.classList.add(HEADER_TOOLBAR_INLINE_CLASS);
+    inline_host.appendChild(toolbar);
+  }
+  else {
+    const title_anchor = find_header_toolbar_anchor();
+    if (title_anchor?.parentElement === button_parent_elt) {
+      title_anchor.insertAdjacentElement("afterend", toolbar);
+    }
+    else {
+      button_parent_elt.appendChild(toolbar);
     }
   }
 
-  if (sibling) {
-    button_parent_elt.insertBefore(toolbar, sibling);
-  }
-  else {
-    button_parent_elt.appendChild(toolbar);
+  return toolbar;
+}
+
+function find_header_toolbar_inline_host() {
+  const pull_desc = document.getElementById("pull-desc-display");
+  if (pull_desc) {
+    return pull_desc;
   }
 
-  return toolbar;
+  const issue_meta = document.querySelector(".issue-title-meta");
+  if (issue_meta instanceof HTMLElement) {
+    return issue_meta;
+  }
+
+  const commit_meta = document.querySelector(".commit-header .flex-list");
+  if (commit_meta instanceof HTMLElement) {
+    return commit_meta;
+  }
+
+  return null;
+}
+
+function find_header_toolbar_anchor() {
+  const title_elt = document.getElementById("issue-title-display");
+  if (title_elt) {
+    return title_elt;
+  }
+
+  const commit_summary = document.getElementsByClassName("commit-summary")[0];
+  if (commit_summary) {
+    return commit_summary;
+  }
+
+  return null;
 }
 
 function create_button(button_text, title, on_click) {
@@ -224,6 +375,8 @@ function create_button(button_text, title, on_click) {
   button.textContent = button_text;
   button.dataset.defaultLabel = button_text;
   button.className = HEADER_BUTTON_CLASS;
+  button.setAttribute("translate", "no");
+  button.classList.add("notranslate");
   button.title = title;
   button.addEventListener("click", async (event) => {
     event.preventDefault();
