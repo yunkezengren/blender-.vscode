@@ -1,238 +1,377 @@
 // ==UserScript==
 // @name     Gitea Document Links
-// @description Add buttons to put descriptive links to the current page on the clipboard.
-// @version  20
+// @description Add polished shortcut buttons for copying links and common PR comments.
+// @version  21
 // @match    https://projects.blender.org/*
 // @grant    GM.setClipboard
 // ==/UserScript==
 
 // Based on: https://projects.blender.org/dr.sybren/.profile/src/branch/main/webbrowser-scripts/gitea-document-links.js
 
-// Remove the 'user/repo:' part of the 'user/repo:branchname' value.
+"use strict";
+
+const SITE_ROOT = "https://projects.blender.org";
+const HEADER_BUTTON_CLASS = "special-greasemonkey-button";
+const HEADER_TOOLBAR_CLASS = "special-greasemonkey-toolbar";
+const COMMENT_TOOLBAR_CLASS = "special-greasemonkey-comment-toolbar";
+const STYLE_ELEMENT_ID = "special-greasemonkey-toolbar-style";
+const BUTTON_FEEDBACK_MS = 1200;
+const CONFIG = {
+  comment_buttons: {
+    build: false,
+    package: false,
+  },
+  theme: {
+    toolbar_gap: "0.35rem",
+    toolbar_margin: "0 0.5rem 0.35rem 0",
+    comment_toolbar_margin: "0 0 0.5rem",
+    button_padding: "0.28rem 0.65rem",
+    button_radius: "7px",
+    button_border: "#7f8b9d",
+    button_bg_start: "#f7f9fb",
+    button_bg_end: "#eef2f6",
+    button_text: "#4e5c70",
+    button_shadow: "0 1px 2px rgba(17, 24, 39, 0.08)",
+    button_hover_border: "#6f7b8d",
+    button_hover_bg_start: "#fbfcfd",
+    button_hover_bg_end: "#eef1f5",
+    button_hover_shadow: "0 2px 6px rgba(17, 24, 39, 0.10)",
+    button_font_size: "12px",
+    button_font_weight: "600",
+  },
+};
+
+// Remove the "user/repo:" part of the "user/repo:branchname" value.
 function fix_branchname_copy_button() {
-  let header = document.getElementById("pull-desc-display");
-  if (!header) return;
-
-  let buttons = header.getElementsByTagName('button');
-  if (buttons.length == 0) return;
-
-  let button = buttons[0];
-  let text = button.dataset["clipboardText"];
-  let textParts = text.split(":");
-  textParts.shift();
-  let branchName = textParts.join(":");
-
-  button.dataset["clipboardText"] = branchName;
-  button.dataset["tooltipContent"] = "Copy branch name \"" + branchName + "\"";
-}
-
-
-function add_document_links() {
-  console.log("triggered!");
-  let buttons = document.getElementsByClassName("special-greasemonkey-button");
-  if (buttons.length > 0) {
+  const header = document.getElementById("pull-desc-display");
+  if (!header) {
     return;
   }
 
-  let url_info = find_url_info();
-  let page_name = "";
-  let page_title = "";
+  const button = header.getElementsByTagName("button")[0];
+  const text = button?.dataset?.clipboardText;
+  if (!text || !text.includes(":")) {
+    return;
+  }
 
-  if (url_info.issue && url_info.issue != "new") {
-    page_name = `#${url_info.issue}`;
-    page_title = find_page_title();
-  } else if (url_info.pull) {
-    page_name = `#${url_info.pull}`;
-    page_title = find_page_title();
-  } else if (url_info.commit) {
-    page_name = `${url_info.commit.substring(0, 12)}`;
-    page_title = find_commit_title();
-  } else {
+  const branch_name = text.split(":").slice(1).join(":");
+  button.dataset.clipboardText = branch_name;
+  button.dataset.tooltipContent = `Copy branch name "${branch_name}"`;
+}
+
+function add_document_links() {
+  ensure_styles();
+
+  if (document.querySelector(`.${HEADER_BUTTON_CLASS}`)) {
+    return;
+  }
+
+  const url_info = find_url_info();
+  const page_info = find_page_info(url_info);
+  if (!page_info) {
     return;
   }
 
   const url = window.location.href.split("#")[0];
 
-  // Top buttons:
-  add_button("MD", `[${page_name}: ${page_title}](${url})`);
-  add_button("MD (short)", `[${page_name}](${url})`);
+  add_clipboard_button("MD", `[${page_info.name}: ${page_info.title}](${url})`);
+  add_clipboard_button("MD Short", `[${page_info.name}](${url})`);
+  add_clipboard_button("Text", `${page_info.name}: ${page_info.title}`);
+
   if (url_info.commit) {
-    add_commit_button("MD (log)", page_name, page_title, url);
-    add_button("REF", `(${url_info.org}/${url_info.repo}@${url_info.commit})`);
-  }
-  add_button("TXT", page_name + ": " + page_title);
-  if (url_info.pull) {
-    add_pr_copy_diff_button("Diff", `https://projects.blender.org/${url_info.org}/${url_info.repo}/pulls/${url_info.pull}.diff`);
+    add_commit_button("MD Log", page_info, url);
+    add_clipboard_button("Ref", `(${url_info.org}/${url_info.repo}@${url_info.commit})`);
   }
 
-  // Buttons at comment area:
   if (url_info.pull) {
-    add_comment_button("Build", "@blender-bot build");
-    add_comment_button("Package", "@blender-bot package");
+    add_pr_copy_diff_button(
+      "Diff",
+      `${SITE_ROOT}/${url_info.org}/${url_info.repo}/pulls/${url_info.pull}.diff`
+    );
+    if (CONFIG.comment_buttons.build) {
+      add_comment_button("Build", "@blender-bot build");
+    }
+    if (CONFIG.comment_buttons.package) {
+      add_comment_button("Package", "@blender-bot package");
+    }
   }
-
 }
 
-function add_commit_button(button_title, page_name, page_title, url) {
-  const author_elts = document.getElementsByClassName("author");
-  if (!author_elts || author_elts.length == 0) {
-    console.warn("MD button: Author element not found");
+function ensure_styles() {
+  if (document.getElementById(STYLE_ELEMENT_ID)) {
     return;
   }
-  const author_elt = author_elts[0];
 
-  const author_links = author_elt.getElementsByTagName("a");
-  if (!author_links || author_links.length == 0) {
-    console.warn("MD button: Author element has no links:", author_elt);
+  const style = document.createElement("style");
+  style.id = STYLE_ELEMENT_ID;
+  const theme = CONFIG.theme;
+  style.textContent = `
+    .${HEADER_TOOLBAR_CLASS} {
+      display: flex;
+      flex-wrap: wrap;
+      gap: ${theme.toolbar_gap};
+      align-items: center;
+      margin: ${theme.toolbar_margin};
+    }
+
+    .${COMMENT_TOOLBAR_CLASS} {
+      display: flex;
+      flex-wrap: wrap;
+      gap: ${theme.toolbar_gap};
+      align-items: center;
+      margin: ${theme.comment_toolbar_margin};
+    }
+
+    .${HEADER_BUTTON_CLASS} {
+      appearance: none;
+      border: 1px solid ${theme.button_border};
+      border-radius: ${theme.button_radius};
+      background: linear-gradient(180deg, ${theme.button_bg_start} 0%, ${theme.button_bg_end} 100%);
+      color: ${theme.button_text};
+      box-shadow: ${theme.button_shadow};
+      font-size: ${theme.button_font_size};
+      font-weight: ${theme.button_font_weight};
+      letter-spacing: 0.01em;
+      padding: ${theme.button_padding};
+      line-height: 1.2;
+      transition:
+        transform 0.14s ease,
+        box-shadow 0.14s ease,
+        border-color 0.14s ease,
+        background 0.14s ease;
+    }
+
+    .${HEADER_BUTTON_CLASS}:hover {
+      background: linear-gradient(180deg, ${theme.button_hover_bg_start} 0%, ${theme.button_hover_bg_end} 100%);
+      border-color: ${theme.button_hover_border};
+      box-shadow: ${theme.button_hover_shadow};
+      transform: translateY(-1px);
+    }
+
+    .${HEADER_BUTTON_CLASS}:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 6px rgba(16, 45, 74, 0.16);
+    }
+
+    .${HEADER_BUTTON_CLASS}:disabled {
+      cursor: wait;
+      opacity: 0.78;
+      transform: none;
+      box-shadow: none;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function add_commit_button(button_text, page_info, url) {
+  const author_name = find_commit_author_name();
+  if (!author_name) {
+    console.warn("MD Log button: author link not found");
     return;
   }
-  const author_link = author_links[0];
-  const author_name = author_link.textContent.trim();
 
-  const author_time_elt = document
-    .getElementById("authored-time")
-    .getElementsByTagName("relative-time")[0];
-  const date = new Date(author_time_elt.getAttribute("datetime"));
-  const fmt_date = date.toISOString().split("T")[0];
-  add_button(
-    button_title,
-    `- [${page_name}: ${page_title}](${url}) (*${author_name}*)`
+  add_clipboard_button(
+    button_text,
+    `- [${page_info.name}: ${page_info.title}](${url}) (*${author_name}*)`
   );
 }
 
-function add_header_button(button_text) {
-  const button_style = "padding: 0.4rem; border-color: #265787";
-  let button = document.createElement("button");
-  button.textContent = button_text;
-  button.className =
-    "ui basic secondary not-in-edit button tiny special-greasemonkey-button";
-  button.setAttribute("style", button_style);
+function find_commit_author_name() {
+  const author_elt = document.getElementsByClassName("author")[0];
+  const author_link = author_elt?.getElementsByTagName("a")[0];
+  return author_link?.textContent?.trim() || "";
+}
 
-  let button_parent_elt = find_button_parent_element();
+function ensure_header_button_toolbar() {
+  const button_parent_elt = find_button_parent_element();
   if (!button_parent_elt) {
-    console.log("no parent elt found");
-    return button;
+    console.warn("Document links: no header parent element found");
+    return null;
   }
 
-  /* Insert before the 'Edit' button, as otherwise that button doesn't work any more. */
-  var sibling = null;
-  for (var childNode of button_parent_elt.childNodes) {
+  let toolbar = button_parent_elt.querySelector(`.${HEADER_TOOLBAR_CLASS}`);
+  if (toolbar) {
+    return toolbar;
+  }
+
+  toolbar = document.createElement("div");
+  toolbar.className = HEADER_TOOLBAR_CLASS;
+
+  let sibling = null;
+  for (const child_node of button_parent_elt.childNodes) {
     if (
-      childNode.className &&
-      childNode.className.includes("issue-title-buttons")
+      child_node.className &&
+      child_node.className.includes("issue-title-buttons")
     ) {
-      sibling = childNode;
+      sibling = child_node;
       break;
     }
   }
+
   if (sibling) {
-    button_parent_elt.insertBefore(button, sibling);
-  } else {
-    button_parent_elt.appendChild(button);
+    button_parent_elt.insertBefore(toolbar, sibling);
+  }
+  else {
+    button_parent_elt.appendChild(toolbar);
   }
 
+  return toolbar;
+}
+
+function create_button(button_text, title, on_click) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = button_text;
+  button.dataset.defaultLabel = button_text;
+  button.className = HEADER_BUTTON_CLASS;
+  button.title = title;
+  button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    await on_click(button, event);
+  });
   return button;
 }
 
-function add_button(button_text, clipboard_text) {
-  button = add_header_button(button_text)
-  button.setAttribute("title", clipboard_text);
-  button.addEventListener("click", function () {
-    console.log("Clipboard:", clipboard_text);
+function add_clipboard_button(button_text, clipboard_text) {
+  const toolbar = ensure_header_button_toolbar();
+  if (!toolbar) {
+    return;
+  }
+
+  const button = create_button(button_text, clipboard_text, async (button_elt) => {
     GM.setClipboard(clipboard_text);
+    flash_button_state(button_elt, "Copied");
   });
+  toolbar.appendChild(button);
 }
 
 function add_comment_button(button_text, comment_text) {
-  // Find the parent to insert the button into.
-  let form = document.getElementById("comment-form");
-  if (!form) return;
-
-  let footer = form.getElementsByClassName("field footer")[0];
-  if (!footer) return;
-
-  let existing_buttons = footer.getElementsByTagName("button");
-  if (existing_buttons.length) {
-    footer = existing_buttons[0].parentElement;
+  const toolbar = ensure_comment_button_toolbar();
+  if (!toolbar) {
+    return;
   }
 
-  let button = document.createElement("button");
-  button.textContent = button_text;
-  button.className = "ui secondary button special-greasemonkey-button";
-  button.setAttribute("title", comment_text);
-  button.addEventListener(
-    "click",
-    function (event) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
+  const button = create_button(button_text, comment_text, async (button_elt, event) => {
+    event.stopImmediatePropagation();
 
-      console.log("Insert into comment:", comment_text);
+    const textarea = document
+      .getElementById("comment-form")
+      ?.getElementsByTagName("textarea")[0];
+    if (!textarea) {
+      console.error("Document links: cannot find comment textarea");
+      flash_button_state(button_elt, "Missing");
+      return;
+    }
 
-      let form = document.getElementById("comment-form");
-      if (!form) {
-        console.error("cannot find comment form");
-        return;
-      }
+    textarea.value = append_comment_line(textarea.value, comment_text);
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flash_button_state(button_elt, "Inserted");
+  });
 
-      let textarea = form.getElementsByTagName("textarea")[0];
-      if (!textarea) {
-        console.error("cannot find text area in form ", form);
-        return;
-      }
+  toolbar.appendChild(button);
+}
 
-      textarea.value += comment_text + "\n";
+function ensure_comment_button_toolbar() {
+  const form = document.getElementById("comment-form");
+  const footer = form?.getElementsByClassName("field footer")[0];
+  if (!footer) {
+    return null;
+  }
 
-      // To trigger Gitea into enabling the 'Comment' button:
-      textarea.dispatchEvent(new Event("input"));
-    },
-    { capture: true }
-  );
+  let button_host = footer;
+  const existing_button = footer.getElementsByTagName("button")[0];
+  if (existing_button?.parentElement) {
+    button_host = existing_button.parentElement;
+  }
 
-  footer.insertBefore(button, footer.children[0]);
+  let toolbar = button_host.querySelector(`.${COMMENT_TOOLBAR_CLASS}`);
+  if (toolbar) {
+    return toolbar;
+  }
+
+  toolbar = document.createElement("div");
+  toolbar.className = COMMENT_TOOLBAR_CLASS;
+  button_host.insertBefore(toolbar, button_host.firstChild);
+  return toolbar;
+}
+
+function append_comment_line(current_text, comment_text) {
+  if (!current_text) {
+    return `${comment_text}\n`;
+  }
+
+  const suffix = current_text.endsWith("\n") ? "" : "\n";
+  return `${current_text}${suffix}${comment_text}\n`;
 }
 
 function find_button_parent_element() {
-  // For issues & PRs:
-  let title_elt = document.getElementById("issue-title-display");
+  const title_elt = document.getElementById("issue-title-display");
   if (title_elt) {
-    // let children = title_elt.getElementsByClassName("edit-button");
-    // if (children.length == 0) return undefined;
-    // return children[0];
     return title_elt.parentElement;
   }
 
-  // For commits:
-  let header_elts = document.getElementsByClassName("ui top commit-header");
+  const header_elts = document.getElementsByClassName("ui top commit-header");
   if (header_elts.length > 0) {
     return header_elts[0];
   }
+
+  return null;
 }
 
 function find_page_title() {
-  let page_title_elt = document.getElementById("issue-title-display");
-  let h1 = page_title_elt.getElementsByTagName("h1")[0];
-  let page_title = h1.textContent.trim();
-  return page_title.replace(/\s*#\d+$/, "").replace(/\s+/, " ").trim();
+  const page_title_elt = document.getElementById("issue-title-display");
+  const h1 = page_title_elt?.getElementsByTagName("h1")[0];
+  const page_title = h1?.textContent?.trim() || "";
+  return page_title.replace(/\s*#\d+$/, "").replace(/\s+/g, " ").trim();
 }
 
 function find_commit_title() {
-  let title_elts = document.getElementsByClassName("commit-summary");
-  if (title_elts.length == 0) return "";
-  return title_elts[0].getAttribute("title");
+  const title_elt = document.getElementsByClassName("commit-summary")[0];
+  return title_elt?.getAttribute("title") || title_elt?.textContent?.trim() || "";
+}
+
+function find_page_info(url_info) {
+  if (url_info.issue && url_info.issue !== "new") {
+    return {
+      name: `#${url_info.issue}`,
+      title: find_page_title(),
+    };
+  }
+
+  if (url_info.pull) {
+    return {
+      name: `#${url_info.pull}`,
+      title: find_page_title(),
+    };
+  }
+
+  if (url_info.commit) {
+    return {
+      name: url_info.commit.substring(0, 12),
+      title: find_commit_title(),
+    };
+  }
+
+  return null;
 }
 
 function find_url_info() {
-  let parts = window.location.pathname.split("/");
-  let url_info = {
+  const parts = window.location.pathname.split("/");
+  const url_info = {
     org: "",
     repo: "",
     issue: "",
     pull: "",
     commit: "",
   };
-  // 'parts' will be ["", "$org", "$repo", "$category", "bla"]
-  if (parts.length > 1) url_info.org = parts[1];
-  if (parts.length > 2) url_info.repo = parts[2];
+
+  // "parts" will be ["", "$org", "$repo", "$category", "bla"].
+  if (parts.length > 1) {
+    url_info.org = parts[1];
+  }
+  if (parts.length > 2) {
+    url_info.repo = parts[2];
+  }
   if (parts.length > 4) {
     switch (parts[3]) {
       case "issues":
@@ -246,33 +385,63 @@ function find_url_info() {
         break;
     }
   }
+
   return url_info;
 }
 
 function add_pr_copy_diff_button(button_text, diff_url) {
-  button = add_top_button(button_text)
-  button.setAttribute("title", "Copy diff from: " + diff_url);
-  button.addEventListener("click", function () {
-    fetch(diff_url, {
+  const toolbar = ensure_header_button_toolbar();
+  if (!toolbar) {
+    return;
+  }
+
+  const button = create_button(button_text, `Copy diff from ${diff_url}`, async (button_elt) => {
+    set_button_loading(button_elt, "Loading");
+
+    try {
+      const response = await fetch(diff_url, {
         headers: {
-          "Accept": "text/plain"
-        }
-      })
-      .then(res => {
-        if (!res.ok) {
-          console.error("failed to fetch diff");
-          return null;
-        }
-        console.log("Fetched diff");
-        return res.text();
-      })
-      .then(text => {
-        if (text) {
-          GM.setClipboard(text);
-          console.log("Copied diff to clipboard");
-        }
+          Accept: "text/plain",
+        },
       });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch diff: ${response.status}`);
+      }
+
+      const diff_text = await response.text();
+      GM.setClipboard(diff_text);
+      flash_button_state(button_elt, "Copied");
+    }
+    catch (error) {
+      console.error("Document links: failed to copy diff", error);
+      flash_button_state(button_elt, "Failed");
+    }
   });
+
+  toolbar.appendChild(button);
+}
+
+function set_button_loading(button, label) {
+  clear_button_feedback(button);
+  button.disabled = true;
+  button.textContent = label;
+}
+
+function flash_button_state(button, label) {
+  clear_button_feedback(button);
+  button.disabled = false;
+  button.textContent = label;
+  button._feedbackTimer = window.setTimeout(() => {
+    button.textContent = button.dataset.defaultLabel;
+  }, BUTTON_FEEDBACK_MS);
+}
+
+function clear_button_feedback(button) {
+  if (button._feedbackTimer) {
+    window.clearTimeout(button._feedbackTimer);
+    button._feedbackTimer = null;
+  }
 }
 
 window.setTimeout(add_document_links, 200);
