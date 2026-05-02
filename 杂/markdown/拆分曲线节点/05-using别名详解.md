@@ -247,13 +247,13 @@ ntype.geometry_node_execute(params);
 
 ```mermaid
 mindmap
-  root((using 详解))
-    using 声明
-      using bke::AttrDomain
+  root((using详解))
+    using声明
+      using bke AttrDomain
       导入其他命名空间的类型
       简化代码
     类型别名
-      using Callback = void (*)(int)
+      using Callback
       给复杂类型起简单名字
       函数指针类型
     void指针问题
