@@ -4,6 +4,165 @@
 
 ---
 
+## 📖 源码注释翻译与解释
+
+### 文件头注释 (BLI_vector.hh:7~25)
+
+> **原文注释：**
+> ```cpp
+> /** \file
+>  * \ingroup bli
+>  *
+>  * A `Vector<T>` is a dynamically growing contiguous array for values of type T. It is
+>  * designed to be a more convenient and efficient replacement for `std::vector`. Note that the term
+>  * "vector" has nothing to do with a vector from computer graphics here.
+>  *
+>  * A vector supports efficient insertion and removal at the end (O(1) amortized). Removal in other
+>  * places takes O(n) time, because all elements afterwards have to be moved. If the order of
+>  * elements is not important, `remove_and_reorder` can be used instead of `remove` for better
+>  * performance.
+>  *
+>  * The improved efficiency is mainly achieved by supporting small buffer optimization. As long as
+>  * the number of elements in the vector does not become larger than InlineBufferCapacity, no memory
+>  * allocation is done. As a consequence, iterators are invalidated when a Vector is moved
+>  * (iterators of std::vector remain valid when the vector is moved).
+>  *
+>  * `Vector` should be your default choice for a vector data structure in Blender.
+>  */
+> ```
+
+**中文翻译与详细解释：**
+
+| 段落 | 翻译 | 关键要点 |
+|------|------|----------|
+| **核心定义** | `Vector<T>` 是一个动态增长的连续数组，用于存储类型 T 的值。它被设计为 `std::vector` 的更方便、更高效的替代品。注意这里的术语 "vector" 与计算机图形学中的向量无关。 | 1. 动态增长<br>2. 连续内存<br>3. 与数学向量区分 |
+| **操作复杂度** | 向量支持在末尾高效插入和删除（O(1) 均摊）。在其他位置删除需要 O(n) 时间，因为之后所有元素都必须移动。如果元素顺序不重要，可以使用 `remove_and_reorder` 代替 `remove` 以获得更好的性能。 | 1. 尾部操作 O(1)<br>2. 中间删除 O(n)<br>3. `remove_and_reorder` 优化 |
+| **小缓冲区优化** | 效率提升主要通过支持小缓冲区优化实现。只要向量中的元素数量不超过 InlineBufferCapacity，就不进行内存分配。因此，当 Vector 被移动时迭代器会失效（而 std::vector 被移动时迭代器保持有效）。 | 1. SBO 免堆分配<br>2. 移动使迭代器失效<br>3. 与 std::vector 行为不同 |
+| **使用建议** | `Vector` 应该是你在 Blender 中使用的默认向量数据结构。 | 推荐作为默认选择 |
+
+### VectorData 结构注释 (BLI_vector.hh:46~55)
+
+> **原文：**
+> ```cpp
+> /**
+>  * This is used in #Vector::from_raw and #Vector::release to transfer ownership of the underlying
+>  * data-array into and out of the #Vector. Note that this struct does not do any memory management.
+>  */
+> template<typename T, typename Allocator> struct VectorData {
+>   T *data = nullptr;
+>   int64_t size = 0;
+>   int64_t capacity = 0;
+>   BLI_NO_UNIQUE_ADDRESS Allocator allocator;
+> };
+> ```
+
+**翻译：** 这在 `Vector::from_raw` 和 `Vector::release` 中使用，用于将底层数据数组的所有权转入和转出 `Vector`。注意这个结构体不进行任何内存管理。
+
+**用途：**
+- `from_raw`: 从原始数据构造 Vector（接管所有权）
+- `release`: 释放 Vector 的数据（转移所有权出去）
+
+### 模板参数注释 (BLI_vector.hh:57~75)
+
+> **原文：**
+> ```cpp
+> template<
+>     /**
+>      * Type of the values stored in this vector. It has to be movable.
+>      */
+>     typename T,
+>     /**
+>      * The number of values that can be stored in this vector, without doing a heap allocation.
+>      * Sometimes it makes sense to increase this value a lot. The memory in the inline buffer is
+>      * not initialized when it is not needed.
+>      *
+>      * When T is large, the small buffer optimization is disabled by default to避免 large
+>      * unexpected allocations on the stack. It can still be enabled explicitly though.
+>      */
+>     int64_t InlineBufferCapacity = default_inline_buffer_capacity(sizeof(T)),
+>     /**
+>      * The allocator used by this vector. Should rarely be changed, except when you don't want that
+>      * MEM_* is used internally.
+>      */
+>     typename Allocator = GuardedAllocator>
+> class Vector {
+> ```
+
+**参数说明：**
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `T` | - | 存储值类型，必须是可移动的 |
+| `InlineBufferCapacity` | 根据 sizeof(T) 计算 | 内联缓冲区可容纳的元素数，不进行堆分配 |
+| `Allocator` | `GuardedAllocator` | 使用的分配器，很少需要修改 |
+
+**InlineBufferCapacity 策略：**
+- 小类型（如 int, float）：默认 4 或更多
+- 大类型：默认 0（禁用 SBO，避免栈上意外大分配）
+- 可显式指定，如 `Vector<int, 16>`
+
+### 成员变量注释 (BLI_vector.hh:88~100)
+
+> **原文：**
+> ```cpp
+> private:
+>   /**
+>    * Use pointers instead of storing the size explicitly. This reduces the number of instructions
+>    * in `append`.
+>    *
+>    * The pointers might point to the memory in the inline buffer.
+>    */
+>   T *begin_;
+>   T *end_;
+>   T *capacity_end_;
+>
+>   /** Used for allocations when the inline buffer is too small. */
+>   BLI_NO_UNIQUE_ADDRESS Allocator allocator_;
+> ```
+
+**翻译：**
+
+**指针设计：**
+- 使用指针而不是显式存储大小，这减少了 `append` 中的指令数
+- 指针可能指向内联缓冲区中的内存
+
+**成员说明：**
+
+| 成员 | 类型 | 含义 |
+|------|------|------|
+| `begin_` | `T*` | 指向第一个元素 |
+| `end_` | `T*` | 指向最后一个元素之后的位置（size = end_ - begin_）|
+| `capacity_end_` | `T*` | 指向容量末尾（capacity = capacity_end_ - begin_）|
+| `allocator_` | `Allocator` | 分配器，内联缓冲区不足时使用 |
+
+**为什么用指针而非 size？**
+
+```cpp
+// 使用指针（Blender Vector）
+void append(const T &value) {
+    if (end_ < capacity_end_) {
+        *end_ = value;
+        ++end_;
+    } else {
+        grow_and_append(value);
+    }
+}
+
+// 使用 size（传统实现）
+void append(const T &value) {
+    if (size_ < capacity_) {
+        data_[size_] = value;
+        ++size_;
+    } else {
+        grow_and_append(value);
+    }
+}
+```
+
+指针版本在某些架构上可能更高效，因为避免了额外的加法运算。
+
+---
+
 ## 🎯 核心特性
 
 ```mermaid

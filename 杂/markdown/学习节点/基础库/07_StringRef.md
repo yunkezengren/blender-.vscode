@@ -4,6 +4,110 @@
 
 ---
 
+## 📖 源码注释翻译与解释
+
+### StringRef 文件头注释 (BLI_string_ref.hh:7~32)
+
+> **原文注释：**
+> ```cpp
+> /** \file
+>  * \ingroup bli
+>  *
+>  * A `StringRef` references a const char array owned by someone else. It is just a pointer
+>  * and a size. Since the memory is not owned, StringRef should not be used to transfer ownership of
+>  * the string. The data referenced by a StringRef cannot be mutated through it.
+>  *
+>  * A StringRef is NOT null-terminated. This makes it much more powerful within C++, because we can
+>  * also cut off parts of the end without creating a copy. When interfacing with C code that expects
+>  * null-terminated strings, `StringRefNull` can be used. It is essentially the same as
+>  * StringRef, but with the restriction that the string has to be null-terminated.
+>  *
+>  * Whenever possible, string parameters should be of type StringRef and the string return type
+>  * should be StringRefNull. Don't forget that the StringRefNull does not own the string, so don't
+>  * return it when the string exists only in the scope of the function. This convention makes
+>  * functions usable in the most contexts.
+>  *
+>  * StringRef vs. std::string_view:
+>  *   Both types are certainly very similar. The main benefit of using StringRef in Blender is that
+>  *   this allows us to add convenience methods at any time. Especially, when doing a lot of string
+>  *   manipulation, this helps to keep the code clean. Furthermore, we need StringRefNull anyway,
+>  *   because there is a lot of C code that expects null-terminated strings. Conversion between
+>  *   StringRef and string_view is very cheap and可以在 API 边界以基本零成本完成。Another benefit of using StringRef is that it uses signed integers, thus developers
+>  *   have to deal less with issues resulting from unsigned integers.
+>  */
+> ```
+
+**中文翻译与详细解释：**
+
+| 段落 | 翻译 | 关键要点 |
+|------|------|----------|
+| **核心定义** | `StringRef` 引用一个由其他对象拥有的 const char 数组。它只是一个指针和一个大小。 | 指针+大小，非拥有 |
+| **所有权** | 由于不拥有内存，StringRef 不应用于转移字符串的所有权。 | 不转移所有权 |
+| **不可变性** | StringRef 引用的数据不能通过它修改。 | 只读视图 |
+| **非空终止** | StringRef **不是**空终止的。这使得它在 C++ 中更强大，因为可以切断末尾部分而无需创建副本。 | 关键区别！ |
+| **C 代码交互** | 当与期望空终止字符串的 C 代码交互时，可以使用 `StringRefNull`。 | StringRefNull 用于 C API |
+| **参数约定** | 尽可能使用 StringRef 作为字符串参数，StringRefNull 作为返回类型。 | 函数签名最佳实践 |
+| **生命周期警告** | 别忘了 StringRefNull 不拥有字符串，所以当字符串只在函数作用域内存在时不要返回它。 | 悬垂引用风险 |
+| **与 string_view 对比** | 两者非常相似。在 Blender 中使用 StringRef 的主要好处是可以随时添加便利方法。 | 可扩展性 |
+| **有符号整数** | 使用 StringRef 的另一个好处是它使用有符号整数，开发者因此更少处理无符号整数导致的问题。 | `int64_t` vs `size_t` |
+
+**StringRef vs StringRefNull：**
+
+| 特性 | StringRef | StringRefNull |
+|------|-----------|---------------|
+| 空终止 | ❌ 否 | ✅ 是 |
+| 用途 | C++ 内部处理 | C API 交互 |
+| 切片效率 | 高（无需复制） | 低（需保持空终止） |
+| 安全性 | 需注意长度 | 可直接传给 C 函数 |
+
+### StringRefBase 类注释 (BLI_string_ref.hh:45~48)
+
+> **原文：**
+> ```cpp
+> /**
+>  * A common base class for StringRef and StringRefNull. This should never be used in other files.
+>  * It only exists to avoid some code duplication.
+>  */
+> class StringRefBase {
+> ```
+
+**翻译：** StringRef 和 StringRefNull 的公共基类。不应该在其他文件中使用。它只存在以避免一些代码重复。
+
+### not_found 常量注释 (BLI_string_ref.hh:57~58)
+
+> **原文：**
+> ```cpp
+> /** Similar to #string_view::npos, but signed. */
+> static constexpr int64_t not_found = -1;
+> ```
+
+**翻译：** 类似于 `string_view::npos`，但是有符号的。
+
+**说明：**
+- `std::string_view::npos` 是 `size_t` 类型（无符号），值为 `size_t(-1)`
+- `StringRef::not_found` 是 `int64_t` 类型（有符号），值为 `-1`
+- 有符号整数更容易处理，避免无符号溢出问题
+
+### copy_utf8_truncated 方法注释 (BLI_string_ref.hh:73~78)
+
+> **原文：**
+> ```cpp
+> /**
+>  * Copy the string into a char array. The copied string will be null-terminated. If it does not
+>  * fit, it will be truncated while keeping it valid UTF8 (assuming the #StringRef itself is
+>  * valid UTF8).
+>  */
+> void copy_utf8_truncated(char *dst, int64_t dst_size) const;
+> ```
+
+**翻译：** 将字符串复制到 char 数组中。复制的字符串将是空终止的。如果放不下，它会被截断同时保持有效的 UTF8（假设 #StringRef 本身是有效的 UTF8）。
+
+**重要特性：**
+- 确保目标缓冲区总是以 null 结尾
+- 截断时保持 UTF8 有效性（不会在多字节字符中间截断）
+
+---
+
 ## 🎯 核心概念
 
 ```mermaid

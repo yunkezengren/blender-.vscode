@@ -4,6 +4,124 @@
 
 ---
 
+## 📖 源码注释翻译与解释
+
+### Map 文件头注释 (BLI_map.hh:7~53)
+
+> **原文注释：**
+> ```cpp
+> /** \file
+>  * \ingroup bli
+>  *
+>  * A `Map<Key, Value>` is an unordered associative container that stores key-value pairs.
+>  * The keys have to be unique. It is designed to be a more convenient and efficient replacement for
+>  * `std::unordered_map`. All core operations (add, lookup, remove and contains) can be done in O(1)
+>  * amortized expected time.
+>  *
+>  * Your default choice for a hash map in Blender should be `Map`.
+>  *
+>  * Map is implemented using open addressing in a slot array with a power-of-two size.
+>  * Every slot is in one of three states: empty, occupied or removed. If a slot is occupied, it
+>  * contains a Key and Value instance.
+>  *
+>  * Benchmarking and comparing hash tables is hard, because many factors influence the result. The
+>  * performance of a hash table depends on the combination of the hash function, probing strategy,
+>  * max load factor, data types, slot type and data distribution. This implementation is designed to
+>  * be relatively fast by default in all cases. However, it also offers many customization points
+>  * that allow it to be optimized for a specific use case.
+>  *
+>  * A rudimentary benchmark can be found in BLI_map_test.cc. The results of that benchmark are there
+>  * as well. The numbers show that in this specific case Map outperforms std::unordered_map
+>  * consistently by a good amount.
+>  *
+>  * Some noteworthy information:
+>  * - Key and Value must be movable types.
+>  * - Pointers to keys and values might be invalidated when the map is changed or moved.
+>  * - The hash function can be customized. See BLI_hash.hh for details.
+>  * - The probing strategy can be customized. See BLI_probing_strategies.hh for details.
+>  * - The slot type can be customized. See BLI_map_slots.hh for details.
+>  * - Small buffer optimization is enabled by default, if Key and Value are not too large.
+>  * - The methods `add_new` and `remove_contained` should be used instead of `add` and `remove`
+>  *   whenever appropriate. Assumptions and intention are described better this way.
+>  * - There are multiple methods to add and lookup keys for different use cases.
+>  * - You cannot use a range-for loop on the map directly. Instead use the keys(), values() and
+>  *   items() iterators. If your map is non-const, you can also change the values through those
+>  *   iterators (but not the keys).
+>  * - Lookups can be performed using types other than Key without conversion. For that use the
+>  *   methods ending with `_as`. The template parameters Hash and IsEqual have to support the other
+>  *   key type. This can greatly improve performance when the map uses strings as keys.
+>  * - The default constructor is cheap, even when a large InlineBufferCapacity is used. A large
+>  *   slot array will only be initialized when the first element is added.
+>  * - The `print_stats` method can be used to get information about the distribution of keys and
+>  *   memory usage of the map.
+>  * - The method names don't follow the std::unordered_map names in many cases. Searching for such
+>  *   names in this file will usually let you discover the new name.
+>  */
+> ```
+
+**中文翻译与详细解释：**
+
+| 段落 | 翻译 | 关键要点 |
+|------|------|----------|
+| **核心定义** | `Map<Key, Value>` 是一个无序关联容器，存储键值对。键必须是唯一的。 | 键唯一，无序存储 |
+| **设计目标** | 它被设计为 `std::unordered_map` 的更方便、更高效的替代品。 | 比标准库更快 |
+| **复杂度** | 所有核心操作（添加、查找、删除、包含）都可以在 O(1) 均摊期望时间内完成。 | O(1) 平均性能 |
+| **默认选择** | 在 Blender 中，哈希表的默认选择应该是 `Map`。 | 推荐作为默认 |
+| **实现方式** | Map 使用开放寻址法，在大小为 2 的幂的槽数组中实现。 | 开放寻址，2的幂大小 |
+| **槽状态** | 每个槽处于三种状态之一：空、已占用或已删除。 | 三种槽状态 |
+| **性能因素** | 哈希表的性能取决于哈希函数、探测策略、最大负载因子、数据类型、槽类型和数据分布的组合。 | 多因素影响性能 |
+| **基准测试** | 简单的基准测试可以在 BLI_map_test.cc 中找到。结果显示 Map 始终比 std::unordered_map 快很多。 | 实际性能优势 |
+
+**重要注意事项：**
+
+| 要点 | 说明 |
+|------|------|
+| 可移动类型 | Key 和 Value 必须是可移动类型 |
+| 指针失效 | 当 map 被修改或移动时，指向键和值的指针可能失效 |
+| 自定义哈希 | 哈希函数可以自定义（见 BLI_hash.hh） |
+| 自定义探测 | 探测策略可以自定义（见 BLI_probing_strategies.hh） |
+| 小缓冲区优化 | 默认启用，如果 Key 和 Value 不是太大 |
+| 推荐方法 | 适当使用 `add_new` 和 `remove_contained` 代替 `add` 和 `remove` |
+| 迭代方式 | 不能直接在 map 上使用范围 for，使用 keys()、values()、items() |
+| 异构查找 | 可以使用 `_as` 后缀方法用其他类型查找，无需转换 |
+| 延迟初始化 | 默认构造便宜，大槽数组只在添加第一个元素时初始化 |
+| 统计信息 | `print_stats` 方法可获取键分布和内存使用信息 |
+
+### MapItem 结构注释 (BLI_map.hh:65~71)
+
+> **原文：**
+> ```cpp
+> /**
+>  * A key-value-pair stored in a #Map. This is used when looping over Map.items().
+>  */
+> template<typename Key, typename Value> struct MapItem {
+>   const Key &key;
+>   const Value &value;
+> };
+> ```
+
+**翻译：** 存储在 #Map 中的键值对。这在遍历 Map.items() 时使用。
+
+### MutableMapItem 结构注释 (BLI_map.hh:73~79)
+
+> **原文：**
+> ```cpp
+> /**
+>  * Same as #MapItem, but the value is mutable. The key is still const because changing it might
+>  * change its hash value which would lead to undefined behavior in the #Map.
+>  */
+> template<typename Key, typename Value> struct MutableMapItem {
+>   const Key &key;
+>   Value &value;
+> };
+> ```
+
+**翻译：** 与 #MapItem 相同，但值是可变的。键仍然是 const，因为修改它可能会改变其哈希值，这会在 #Map 中导致未定义行为。
+
+**重要：** 键不能修改，因为哈希表依赖键的哈希值定位。修改键会破坏哈希表结构。
+
+---
+
 ## 🎯 Map<K,V> - 哈希表
 
 ### 核心特性

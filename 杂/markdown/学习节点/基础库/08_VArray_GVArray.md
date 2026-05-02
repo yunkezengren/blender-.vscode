@@ -4,6 +4,128 @@
 
 ---
 
+## 📖 源码注释翻译与解释
+
+### 虚拟数组文件头注释 (BLI_virtual_array.hh:7~26)
+
+> **原文注释：**
+> ```cpp
+> /** \file
+>  * \ingroup bli
+>  *
+>  * A virtual array is a data structure that behaves similarly to an array, but its elements are
+>  * accessed through virtual methods. This improves the decoupling of a function from its callers,
+>  * because it does not have to know exactly how the data is laid out in memory, or if it is stored
+>  * in memory at all. It could just as well be computed on the fly.
+>  *
+>  * Taking a virtual array as parameter instead of a more specific non-virtual type has some
+>  * tradeoffs. Access to individual elements of the individual elements is slower due to function
+>  * call overhead. On the other hand, potential callers don't have to convert the data into the
+>  * specific format required for the function. This can be a costly conversion if only few of the
+>  * elements are accessed in end.
+>  *
+>  * Functions taking a virtual array as input can still optimize for different data layouts. For
+>  * example, they can check if the array references contiguous memory internally or if it is the
+>  * same value for all indices. Whether it is worth optimizing for different data layouts in a
+>  * function has to be decided on a case by case basis. One should always do some benchmarking to
+>  * see if the increased compile time and binary size is worth it.
+>  */
+> ```
+
+**中文翻译与详细解释：**
+
+| 段落 | 翻译 | 关键要点 |
+|------|------|----------|
+| **核心定义** | 虚拟数组是一种行为类似于数组的数据结构，但其元素通过虚方法访问。 | 虚方法访问元素 |
+| **解耦优势** | 这提高了函数与其调用者的解耦，因为它不必确切知道数据在内存中的布局方式，或者它是否完全存储在内存中。 | 不关心内存布局 |
+| **惰性计算** | 数据可以即时计算。 | 支持函数生成 |
+| **权衡** | 使用虚拟数组作为参数而不是更具体的非虚拟类型有一些权衡。由于函数调用开销，访问单个元素较慢。 | 性能 vs 灵活性 |
+| **避免转换** | 另一方面，潜在调用者不必将数据转换为函数所需的特定格式。如果最终只访问少数元素，这种转换可能代价高昂。 | 避免不必要的数据转换 |
+| **优化可能** | 接受虚拟数组作为输入的函数仍然可以为不同的数据布局进行优化。例如，可以检查数组内部是否引用连续内存，或者所有索引的值是否相同。 | 可以检查底层类型优化 |
+| **基准测试** | 函数中是否值得为不同数据布局进行优化必须根据具体情况决定。应该始终进行一些基准测试，看看增加的编译时间和二进制大小是否值得。 | 需要权衡编译时间/二进制大小 |
+
+### CommonVArrayInfo 结构注释 (BLI_virtual_array.hh:43~71)
+
+> **原文：**
+> ```cpp
+> /**
+>  * Used to quickly check if a varray is a span or a single value. This struct also allows
+>  * retrieving multiple pieces of data with a single virtual method call.
+>  */
+> struct CommonVArrayInfo {
+>   enum class Type : uint8_t {
+>     /* Is not one of the common special types below. */
+>     Any,
+>     Span,
+>     Single,
+>   };
+>
+>   Type type = Type::Any;
+>
+>   /** True when the #data becomes a dangling pointer when the virtual array is destructed. */
+>   bool may_have_ownership = true;
+>
+>   /**
+>    * Points either to nothing, a single value, or an array of values, depending on #type.
+>    * If this is a span of a mutable virtual array, it is safe to cast away const.
+>    */
+>   const void *data;
+>   ...
+> };
+> ```
+
+**翻译：** 用于快速检查 varray 是否是 span 或单值。这个结构体还允许通过单次虚方法调用检索多段数据。
+
+**字段说明：**
+
+| 字段 | 说明 |
+|------|------|
+| `type` | 类型：Any（通用）、Span（连续数组）、Single（单值广播） |
+| `may_have_ownership` | 当虚拟数组被销毁时，#data 是否变成悬垂指针 |
+| `data` | 根据 #type 指向空、单值或值数组 |
+
+### VArrayImpl 类注释 (BLI_virtual_array.hh:73~76)
+
+> **原文：**
+> ```cpp
+> /**
+>  * Implements the specifics of how the elements of a virtual array are accessed. It contains a
+>  * bunch of virtual methods that are wrapped by #VArray.
+>  */
+> template<typename T> class VArrayImpl {
+> ```
+
+**翻译：** 实现虚拟数组元素访问的具体方式。它包含一组被 #VArray 包装的虚方法。
+
+### size_ 成员注释 (BLI_virtual_array.hh:78~83)
+
+> **原文：**
+> ```cpp
+> /**
+>  * Number of elements in the virtual array. All virtual arrays have a size, but in some cases it
+>  * may make sense to set it to the max value.
+>  */
+> int64_t size_;
+> ```
+
+**翻译：** 虚拟数组中的元素数量。所有虚拟数组都有大小，但在某些情况下将其设置为最大值可能有意义。
+
+### get 方法注释 (BLI_virtual_array.hh:98~100)
+
+> **原文：**
+> ```cpp
+> /**
+>  * Get the element at #index. This does not return a reference, because the value may be computed
+>  * on the fly.
+>  */
+> ```
+
+**翻译：** 获取 #index 处的元素。这不返回引用，因为值可能是即时计算的。
+
+**重要：** 返回的是值而非引用，因为底层可能是函数生成的值，没有实际的内存位置。
+
+---
+
 ## 🎯 核心概念
 
 ```mermaid

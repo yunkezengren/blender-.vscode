@@ -4,6 +4,115 @@
 
 ---
 
+## 📖 源码注释翻译与解释
+
+### IndexRange 文件头注释 (BLI_index_range.hh:7~38)
+
+> **原文注释：**
+> ```cpp
+> /** \file
+>  * \ingroup bli
+>  *
+>  * A `IndexRange` wraps an interval of non-negative integers. It can be used to reference
+>  * consecutive elements in an array. Furthermore, it can make for loops more convenient and less
+>  * error prone, especially when using nested loops.
+>  *
+>  * I'd argue that the second loop is more readable and less error prone than the first one. That is
+>  * not necessarily always the case, but often it is.
+>  *
+>  *  for (int64_t i = 0; i < 10; i++) {
+>  *    for (int64_t j = 0; j < 20; j++) {
+>  *       for (int64_t k = 0; k < 30; k++) {
+>  *
+>  *  for (int64_t i : IndexRange(10)) {
+>  *    for (int64_t j : IndexRange(20)) {
+>  *      for (int64_t k : IndexRange(30)) {
+>  *
+>  * Some containers like Vector have an index_range() method. This will return the
+>  * IndexRange that contains all indices that can be used to access the container. This is
+>  * particularly useful when you want to iterate over the indices and the elements (much like
+>  * Python's enumerate(), just worse). Again, I think the second example here is better:
+>  *
+>  *  for (int64_t i = 0; i < my_vector_with_a_long_name.size(); i++) {
+>  *    do_something(i, my_vector_with_a_long_name[i]);
+>  *
+>  *  for (int64_t i : my_vector_with_a_long_name.index_range()) {
+>  *    do_something(i, my_vector_with_a_long_name[i]);
+>  *
+>  * Ideally this could be could be even closer to Python's enumerate(). We might get that in the
+>  * future with newer C++ versions.
+>  */
+> ```
+
+**中文翻译与详细解释：**
+
+| 段落 | 翻译 | 关键要点 |
+|------|------|----------|
+| **核心定义** | `IndexRange` 包装了一个非负整数区间。它可以用来引用数组中的连续元素。 | 表示连续索引范围 [start, start+size) |
+| **循环便利性** | 此外，它可以使 for 循环更方便且更少出错，特别是使用嵌套循环时。 | 减少循环变量错误 |
+| **可读性对比** | 作者认为第二种循环比第一种更易读且更少出错。这不一定总是如此，但经常是这样。 | 基于范围的 for 循环更清晰 |
+| **嵌套循环示例** | 展示了传统三层嵌套循环 vs IndexRange 版本 | IndexRange 版本更简洁 |
+| **容器集成** | 一些容器如 Vector 有 index_range() 方法，返回可用于访问容器的所有索引的 IndexRange。 | 与容器无缝集成 |
+| **enumerate 类比** | 这在需要同时迭代索引和元素时特别有用（很像 Python 的 enumerate()，只是更差）。 | 类似 Python 的 enumerate |
+| **未来改进** | 理想情况下这可以更接近 Python 的 enumerate()。未来 C++ 版本可能会实现。 | C++20 ranges 可能改进 |
+
+**代码对比：**
+
+```cpp
+// ❌ 传统方式 - 容易出错
+for (int64_t i = 0; i < 10; i++) {
+    for (int64_t j = 0; j < 20; j++) {
+        for (int64_t k = 0; k < 30; k++) {
+            // 容易写错边界条件
+        }
+    }
+}
+
+// ✅ IndexRange 方式 - 更清晰
+for (int64_t i : IndexRange(10)) {
+    for (int64_t j : IndexRange(20)) {
+        for (int64_t k : IndexRange(30)) {
+            // 意图明确，减少错误
+        }
+    }
+}
+```
+
+### 工厂方法注释
+
+#### from_begin_end (BLI_index_range.hh:74~77)
+
+> **原文：**
+> ```cpp
+> constexpr static IndexRange from_begin_end(const int64_t begin, const int64_t end)
+> {
+>   return IndexRange(begin, end - begin);
+> }
+> ```
+
+**说明：** 从起始和结束索引创建范围（结束不包含）。
+
+#### from_begin_end_inclusive (BLI_index_range.hh:79~82)
+
+> **原文：**
+> ```cpp
+> constexpr static IndexRange from_begin_end_inclusive(const int64_t begin, const int64_t last)
+> {
+>   return IndexRange(begin, last - begin + 1);
+> }
+> ```
+
+**说明：** 从起始和结束索引创建范围（结束包含）。
+
+**区别：**
+
+| 方法 | 范围 | 示例 |
+|------|------|------|
+| `from_begin_end(0, 10)` | [0, 10) | 0-9，共10个元素 |
+| `from_begin_end_inclusive(0, 9)` | [0, 10) | 0-9，共10个元素 |
+
+---
+
 ## 🎯 IndexRange - 连续索引范围
 
 ### 核心概念

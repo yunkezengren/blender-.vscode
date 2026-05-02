@@ -4,6 +4,133 @@
 
 ---
 
+## 📖 源码注释翻译与解释
+
+### 文件头注释 (BLI_array.hh:7~26)
+
+> **原文注释：**
+> ```cpp
+> /** \file
+>  * \ingroup bli
+>  *
+>  * A `Array<T>` is a container for a fixed size array the size of which is NOT known at
+>  * compile time.
+>  *
+>  * If the size is known at compile time, `std::array<T, N>` should be used instead.
+>  *
+>  * Array should usually be used instead of Vector whenever the number of elements
+>  * is known at construction time. Note however, that Array will default construct all
+>  * elements when initialized with the size-constructor. For trivial types, this does nothing. In
+>  * all other cases, this adds overhead.
+>  *
+>  * A main benefit of using Array over Vector is that it expresses the intent of the developer
+>  * better. It indicates that the size of the data structure is not expected to change. Furthermore,
+>  * you can be more certain that an array does not over-allocate.
+>  *
+>  * Array supports small object optimization to improve performance when the size turns out
+>  * to be small at run-time.
+>  */
+> ```
+
+**中文翻译与详细解释：**
+
+| 段落 | 翻译 | 关键要点 |
+|------|------|----------|
+| **核心定义** | `Array<T>` 是一个固定大小数组的容器，其大小在**编译时未知**。 | 运行时确定大小，但构造后固定 |
+| **与 std::array 对比** | 如果大小在编译时已知，应该使用 `std::array<T, N>` 代替。 | `std::array` 用于编译时已知大小 |
+| **使用场景** | 当元素数量在构造时已知时，通常应该使用 Array 代替 Vector。 | 构造时已知大小 → Array |
+| **初始化开销** | 注意，Array 使用大小构造函数初始化时会默认构造所有元素。对于平凡类型，这什么都不做。但在其他情况下，这会增加开销。 | 非平凡类型有默认构造开销 |
+| **意图表达** | 使用 Array 而非 Vector 的主要好处是更好地表达开发者的意图。它表明数据结构的大小不期望改变。 | 语义清晰：大小固定 |
+| **内存效率** | 此外，你可以更确定数组不会过度分配。 | 不会预留额外容量 |
+| **小对象优化** | Array 支持小对象优化，以在运行时大小较小时提高性能。 | 同 Vector 的 SBO |
+
+### 模板参数注释 (BLI_array.hh:36~49)
+
+> **原文：**
+> ```cpp
+> template<
+>     /**
+>      * The type of the values stored in the array.
+>      */
+>     typename T,
+>     /**
+>      * The number of values that can be stored in the array, without doing a heap allocation.
+>      */
+>     int64_t InlineBufferCapacity = default_inline_buffer_capacity(sizeof(T)),
+>     /**
+>      * The allocator used by this array. Should rarely be changed, except when you don't want that
+>      * MEM_* functions are used internally.
+>      */
+>     typename Allocator = GuardedAllocator>
+> class Array {
+> ```
+
+**参数说明：**
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `T` | - | 存储值类型 |
+| `InlineBufferCapacity` | 根据 sizeof(T) 计算 | 内联缓冲区可容纳的元素数 |
+| `Allocator` | `GuardedAllocator` | 使用的分配器 |
+
+### 成员变量注释 (BLI_array.hh:61~72)
+
+> **原文：**
+> ```cpp
+> private:
+>   /** The beginning of the array. It might point into the inline buffer. */
+>   T *data_;
+>
+>   /** Number of elements in the array. */
+>   int64_t size_;
+>
+>   /** Used for allocations when the inline buffer is too small. */
+>   BLI_NO_UNIQUE_ADDRESS Allocator allocator_;
+>
+>   /** A placeholder buffer that will remain uninitialized until it is used. */
+>   BLI_NO_UNIQUE_ADDRESS TypedBuffer<T, InlineBufferCapacity> inline_buffer_;
+> ```
+
+**翻译与说明：**
+
+| 成员 | 说明 |
+|------|------|
+| `data_` | 数组起始指针，可能指向内联缓冲区 |
+| `size_` | 元素数量（固定不变） |
+| `allocator_` | 分配器，内联缓冲区不足时使用 |
+| `inline_buffer_` | 占位缓冲区，使用前保持未初始化状态 |
+
+**与 Vector 的区别：**
+
+```cpp
+// Vector: 使用三个指针
+T *begin_;
+T *end_;           // 用于动态增长
+T *capacity_end_;  // 用于动态扩容
+
+// Array: 使用指针 + 大小
+T *data_;
+int64_t size_;     // 固定大小，不需要 end_ 指针
+```
+
+Array 不需要 `end_` 和 `capacity_end_` 指针，因为大小固定，不需要追踪容量和动态增长。
+
+### 构造函数注释 (BLI_array.hh:74~77)
+
+> **原文：**
+> ```cpp
+> /**
+>  * By default an empty array is created.
+>  */
+> Array(Allocator allocator = {}) noexcept : allocator_(allocator)
+> {
+>   data_ = inline_buffer_;
+> ```
+
+**翻译：** 默认创建一个空数组。
+
+---
+
 ## 🎯 核心特性
 
 ```mermaid
