@@ -93,8 +93,71 @@ static void node_geo_exec(GeoNodeExecParams params)
 
 **为什么不用全局变量？**
 
+用户问的是：为什么声明时用 `"Curve"_ustr` 字符串，而不用当前文件定义的变量？
+
+**澄清：** 在 `node_declare` 中确实使用了字符串字面量：
+
 ```cpp
-// ❌ 错误方式：全局变量
+static void node_declare(NodeDeclarationBuilder &b)
+{
+  b.add_input<decl::Geometry>("Curve"_ustr)  // 字符串字面量
+      .supported_type({GeometryComponent::Type::Curve, GeometryComponent::Type::GreasePencil})
+      .description("Curves to split");         // 字符串字面量
+  b.add_output<decl::Geometry>("Curve"_ustr).propagate_all().align_with_previous();
+  b.add_input<decl::Bool>("Selection"_ustr)  // 字符串字面量
+      .default_value(true)
+      .hide_value()
+      .field_on_all()
+      .description("Control points used to split curves");  // 字符串字面量
+  // ...
+}
+```
+
+**为什么用字符串字面量而不是变量？**
+
+```cpp
+// ❌ 如果用变量（不推荐）
+static const char* INPUT_CURVE = "Curve";
+static const char* INPUT_SELECTION = "Selection";
+
+static void node_declare(NodeDeclarationBuilder &b) {
+    b.add_input<decl::Geometry>(INPUT_CURVE);  // 可以工作，但...
+    // 问题：
+    // 1. 运行时才能确定字符串值
+    // 2. 编译器无法检查字符串是否正确
+    // 3. 需要额外的变量定义
+}
+
+// ✅ 用字符串字面量 + _ustr 后缀（推荐）
+static void node_declare(NodeDeclarationBuilder &b) {
+    b.add_input<decl::Geometry>("Curve"_ustr);  // 编译期确定
+    // 优势：
+    // 1. "Curve"_ustr 是编译期常量（StringRef）
+    // 2. 编译器可以内联优化
+    // 3. 代码更简洁，一眼就能看到名称
+}
+```
+
+**`_ustr` 后缀是什么？**
+
+```cpp
+// "Curve"_ustr 是一个用户定义字面量（C++11）
+// 它创建一个 StringRef 对象，而不是 const char*
+
+// 对比：
+"Curve"       // const char[6]（包含 '\0'）
+"Curve"_ustr  // StringRef（包含指针和长度，无 '\0'）
+
+// StringRef 的优势：
+// 1. 知道长度（O(1) 获取长度，不需要 strlen）
+// 2. 可以引用子字符串而不复制
+// 3. 比较操作更高效
+```
+
+**为什么不用全局变量？**
+
+```cpp
+// ❌ 错误方式：全局变量存储输入数据
 static GeometrySet g_geometry;  // 全局变量
 static Field<bool> g_selection; // 全局变量
 
@@ -103,7 +166,7 @@ static void node_geo_exec(GeoNodeExecParams params) {
     g_selection = ...; // 线程不安全！
 }
 
-// ✅ 正确方式：参数传递
+// ✅ 正确方式：参数传递，局部变量
 static void node_geo_exec(GeoNodeExecParams params) {
     GeometrySet geometry_set = params.extract_input<GeometrySet>("Curve"_ustr);
     // 局部变量，线程安全，作用域清晰
@@ -144,6 +207,95 @@ GeometrySet geometry_set = params.extract_input<GeometrySet>("Curve"_ustr);
 | `decl::Float` | `Field<float>` 或 `float` | 浮点字段或值 |
 | `decl::Int` | `Field<int>` 或 `int` | 整数字段或值 |
 | `decl::Vector` | `Field<float3>` | 3D 向量字段 |
+
+**用户问题：为什么声明类型和取出类型不相同或更相近？**
+
+**澄清：** 它们是有对应关系的，但不是完全相同：
+
+```cpp
+// 声明时：decl::Xxx 是 Socket 的"类型标识"
+b.add_input<decl::Geometry>("Curve"_ustr)
+//      ↑ 告诉 Blender：这个 socket 接受几何体
+
+// 取出时：GeometrySet 是实际的"数据类型"
+GeometrySet geometry_set = params.extract_input<GeometrySet>("Curve"_ustr);
+//          ↑ 实际的数据结构
+```
+
+**为什么不设计成完全相同的名称？**
+
+```cpp
+// 方案1：完全相同（不推荐）
+b.add_input<GeometrySet>("Curve"_ustr);  // 直接用数据类型
+// 问题：GeometrySet 是一个复杂的类，不适合做模板参数标识
+
+// 方案2：使用类型别名（当前设计）
+b.add_input<decl::Geometry>("Curve"_ustr);  // decl::Geometry 是轻量级标识
+// 优势：
+// 1. decl::Geometry 是一个空的标签类型，编译期开销为0
+// 2. 可以附加元数据（如 .supported_type()）
+// 3. 分离"接口声明"和"数据实现"
+```
+
+**设计哲学：分离关注点**
+
+```cpp
+// decl::Geometry 关注：UI 如何显示这个 socket
+// - 颜色（绿色表示几何体）
+// - 可以连接什么类型的 socket
+// - 在节点编辑器中的行为
+
+// GeometrySet 关注：实际存储什么数据
+// - 包含 Curves、Mesh、PointCloud 等
+// - 内存布局
+// - 操作方法
+```
+
+**更详细的对应关系：**
+
+| Socket 声明      | 数据类型        | 为什么这样设计                            |
+| ---------------- | --------------- | ----------------------------------------- |
+| `decl::Geometry` | `GeometrySet`   | GeometrySet 可能包含多种几何类型          |
+| `decl::Bool`     | `Field<bool>`   | 字段可以每点不同，也可以是常量            |
+| `decl::Bool`     | `bool`          | 有些布尔输入只是开关（如 Delete Segment） |
+| `decl::Float`    | `Field<float>`  | 字段可以是复杂表达式                      |
+| `decl::Float`    | `float`         | 有些只是简单数值                          |
+| `decl::Int`      | `Field<int>`    | 同上                                      |
+| `decl::Int`      | `int`           | 同上                                      |
+| `decl::Vector`   | `Field<float3>` | 3D 向量字段                               |
+
+**关键区别：字段 vs 值**
+
+```cpp
+// 字段（Field）：可以是每点不同的值
+const Field<bool> selection_field = params.extract_input<Field<bool>>("Selection"_ustr);
+// selection_field 可能是一个：
+// - 常量 true
+// - 顶点位置 > 0 的表达式
+// - 复杂的几何接近查询
+
+// 值（Value）：单一的值
+const bool delete_segment = params.extract_input<bool>("Delete Segment"_ustr);
+// delete_segment 只是一个 bool 值（true 或 false）
+```
+
+**为什么同一个 decl::Bool 可以取出两种类型？**
+
+```cpp
+// 在 node_declare 中：
+b.add_input<decl::Bool>("Selection"_ustr)
+    .field_on_all()  // ← 标记为字段输入
+    
+b.add_input<decl::Bool>("Delete Segment"_ustr)
+    // 没有 .field_on_all()，表示普通布尔值
+
+// 在 node_geo_exec 中：
+// "Selection" 有 .field_on_all()，所以取出 Field<bool>
+const Field<bool> selection_field = params.extract_input<Field<bool>>("Selection"_ustr);
+
+// "Delete Segment" 是普通值，所以取出 bool
+const bool delete_segment = params.extract_input<bool>("Delete Segment"_ustr);
+```
 
 ```cpp
 // 字段 vs 值的区别：
@@ -197,62 +349,81 @@ GeometryComponentEditData::remember_deformed_positions_if_necessary(geometry_set
 
 ---
 
-### 问题 4: 为什么没用 ELFI（字段惰性求值接口）？
+### 问题 4: 用户问题：为什么用两个 `if` 而不是 `else if`？
 
-**源码位置：** `node_geo_curve_split.cc:209,219`
+**源码位置：** `node_geo_curve_split.cc:207~240`
 
 ```cpp
-// 曲线处理
-if (split_curves(curves_id->geometry.wrap(), ...)) {
-    curves_id->geometry.wrap() = std::move(dst_curves);
-}
-
-// 蜡笔处理
-if (split_curves(drawing->strokes(), ...)) {
-    drawing->strokes_for_write() = std::move(dst_curves);
-}
+geometry::foreach_real_geometry(geometry_set, [&](GeometrySet &geometry_set) {
+  if (Curves *curves_id = geometry_set.get_curves_for_write()) {
+    // 处理曲线...
+  }
+  if (GreasePencil *grease_pencil = geometry_set.get_grease_pencil_for_write()) {
+    // 处理蜡笔...
+  }
+});
 ```
 
-**为什么这里没用 ELFI？**
+**为什么不用 `else if`？**
 
 ```cpp
-// ELFI（Lazy Function Interface）适用于：
-// - 字段求值（Field Evaluation）
-// - 延迟计算（Lazy Evaluation）
-// - 多线程并行求值
+// ❌ 如果用 else if（错误！）
+if (Curves *curves_id = geometry_set.get_curves_for_write()) {
+    // 处理曲线
+} else if (GreasePencil *grease_pencil = geometry_set.get_grease_pencil_for_write()) {
+    // 处理蜡笔
+}
+// 问题：GeometrySet 可以同时包含曲线和蜡笔！
+// 如果是 else if，蜡笔处理永远不会执行
 
-// 但 Split Curve 节点：
-// 1. 不是字段求值，是几何体操作
-// 2. 需要实际修改曲线拓扑结构
-// 3. 操作是"立即执行"的，不是延迟的
-
-// 对比：
-// Set Position 节点：
-// - 输入：位置字段（可能是复杂表达式）
-// - 使用 ELFI 延迟求值每个点的位置
-//
-// Split Curve 节点：
-// - 输入：选择字段（哪些点要拆分）
-// - 操作：立即拆分曲线（改变拓扑）
-// - 不需要延迟，因为结果立即可用
+// ✅ 用两个独立的 if（正确）
+if (Curves *curves_id = geometry_set.get_curves_for_write()) {
+    // 处理曲线
+}
+if (GreasePencil *grease_pencil = geometry_set.get_grease_pencil_for_write()) {
+    // 处理蜡笔
+}
+// 两者都会检查，都会执行（如果存在）
 ```
 
-**什么时候用 ELFI？**
+**关键概念：GeometrySet 可以包含多种几何类型**
 
 ```cpp
-// 用 ELFI 的场景：
-// 1. 字段求值（Field Evaluation）
-fn::FieldEvaluator evaluator{field_context, points_num};
-evaluator.add(position_field);
-evaluator.evaluate();  // ELFI 并行求值
+// GeometrySet 不是单一几何体，而是一个"集合"
+class GeometrySet {
+    // 可能同时包含：
+    Mesh *mesh;              // 网格
+    Curves *curves;          // 曲线
+    PointCloud *point_cloud; // 点云
+    GreasePencil *grease_pencil; // 蜡笔
+    // ...
+};
 
-// 2. 多函数（MultiFunction）
-// 3. 延迟计算（Lazy Evaluation）
+// 场景1：只有曲线
+GeometrySet set1;
+set1.add_curves(...);
+// get_curves_for_write() 返回指针
+// get_grease_pencil_for_write() 返回 nullptr
 
-// 不用 ELFI 的场景：
-// 1. 直接几何体操作（如 Split、Merge）
-// 2. 立即执行的算法
-// 3. 不涉及字段求值
+// 场景2：只有蜡笔
+GeometrySet set2;
+set2.add_grease_pencil(...);
+// get_curves_for_write() 返回 nullptr
+// get_grease_pencil_for_write() 返回指针
+
+// 场景3：同时有曲线和蜡笔（可能吗？）
+// 在当前节点中不太可能，但 GeometrySet 的设计支持这种可能性
+// 用两个独立的 if 确保代码的通用性和健壮性
+```
+
+**设计原则：防御性编程**
+
+```cpp
+// 即使当前节点不太可能同时有曲线和蜡笔
+// 用两个独立的 if 也是更好的做法：
+// 1. 代码更清晰：每个 if 处理一种类型
+// 2. 更健壮：不假设 GeometrySet 只包含一种类型
+// 3. 更容易扩展：添加新类型时只需再加一个 if
 ```
 
 ---
