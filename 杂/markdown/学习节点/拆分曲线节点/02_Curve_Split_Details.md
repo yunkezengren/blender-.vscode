@@ -15,47 +15,6 @@
 
 ---
 
-## 1. 为什么这样访问 `curves_id->geometry.wrap()`？
-
-### 数据结构层次
-
-```cpp
-// Curves 是 ID 类型（继承自 ID）
-struct Curves {
-    ID id;              // 基础 ID 信息
-    CurvesGeometry geometry;  // 几何数据
-};
-
-// CurvesGeometry 包含实际数据
-struct CurvesGeometry {
-    ImplicitSharingPtr<CurvesGeometryImpl> data;  // 隐式共享指针
-    
-    // wrap() 返回可写的引用
-    CurvesGeometry &wrap() { return *this; }
-    const CurvesGeometry &wrap() const { return *this; }
-};
-```
-
-### 为什么用 `wrap()`？
-
-```cpp
-// 历史原因：CurvesGeometry 可能是 "空" 状态
-// wrap() 确保返回有效的可写引用
-
-// 实际代码中：
-curves_id->geometry.wrap()  // 返回 CurvesGeometry&
-
-// 等价于：
-curves_id->geometry          // 也是 CurvesGeometry&
-```
-
-**在 Blender 中，`wrap()` 是一个惯用法**，用于：
-1. 确保数据已初始化
-2. 提供统一的访问接口
-3. 支持隐式共享的写时复制
-
----
-
 ## 2. 为什么用 `std::move` 和 `dst_curves`？
 
 ### 代码流程
