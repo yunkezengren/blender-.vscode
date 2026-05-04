@@ -4,6 +4,53 @@
 
 ---
 
+## 📋 快速上手（如果你只想"会用"）
+
+> **IndexMask 是什么？** 它是一个**有序的唯一索引集合**，用来表示"哪些元素被选中"。比如 100 万个顶点中只选中了 100 个，用 `bool[100万]` 浪费内存，用 `int[100]` 跳转太多，IndexMask 折中两者。
+
+### 最常用的 5 个操作
+
+```cpp
+// 1. 从布尔数组构造（字段求值结果 → IndexMask）
+Array<bool> bools(size);
+// ... 填充 bools ...
+IndexMaskMemory memory;
+IndexMask mask = IndexMask::from_bools(bools, memory);
+
+// 2. 遍历（顺序访问每个选中的索引）
+mask.foreach_index([&](const int64_t i) {
+    positions[i] += offset;  // 只处理选中的点
+});
+
+// 3. 并行遍历（多线程加速）
+mask.foreach_index_optimized(parallel_fn, 4096);
+
+// 4. 切片（取子集，零拷贝）
+IndexMask sub = mask.slice(IndexRange(100, 50));  // 第 100~149 个选中的索引
+
+// 5. 判断空/大小
+if (mask.is_empty()) { /* 没有选中任何元素 */ }
+int64_t count = mask.size();  // 选中多少个
+```
+
+### 什么时候用 IndexMask？
+
+| 场景 | 推荐方案 |
+|------|----------|
+| 稀疏选中（选中 < 10%） | ✅ **IndexMask** — 省内存 |
+| 密集选中（选中 > 50%） | `Array<bool>` 或 `BitVector` — 更快 |
+| 只需要遍历一次 | `Array<bool>` — 简单 |
+| 需要频繁切片/组合 | ✅ **IndexMask** — 零拷贝切片 |
+| 需要并行处理 | ✅ **IndexMask** — 天然分段并行 |
+
+### 核心概念一句话
+
+- **段（Segment）**：每 16384 个连续索引为一段，段内用 `int16_t` 存偏移
+- **非拥有式**：IndexMask 只是"视图"，内存由 `IndexMaskMemory` 管理
+- **不可变**：构造后不能增删，需要新掩码就重新构造
+
+---
+
 ## 🗺️ 总览：IndexMask 是什么？
 
 ```mermaid
@@ -43,7 +90,7 @@ flowchart TB
  *   for eliminate per-segment overhead in many cases and also leads to many more segments.
  * - The most-significant-bit is not used so that signed integers can be used which avoids common
  *   issues when mixing signed and unsigned ints.
- * - The second most-significant-bit is not used for indices so that #max_segment_size itself can
+ * - The second most-significant bit is not used for indices so that #max_segment_size itself can
  *   be stored in the #int16_t.
  * - The maximum number of indices in a segment is 16384, which is generally enough to make the
  *   overhead per segment negligible when processing large index masks.
@@ -52,35 +99,252 @@ flowchart TB
  */
 static constexpr int64_t max_segment_size_shift = 14;
 static constexpr int64_t max_segment_size = (1 << max_segment_size_shift); /* 16384 */
+static constexpr int64_t max_segment_size_mask_low = max_segment_size - 1;
+static constexpr int64_t max_segment_size_mask_high = ~max_segment_size_mask_low;
 ```
 
-**注释翻译与解读：**
+**注释翻译：**
 
-| 设计决策 | 原因 |
-|---------|------|
-| **int16_t 存索引** | 比 32/64 位整数更紧凑，每索引只需 2 字节 |
-| **不用 8 位 (int8_t)** | 256 的段太小，段数量爆炸，每段开销无法摊平 |
-| **最高位不用** | 使用有符号整数，避免 signed/unsigned 混用问题 |
-| **次高位也不用** | 让 `max_segment_size` 本身也能存进 int16_t |
-| **16384 = 2^14** | 足够大以摊平每段开销；2 的幂方便位运算构造 |
+> 定义最大段大小的常量。段大小受限，使得每个段内的索引可以存储为 `int16_t`，这让掩码比使用 32 或 64 位整数时紧凑得多。
+> - 使用 8 位整数效果不好，因为最大段大小会太小，在很多情况下无法消除每段开销，还会导致段数量过多。
+> - 最高位不使用，这样可以改用有符号整数，避免 signed/unsigned 混用时常见的问题。
+> - 次高位也不用于索引，这样 `max_segment_size` 本身也能存进 `int16_t`。
+> - 每段最大索引数为 16384，通常足以在处理大索引掩码时让每段开销忽略不计。
+> - `max_segment_size` 使用 2 的幂，这样可以更快地构造索引范围的索引掩码。
+
+**补充：两个位掩码常量的作用**
+
+| 常量 | 值 | 用途 |
+|------|-----|------|
+| `max_segment_size_mask_low` | `0x3FFF` (16383) | 用 `&` 提取索引的低 14 位（段内偏移） |
+| `max_segment_size_mask_high` | `~0x3FFF` | 用 `&` 提取索引的高 50 位（段号 × 16384） |
+
+```cpp
+// 快速计算段号和段内偏移（位运算替代除法/取模）
+int64_t segment_index = index & max_segment_size_mask_high;  // index / 16384 * 16384
+int64_t offset_in_segment = index & max_segment_size_mask_low; // index % 16384
+```
+
+**为什么用位掩码而不是 `%` 和 `/`？**
+- 除法是 CPU 最慢的整数运算之一（数十个周期）
+- 位运算是单周期操作
+- 16384 = 2^14，所以可以用位掩码精确替代
 
 ```mermaid
 flowchart LR
-    subgraph 内存对比["选中 10000 个索引的内存对比"]
-        A["bool[1000000]<br/>1,000,000 字节<br/>1MB"] 
-        B["int32_t[10000]<br/>40,000 字节<br/>40KB"]
-        C["IndexMask<br/>~1 个段<br/>20,000 字节<br/>20KB<br/>+ 极小开销"]
+    subgraph 位运算优化["16384 = 2^14 的位运算优势"]
+        A["index / 16384<br/>慢除法"] --> B["index >> 14<br/>或<br/>index & mask_high<br/>单周期"]
+        C["index % 16384<br/>慢取模"] --> D["index & 0x3FFF<br/>单周期"]
     end
 
     style A fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c
-    style B fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
-    style C fill:#e8f5e9,stroke:#388e3c,stroke-width:3px,color:#1b5e20
+    style C fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c
+    style B fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style D fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
 ```
+
+### 一个具体例子：IndexMask 怎么存索引 {3, 7, 16385, 32770}？
+
+```mermaid
+flowchart TB
+    subgraph 原始索引["原始索引集合"]
+        RAW["{3, 7, 16385, 32770}<br/>全局索引"]
+    end
+
+    subgraph 分段过程["分段过程（每段 16384）"]
+        SEG0["段 0<br/>offset = 0<br/>覆盖 [0, 16383]<br/>包含: {3, 7}<br/>存为 int16_t: {3, 7}"]
+        SEG1["段 1<br/>offset = 16384<br/>覆盖 [16384, 32767]<br/>包含: {16385}<br/>存为 int16_t: {1}"]
+        SEG2["段 2<br/>offset = 32768<br/>覆盖 [32768, 49151]<br/>包含: {32770}<br/>存为 int16_t: {2}"]
+    end
+
+    subgraph 内存占用["内存占用对比"]
+        INT64["int64_t[4]<br/>4 × 8 = 32 字节"]
+        IMASK["IndexMask<br/>3 个段 × (8+8+2×N) ≈ 60 字节<br/>（小段时 overhead 大）"]
+        IMASK2["IndexMask（1000 个索引均匀分布）<br/>≈ 2000 字节<br/>vs int64_t: 8000 字节"]
+    end
+
+    RAW --> SEG0
+    RAW --> SEG1
+    RAW --> SEG2
+
+    style SEG0 fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style SEG1 fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style SEG2 fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+    style IMASK2 fill:#e8f5e9,stroke:#388e3c,stroke-width:3px,color:#1b5e20
+```
+
+**注意：** 上面的例子只有 4 个索引，IndexMask 的段 overhead（每个段需要 offset 指针等）反而让它比 `int64_t[]` 更占内存。IndexMask 的优势在**大量索引**时才体现。
+
+---
+
+### 16384 是怎么来的？逐条解读注释中的设计决策
+
+```mermaid
+flowchart TB
+    subgraph 问题链["设计决策链"]
+        Q1["为什么用 int16_t？"] --> A1["2 字节/索引<br/>比 int32/int64 紧凑"]
+        Q2["为什么最高位不用？"] --> A2["保证非负<br/>避免 signed/unsigned 混用坑"]
+        Q3["为什么次高位也不用？"] --> A3["16384 需要位 14<br/>必须是 2 的幂才能位运算优化"]
+        Q4["为什么是 16384？"] --> A4["2^14 = 16384<br/>足够大摊平 overhead<br/>2 的幂方便位运算"]
+    end
+
+    style Q1 fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style Q2 fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style Q3 fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style Q4 fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style A1 fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style A2 fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style A3 fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style A4 fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+```
+
+#### ① 最高位不用 → 避免 signed/unsigned 混用陷阱
+
+C/C++ 有个著名陷阱：signed 和 unsigned 混用时，signed 会被隐式提升为 unsigned：
+
+```cpp
+int16_t a = -1;      // 二进制: 1111111111111111
+uint16_t b = 1;
+if (a < b) {         // 实际上 a 被提升为 uint16_t → 65535
+    // 这行不会执行！65535 < 1 是 false
+}
+```
+
+如果最高位用于数据（表示 32768~65535），负数补码和正数会混在一起，极易踩坑。空出最高位，所有值都是 0~16383（正数），自然避开。
+
+#### ② 次高位也不用 → 为了存下 16384 这个值本身
+
+**核心问题：为什么代码里需要把 `max_segment_size` 存进 `int16_t`？**
+
+看这段源码：
+
+```cpp
+// intern/index_mask.cc:48~54
+std::array<int16_t, max_segment_size> build_static_indices_array()
+{
+  std::array<int16_t, max_segment_size> data;
+  for (int16_t i = 0; i < max_segment_size; i++) {
+    data[size_t(i)] = i;
+  }
+  return data;
+}
+```
+
+注意 `for` 循环：`int16_t i = 0; i < max_segment_size; i++`。这里的 `i` 是 `int16_t`，循环上限 `max_segment_size` 必须能存进 `int16_t`！
+
+如果 `max_segment_size = 32767`（2^15 - 1），`i` 递增到 32767 后 `i++` 会溢出成 -32768，死循环！所以 `max_segment_size` 本身必须是 `int16_t` 能合法表示的值。
+
+```mermaid
+flowchart LR
+    subgraph 位分配["int16_t 能存什么值？"]
+        A["位 15 = 0<br/>位 14 = 0<br/>位 13~0 = 数据<br/>→ 0 ~ 16383"] --> B["如果 max_segment_size = 16384<br/>位 14 = 1<br/>需要次高位空出来"]
+        B --> C["如果 max_segment_size = 32767<br/>位 14 被索引用<br/>但 32767 不是 2 的幂<br/>无法用位运算优化！"]
+    end
+
+    style A fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style B fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style C fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c
+```
+
+**所以次高位不用的真正原因：**
+1. `max_segment_size` 要作为 `int16_t` 循环上限，必须能存进 `int16_t`
+2. 16384 刚好是 `2^14`，位 14 为 1，需要次高位空出来
+3. 16384 同时是 2 的幂，满足位运算优化需求
+
+```
+16383 = 0011111111111111  (位 14 = 0，可以存，但不是 2 的幂)
+16384 = 0100000000000000  (位 14 = 1，是 2 的幂，需要次高位空出来)
+```
+
+#### ③ 2 的幂 → 整段复用静态预分配
+
+**什么是"全局静态预分配"？**
+
+```cpp
+// intern/index_mask.cc:48~54
+// 程序启动时预分配的一个全局数组：{0, 1, 2, ..., 16383}
+std::array<int16_t, max_segment_size> build_static_indices_array()
+{
+  std::array<int16_t, max_segment_size> data;
+  for (int16_t i = 0; i < max_segment_size; i++) {
+    data[size_t(i)] = i;
+  }
+  return data;
+}
+
+// intern/index_mask.cc:57~101
+// 预分配 21 亿索引的静态掩码，所有 [0, N) 范围都复用它
+const IndexMask &get_static_index_mask_for_min_size(const int64_t min_size)
+{
+  static IndexMask static_mask = []() {
+    // ... 131072 个段，全部指向同一个 static_offsets 数组 ...
+    return mask;
+  }();
+  return static_mask;
+}
+```
+
+**关键点：**
+- `static_offsets` 是一个全局静态数组 `{0, 1, 2, ..., 16383}`
+- 所有"完整段"（包含 16384 个连续索引）都可以**复用**这个数组，不需要自己分配
+- 只有"部分段"（比如最后 8192 个索引）需要单独分配
+
+**为什么段大小必须是 16384 才能复用？**
+
+```mermaid
+flowchart TB
+    subgraph 段大小16384["段大小 = 16384（2 的幂）"]
+        A["[0, 50000) 全选中"] --> B["50000 = 3 × 16384 + 8192"]
+        B --> C["3 个完整段<br/>→ 都指向同一个 static_offsets<br/>{0,1,2,...,16383}<br/>零拷贝！"]
+        B --> D["1 个部分段<br/>→ 单独分配 {0,1,...,8191}"]
+    end
+
+    subgraph 段大小10000["段大小 = 10000（假设）"]
+        E["[0, 50000) 全选中"] --> F["50000 = 5 × 10000"]
+        F --> G["5 个段，每段大小都是 10000<br/>但 static_offsets 是 {0..16383}<br/>长度不匹配，无法复用！<br/>每段都要单独分配"]
+    end
+
+    style C fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style G fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c
+```
+
+**如果段大小是 10000，能让 static_offsets 也变成 10000 吗？**
+
+技术上可以，但会失去**整段复用**的能力：
+- 段大小 = 16384 时，所有完整段都复用**同一个** `static_offsets`
+- 段大小 = 10000 时，每个段长度不同，需要**各自分配**，无法共享
+
+```
+段大小 = 16384:  所有完整段 → 指向同一个 {0..16383} 数组
+段大小 = 10000:  段 0 → {0..9999}, 段 1 → {0..9999}, ... 每段都要自己分配
+```
+
+**2 的幂的额外好处：** 可以用位运算快速计算段号和偏移（`>> 14` 和 `& 0x3FFF`），而 10000 必须用慢速的除法和取模。
+
+#### ④ mask_low / mask_high → 用位运算替代除法
+
+| 常量 | 值 | 作用 |
+|------|-----|------|
+| `mask_low` | `0x3FFF` (0011111111111111) | `index & mask_low` = 段内偏移（替代 `% 16384`） |
+| `mask_high` | `~0x3FFF` | `index & mask_high` = 段起始地址（替代 `/ 16384 * 16384`） |
+
+```cpp
+// index = 32770
+// 二进制: 1000000000000010
+
+32770 & 0x3FFF    // = 0000000000000010 = 2      → 段内偏移
+32770 & ~0x3FFF   // = 1000000000000000 = 32768  → 段起始地址（段号 = 2）
+```
+
+`low` = 保留**低位** → 得到低地址部分（段内偏移）  
+`high` = 保留**高位** → 得到高地址部分（段起始/段号）
+
+
 
 ### 1.2 内存布局详解
 
 ```mermaid
-flowchart TB
+flowchart LR
     subgraph IndexMask内存布局["IndexMask 内存布局（非拥有式）"]
         DATA["IndexMaskData<br/>56 字节"] --> IN["indices_num_<br/>索引总数"]
         DATA --> SN["segments_num_<br/>段数"]
