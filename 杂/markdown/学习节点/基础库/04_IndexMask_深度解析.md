@@ -341,35 +341,426 @@ flowchart TB
 
 
 
-### 1.2 内存布局详解
+### 1.2 内存布局详解：逐字段解读
+
+#### 调试视图中的 IndexMaskData
+
+当你在调试器中看到这样的内容：
+
+```
+blender::index_mask::IndexMaskData = 
+{indices_num_=101 segments_num_=24 indices_by_segment_=0x0000029aa356c7a8 ...}
+    indices_num_ = 101              ← 总共选中了 101 个索引
+    segments_num_ = 24              ← 分布在 24 个段中
+    indices_by_segment_ = 0x...     ← 指向 24 个 int16_t[] 数组的指针数组
+    segment_offsets_ = 0x...        ← 24 个段的全局起始偏移
+    cumulative_segment_sizes_ = 0x...  ← 累积段大小（用于快速定位）
+    begin_index_in_segment_ = 0     ← 第一个段从第 0 个元素开始
+    end_index_in_segment_ = 2       ← 最后一个段到第 2 个元素结束（不含）
+```
+
+#### 逐字段详细解释
+
+```mermaid
+flowchart TB
+    subgraph IndexMaskData["IndexMaskData 结构（56 字节）"]
+        IN["indices_num_: int64<br/>索引总数<br/>示例: 101"]
+        SN["segments_num_: int64<br/>段数量<br/>示例: 24"]
+        IBS["indices_by_segment_: int16_t**<br/>指向每段索引数组的指针数组<br/>长度 = segments_num_"]
+        SO["segment_offsets_: int64_t*<br/>每段的全局偏移<br/>第 i 段覆盖 [offset, offset+16384)"]
+        CSS["cumulative_segment_sizes_: int64_t*<br/>累积段大小<br/>CSS[i] = 前 i 个段的总索引数"]
+        BIS["begin_index_in_segment_: int64<br/>起始切片区内索引<br/>支持切片"]
+        EIS["end_index_in_segment_: int64<br/>结束切片区内索引<br/>支持切片"]
+    end
+
+    style IN fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style SN fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style IBS fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style SO fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+    style CSS fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#880e4f
+    style BIS fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
+    style EIS fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
+```
+
+#### 源码注释逐条翻译
+
+```cpp
+// source/blender/blenlib/BLI_index_mask.hh:65~71
+
+/**
+ * Base type of #IndexMask. This only exists to make it more convenient to construct an index mask
+ * in a few functions with #IndexMask::data_for_inplace_construction.
+ *
+ * The names intentionally have a trailing underscore here even though they are public in
+ * #IndexMaskData because they are private in #IndexMask.
+ */
+```
+
+**注释翻译：**
+
+> IndexMask 的基类型。它只存在于让少数函数通过 `IndexMask::data_for_inplace_construction` 更方便地构造索引掩码。
+>
+> 这里的名字故意保留了尾部下划线，尽管它们在 IndexMaskData 中是 public 的，因为这些字段在 IndexMask 中是 private 的。
+
+**为什么需要这个注释？**
 
 ```mermaid
 flowchart LR
-    subgraph IndexMask内存布局["IndexMask 内存布局（非拥有式）"]
-        DATA["IndexMaskData<br/>56 字节"] --> IN["indices_num_<br/>索引总数"]
-        DATA --> SN["segments_num_<br/>段数"]
-        DATA --> IB["indices_by_segment_<br/>int16_t**<br/>每段的索引数组指针"]
-        DATA --> SO["segment_offsets_<br/>int64_t*<br/>每段的全局偏移"]
-        DATA --> CS["cumulative_segment_sizes_<br/>int64_t*<br/>累积段大小"]
-        DATA --> BI["begin_index_in_segment_<br/>起始切片区内索引"]
-        DATA --> EI["end_index_in_segment_<br/>结束切片区内索引"]
+    subgraph 命名矛盾["命名访问权限的矛盾"]
+        A["IndexMaskData<br/>struct<br/>字段 = public<br/>名字带下划线"] --> B["通常下划线 = private<br/>但 struct 默认 public"]
+        C["IndexMask<br/>class : private IndexMaskData<br/>继承后字段 = private<br/>名字仍带下划线"] --> D["下划线在 IndexMask 中是合理的<br/>因为字段确实 private"]
     end
 
-    subgraph 实际数据["实际数据（由 IndexMaskMemory 拥有）"]
-        S0["段 0<br/>offset = 0<br/>indices = {1, 5, 10}"]
-        S1["段 1<br/>offset = 16384<br/>indices = {0, 3, 7}"]
-        S2["段 2<br/>offset = 32768<br/>indices = {100, 200}"]
-    end
-
-    IB -.->|指向| S0
-    IB -.->|指向| S1
-    IB -.->|指向| S2
-
-    style DATA fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#0d47a1
-    style S0 fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
-    style S1 fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
-    style S2 fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#880e4f
+    style A fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+    style C fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
 ```
+
+---
+
+```cpp
+// source/blender/blenlib/BLI_index_mask.hh:72~107
+
+struct IndexMaskData {
+  /**
+   * Size of the index mask, i.e. the number of indices.
+   * 索引掩码的大小，即索引的数量。
+   */
+  int64_t indices_num_;
+
+  /**
+   * Number of segments in the index mask. Each segment contains at least one of the indices.
+   * 索引掩码中的段数。每个段至少包含一个索引。
+   */
+  int64_t segments_num_;
+
+  /**
+   * Pointer to the index array for every segment. The size of each array can be computed from
+   * #cumulative_segment_sizes_.
+   * 指向每个段的索引数组的指针。每个数组的大小可以从 cumulative_segment_sizes_ 计算得出。
+   */
+  const int16_t **indices_by_segment_;
+
+  /**
+   * Offset that is applied to the indices in each segment.
+   * 应用于每个段中索引的偏移量。
+   * 第 i 段的全局索引 = segment_offsets_[i] + indices_by_segment_[i][j]
+   */
+  const int64_t *segment_offsets_;
+
+  /**
+   * Encodes the size of each segment. The size of a specific segment can be computed by
+   * subtracting consecutive values (also see #OffsetIndices). The size of this array is one
+   * larger than #segments_num_. Note that the first value is _not_ necessarily zero when an
+   * index mask is a slice of another mask.
+   * 编码每个段的大小。特定段的大小可以通过相邻值的差计算（参见 OffsetIndices）。
+   * 这个数组的大小比 segments_num_ 大 1。
+   * 注意：当索引掩码是另一个掩码的切片时，第一个值不一定为零。
+   */
+  const int64_t *cumulative_segment_sizes_;
+
+  /**
+   * Index into the first segment where the #IndexMask starts. This exists to support slicing
+   * without having to modify and therefor allocate a new #indices_by_segment_ array.
+   * 第一个段中 IndexMask 开始的索引。这支持切片而无需修改/分配新的 indices_by_segment_ 数组。
+   */
+  int64_t begin_index_in_segment_;
+
+  /**
+   * Index into the last segment where the #IndexMask ends. This exists to support slicing without
+   * having to modify and therefore allocate a new #cumulative_segment_sizes_ array.
+   * 最后一个段中 IndexMask 结束的索引。这支持切片而无需修改/分配新的 cumulative_segment_sizes_ 数组。
+   */
+  int64_t end_index_in_segment_;
+};
+```
+
+**为什么 `segments_num_` 用 `int64_t` 而不是 `int32_t`？**
+
+```mermaid
+flowchart LR
+    subgraph 一致性设计["字段类型一致性设计"]
+        A["indices_num_: int64_t<br/>索引总数可能很大"] --> B["segments_num_: int64_t<br/>保持类型一致"]
+        B --> C["避免混用 int32/int64<br/>减少类型转换 bug"]
+        B --> D["cumulative_segment_sizes_: int64_t*<br/>同一套类型系统"]
+    end
+
+    style B fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+```
+
+虽然实际段数不可能达到 2^63，但 Blender 基础库的设计哲学是：**索引相关的所有整数统一用 `int64_t`**。这避免了：
+1. `int32_t` 和 `int64_t` 混用时的隐式转换警告
+2. 不同平台 `int` 大小不一致的问题（Windows 上 `long` 是 32 位，Linux 上是 64 位）
+3. 代码阅读时的认知负担（"这个字段是 int 还是 int64？"）
+
+#### 实际数据布局可视化
+
+```mermaid
+flowchart TB
+    subgraph 调试示例["调试示例: indices_num_=101, segments_num_=24"]
+        subgraph IndexMaskData结构["IndexMaskData (栈上)"]
+            D0["indices_num_ = 101"]
+            D1["segments_num_ = 24"]
+            D2["indices_by_segment_ → 指向指针数组"]
+            D3["segment_offsets_ → 指向偏移数组"]
+            D4["cumulative_segment_sizes_ → 指向累积大小数组"]
+            D5["begin_index_in_segment_ = 0"]
+            D6["end_index_in_segment_ = 2"]
+        end
+
+        subgraph 堆上数据["堆上数据 (由 IndexMaskMemory 管理)"]
+            IBS["indices_by_segment_[24]<br/>int16_t* 数组<br/>每个元素指向一段的索引数据"]
+            SO["segment_offsets_[24]<br/>int64_t 数组<br/>{0, 16384, 32768, ...}"]
+            CSS["cumulative_segment_sizes_[25]<br/>int64_t 数组<br/>{0, 5, 12, 20, ...}<br/>CSS[i+1] - CSS[i] = 第 i 段大小"]
+
+            subgraph 段0["段 0 数据"]
+                S0_DATA["int16_t[]<br/>{1244, 2000, ...}<br/>实际索引 = 0 + 1244 = 1244"]
+            end
+
+            subgraph 段1["段 1 数据"]
+                S1_DATA["int16_t[]<br/>{50, 100, ...}<br/>实际索引 = 16384 + 50 = 16434"]
+            end
+        end
+
+        D2 -.-> IBS
+        D3 -.-> SO
+        D4 -.-> CSS
+        IBS -.-> S0_DATA
+        IBS -.-> S1_DATA
+    end
+
+    style D0 fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style IBS fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style S0_DATA fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+```
+
+#### 关键洞察：为什么需要这么多指针？
+
+| 字段 | 如果不存在会怎样？ | 存在的价值 |
+|------|------------------|-----------|
+| `indices_by_segment_` | 无法访问段的索引数据 | 核心数据访问 |
+| `segment_offsets_` | 不知道每段的全局范围 | 计算实际索引 = offset + 段内偏移 |
+| `cumulative_segment_sizes_` | 无法 O(log n) 定位第 k 个索引 | 支持二分查找、切片 |
+| `begin/end_index_in_segment_` | 切片必须复制数据 | **零拷贝切片**的关键 |
+
+#### 切片如何工作？
+
+```cpp
+// 原始掩码: 段 0 = {0,1,2,3,4}, 段 1 = {5,6,7,8,9}
+// slice(2, 5) → 取第 2~6 个索引
+
+// 原始状态:
+// begin_index_in_segment_ = 0
+// end_index_in_segment_ = 5 (段 0 大小)
+
+// 切片后:
+// begin_index_in_segment_ = 2  ← 从段 0 的第 2 个开始
+// end_index_in_segment_ = 2    ← 到段 1 的第 2 个结束
+// indices_num_ = 5
+// 
+// 结果: {2,3,4} (段 0 的后 3 个) + {5,6} (段 1 的前 2 个) = {2,3,4,5,6}
+// 但段数据指针完全没有复制！只是调整了 begin/end 值
+```
+
+```mermaid
+flowchart LR
+    subgraph 切片原理["零拷贝切片原理"]
+        ORIG["原始掩码<br/>段0: {0,1,2,3,4}<br/>begin=0, end=5"] --> SLICE["slice(2, 5)"]
+        SLICE --> RESULT["切片后掩码<br/>begin=2, end=2<br/>数据指针相同<br/>只是调整了边界"]
+    end
+
+    style RESULT fill:#e8f5e9,stroke:#388e3c,stroke-width:3px,color:#1b5e20
+```
+
+---
+
+### 为什么用 `class IndexMask : private IndexMaskData` 继承而不是成员？
+
+```cpp
+// source/blender/blenlib/BLI_index_mask.hh:219
+class IndexMask : private IndexMaskData {
+```
+
+**private 继承 vs 成员对象的对比：**
+
+```mermaid
+flowchart LR
+    subgraph 继承方式["private 继承"]
+        A["class IndexMask : private IndexMaskData<br/>↓<br/>IndexMask 内部可以直接访问<br/>indices_num_, segments_num_...<br/>无需 data.indices_num_<br/>代码更简洁"]
+    end
+
+    subgraph 成员方式["成员对象"]
+        B["class IndexMask {<br/>  IndexMaskData data_;<br/>}<br/>↓<br/>访问需要 data_.indices_num_<br/>多一层间接<br/>但语义更清晰"]
+    end
+
+    style A fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style B fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+```
+
+**选择 private 继承的原因：**
+
+| 方面 | private 继承 | 成员对象 |
+|------|-------------|----------|
+| **访问语法** | `indices_num_` 直接访问 | `data_.indices_num_` 间接访问 |
+| **内存布局** | 基类子对象在开头，与 struct 布局一致 | 成员在内部，可能有对齐填充 |
+| **切片操作** | `IndexMaskData&` 可以直接引用整个状态 | 需要额外取地址操作 |
+| **语义表达** | "是一个实现细节"（is-implemented-in-terms-of） | "有一个数据块" |
+| **构造便利性** | `data_for_inplace_construction()` 返回基类引用 | 需要额外封装 |
+
+**核心原因：让 `data_for_inplace_construction()` 成为可能**
+
+```cpp
+// 这个函数返回 IndexMaskData 的引用，允许外部直接填充字段
+IndexMaskData &data_for_inplace_construction()
+{
+  return *this;  // 继承后 *this 就是 IndexMaskData
+}
+
+// 如果是成员对象，需要这样写：
+IndexMaskData &data_for_inplace_construction()
+{
+  return data_;  // 也可以，但继承更自然
+}
+```
+
+private 继承在 C++ 中被称为 **"is-implemented-in-terms-of"**（以实现细节的方式是一个），它明确表示：IndexMask 不是 IndexMaskData（对外），但在实现上就是一块 IndexMaskData 内存。
+
+---
+
+### IndexMask 类注释完整翻译
+
+```cpp
+// source/blender/blenlib/BLI_index_mask.hh:175~218
+
+/**
+ * An #IndexMask is a sequence of unique and sorted indices (`BLI_unique_sorted_indices.hh`).
+ * It's commonly used when a subset of elements in an array has to be processed.
+ *
+ * IndexMask 是一个唯一且有序索引的序列。它通常用于需要处理数组中某个子集元素的场景。
+ */
+```
+
+**核心特性：** 唯一（不重复）且有序（升序排列）。这保证了可以用二分查找做 `contains()`，也支持高效的集合并/交/差运算。
+
+```cpp
+ * #IndexMask is a non-owning container. That data it references is usually either statically
+ * allocated or is owned by an #IndexMaskMemory.
+ *
+ * IndexMask 是一个非拥有式容器。它引用的数据通常是静态分配的，或者由 IndexMaskMemory 拥有。
+ */
+```
+
+**非拥有式的含义：** IndexMask 对象本身只是一块 56 字节的"视图"，不管理内存生命周期。真正的内存由外部（静态存储或 IndexMaskMemory）管理。
+
+```cpp
+ * Internally, an index mask is split into an arbitrary number of ordered segments. Each segment
+ * contains up to #max_segment_size (2^14 = 16384) indices. The indices in a segment are stored as
+ * `int16_t`, but each segment also has a `int64_t` offset.
+ *
+ * 内部实现上，索引掩码被分割为任意数量的有序段。每个段最多包含 max_segment_size (2^14 = 16384) 个索引。
+ * 段内的索引以 int16_t 存储，但每个段还有一个 int64_t 偏移量。
+ */
+```
+
+**段的核心设计：** `int16_t` 存段内偏移（省内存）+ `int64_t` 存段全局偏移（支持大数组）。
+
+```cpp
+ * The data structure is designed to satisfy the following key requirements:
+ * - Construct index mask for an #IndexRange in O(1) time (after initial setup).
+ * - Support efficient slicing (O(log n) with a low constant factor).
+ * - Support multi-threaded construction without severe serial bottlenecks.
+ * - Support efficient iteration over indices that uses #IndexRange when possible.
+ *
+ * 该数据结构的设计满足以下关键需求：
+ * - 为 IndexRange 构造索引掩码的时间复杂度为 O(1)（初始设置之后）。
+ * - 支持高效的切片（O(log n)，常数因子很小）。
+ * - 支持多线程构造，没有严重的串行瓶颈。
+ * - 支持高效的索引遍历，尽可能使用 IndexRange。
+ */
+```
+
+**四大设计目标解读：**
+
+| 目标 | 实现方式 |
+|------|----------|
+| O(1) 构造范围 | 静态预分配 21 亿索引的掩码，切片即可 |
+| 高效切片 | `begin/end_index_in_segment_` 调整边界，零拷贝 |
+| 多线程构造 | 分段独立分配，无锁 |
+| 高效遍历 | `foreach_segment` 段内连续访问，缓存友好 |
+
+```cpp
+ * Construction:
+ *   A new index mask is usually created by calling one of its constructors which are O(1), or for
+ *   more complex masks, by calling various `IndexMask::from_*` functions that create masks from
+ *   various sources. Those generally need additional memory which is provided with by an
+ *   #IndexMaskMemory.
+ *
+ *   构造：
+ *   新的索引掩码通常通过调用 O(1) 的构造函数创建。对于更复杂的掩码，可以调用各种
+ *   IndexMask::from_* 函数从不同的源创建。这些函数通常需要额外的内存，由 IndexMaskMemory 提供。
+ */
+```
+
+```cpp
+ *   Some of the `IndexMask::from_*` functions have an `IndexMask universe` input. When provided,
+ *   the function will only consider the indices in the "universe". The term comes from
+ *   mathematics: https://en.wikipedia.org/wiki/Universe_(mathematics).
+ *
+ *   部分 IndexMask::from_* 函数有一个 IndexMask universe 输入参数。如果提供了该参数，
+ *   函数只会考虑 "universe" 中的索引。这个术语来自数学中的"全集"概念。
+ */
+```
+
+**Universe（全集）的含义：** 比如你想从布尔数组构造掩码，但只关心其中一部分索引（比如某个顶点组内的顶点），可以把那个顶点组的掩码作为 universe 传入，函数会自动过滤。
+
+```cpp
+ * Iteration:
+ *   To iterate over the indices, one usually has to use one of the `foreach_*` functions which
+ *   require a callback function. Due to the internal segmentation of the index mask, this is more
+ *   efficient than using a normal C++ iterator and range-based for loops.
+ *
+ *   遍历：
+ *   要遍历索引，通常必须使用某个 foreach_* 函数，这些函数需要一个回调函数。
+ *   由于索引掩码的内部分段特性，这比使用普通 C++ 迭代器和基于范围的 for 循环更高效。
+ */
+```
+
+**为什么回调比迭代器高效？** 因为段内数据是连续的，编译器可以把回调内联到段遍历循环中，做 SIMD 优化。标准迭代器每次 `++` 都要检查段边界。
+
+```cpp
+ *   There are multiple variants of the `foreach_*` functions which are useful in different
+ *   scenarios. The callback can generally take one or two arguments. The first is the index
+ *   stored in the mask and the second is the index that would have to be passed into `operator[]`
+ *   to get the first index.
+ *
+ *   foreach_* 函数有多个变体，适用于不同场景。回调通常可以接收一个或两个参数。
+ *   第一个是掩码中存储的索引，第二个是要传入 operator[] 才能得到第一个索引的索引（即位置）。
+ */
+```
+
+**双参数回调：** `fn(index, pos)` 中 `pos` 是该索引在掩码中的位置（0, 1, 2, ...），`index` 是实际的全局索引。这样你可以同时知道"这是第几个选中的"和"它实际是什么索引"。
+
+```cpp
+ *   The `foreach_*` methods also accept an execution mode optional argument. When that is
+ *   provided, multi-threading might be used. Integrating multi-threading at this level works well
+ *   because mask iteration and parallelism are often used at the same time.
+ *
+ *   foreach_* 方法还接受一个可选的执行模式参数。如果提供了该参数，可能会使用多线程。
+ *   在这个层面集成多线程效果很好，因为掩码遍历和并行性通常是同时使用的。
+ */
+```
+
+```cpp
+ * Extraction:
+ *   An #IndexMask can be converted into various other forms using the `to_*` methods.
+ *
+ *   提取：
+ *   IndexMask 可以使用 to_* 方法转换为各种其他形式。
+ */
+```
+
+**提取方法：** `to_bools()` → `bool[]`, `to_bits()` → 位数组, `to_indices()` → `int64_t[]`。
+
+---
 
 **关键设计：非拥有式（non-owning）**
 
