@@ -1,6 +1,28 @@
 # 曲线节点实现差异
 
 > 解释不同曲线节点实现方式的差异
+- [曲线节点实现差异](#曲线节点实现差异)
+  - [📖 问题来源](#-问题来源)
+  - [1. 为什么多一步转换？`wrap()` 的 `reinterpret_cast`](#1-为什么多一步转换wrap-的-reinterpret_cast)
+    - [代码位置](#代码位置)
+    - [核心原因：同一个数据结构有两个 C++ 版本](#核心原因同一个数据结构有两个-c-版本)
+    - [为什么需要 `wrap()` 转换？](#为什么需要-wrap-转换)
+    - [设计原因](#设计原因)
+    - [深入问题](#深入问题)
+      - [Q1: `DNA_curves_types.h:20~23` 的前向声明是什么？](#q1-dna_curves_typesh2023-的前向声明是什么)
+      - [Q2: 为什么声明和定义不在同一个头文件？](#q2-为什么声明和定义不在同一个头文件)
+      - [Q3: 为什么使用 `reinterpret_cast` 而不是 `static_cast`？](#q3-为什么使用-reinterpret_cast-而不是-static_cast)
+      - [Q4: 为什么实现放在 `BKE_curves.hh:1185~1192`？为什么用 `inline`？](#q4-为什么实现放在-bke_curveshh11851192为什么用-inline)
+  - [2. 为什么有的用 `get_curves_for_write`，有的用 `get_curves` + `replace_curves`？](#2-为什么有的用-get_curves_for_write有的用-get_curves--replace_curves)
+    - [对比两种模式](#对比两种模式)
+    - [为什么不同？](#为什么不同)
+    - [具体分析](#具体分析)
+  - [3. 为什么不是所有曲线节点都用 `params.get_attribute_filter`？](#3-为什么不是所有曲线节点都用-paramsget_attribute_filter)
+    - [什么是 `attribute_filter`？](#什么是-attribute_filter)
+    - [为什么有的用，有的不用？](#为什么有的用有的不用)
+    - [判断标准](#判断标准)
+    - [示例对比](#示例对比)
+  - [✅ 总结](#-总结)
 
 ---
 
