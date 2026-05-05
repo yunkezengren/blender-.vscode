@@ -1,486 +1,685 @@
-# VArray<T> / GVArray / GSpan - 类型擦除数组
+# VArray / GVArray 完全指南
 
-> 在不知道具体类型的情况下操作数组，是字段系统和属性系统的核心
+> 从 `curves.cyclic()` 的一行代码出发，彻底理解 Blender 的虚拟数组系统。
+>
+> 核心源码：`source/blender/blenlib/BLI_virtual_array.hh`
 
 ---
 
-## 📖 源码注释翻译与解释
+## 目录
 
-### 虚拟数组文件头注释 (BLI_virtual_array.hh:7~26)
-
-> **原文注释：**
-> ```cpp
-> /** \file
->  * \ingroup bli
->  *
->  * A virtual array is a data structure that behaves similarly to an array, but its elements are
->  * accessed through virtual methods. This improves the decoupling of a function from its callers,
->  * because it does not have to know exactly how the data is laid out in memory, or if it is stored
->  * in memory at all. It could just as well be computed on the fly.
->  *
->  * Taking a virtual array as parameter instead of a more specific non-virtual type has some
->  * tradeoffs. Access to individual elements of the individual elements is slower due to function
->  * call overhead. On the other hand, potential callers don't have to convert the data into the
->  * specific format required for the function. This can be a costly conversion if only few of the
->  * elements are accessed in end.
->  *
->  * Functions taking a virtual array as input can still optimize for different data layouts. For
->  * example, they can check if the array references contiguous memory internally or if it is the
->  * same value for all indices. Whether it is worth optimizing for different data layouts in a
->  * function has to be decided on a case by case basis. One should always do some benchmarking to
->  * see if the increased compile time and binary size is worth it.
->  */
-> ```
-
-**中文翻译与详细解释：**
-
-| 段落 | 翻译 | 关键要点 |
-|------|------|----------|
-| **核心定义** | 虚拟数组是一种行为类似于数组的数据结构，但其元素通过虚方法访问。 | 虚方法访问元素 |
-| **解耦优势** | 这提高了函数与其调用者的解耦，因为它不必确切知道数据在内存中的布局方式，或者它是否完全存储在内存中。 | 不关心内存布局 |
-| **惰性计算** | 数据可以即时计算。 | 支持函数生成 |
-| **权衡** | 使用虚拟数组作为参数而不是更具体的非虚拟类型有一些权衡。由于函数调用开销，访问单个元素较慢。 | 性能 vs 灵活性 |
-| **避免转换** | 另一方面，潜在调用者不必将数据转换为函数所需的特定格式。如果最终只访问少数元素，这种转换可能代价高昂。 | 避免不必要的数据转换 |
-| **优化可能** | 接受虚拟数组作为输入的函数仍然可以为不同的数据布局进行优化。例如，可以检查数组内部是否引用连续内存，或者所有索引的值是否相同。 | 可以检查底层类型优化 |
-| **基准测试** | 函数中是否值得为不同数据布局进行优化必须根据具体情况决定。应该始终进行一些基准测试，看看增加的编译时间和二进制大小是否值得。 | 需要权衡编译时间/二进制大小 |
-
-### CommonVArrayInfo 结构注释 (BLI_virtual_array.hh:43~71)
-
-> **原文：**
-> ```cpp
-> /**
->  * Used to quickly check if a varray is a span or a single value. This struct also allows
->  * retrieving multiple pieces of data with a single virtual method call.
->  */
-> struct CommonVArrayInfo {
->   enum class Type : uint8_t {
->     /* Is not one of the common special types below. */
->     Any,
->     Span,
->     Single,
->   };
->
->   Type type = Type::Any;
->
->   /** True when the #data becomes a dangling pointer when the virtual array is destructed. */
->   bool may_have_ownership = true;
->
->   /**
->    * Points either to nothing, a single value, or an array of values, depending on #type.
->    * If this is a span of a mutable virtual array, it is safe to cast away const.
->    */
->   const void *data;
->   ...
-> };
-> ```
-
-**翻译：** 用于快速检查 varray 是否是 span 或单值。这个结构体还允许通过单次虚方法调用检索多段数据。
-
-**字段说明：**
-
-| 字段 | 说明 |
-|------|------|
-| `type` | 类型：Any（通用）、Span（连续数组）、Single（单值广播） |
-| `may_have_ownership` | 当虚拟数组被销毁时，#data 是否变成悬垂指针 |
-| `data` | 根据 #type 指向空、单值或值数组 |
-
-### VArrayImpl 类注释 (BLI_virtual_array.hh:73~76)
-
-> **原文：**
-> ```cpp
-> /**
->  * Implements the specifics of how the elements of a virtual array are accessed. It contains a
->  * bunch of virtual methods that are wrapped by #VArray.
->  */
-> template<typename T> class VArrayImpl {
-> ```
-
-**翻译：** 实现虚拟数组元素访问的具体方式。它包含一组被 #VArray 包装的虚方法。
-
-### size_ 成员注释 (BLI_virtual_array.hh:78~83)
-
-> **原文：**
-> ```cpp
-> /**
->  * Number of elements in the virtual array. All virtual arrays have a size, but in some cases it
->  * may make sense to set it to the max value.
->  */
-> int64_t size_;
-> ```
-
-**翻译：** 虚拟数组中的元素数量。所有虚拟数组都有大小，但在某些情况下将其设置为最大值可能有意义。
-
-### get 方法注释 (BLI_virtual_array.hh:98~100)
-
-> **原文：**
-> ```cpp
-> /**
->  * Get the element at #index. This does not return a reference, because the value may be computed
->  * on the fly.
->  */
-> ```
-
-**翻译：** 获取 #index 处的元素。这不返回引用，因为值可能是即时计算的。
-
-**重要：** 返回的是值而非引用，因为底层可能是函数生成的值，没有实际的内存位置。
+1. [从一个问题出发](#1-从一个问题出发)
+2. [VArray 解决什么痛点](#2-varray-解决什么痛点)
+3. [三种底层实现](#3-三种底层实现)
+4. [VArray vs Span vs Array](#4-varray-vs-span-vs-array)
+5. [源码中的真实用例](#5-源码中的真实用例)
+6. [GVArray：类型擦除版](#6-gvarray类型擦除版)
+7. [可写版本与辅助类](#7-可写版本与辅助类)
+8. [去虚拟化优化](#8-去虚拟化优化)
 
 ---
 
-## 🎯 核心概念
+## 1. 从一个问题出发
+
+### 1.1 这行代码在干什么？
+
+```cpp
+// source/blender/geometry/intern/curves_remove_and_split.cc:20
+const VArray<bool> src_cyclic = curves.cyclic();
+```
+
+**直觉问题**：
+- 为什么返回 `VArray<bool>`？直接返回 `Array<bool>` 或 `Span<bool>` 不行吗？
+- `VArray` 和 `Array` 有什么区别？
+- 这行代码背后隐藏了什么设计思想？
+
+### 1.2 先看一下 `CurvesGeometry::cyclic()` 可能返回什么
+
+在 Blender 中，每条曲线有一个 `cyclic` 标志（是否首尾相连形成闭环）。这个数据的存储方式**不是固定的**：
+
+| 场景 | 底层存储 | 示例 |
+|------|----------|------|
+| **所有曲线都是非循环的** | 单个 `false` 值 | 1000 条曲线，只需要 1 个 bool |
+| **所有曲线都是循环的** | 单个 `true` 值 | 1000 条曲线，只需要 1 个 bool |
+| **混合情况** | `Array<bool>`，每条曲线一个值 | 曲线 0 循环，曲线 1 不循环... |
+
+**关键洞察**：如果强制返回 `Array<bool>`，前两种场景会浪费 999 个 bool 的内存。如果返回 `Span<bool>`，前两种场景根本无法表示（没有数组可引用）。
+
+**VArray 的解决方案**：统一接口，底层可以是"单值"、"数组"、甚至"函数"，调用者完全不用关心。
 
 ```mermaid
 flowchart TB
-    subgraph 类型擦除层次["类型擦除层次"]
-        A["VArray<T><br/>编译期类型"] --> B["GVArray<br/>运行期类型"]
-        B --> C["GSpan<br/>只读视图"]
-        B --> D["GMutableSpan<br/>可写视图"]
+    subgraph 调用者["调用者视角"]
+        CALL["src_cyclic[i]<br/>获取第 i 条曲线的循环标志"]
     end
-    
-    subgraph 使用场景["使用场景"]
-        E["字段求值"] --> E1["GVArray 存储结果"]
-        F["属性系统"] --> F1["GSpan 读取属性"]
-        G["多函数"] --> G1["类型擦除参数"]
+
+    subgraph VArray内部["VArray 内部（透明）"]
+        direction TB
+        SINGLE["场景 A：单值<br/>返回同一个 bool"]
+        SPAN["场景 B：数组<br/>从 Array<bool> 取"]
+        FUNC["场景 C：函数<br/>按需计算"]
     end
-    
-    类型擦除层次 --> 使用场景
-    
-    style B fill:#e1f5fe,stroke:#01579b,stroke-width:3px
-    style C fill:#fff3e0,stroke:#e65100
+
+    CALL --> SINGLE
+    CALL --> SPAN
+    CALL --> FUNC
+
+    style CALL fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#0d47a1
+    style SINGLE fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style SPAN fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+    style FUNC fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#880e4f
 ```
 
 ---
 
-## 📦 VArray<T> - 虚拟数组
+## 2. VArray 解决什么痛点
 
-### 核心特性
+### 2.1 痛点一：调用者不想做数据转换
 
-`VArray<T>` 是一个**只读**的虚拟数组接口，底层可以是：
-- 实际数组（`Array<T>`、`Vector<T>`）
-- 单值广播（所有元素相同）
-- 函数生成（按需计算）
+假设你写了一个函数，接受一组浮点数做某种计算：
 
 ```cpp
-#include "BLI_virtual_array.hh"
+// ❌ 方案 A：接受 Span<float>（太严格）
+void process(Span<float> values) {
+    for (float v : values) { /* ... */ }
+}
 
-namespace blender::nodes {
+// 调用者必须先把数据转成连续数组
+Vector<float> vec = {1.0f, 2.0f, 3.0f};
+process(vec);  // ✅ 可以
 
-void varray_examples() {
-    // 1. 从 Vector 构造
-    Vector<float> vec = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-    VArray<float> varray1 = VArray<float>::ForContainer(vec);
-    
-    // 2. 单值广播（所有元素都是 42）
-    VArray<float> varray2 = VArray<float>::ForSingle(42.0f, 1000);
-    
-    // 3. 函数生成（按需计算）
-    VArray<float> varray3 = VArray<float>::ForFunc(
-        100,
-        [](const int64_t i) { return float(i) * 0.5f; }
-    );
-    
-    // 4. 访问元素
-    float val = varray1[0];  // 1.0f
-    
-    // 5. 检查是否为单值
-    if (varray1.is_single()) {
-        float single_val = varray1.get_internal_single();
+// 但如果是单值广播呢？
+process(Span<float>(/* 只有一个 float，没法构造 Span */));  // ❌ 不行！
+```
+
+```cpp
+// ✅ 方案 B：接受 VArray<float>（灵活）
+void process(VArray<float> values) {
+    for (int64_t i : values.index_range()) {
+        float v = values[i];  // 不管底层是什么，都能访问
     }
 }
 
-} // namespace blender::nodes
+// 从数组构造
+Array<float> arr = {1.0f, 2.0f, 3.0f};
+process(VArray<float>::from_span(arr));  // ✅
+
+// 从单值构造（1000 个元素都是 42.0f）
+process(VArray<float>::from_single(42.0f, 1000));  // ✅
+
+// 从函数构造
+process(VArray<float>::from_func(100, [](int64_t i) { return float(i) * 0.5f; }));  // ✅
 ```
 
-### 常用操作
+### 2.2 痛点二：有些数据根本不存在于内存中
+
+字段系统（Field System）的核心特性是**延迟计算**。比如用户输入了一个 `"position"` 字段，它的值不是预先存好的，而是在求值时根据几何体实时计算出来的。
 
 ```cpp
-void varray_operations() {
-    VArray<float> varray = get_varray();
-    
-    // 大小
-    int64_t size = varray.size();
-    bool empty = varray.is_empty();
-    
-    // 索引访问
-    float val = varray[10];
-    
-    // 尝试获取内部数组（如果是实际数组）
-    const float *data = varray.try_get_internal_single();
-    
-    // 遍历
-    for (int64_t i : varray.index_range()) {
-        float value = varray[i];
-    }
-    
-    // 转换为 Span（如果可能）
-    std::optional<Span<float>> span = varray.try_get_internal_span();
-}
+// 字段求值结果就是一个 VArray
+// 底层根本没有 Array<float3>，只有一个计算函数
+VArray<float3> positions = evaluator.get_evaluated<float3>(0);
+
+// 访问 positions[10] 时，才会调用底层函数计算第 10 个点的位置
+float3 pos = positions[10];
 ```
 
----
+### 2.3 痛点三：性能与灵活性的权衡
 
-## 🌐 GVArray - 类型擦除的 VArray
+```cpp
+// 文件头注释的核心思想（BLI_virtual_array.hh:7~26）
 
-### 核心概念
-
-`GVArray` 是 `VArray<T>` 的类型擦除版本，在**运行期**才知道元素类型。
+/*
+ * A virtual array is a data structure that behaves similarly to an array,
+ * but its elements are accessed through virtual methods.
+ *
+ * 优点：调用者不必知道数据怎么存的，甚至不必存于内存中
+ * 缺点：访问单个元素有虚函数调用开销
+ *
+ * 权衡：如果最终只访问少量元素，避免了"把所有数据展开成数组"的昂贵转换
+ */
+```
 
 ```mermaid
 flowchart LR
-    subgraph 编译期["编译期已知类型"]
-        A["VArray<float3>"] --> B["具体类型操作"]
+    subgraph 传统方式["传统方式：先转换再处理"]
+        A["原始数据<br/>（任意格式）"] --> B["强制转换为<br/>Array<T>"]
+        B --> C["处理"]
     end
-    
-    subgraph 运行期["运行期确定类型"]
-        C["GVArray"] --> D["通过 CPPType 操作"]
-        D --> E["type() 获取类型"]
-        D --> F["typed<T>() 转换"]
+
+    subgraph VArray方式["VArray 方式：直接处理"]
+        D["原始数据<br/>（任意格式）"] --> E["包装为 VArray<T>"]
+        E --> F["处理<br/>按需访问"]
     end
-    
-    style C fill:#e1f5fe,stroke:#01579b,stroke-width:3px
-```
 
-### 使用示例
-
-```cpp
-#include "BLI_virtual_array.hh"
-#include "BLI_cpp_type.hh"
-
-namespace blender::nodes {
-
-void gvarray_examples() {
-    // 1. 从 VArray<float3> 构造
-    VArray<float3> typed_varray = VArray<float3>::ForSingle(float3(1, 2, 3), 100);
-    GVArray gvarray(typed_varray);
-    
-    // 2. 获取类型
-    const CPPType &type = gvarray.type();
-    std::cout << "Type: " << type.name << std::endl;
-    
-    // 3. 类型检查
-    if (gvarray.type() == CPPType::get<float3>()) {
-        // 安全地转换为具体类型
-        VArray<float3> typed = gvarray.typed<float3>();
-        float3 val = typed[0];
-    }
-    
-    // 4. 通用访问（类型擦除）
-    void *buffer = MEM_mallocN(type.size, __func__);
-    gvarray.get_to_uninitialized(0, buffer);  // 获取第0个元素
-    type.destruct(buffer);
-    MEM_freeN(buffer);
-}
-
-} // namespace blender::nodes
+    style B fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c
+    style E fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
 ```
 
 ---
 
-## 📏 GSpan - 类型擦除的 Span
+## 3. 三种底层实现
 
-### 核心概念
+`VArray<T>` 本身只是一个**包装器**，真正的逻辑在 `VArrayImpl<T>` 的各种子类中。
 
-`GSpan` 是 `Span<T>` 的类型擦除版本，用于**只读**访问类型未知的数组。
-
-```cpp
-#include "BLI_span.hh"
-
-namespace blender::nodes {
-
-void gspan_examples() {
-    // 1. 从 Span<float3> 构造
-    Array<float3> positions(100);
-    Span<float3> span = positions;
-    GSpan gspan(span);
-    
-    // 2. 获取类型
-    const CPPType &type = gspan.type();
-    
-    // 3. 类型检查并转换
-    if (gspan.type() == CPPType::get<float3>()) {
-        Span<float3> typed = gspan.typed<float3>();
-        // 使用 typed...
-    }
-    
-    // 4. 大小
-    int64_t size = gspan.size();
-    
-    // 5. 元素访问（类型擦除）
-    const void *element = gspan[0];  // 返回 void*
-}
-
-} // namespace blender::nodes
-```
-
----
-
-## ✏️ GMutableSpan - 类型擦除的可写 Span
-
-```cpp
-#include "BLI_span.hh"
-
-namespace blender::nodes {
-
-void gmutable_span_examples() {
-    // 1. 构造
-    Array<float> data(100);
-    GMutableSpan gspan(CPPType::get<float>(), data.data(), data.size());
-    
-    // 2. 设置值
-    float value = 42.0f;
-    gspan.set(0, &value);  // 设置第0个元素
-    
-    // 3. 批量填充
-    gspan.fill(&value);
-    
-    // 4. 从 GSpan 构造（拷贝）
-    GSpan src = get_source_data();
-    Array<uint8_t> buffer(src.type().size * src.size());
-    GMutableSpan dst(src.type(), buffer.data(), src.size());
-    dst.copy_from(src);
-}
-
-} // namespace blender::nodes
-```
-
----
-
-## 🎯 节点开发中的典型用法
-
-### 模式 1：字段求值结果
-
-```cpp
-static void node_geo_exec(GeoNodeExecParams params)
-{
-    GeometrySet geometry = params.extract_input<GeometrySet>("Geometry"_ustr);
-    const Field<float> field = params.extract_input<Field<float>>("Value"_ustr);
-    
-    if (Mesh *mesh = geometry.get_mesh()) {
-        const bke::MeshFieldContext context(*mesh, bke::AttrDomain::Point);
-        fn::FieldEvaluator evaluator(context, mesh->totvert);
-        
-        // 分配输出缓冲区
-        Array<float> result(mesh->totvert);
-        evaluator.add_with_destination(field, result.as_mutable_span());
-        evaluator.evaluate();
-        
-        // result 现在包含字段求值结果
-    }
-}
-```
-
-### 模式 2：通用属性读取
-
-```cpp
-static void process_generic_attribute(const bke::AttributeAccessor &attributes,
-                                      StringRef name)
-{
-    // 查找属性（返回 GVArray）
-    std::optional<GVArray> attribute = attributes.lookup(name);
-    if (!attribute) {
-        return;
-    }
-    
-    const CPPType &type = attribute->type();
-    int64_t size = attribute->size();
-    
-    // 根据类型处理
-    if (type == CPPType::get<float>()) {
-        VArray<float> typed = attribute->typed<float>();
-        for (int64_t i : typed.index_range()) {
-            float value = typed[i];
-            // 处理...
-        }
-    }
-    else if (type == CPPType::get<float3>()) {
-        VArray<float3> typed = attribute->typed<float3>();
-        // 处理...
-    }
-}
-```
-
-### 模式 3：属性写入
-
-```cpp
-static void write_generic_attribute(bke::MutableAttributeAccessor &attributes,
-                                    StringRef name,
-                                    const CPPType &type,
-                                    int64_t size)
-{
-    // 添加属性
-    bke::GSpanAttributeWriter writer = attributes.lookup_or_add_for_write(
-        name, bke::AttrDomain::Point, type);
-    
-    if (!writer) {
-        return;
-    }
-    
-    // 写入数据
-    GMutableSpan span = writer.span;
-    for (int64_t i : span.index_range()) {
-        // 构造值并写入
-        void *value = MEM_mallocN(type.size, __func__);
-        type.default_construct(value);
-        span.set(i, value);
-        type.destruct(value);
-        MEM_freeN(value);
-    }
-    
-    writer.finish();
-}
-```
-
----
-
-## 🔄 类型转换关系
+### 3.1 类层次结构
 
 ```mermaid
 flowchart TB
-    subgraph 具体类型["编译期具体类型"]
-        A["Span<float3>"] --> B["VArray<float3>"]
-        C["MutableSpan<float3>"] --> D["VMutableArray<float3>"]
+    subgraph 接口层["接口层"]
+        VA["VArray<T><br/>用户直接使用的包装类"]
     end
-    
-    subgraph 类型擦除["运行期类型擦除"]
-        E["GSpan"] --> F["GVArray"]
-        G["GMutableSpan"] --> H["GVMutableArray"]
+
+    subgraph 实现层["实现层"]
+        IMPL["VArrayImpl<T><br/>抽象基类<br/>virtual T get(int64_t) = 0"]
+        MIMPL["VMutableArrayImpl<T><br/>增加 virtual void set()"]
+
+        SPAN["VArrayImpl_For_Span<br/>包装连续数组"]
+        SINGLE["VArrayImpl_For_Single<br/>单值广播"]
+        FUNC["VArrayImpl_For_Func<br/>函数生成"]
+        CONT["VArrayImpl_For_ArrayContainer<br/>拥有容器"]
     end
-    
-    subgraph 转换["转换"]
-        A --> E
-        B --> F
-        C --> G
-        D --> H
-        E -.->|typed<float3>| A
-        F -.->|typed<float3>| B
-    end
-    
-    style E fill:#e1f5fe,stroke:#01579b
-    style F fill:#fff3e0,stroke:#e65100
+
+    VA -->|持有| IMPL
+    IMPL -->|派生| SPAN
+    IMPL -->|派生| SINGLE
+    IMPL -->|派生| FUNC
+    IMPL -->|派生| CONT
+    MIMPL -->|派生| SPAN
+
+    style VA fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#0d47a1
+    style IMPL fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+    style SPAN fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style SINGLE fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style FUNC fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+```
+
+### 3.2 实现一：VArrayImpl_For_Span（包装数组）
+
+```cpp
+// BLI_virtual_array.hh:204~264
+template<typename T> class VArrayImpl_For_Span : public VMutableArrayImpl<T> {
+ protected:
+  T *data_ = nullptr;
+
+ public:
+  VArrayImpl_For_Span(const MutableSpan<T> data)
+      : VMutableArrayImpl<T>(data.size()), data_(data.data()) {}
+
+  T get(const int64_t index) const final {
+    return data_[index];  // 直接数组访问
+  }
+
+  void set(const int64_t index, T value) final {
+    data_[index] = value;  // 直接数组写入
+  }
+
+  CommonVArrayInfo common_info() const override {
+    return CommonVArrayInfo(CommonVArrayInfo::Type::Span, true, data_);
+  }
+};
+```
+
+**特点**：
+- 底层就是一块连续内存
+- `get()` 直接 `data_[index]`，最快
+- `common_info()` 返回 `Type::Span`，让外部知道可以优化
+
+### 3.3 实现二：VArrayImpl_For_Single（单值广播）
+
+```cpp
+// BLI_virtual_array.hh:314~366
+template<typename T> class VArrayImpl_For_Single final : public VArrayImpl<T> {
+ private:
+  T value_;
+
+ public:
+  VArrayImpl_For_Single(T value, const int64_t size)
+      : VArrayImpl<T>(size), value_(std::move(value)) {}
+
+  T get(const int64_t /*index*/) const override {
+    return value_;  // 不管 index 是什么，返回同一个值
+  }
+
+  CommonVArrayInfo common_info() const override {
+    return CommonVArrayInfo(CommonVArrayInfo::Type::Single, true, &value_);
+  }
+};
+```
+
+**特点**：
+- 所有索引返回同一个值
+- 内存占用极小（只有一个 `T`）
+- `materialize` 优化：用 `fill` 而不是逐个 `get`
+
+**用例**：`curves.cyclic()` 在所有曲线都是非循环时，底层就是这个实现。
+
+### 3.4 实现三：VArrayImpl_For_Func（函数生成）
+
+```cpp
+// BLI_virtual_array.hh:375~423
+template<typename T, typename GetFunc> class VArrayImpl_For_Func final : public VArrayImpl<T> {
+ private:
+  GetFunc get_func_;
+
+ public:
+  VArrayImpl_For_Func(const int64_t size, GetFunc get_func)
+      : VArrayImpl<T>(size), get_func_(std::move(get_func)) {}
+
+  T get(const int64_t index) const override {
+    return get_func_(index);  // 调用函数生成值
+  }
+};
+```
+
+**特点**：
+- 没有预存数据，每次 `get()` 都调用函数
+- 用于字段求值结果、派生属性等
+- 最灵活，但也最慢（每次都有函数调用开销）
+
+### 3.5 CommonVArrayInfo：快速类型探测
+
+```cpp
+// BLI_virtual_array.hh:47~71
+struct CommonVArrayInfo {
+  enum class Type : uint8_t {
+    Any,    // 通用类型（如 Func）
+    Span,   // 底层是连续数组
+    Single, // 底层是单值广播
+  };
+
+  Type type = Type::Any;
+  bool may_have_ownership = true;
+  const void *data;  // 指向底层数据
+};
+```
+
+**作用**：通过一次虚函数调用 `common_info()`，外部就能知道底层是什么类型，从而选择优化路径。
+
+```cpp
+VArray<float> varray = get_some_varray();
+
+// 快速检查底层类型
+if (varray.is_single()) {
+    // 所有值相同，可以用 fill 优化
+    float val = varray.get_internal_single();
+    // ...
+}
+else if (varray.is_span()) {
+    // 底层是连续数组，可以直接拿指针
+    Span<float> span = varray.get_internal_span();
+    // ...
+}
 ```
 
 ---
 
-## ✅ 检查清单
+## 4. VArray vs Span vs Array
 
-- [ ] 理解 VArray 的虚拟数组概念
-- [ ] 掌握 GVArray 的类型擦除机制
-- [ ] 会用 typed<T>() 进行类型转换
-- [ ] 了解 GSpan 和 GMutableSpan 的区别
-- [ ] 掌握字段求值中的缓冲区使用
+| 特性 | `Span<T>` | `VArray<T>` | `Array<T>` |
+|------|-----------|-------------|------------|
+| **只读/可写** | 只读视图 | 只读（`VMutableArray` 可写） | 可写 |
+| **底层形态** | 必须是连续数组 | Span / Single / Func 都可以 | 连续数组 |
+| **内存拥有** | 不拥有 | 可选（取决于实现） | 拥有 |
+| **访问开销** | O(1)，直接指针 | O(1) + 虚函数开销 | O(1)，直接指针 |
+| **单值广播** | ❌ 不支持 | ✅ 支持 | ❌ 不支持（浪费内存） |
+| **函数生成** | ❌ 不支持 | ✅ 支持 | ❌ 不支持 |
+| **适用场景** | 已知底层是数组 | 不知道底层形态 | 需要拥有并修改数据 |
+
+### 选择指南
+
+```mermaid
+flowchart TB
+    START{"你需要什么？"}
+
+    START -->|已知底层是连续数组<br/>追求极致性能| SPAN["Span<T>"]
+    START -->|不知道底层怎么存的<br/>可能是单值/数组/函数| VARRAY["VArray<T>"]
+    START -->|需要拥有数据并修改<br/>且数据量不大| ARRAY["Array<T>"]
+
+    SPAN -->|但调用者只有 VArray| VS["VArraySpan<T><br/>（必要时拷贝）"]
+    VARRAY -->|发现底层是 Span<br/>想直接操作| DEV["devirtualize_varray<br/>（去虚拟化）"]
+
+    style SPAN fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style VARRAY fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style ARRAY fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+```
 
 ---
 
-## 📁 相关文件
+## 5. 源码中的真实用例
+
+### 5.1 用例一：curves.cyclic()（属性读取）
+
+```cpp
+// source/blender/geometry/intern/curves_remove_and_split.cc:20
+const VArray<bool> src_cyclic = curves.cyclic();
+
+// 后续使用：像普通数组一样索引访问
+const bool curve_cyclic = src_cyclic[curve_i];
+```
+
+**为什么用 VArray？**
+- `cyclic` 属性可能以单值存储（所有曲线相同）
+- 也可能以数组存储（每条曲线不同）
+- 调用者不需要关心，统一用 `operator[]` 访问
+
+### 5.2 用例二：字段求值结果
+
+```cpp
+// node_geo_curve_split.cc:183~187
+fn::FieldEvaluator evaluator{field_context, src_curves.points_num()};
+evaluator.add(selection_field);
+evaluator.evaluate();
+
+const IndexMask selection = evaluator.get_evaluated_as_mask(0);
+```
+
+**内部实现**：`FieldEvaluator` 的求值结果底层是 `GVArray`（`VArray` 的类型擦除版），可能来自：
+- 直接从几何体属性读取（Span）
+- 常量字段（Single）
+- 复杂表达式计算（Func）
+
+### 5.3 用例三：函数参数解耦
+
+```cpp
+// 某处理函数接受 VArray，不关心底层
+void process_curves(const CurvesGeometry &curves,
+                    const VArray<bool> &cyclic_flags)  // 可以是 Single 或 Span
+{
+    for (const int i : curves.curves_range()) {
+        if (cyclic_flags[i]) {
+            // 处理循环曲线...
+        }
+    }
+}
+
+// 调用方式 1：从 CurvesGeometry 获取（可能是 Single）
+process_curves(curves, curves.cyclic());
+
+// 调用方式 2：手动构造 Single（测试用）
+process_curves(curves, VArray<bool>::from_single(false, curves.curves_num()));
+```
+
+---
+
+## 6. GVArray：类型擦除版
+
+### 6.1 为什么需要 GVArray？
+
+`VArray<T>` 的 `T` 在**编译期**确定。但属性系统的场景是：运行期才知道属性是什么类型（`float`、`float3`、`int`...）。
+
+```cpp
+// 属性查找返回 GVArray（类型在运行期确定）
+std::optional<GVArray> attribute = attributes.lookup("position");
+
+// 检查类型
+if (attribute->type() == CPPType::get<float3>()) {
+    // 安全地转回具体类型
+    VArray<float3> typed = attribute->typed<float3>();
+    float3 pos = typed[0];
+}
+```
+
+### 6.2 GVArray 与 VArray 的关系
+
+```mermaid
+flowchart TB
+    subgraph 编译期类型["编译期确定类型"]
+        VA_F["VArray<float>"]
+        VA_I["VArray<int>"]
+        VA_3["VArray<float3>"]
+    end
+
+    subgraph 运行期类型["运行期确定类型"]
+        GVA["GVArray<br/>持有 CPPType*<br/>+ VArrayImpl<void>*"]
+    end
+
+    VA_F -->|擦除类型| GVA
+    VA_I -->|擦除类型| GVA
+    VA_3 -->|擦除类型| GVA
+
+    GVA -->|typed<float>()| VA_F
+    GVA -->|typed<int>()| VA_I
+
+    style GVA fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#880e4f
+```
+
+### 6.3 类型擦除的代价
+
+```cpp
+// GVArray 的 get 需要知道类型大小，返回 void*
+void GVArray::get_to_uninitialized(int64_t index, void *r_value) const;
+
+// 对比 VArray<T> 的直接返回值
+T VArray<T>::operator[](int64_t index) const;
+```
+
+`GVArray` 更通用但使用更麻烦，通常在属性系统、字段系统等需要处理"任意类型"的场景使用。
+
+---
+
+## 7. 可写版本与辅助类
+
+### 7.1 VMutableArray<T>
+
+```cpp
+// 可写的虚拟数组
+template<typename T> class VMutableArray : public VArrayCommon<T> {
+ public:
+    void set(int64_t index, T value);  // 写入
+    void set_all(Span<T> src);         // 批量写入
+    operator VArray<T>() const;        // 隐式转只读
+};
+```
+
+### 7.2 VArraySpan：VArray → Span 的桥梁
+
+```cpp
+// BLI_virtual_array.hh:948~1003
+template<typename T> class VArraySpan final : public Span<T> {
+ private:
+  VArray<T> varray_;
+  Array<T> owned_data_;  // 如果底层不是 Span，需要拷贝到这里
+
+ public:
+  VArraySpan(VArray<T> &&varray) : varray_(std::move(varray)) {
+    const CommonVArrayInfo info = varray_.common_info();
+    if (info.type == CommonVArrayInfo::Type::Span) {
+      // 底层就是 Span，直接引用，零拷贝！
+      this->data_ = static_cast<const T *>(info.data);
+    }
+    else {
+      // 底层是 Single 或 Func，必须拷贝到数组
+      owned_data_.~Array();
+      new (&owned_data_) Array<T>(varray_.size(), NoInitialization{});
+      varray_.materialize_to_uninitialized(owned_data_);
+      this->data_ = owned_data_.data();
+    }
+  }
+};
+```
+
+**使用场景**：某个 API 只接受 `Span<T>`，但你的数据是 `VArray<T>`。
+
+```cpp
+void api_only_accepts_span(Span<float> data);  // 第三方 API
+
+VArray<float> varray = get_varray();
+VArraySpan<float> varray_span(varray);  // 如果底层是 Span，零拷贝；否则拷贝
+api_only_accepts_span(varray_span);      // ✅
+```
+
+### 7.3 MutableVArraySpan：可写版 + save() 机制
+
+```cpp
+// BLI_virtual_array.hh:1016~1114
+template<typename T> class MutableVArraySpan final : public MutableSpan<T> {
+ private:
+  VMutableArray<T> varray_;
+  Array<T> owned_data_;
+  bool save_has_been_called_ = false;
+
+ public:
+  MutableVArraySpan(VMutableArray<T> varray) : varray_(std::move(varray)) {
+    const CommonVArrayInfo info = varray_.common_info();
+    if (info.type == CommonVArrayInfo::Type::Span) {
+      this->data_ = const_cast<T *>(static_cast<const T *>(info.data));
+    }
+    else {
+      // 分配临时数组，修改这里
+      owned_data_.reinitialize(varray_.size());
+      this->data_ = owned_data_.data();
+    }
+  }
+
+  // 关键：将修改写回底层虚拟数组
+  void save() {
+    save_has_been_called_ = true;
+    if (this->data_ != owned_data_.data()) {
+      return;  // 底层就是 Span，修改已直接生效
+    }
+    varray_.set_all(owned_data_);  // 将临时数组写回
+  }
+
+  ~MutableVArraySpan() {
+    if (!save_has_been_called_) {
+      print_mutable_varray_span_warning();  // 忘记 save 会警告！
+    }
+  }
+};
+```
+
+**关键设计**：
+- 如果底层是 Span，直接操作底层内存，`save()` 什么都不做
+- 如果底层是 Single/Func，修改的是临时数组，必须调用 `save()` 写回
+- 析构时检查是否调用了 `save()`，防止忘记写回
+
+```mermaid
+flowchart TB
+    subgraph 修改前["构造 MutableVArraySpan"]
+        A["VMutableArray<float>"]
+    end
+
+    subgraph 分支["底层类型判断"]
+        B{"底层是 Span?"}
+    end
+
+    subgraph Span路径["Span 路径"]
+        C["直接引用底层内存"]
+        C --> D["修改直接生效"]
+        D --> E["save() 无操作"]
+    end
+
+    subgraph 非Span路径["Single/Func 路径"]
+        F["分配 owned_data_ 临时数组"]
+        F --> G["修改临时数组"]
+        G --> H["必须调用 save()"]
+        H --> I["set_all 写回底层"]
+    end
+
+    A --> B
+    B -->|是| C
+    B -->|否| F
+
+    style Span路径 fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style 非Span路径 fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+```
+
+---
+
+## 8. 去虚拟化优化
+
+### 8.1 问题：虚函数调用有开销
+
+```cpp
+VArray<float> varray = get_varray();
+for (int64_t i = 0; i < varray.size(); i++) {
+    float v = varray[i];  // 每次都有虚函数调用！
+}
+```
+
+如果循环 100 万次，虚函数调用的累积开销可能很显著。
+
+### 8.2 解决方案：编译期生成多版本
+
+```cpp
+// BLI_virtual_array.hh:1183~1194
+template<typename T, typename Func>
+inline void devirtualize_varray(const VArray<T> &varray, const Func &func, bool enable = true) {
+  if (enable) {
+    if (call_with_devirtualized_parameters(
+            std::make_tuple(VArrayDevirtualizer<T, true, true>{varray}), func)) {
+      return;  // 成功去虚拟化，直接返回
+    }
+  }
+  func(VArrayRef<T>(varray));  // 回退：普通虚函数调用
+}
+```
+
+**原理**：
+1. 检查 `varray.common_info()` 的底层类型
+2. 如果是 `Span`，调用 `func(Span<T>())`
+3. 如果是 `Single`，调用 `func(SingleAsSpan<T>())`
+4. 如果是 `Any`，回退到 `func(VArrayRef<T>())`
+
+```cpp
+// 使用示例
+devirtualize_varray(varray, [&](auto &&span) {
+    // 这里的 span 可能是 Span<T>、SingleAsSpan<T> 或 VArrayRef<T>
+    // 编译器会为每种情况生成一份代码
+    for (int64_t i = 0; i < span.size(); i++) {
+        float v = span[i];  // 如果是 Span，直接内联；如果是 Single，直接返回单值
+    }
+});
+```
+
+### 8.3 注意事项
+
+```cpp
+// 文件注释警告（BLI_virtual_array.hh:1176~1182）
+/*
+ * One has to be careful with nesting multiple devirtualizations,
+ * because that results in an exponential number of function instantiations.
+ *
+ * 嵌套多个去虚拟化会导致指数级代码膨胀！
+ * 2 个 varray × 3 种类型 = 9 个版本
+ * 3 个 varray × 3 种类型 = 27 个版本
+ */
+```
+
+---
+
+## 总结速查表
+
+| 概念 | 一句话解释 |
+|------|-----------|
+| **VArray<T>** | "像数组一样用，但底层可能是数组/单值/函数" |
+| **VArrayImpl_For_Span** | 底层包装连续数组，最快 |
+| **VArrayImpl_For_Single** | 底层只有一个值，所有索引返回同一个 |
+| **VArrayImpl_For_Func** | 底层是函数，按需计算 |
+| **CommonVArrayInfo** | 快速探测底层类型，用于优化分支 |
+| **GVArray** | VArray 的类型擦除版，运行期才知道 `T` |
+| **VArraySpan** | VArray → Span 的适配器，必要时拷贝 |
+| **MutableVArraySpan** | 可写适配器，`save()` 写回机制 |
+| **devirtualize_varray** | 编译期生成多版本，消除虚函数开销 |
+
+| 场景 | 推荐类型 |
+|------|----------|
+| 属性读取（如 `curves.cyclic()`） | `VArray<T>` |
+| 字段求值结果 | `GVArray` → `typed<T>()` |
+| 已知底层是数组，追求性能 | `Span<T>` |
+| API 只接受 Span，但数据是 VArray | `VArraySpan<T>` |
+| 需要修改 VArray 的数据 | `MutableVArraySpan<T>` + `save()` |
+| 处理大量数据，虚函数开销显著 | `devirtualize_varray` |
+
+---
+
+## 相关文件
 
 | 文件 | 路径 |
-|-----|------|
-| BLI_virtual_array.hh | `source/blender/blenlib/BLI_virtual_array.hh` |
-| BLI_span.hh | `source/blender/blenlib/BLI_span.hh` |
-| BLI_cpp_type.hh | `source/blender/blenlib/BLI_cpp_type.hh` |
-
----
-
-## 🔗 相关文档
-
-- [09_CPPType.md](09_CPPType.md) - 类型擦除系统
-- [10_Field.md](10_Field.md) - 字段系统
+|------|------|
+| `BLI_virtual_array.hh` | `source/blender/blenlib/` |
+| `BLI_span.hh` | `source/blender/blenlib/` |
+| `BLI_cpp_type.hh` | `source/blender/blenlib/` |
+| `curves_remove_and_split.cc` | `source/blender/geometry/intern/` |
+| `node_geo_curve_split.cc` | `source/blender/nodes/geometry/nodes/` |

@@ -3,6 +3,34 @@
 > 基于 `source/blender/blenlib/BLI_offset_indices.hh` 与 `intern/offset_indices.cc` 的完整源码分析。
 >
 > 这是 Blender 几何处理中最基础、最常用的数据结构之一。`CurvesGeometry` 的 `curve_offsets`、网格的面-顶点关联、粒子的分组……底层全是它。
+- [OffsetIndices 深度解析 - Blender 的变长数组偏移表](#offsetindices-深度解析---blender-的变长数组偏移表)
+  - [📋 快速上手](#-快速上手)
+    - [为什么用偏移而不是大小？](#为什么用偏移而不是大小)
+  - [1️⃣ 核心设计：偏移表编码](#1️⃣-核心设计偏移表编码)
+    - [1.1 一个具体例子](#11-一个具体例子)
+    - [1.2 源码注释逐条翻译](#12-源码注释逐条翻译)
+  - [2️⃣ OffsetIndices 类详解](#2️⃣-offsetindices-类详解)
+    - [2.1 类定义与模板约束](#21-类定义与模板约束)
+    - [2.2 构造函数](#22-构造函数)
+    - [2.3 核心方法](#23-核心方法)
+    - [2.4 运算符重载：获取第 i 个范围](#24-运算符重载获取第-i-个范围)
+    - [2.5 切片](#25-切片)
+  - [3️⃣ GroupedSpan：OffsetIndices + 数据的组合](#3️⃣-groupedspanoffsetindices--数据的组合)
+    - [3.1 设计意图](#31-设计意图)
+    - [3.2 使用示例](#32-使用示例)
+  - [4️⃣ 工具函数详解](#4️⃣-工具函数详解)
+    - [4.1 accumulate\_counts\_to\_offsets：大小数组 → 偏移表](#41-accumulate_counts_to_offsets大小数组--偏移表)
+    - [4.2 build\_reverse\_map：建立反向映射](#42-build_reverse_map建立反向映射)
+    - [4.3 reverse\_indices\_in\_groups：按组反转索引](#43-reverse_indices_in_groups按组反转索引)
+  - [5️⃣ 在 Blender 中的实际使用](#5️⃣-在-blender-中的实际使用)
+    - [5.1 CurvesGeometry：曲线 → 点映射](#51-curvesgeometry曲线--点映射)
+    - [5.2 在 Split Curve 节点中的使用](#52-在-split-curve-节点中的使用)
+    - [5.3 与 IndexMask 的配合](#53-与-indexmask-的配合)
+  - [6️⃣ 设计评估](#6️⃣-设计评估)
+    - [6.1 优势](#61-优势)
+    - [6.2 劣势与限制](#62-劣势与限制)
+  - [✅ 总结](#-总结)
+  - [📁 相关文件](#-相关文件)
 
 ---
 
@@ -26,10 +54,10 @@ for (const int curve_i : src_curves.curves_range()) {
 
 | 存储方式 | 内存 | 获取第 i 组范围 | 获取总大小 |
 |---------|------|----------------|-----------|
-| **大小数组** `{5,3,4}` | 3 × 4B = 12B | 累加前 i 个：O(i) | 累加全部：O(n) |
+| **{start, size} 数组** `{0,5},{5,3},{8,4}` | 6 × 4B = 24B | 直接访问：O(1) | 累加 size：O(n) |
 | **偏移数组** `{0,5,8,12}` | 4 × 4B = 16B | `offsets[i+1] - offsets[i]`：O(1) | 最后一个元素：O(1) |
 
-**偏移表用 33% 额外内存换取 O(1) 随机访问。**
+**偏移表比 {start, size} 方案节省 8B（3 组时），且获取总大小是 O(1)。**
 
 ---
 
@@ -653,7 +681,7 @@ if constexpr (std::is_same_v<std::decay_t<decltype(segment)>, IndexRange>)
 ### 6.1 优势
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph 优势["OffsetIndices 设计优势"]
         A1["内存高效<br/>比 {start,size} 省 50%"] 
         A2["O(1) 随机访问<br/>无分支判断"]
@@ -688,7 +716,7 @@ flowchart LR
 3. **Span 视图**：零拷贝，可指向任何整数数组
 4. **原地转换**：`accumulate_counts_to_offsets` 同数组覆盖，O(n) 时间 O(1) 空间
 
-**如果你只记住一件事：** `OffsetIndices` 用 **33% 额外内存** 换取了 **O(1) 随机访问** 和 **无分支遍历**，这是几何处理中每秒访问数百万次的操作，收益巨大。
+**如果你只记住一件事：** `OffsetIndices` 用 **一个元素的额外内存** 换取了 **O(1) 随机访问** 和 **无分支遍历**，这是几何处理中每秒访问数百万次的操作，收益巨大。
 
 ---
 
