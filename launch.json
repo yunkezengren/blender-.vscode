@@ -8,9 +8,9 @@
             "request": "launch",
             "program": "E:/blender-git/blender_ninja_lite_debug/bin/blender.exe",
             "args": [
-                "C:/Users/86166/Desktop/blender临时文件/电子表格-列排序.blend",
+                // "C:/Users/86166/Desktop/blender临时文件/电子表格-列排序.blend",
                 // "C:/Users/86166/Desktop/blender临时文件/树视图多选.blend",
-                // "C:/Users/86166/Desktop/blender临时文件/新几何节点-拆分曲线.blend",
+                "C:/Users/86166/Desktop/blender临时文件/新几何节点-拆分曲线.blend",
                 // "C:/Users/86166/Desktop/blender临时文件/节点-双击重命名接口.blend",
                 // "C:/Users/86166/Desktop/blender临时文件/几何节点-改进预览实例.blend",
                 // "C:/Users/86166/Desktop/blender临时文件/几何节点-新的Gizmo.blend",

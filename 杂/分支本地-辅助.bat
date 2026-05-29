@@ -6,6 +6,8 @@ set Branch=make-group-inherit-color-tag
 set Branch=change-socket-shape
 set Branch=main
 
+set Branch=worktree-test-branch
+
 set bl_Branch=E:\blender-git\blender-%Branch%
 # set nj_Branch=E:\blender-git\ninja_lite_debug_%Branch%
 set nj_debug_Branch=E:\blender-git\ninja_debug_%Branch%
@@ -19,27 +21,35 @@ cd %nj_release_Branch%
 rebuild -j8 && bin\blender
 
 ######################################################################
+
+set new_branch=worktree-test-branch
+set new_path=E:\blender-git\blender-%new_branch%
+set nj_path=E:\blender-git\ninja_lite_debug_%new_branch%
+
 # 初始建立工作树
 cd /d E:\blender-git\blender
 # [-b <新分支名>] <路径> [<起始点>]
-git worktree add -b %Branch% %bl_Branch% main
+git worktree add -b %new_branch% %new_path% origin/main
+
 # 已经存在的分支
-git worktree add %bl_Branch% %Branch%
+git worktree add %new_path% %new_branch%
+
+cd %new_path%
 
 # 不追踪对这个 lib 文件夹的更改
 git update-index --skip-worktree lib\windows_x64
 # git update-index --no-skip-worktree lib\windows_x64
 
-cd %bl_Branch%
 # 强制删除 lib 文件夹
 rmdir /s /q lib
-mklink /J "%bl_Branch%\lib" "E:\blender-git\blender\lib"
-mklink /J "%bl_Branch%\.vscode" "E:\blender-git\blender\.vscode"
+mklink /J "%new_path%\lib" "E:\blender-git\blender\lib"
+mklink /J "%new_path%\.vscode" "E:\blender-git\blender\.vscode"
 
-make nobuild ninja builddir %nj_Branch%
-make nobuild ninja lite debug builddir %nj_Branch%
-cd %nj_Branch%
+@REM make nobuild ninja builddir %nj_path%
+make nobuild ninja lite debug builddir %nj_path%
+cd %nj_path%
 code CmakeCache.txt
+
 # 原来我是4核8线程啊
 #   启用 WITH_TBB
 #   启用 CMAKE_EXPORT_COMPILE_COMMANDS: 会在构建目录中创建compile_commands.json

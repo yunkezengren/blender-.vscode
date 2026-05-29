@@ -2,6 +2,18 @@
 
 > 按选中的控制点拆分曲线，或将选中的线段删除
 
+- [Split Curve 节点 - 曲线拆分](#split-curve-节点---曲线拆分)
+  - [📖 源码位置](#-源码位置)
+  - [🔍 核心问题解答](#-核心问题解答)
+    - [问题 1: 为什么声明输入输出在 `node_declare` 中？](#问题-1-为什么声明输入输出在-node_declare-中)
+    - [问题 2: 为什么用 `params.extract_input<>()` 获取输入？](#问题-2-为什么用-paramsextract_input-获取输入)
+    - [问题 3: `remember_deformed_positions_if_necessary()` 是干什么的？](#问题-3-remember_deformed_positions_if_necessary-是干什么的)
+    - [问题 4: 用户问题：为什么用两个 `if` 而不是 `else if`？](#问题-4-用户问题为什么用两个-if-而不是-else-if)
+    - [问题 5: 为什么用 `std::move`？](#问题-5-为什么用-stdmove)
+    - [问题 6: 为什么分别用了这些容器？](#问题-6-为什么分别用了这些容器)
+  - [📊 节点执行流程](#-节点执行流程)
+  - [✅ 总结](#-总结)
+
 ---
 
 ## 📖 源码位置
