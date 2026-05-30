@@ -189,36 +189,81 @@ void copy_construct_indices(const void *src, void *dst, const IndexMask &mask);
 
 ## 4. 类型注册机制
 
-`CPPType` 使用宏注册类型，在程序启动时自动创建单例：
+`CPPType` 使用宏在程序启动时注册类型，创建单例对象。
 
+### 注册位置
+
+注册分两层：
+
+1. **基础类型**（[blenlib/intern/cpp_types.cc](../../source/blender/blenlib/intern/cpp_types.cc)）：`register_cpp_types()` 函数中注册：
 ```cpp
-// 在 .cc 文件中注册类型
-BLI_CPP_TYPE_IMPLEMENT(float);
-BLI_CPP_TYPE_IMPLEMENT(int);
-BLI_CPP_TYPE_IMPLEMENT(blender::float3);
-BLI_CPP_TYPE_IMPLEMENT(std::string);
-```
-
-### BLI_CPP_TYPE_MAKE 宏
-
-```cpp
-// 在 .hh 文件中声明类型
-BLI_CPP_TYPE_MAKE(float, CPPTypeFlags::BasicType)
-```
-
-展开后大致等价于：
-
-```cpp
-template<> const CPPType &CPPType::get<float>()
+void register_cpp_types()
 {
-  static CPPType instance{TypeTag<float>{}, TypeForValue<CPPTypeFlags, Flags>{}, "float"};
-  return instance;
+  BLI_CPP_TYPE_REGISTER(bool, CPPTypeFlags::BasicType);
+  BLI_CPP_TYPE_REGISTER(float, CPPTypeFlags::BasicType);
+  BLI_CPP_TYPE_REGISTER(float3, CPPTypeFlags::BasicType);
+  BLI_CPP_TYPE_REGISTER(int32_t, CPPTypeFlags::BasicType);
+  BLI_CPP_TYPE_REGISTER(std::string, CPPTypeFlags::BasicType);
+  // ... 更多基础类型
 }
 ```
+
+2. **BKE 类型**（[blenkernel/intern/cpp_types.cc](../../source/blender/blenkernel/intern/cpp_types.cc)）：`BKE_cpp_types_init()` 先调用 `register_cpp_types()`，再注册业务类型：
+```cpp
+void BKE_cpp_types_init()
+{
+  register_cpp_types();  // 先注册基础类型
+  BLI_CPP_TYPE_REGISTER(bke::GeometrySet, CPPTypeFlags::Printable | CPPTypeFlags::EqualityComparable);
+  BLI_CPP_TYPE_REGISTER(Object *, CPPTypeFlags::BasicType);
+  BLI_CPP_TYPE_REGISTER(nodes::ClosurePtr, CPPTypeFlags::EqualityComparable);
+  BLI_CPP_TYPE_REGISTER(nodes::GListPtr, CPPTypeFlags::EqualityComparable);  // ← 列表类型在这里注册
+  // ... 更多业务类型
+}
+```
+
+### BLI_CPP_TYPE_REGISTER 宏
+
+```cpp
+#define BLI_CPP_TYPE_REGISTER(TYPE_NAME, FLAGS) \
+  blender::detail::register_cpp_type<TYPE_NAME, FLAGS>(STRINGIFY(TYPE_NAME))
+```
+
+展开后调用 `detail::register_cpp_type<T, FLAGS>(name)`，其实现：
+
+```cpp
+template<typename T, CPPTypeFlags FLAGS>
+inline void register_cpp_type(const StringRef type_name)
+{
+  static CPPType *cpp_type = new (detail::cpp_type_impl<T>.ptr())
+      CPPType(TypeTag<T>(), TypeForValue<CPPTypeFlags, FLAGS>(), type_name);
+
+  struct CPPTypeDestructor {
+    ~CPPTypeDestructor() { std::destroy_at(cpp_type); }
+  };
+  static CPPTypeDestructor cpp_type_destructor;  // 程序退出时析构
+}
+```
+
+> **`detail::cpp_type_impl<T>`**：定义在 [BLI_cpp_type.hh:440](../../source/blender/blenlib/BLI_cpp_type.hh) 的模板变量 `template<typename T> inline TypedBuffer<CPPType> cpp_type_impl{};`。`TypedBuffer<CPPType>` 是一块足够容纳 `CPPType` 对象的未初始化内存。`register_cpp_type` 在这块内存上 placement new 构造 `CPPType` 对象。
+
+> **`CPPType::get<T>()` 的实现**：
+> ```cpp
+> template<typename T> inline const CPPType &CPPType::get()
+> {
+>   const CPPType &type = detail::cpp_type_impl<std::decay_t<T>>.ref();
+>   BLI_assert(type.size > 0);  // 未注册则断言失败
+>   return type;
+> }
+> ```
+> 它直接返回 `cpp_type_impl<T>` 中之前构造的对象引用。`std::decay_t<T>` 确保引用类型（如 `float&`）也能正确查找。
 
 > **`TypeTag<T>`**：空结构体，用于在构造函数中传递类型信息。`CPPType` 的构造函数是模板函数，通过 `TypeTag<T>` 推断类型 `T`，然后为每个函数指针成员绑定对应的 `T` 操作。
 
 ### CPPTypeFlags
+
+原始注释翻译：
+
+> 不同类型支持不同功能。像"可拷贝构造"这样的功能可以很容易地自动检测。但有些功能在 C++17 中难以自动检测，这些功能就用此枚举中的标志来表示，需要程序员手动指定。
 
 ```cpp
 enum class CPPTypeFlags {
@@ -227,17 +272,39 @@ enum class CPPTypeFlags {
   Printable = 1 << 1,
   EqualityComparable = 1 << 2,
   IdentityDefaultValue = 1 << 3,
+
   BasicType = Hashable | Printable | EqualityComparable,
 };
+ENUM_OPERATORS(CPPTypeFlags)
 ```
 
-| 标志 | 含义 |
-|------|------|
-| `Hashable` | 支持 `hash_` 函数 |
-| `Printable` | 支持 `print_` 函数 |
-| `EqualityComparable` | 支持 `is_equal_` 函数 |
-| `IdentityDefaultValue` | 默认值是全零（如 `int(0)`, `float(0.0f)`） |
-| `BasicType` | 同时具备 Hashable + Printable + EqualityComparable |
+> **为什么需要区分这些标志？** 核心原因是 C++ 的类型特征（type traits）能力有限：
+>
+> - **可自动检测的**：`std::is_copy_constructible_v<T>`、`std::is_trivially_destructible_v<T>` 等，编译器能自动判断。这些在 `CPPType` 构造函数中通过 `if constexpr` 自动设置对应的函数指针。
+> - **无法自动检测的**：C++ 没有 `std::is_hashable_v<T>`（哈希需要 `std::hash<T>` 特化，但无法检测特化是否存在）、没有 `std::is_printable_v<T>`（需要 `operator<<`，但检测困难）、没有 `std::is_equality_comparable_v<T>`（C++20 的 `std::equality_comparable` concept 可用，但 Blender 使用 C++17）。所以这些能力必须由程序员在注册时手动声明。
+>
+> **`ENUM_OPERATORS(CPPTypeFlags)`**：Blender 宏，为枚举类型生成位运算符（`|`、`&`、`^`、`~`、`|=`、`&=`）。C++ 的 `enum class` 默认不支持位运算，这个宏使 `BasicType = Hashable | Printable | EqualityComparable` 这样的组合写法合法。
+
+| 标志 | 含义 | 为什么不能自动检测 |
+|------|------|------------------|
+| `Hashable` | 支持 `hash_` 函数（`std::hash<T>` 有特化） | C++17 无法检测 `std::hash<T>` 是否有有效特化 |
+| `Printable` | 支持 `print_` 函数（`operator<<` 可用） | 检测 `operator<<` 是否存在在 C++17 中很困难 |
+| `EqualityComparable` | 支持 `is_equal_` 函数（`operator==` 可用） | C++17 没有 `std::equality_comparable` concept |
+| `IdentityDefaultValue` | 默认值是全零（如 `int(0)`, `float(0.0f)`） | 无法自动判断"全零是否是有效的默认值" |
+| `BasicType` | `Hashable | Printable | EqualityComparable` 的组合 | — |
+
+> **`IdentityDefaultValue` 的用途**：当默认值是全零时，可以用 `memset(0)` 快速初始化，比逐个默认构造快得多。例如 `float3(0,0,0)` 是全零，可以用 `memset`；但 `std::string()` 不是全零（内部有指针），不能用 `memset`。
+
+> **各类型的标志分配**：
+>
+> | 类型 | 标志 | 原因 |
+> |------|------|------|
+> | `float`, `int`, `bool` | `BasicType` | 可哈希、可打印、可比较 |
+> | `float3`, `int2` | `BasicType` | 向量类型也支持这些操作 |
+> | `std::string` | `BasicType` | 字符串支持哈希、打印、比较 |
+> | `GeometrySet` | `Printable \| EqualityComparable` | 不可哈希（没有 `std::hash` 特化） |
+> | `GListPtr` | `EqualityComparable` | 只支持比较，不支持哈希和打印 |
+> | `InstanceReference` | `None` | 不支持任何额外操作 |
 
 ---
 
