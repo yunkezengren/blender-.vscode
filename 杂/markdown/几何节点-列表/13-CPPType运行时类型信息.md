@@ -382,7 +382,11 @@ template<typename T> class ListPtr;
 }
 ```
 
-**为什么需要单独的前向声明头文件？** 当两个头文件互相引用对方的类时，会产生循环依赖。前向声明打破循环——只需要知道类名（不需要知道类的大小和成员），就可以声明指针或引用。
+**为什么 `NOD_geometry_nodes_list.hh` 需要包含自己的前向声明头文件？** 有两个原因：
+
+**原因 1：类定义内部的交叉引用**。在 `list.hh` 中，类的定义顺序是 `GList`(第18行) → `List<T>`(第102行) → `GListPtr`(第135行) → `ListPtr<T>`(第154行)。但 `GList` 的方法签名引用了 `GListPtr`（如 `static GListPtr create(...)`），而 `GListPtr` 在后面才定义。没有前向声明，编译器在解析 `GListPtr` 时会报错"未知类型"。同样，`List<T>` 引用了 `ListPtr<T>`，也需要前向声明。
+
+**原因 2：供其他头文件使用**。`list_fwd.hh` 使得其他文件只需 `#include "NOD_geometry_nodes_list_fwd.hh"` 就能使用 `GList*` 或 `ListPtr<T>&`（指针或引用），而不需要拉入整个 `list.hh` 的重量级依赖链（它包含了 `BLI_generic_virtual_array.hh`、`BLI_implicit_sharing_ptr.hh` 等）。这减少了编译时间和不必要的头文件依赖。
 
 ```mermaid
 graph LR
@@ -390,11 +394,15 @@ graph LR
     MAIN["list.hh<br/>完整定义"]
     OTHER["其他头文件<br/>只需指针/引用"]
 
-    FWD --> MAIN
-    OTHER --> FWD
+    FWD --> |"#include"| MAIN
+    OTHER --> |"#include"| FWD
+
+    subgraph "list.hh 内部"
+        GL["GList<br/>引用 GListPtr"]
+        LP["GListPtr<br/>引用 GList"]
+        GL -.-> |"需要前向声明"| LP
+    end
 
     style FWD fill:#2ecc71,color:#fff
     style MAIN fill:#e74c3c,color:#fff
 ```
-
-**具体场景**：`NOD_geometry_nodes_list.hh` 包含了 `BLI_generic_virtual_array.hh`（因为 `GList` 使用 `GVArray`），而 `BLI_generic_virtual_array.hh` 可能间接依赖某些前向声明。`list_fwd.hh` 使得其他文件只需 `#include "NOD_geometry_nodes_list_fwd.hh"` 就能使用 `GList*` 或 `ListPtr<T>` 的引用，而不需要拉入整个 `list.hh` 的重量级依赖链。
