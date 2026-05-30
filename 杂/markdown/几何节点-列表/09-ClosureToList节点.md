@@ -1,4 +1,4 @@
-# Closure to List 节点
+﻿# Closure to List 节点
 
 > 📖 系列文档：[目录](01-列表系统架构与核心数据结构.md) | [上一篇](08-FieldToList节点.md) | [下一篇](10-列表函数求值系统.md)
 > 源码文件：[node_geo_closure_to_list.cc](../../source/blender/nodes/geometry/nodes/node_geo_closure_to_list.cc)
@@ -95,7 +95,7 @@ graph TB
     end
 
     subgraph "BKE 集成"
-        SVV["BKE_node_socket_value.hh"]
+        SocketValueVariant["BKE_node_socket_value.hh"]
     end
 
     C2L --> CC
@@ -114,7 +114,7 @@ graph TB
     CC --> DECL_H
     DECL_H --> DECL_C
     CC --> TRACE
-    CC --> SVV
+    CC --> SocketValueVariant
 
     style C2L fill:#9b59b6,color:#fff
     style CC fill:#e74c3c,color:#fff
@@ -657,7 +657,7 @@ flowchart TD
     CheckRequired -->|"是"| GetSocketTypes["获取每个项的 bNodeSocketType"]
     GetSocketTypes --> CheckNull{"有 null socket type?"}
     CheckNull -->|"是"| Default2["设置默认输出"]
-    CheckNull -->|"否"| AllocResults["分配结果数组<br/>Array&lt;Array&lt;SVV&gt;&gt;"]
+    CheckNull -->|"否"| AllocResults["分配结果数组<br/>Array&lt;Array&lt;SocketValueVariant&gt;&gt;"]
     AllocResults --> ParallelEval["threading::parallel_for<br/>逐索引执行闭包"]
     ParallelEval --> CollectResults["收集结果到 GListPtr"]
     CollectResults --> SetOutputs["设置输出"]
@@ -809,7 +809,7 @@ sequenceDiagram
     Note over Thread: range = [4, 5, 6, 7]
 
     loop list_i = 4, 5, 6, 7
-        Thread->>Params: inputs[0].value = SVV(int(list_i))
+        Thread->>Params: inputs[0].value = SocketValueVariant(int(list_i))
         Thread->>Params: outputs[i].value = &closure_results[i][list_i]
         Thread->>Context: 创建 (parent, node_id=5, list_index=list_i)
         Thread->>UserData: 复制 parent_user_data<br/>设置 compute_context = &context
@@ -938,7 +938,7 @@ flowchart TD
 
     DestructStorage --> ProcessOutputs["处理输出项"]
     ProcessOutputs --> ConvertOutput["隐式类型转换<br/>implicitly_convert_socket_value"]
-    ConvertOutput --> WriteResult["new (item.value) SVV(转换后值)<br/>就地构造"]
+    ConvertOutput --> WriteResult["new (item.value) SocketValueVariant(转换后值)<br/>就地构造"]
     WriteResult --> Cleanup["清理临时值"]
     Cleanup --> Done["完成"]
 
@@ -1005,7 +1005,7 @@ for (const int output_item_i : params.outputs.index_range()) {
 }
 ```
 
-> **`new (item.value) SVV(...)`**：在 `item.value` 指向的未初始化内存上就地构造 `SocketValueVariant`。这就是为什么 `closure_results` 使用 `NoInitialization`——`evaluate_closure_eagerly` 会负责构造每个元素。
+> **`new (item.value) SocketValueVariant(...)`**：在 `item.value` 指向的未初始化内存上就地构造 `SocketValueVariant`。这就是为什么 `closure_results` 使用 `NoInitialization`——`evaluate_closure_eagerly` 会负责构造每个元素。
 
 > **闭包不提供的输出**：如果 `outputs_map[output_item_i]` 为 `nullopt`，说明闭包没有这个输出，使用 `construct_socket_default_value` 构造默认值。
 
@@ -1108,7 +1108,7 @@ graph TD
 
 ```mermaid
 flowchart TD
-    Results["closure_results[i]<br/>Array&lt;SVV&gt;"]
+    Results["closure_results[i]<br/>Array&lt;SocketValueVariant&gt;"]
 
     Results --> Check{"std::all_of<br/>所有结果都是<br/>单值 (is_single)?"}
 
@@ -1164,21 +1164,21 @@ else {
 }
 ```
 
-> **为什么需要两种路径？** 当闭包输出的是几何体列表或字段列表时，每个 `SVV` 本身包含 `GListPtr` 或 `GField`。这种情况下不能简单放入 `GArray`（`GArray` 要求元素是同一 `CPPType` 的平凡布局），而 `SocketValueVariant` 的变体性质使得直接构建 `GArray` 更合理。
+> **为什么需要两种路径？** 当闭包输出的是几何体列表或字段列表时，每个 `SocketValueVariant` 本身包含 `GListPtr` 或 `GField`。这种情况下不能简单放入 `GArray`（`GArray` 要求元素是同一 `CPPType` 的平凡布局），而 `SocketValueVariant` 的变体性质使得直接构建 `GArray` 更合理。
 
-> **`GList::from_container`**：从 `Array<SocketValueVariant>` 构建 `GList`。内部会遍历数组，提取每个 `SVV` 中的值，构建类型擦除的列表。
+> **`GList::from_container`**：从 `Array<SocketValueVariant>` 构建 `GList`。内部会遍历数组，提取每个 `SocketValueVariant` 中的值，构建类型擦除的列表。
 
 ### 何时走快速路径 vs 通用路径？
 
-| 闭包输出类型 | 结果 SVV Kind | 路径 | 原因 |
+| 闭包输出类型 | 结果 SocketValueVariant Kind | 路径 | 原因 |
 |-------------|--------------|------|------|
 | Geometry | Single | 快速 | 单值，可直接 move_construct |
 | String | Single | 快速 | 单值，可直接 move_construct |
 | Float | Single | 快速 | 单值，可直接 move_construct |
 | Int | Single | 快速 | 单值，可直接 move_construct |
-| Float (字段) | Field | 通用 | SVV 包含 GField，非平凡类型 |
-| Float (列表) | List | 通用 | SVV 包含 GListPtr，非平凡类型 |
-| Volume Grid | Grid | 通用 | SVV 包含 Grid 数据，非平凡类型 |
+| Float (字段) | Field | 通用 | SocketValueVariant 包含 GField，非平凡类型 |
+| Float (列表) | List | 通用 | SocketValueVariant 包含 GListPtr，非平凡类型 |
+| Volume Grid | Grid | 通用 | SocketValueVariant 包含 Grid 数据，非平凡类型 |
 
 ### 快速路径的性能优势
 
@@ -1190,7 +1190,7 @@ graph LR
     end
 
     subgraph "通用路径"
-        SP1["遍历 SVV 数组"] --> SP2["提取每个值"] --> SP3["构建 GList: O(n)"]
+        SP1["遍历 SocketValueVariant 数组"] --> SP2["提取每个值"] --> SP3["构建 GList: O(n)"]
     end
 
     style FP3 fill:#2ecc71,color:#fff
@@ -2276,8 +2276,8 @@ flowchart TD
     end
 
     subgraph "3. 结果数组分配"
-        C1["closure_results[0]: Array&lt;SVV&gt;(3, NoInit)"]
-        C2["closure_results[1]: Array&lt;SVV&gt;(3, NoInit)"]
+        C1["closure_results[0]: Array&lt;SocketValueVariant&gt;(3, NoInit)"]
+        C2["closure_results[1]: Array&lt;SocketValueVariant&gt;(3, NoInit)"]
     end
 
     subgraph "4. 并行执行 (grain=8, count=3 → 单线程)"
@@ -2322,7 +2322,7 @@ sequenceDiagram
     participant LF as LazyFunction
     participant Closure as 闭包内部节点
 
-    C2L->>Params: inputs[0] = {key="Index", type=Int, value=SVV(1)}
+    C2L->>Params: inputs[0] = {key="Index", type=Int, value=SocketValueVariant(1)}
     C2L->>Params: outputs[0] = {key="Mesh", type=Geometry, value=&results[0][1]}
     C2L->>Params: outputs[1] = {key="Name", type=String, value=&results[1][1]}
     C2L->>Context: 创建 (parent, node_id=5, list_index=1)
@@ -2340,8 +2340,8 @@ sequenceDiagram
     LF-->>Eager: 输出值写入 lf_output_values
 
     Eager->>Eager: 隐式类型转换 (输出)
-    Eager->>Eager: new (&results[0][1]) SVV(mesh_value)
-    Eager->>Eager: new (&results[1][1]) SVV(name_value)
+    Eager->>Eager: new (&results[0][1]) SocketValueVariant(mesh_value)
+    Eager->>Eager: new (&results[1][1]) SocketValueVariant(name_value)
     Eager-->>C2L: 完成
 
     Note over C2L: results[0][1] 现在包含 Mesh<br/>results[1][1] 现在包含 Name
@@ -2357,7 +2357,7 @@ if (count < 0) {
   return;
 }
 // count == 0 时继续执行
-// closure_results[i] 会是空数组 (Array<SVV>(0, NoInit))
+// closure_results[i] 会是空数组 (Array<SocketValueVariant>(0, NoInit))
 // 结果收集时 all_of(空范围) 返回 true → 快速路径
 // GArray(type, 0, NoInit) → 空列表
 // params.set_output(identifier, GList::from_garray(std::move(array)))
@@ -2366,7 +2366,7 @@ if (count < 0) {
 
 ```mermaid
 flowchart TD
-    Count0["Count = 0"] --> AllocEmpty["closure_results[i] = Array&lt;SVV&gt;(0)"]
+    Count0["Count = 0"] --> AllocEmpty["closure_results[i] = Array&lt;SocketValueVariant&gt;(0)"]
     AllocEmpty --> NoParallel["parallel_for(IndexRange(0), ...) → 不执行"]
     NoParallel --> AllOf["all_of(空范围) → true"]
     AllOf --> EmptyGArray["GArray(type, 0, NoInit)"]

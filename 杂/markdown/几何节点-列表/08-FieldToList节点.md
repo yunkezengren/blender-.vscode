@@ -56,7 +56,7 @@ graph TB
     end
 
     subgraph "BKE 集成"
-        SVV["BKE_node_socket_value.hh<br/>SocketValueVariant"]
+        SocketValueVariant["BKE_node_socket_value.hh<br/>SocketValueVariant"]
         LF["geometry_nodes_lazy_function.cc<br/>惰性函数执行"]
     end
 
@@ -68,8 +68,8 @@ graph TB
     CC --> LIST
     LIST --> IMPL
     CC --> DNA
-    CC --> SVV
-    SVV --> LF
+    CC --> SocketValueVariant
+    SocketValueVariant --> LF
 
     style F2L fill:#e74c3c,color:#fff
     style CC fill:#2ecc71,color:#fff

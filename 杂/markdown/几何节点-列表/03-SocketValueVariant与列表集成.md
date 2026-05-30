@@ -20,12 +20,12 @@
     - [类型判断方法一览](#类型判断方法一览)
   - [5. convert\_to\_single — 列表转单值](#5-convert_to_single--列表转单值)
   - [6. 在惰性函数求值中的分发](#6-在惰性函数求值中的分发)
-  - [7. 列表在各节点中的 SVV 使用模式](#7-列表在各节点中的-svv-使用模式)
+  - [7. 列表在各节点中的 SocketValueVariant 使用模式](#7-列表在各节点中的-SocketValueVariant-使用模式)
     - [List Length — 最简单](#list-length--最简单)
     - [Join List — 多输入提取](#join-list--多输入提取)
     - [Filter List — 动态类型判断](#filter-list--动态类型判断)
     - [Get List Item — 两条路径](#get-list-item--两条路径)
-    - [SVV 类型流转总览](#svv-类型流转总览)
+    - [SocketValueVariant 类型流转总览](#SocketValueVariant-类型流转总览)
   - [附录：关键 C++ 语法速查](#附录关键-c-语法速查)
 
 
@@ -33,22 +33,22 @@
 
 ## 1. SocketValueVariant 概述
 
-`SocketValueVariant`（简称 SVV）是几何节点中 **Socket 值的统一容器**。每个 Socket 在运行时携带的值都存储为 `SocketValueVariant`，它可以是单值、字段、体积网格或列表。
+`SocketValueVariant`（简称 SocketValueVariant）是几何节点中 **Socket 值的统一容器**。每个 Socket 在运行时携带的值都存储为 `SocketValueVariant`，它可以是单值、字段、体积网格或列表。
 
 ```mermaid
 graph TB
-    SVV["SocketValueVariant<br/>几何节点的万能值容器"]
+    SocketValueVariant["SocketValueVariant<br/>几何节点的万能值容器"]
     Single["🔵 Single<br/>单值 (int, float, ...)"]
     Field["🟢 Field<br/>GField"]
     Grid["🟠 Grid<br/>GVolumeGrid"]
     List["🔴 List<br/>GListPtr"]
 
-    SVV --> Single
-    SVV --> Field
-    SVV --> Grid
-    SVV --> List
+    SocketValueVariant --> Single
+    SocketValueVariant --> Field
+    SocketValueVariant --> Grid
+    SocketValueVariant --> List
 
-    style SVV fill:#2c3e50,color:#fff
+    style SocketValueVariant fill:#2c3e50,color:#fff
     style List fill:#ff6b6b,color:#fff
 ```
 
@@ -176,7 +176,7 @@ else if constexpr (nodes::is_ListPtr_v<T>) {
 >
 > **为什么不能只检查 `is_same_v<T, GField>` 和 `is_same_v<T, GListPtr>`？** 因为用户代码经常写 `extract<Field<float>>()` 而非 `extract<GField>()`。如果只有 `is_same_v<T, GField>` 分支，`Field<float>` 不会匹配，编译器会报错"没有匹配的 extract 重载"。`is_field_v` 和 `is_ListPtr_v` 让任何 `Field<T>` 和 `ListPtr<T>` 都能正确匹配。
 >
-> **为什么 `Field<float>` 和 `GField` 需要分开处理？** 因为 `SVV` 内部只存 `GField`（泛型字段），不存 `Field<float>`（类型化字段）。`extract<Field<float>>()` 需要先取出 `GField`，再调用 `.typed<float>()` 转为类型化版本。而 `extract<GField>()` 直接取出，不需要转换。
+> **为什么 `Field<float>` 和 `GField` 需要分开处理？** 因为 `SocketValueVariant` 内部只存 `GField`（泛型字段），不存 `Field<float>`（类型化字段）。`extract<Field<float>>()` 需要先取出 `GField`，再调用 `.typed<float>()` 转为类型化版本。而 `extract<GField>()` 直接取出，不需要转换。
 
 ---
 
@@ -289,22 +289,22 @@ if (any_input_is_field) {
 
 ---
 
-## 7. 列表在各节点中的 SVV 使用模式
+## 7. 列表在各节点中的 SocketValueVariant 使用模式
 
 ### List Length — 最简单
 
 ```cpp
 auto list = params.extract_input<GListPtr>("List"_ustr);
-// SVV 自动从 Kind::List 提取为 GListPtr
+// SocketValueVariant 自动从 Kind::List 提取为 GListPtr
 params.set_output("Length"_ustr, int(list->size()));
-// SVV 自动将 int 包装为 Kind::Single
+// SocketValueVariant 自动将 int 包装为 Kind::Single
 ```
 
 ### Join List — 多输入提取
 
 ```cpp
 auto inputs = params.extract_input<GeoNodesMultiInput<bke::SocketValueVariant>>("Value"_ustr);
-// 每个 SVV 可能是 Single 或 List
+// 每个 SocketValueVariant 可能是 Single 或 List
 for (const int i : inputs.values.index_range()) {
   if (inputs.values[i].is_list()) {
     size_offset_data[i] = inputs.values[i].get<GListPtr>()->size();
@@ -348,14 +348,14 @@ else {
 }
 ```
 
-### SVV 类型流转总览
+### SocketValueVariant 类型流转总览
 
 ```mermaid
 graph TB
     subgraph "节点输入"
-        I_Single["SVV(Kind::Single)"]
-        I_Field["SVV(Kind::Field)"]
-        I_List["SVV(Kind::List)"]
+        I_Single["SocketValueVariant(Kind::Single)"]
+        I_Field["SocketValueVariant(Kind::Field)"]
+        I_List["SocketValueVariant(Kind::List)"]
     end
 
     subgraph "节点处理"
@@ -366,9 +366,9 @@ graph TB
     end
 
     subgraph "节点输出"
-        O_Single["SVV(Kind::Single)"]
-        O_Field["SVV(Kind::Field)"]
-        O_List["SVV(Kind::List)"]
+        O_Single["SocketValueVariant(Kind::Single)"]
+        O_Field["SocketValueVariant(Kind::Field)"]
+        O_List["SocketValueVariant(Kind::List)"]
     end
 
     I_Single --> Extract
@@ -393,7 +393,7 @@ graph TB
 
 | 语法 | 含义 | 本文档中的使用 |
 |------|------|----------------|
-| `Any<void, 32, 16, Extra>` | Blender 类型擦除容器 | SVV 底层存储 |
+| `Any<void, 32, 16, Extra>` | Blender 类型擦除容器 | SocketValueVariant 底层存储 |
 | `value_.emplace<T>(args)` | 在 Any 中构造 T 对象 | `store_impl` 中存入列表 |
 | `value_.get<T>()` | 从 Any 中获取 T 引用 | `extract` 中取出列表 |
 | `std::move(value_.get<T>())` | 从 Any 中移动出 T | `extract` 转移所有权 |

@@ -250,6 +250,8 @@ for (const int i : inputs.values.index_range()) {
 }
 ```
 
+> **如何知道 `get<>` 里填什么类型？** 判断依据是上下文：`inputs.values[i]` 是 `SocketValueVariant`（SocketValueVariant），前面 `is_list()` 返回 `true` 说明内部持有列表数据，而 SocketValueVariant 的列表统一存为 `GListPtr`，所以用 `get<GListPtr>()`。如果 `is_list()` 返回 `false`，则用 `get_single_ptr()` 获取单值。不能用 `get<ListPtr<float>>()` 因为 Join List 是泛型节点，不知道元素类型是 `float` 还是 `int`（`socket_type` 是运行时变量）。
+
 > **双重可变性检查**：`list->is_mutable()` 检查 GList 是否被共享；`src_array_data->sharing_info->is_mutable()` 检查底层数据是否被共享。两者都为 true 才能安全移动。
 
 > **`cpp_type.move_construct_n(src, dst, n)`**：对数组中 `n` 个元素逐个调用移动构造函数。对于平凡类型（`float`、`int`）等价于 `memcpy`；对于非平凡类型（`std::string`、`GeometrySet`）逐个移动构造，转移所有权而非拷贝数据。移动后源对象处于"有效但未指定"状态（可能为空壳）。
@@ -260,7 +262,7 @@ for (const int i : inputs.values.index_range()) {
 >
 > **为什么叫 "materialize"（物化）？** 虚拟数组的数据可能是"虚拟的"——按需计算而非存储在内存中。"物化"就是把虚拟数据变成实实在在的内存数据。
 
-> **`inputs.values[i].get_single_ptr()`**：从 `SocketValueVariant` 中获取单值的 `GMutablePointer`。`get_single_ptr()` 返回指向 `SVV` 内部存储值的可变指针。内部实现是 `GPointer(*socket_type_to_geo_nodes_base_cpp_type(socket_type()), value_.get())`。
+> **`inputs.values[i].get_single_ptr()`**：从 `SocketValueVariant` 中获取单值的 `GMutablePointer`。`get_single_ptr()` 返回指向 `SocketValueVariant` 内部存储值的可变指针。内部实现是 `GPointer(*socket_type_to_geo_nodes_base_cpp_type(socket_type()), value_.get())`。
 
 > **`cpp_type.move_construct(src, dst)`**：对单个元素调用移动构造。`src` 是 `void*`（源），`dst` 是 `void*`（目标，未初始化内存）。移动后 `src` 指向的对象处于"有效但未指定"状态。
 
@@ -285,6 +287,6 @@ graph LR
     end
 
     subgraph "运行时"
-        V["GeoNodesMultiInput&lt;SVV&gt;<br/>.values = [SVV_A, SVV_B, SVV_C]"]
+        V["GeoNodesMultiInput&lt;SocketValueVariant&gt;<br/>.values = [SVV_A, SVV_B, SVV_C]"]
     end
 ```

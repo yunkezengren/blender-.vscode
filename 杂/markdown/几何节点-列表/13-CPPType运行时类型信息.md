@@ -130,10 +130,66 @@ classDiagram
 |------|------|---------|------|
 | `size` | `int64_t` | `sizeof(T)` | 单个元素占用的字节数 |
 | `alignment` | `int64_t` | `alignof(T)` | 内存对齐要求 |
-| `is_trivial` | `bool` | `std::is_trivial_v<T>` | 是否可以用 `memcpy` 拷贝 |
-| `is_trivially_destructible` | `bool` | `std::is_trivially_destructible_v<T>` | 析构是否是空操作 |
+| `is_trivial` | `bool` | `std::is_trivial_v<T>` | 平凡类型：可以用 `memcpy` 拷贝 + 析构是空操作 + 有平凡默认构造函数 |
+| `is_trivially_destructible` | `bool` | `std::is_trivially_destructible_v<T>` | 析构是空操作：不需要释放任何资源 |
 | `has_special_member_functions` | `bool` | — | 是否有完整的特殊成员函数 |
 | `type_index` | `int` | — | 唯一索引，用于快速比较 |
+
+### Trivial 概念详解
+
+**Trivial**（平凡）的英文原意是"琐碎的、不重要的"。在 C++ 中，它表示一个类型**"简单到不需要特殊处理"**——没有自定义的构造/析构/拷贝逻辑，编译器默认的行为就足够了。
+
+用搬家类比：一本书直接拿走就行（trivial），一个鱼缸要先倒水捞鱼再搬（non-trivial）。
+
+```mermaid
+flowchart LR
+    A["所有类型"] --> B["可析构<br/>destructible<br/>析构函数存在"]
+    B --> C["可平凡析构<br/>trivially_destructible<br/>析构什么都不做"]
+    C --> D["可平凡拷贝<br/>trivially_copyable<br/>可以用 memcpy 拷贝"]
+    D --> E["平凡类型<br/>trivial<br/>最严格：可平凡拷贝 + 平凡默认构造"]
+
+    style E fill:#2ecc71,color:#fff
+    style D fill:#3498db,color:#fff
+    style C fill:#e67e22,color:#fff
+    style B fill:#95a5a6,color:#fff
+```
+
+| 类型 | trivial | trivially_copyable | trivially_destructible | 原因 |
+|------|:-------:|:------------------:|:---------------------:|------|
+| `int`, `float`, `float3` | ✅ | ✅ | ✅ | 纯数值，无特殊逻辑 |
+| `int[5]` | ✅ | ✅ | ✅ | 原生数组 |
+| `std::string` | ❌ | ❌ | ❌ | 有堆分配，析构要释放，拷贝要深拷贝 |
+| `std::vector<int>` | ❌ | ❌ | ❌ | 有堆分配 |
+| `GeometrySet` | ❌ | ❌ | ❌ | 内部有共享指针 |
+| 有虚函数的类 | ❌ | ❌ | ❌ | 虚函数表指针不能 memcpy |
+
+**在 CPPType 中的实际影响**：
+
+```cpp
+// copy_construct_n：trivial 类型用 memcpy，否则逐个拷贝构造
+void copy_construct_n(const void *src, void *dst, int64_t n) {
+    if (is_trivial) {
+        memcpy(dst, src, size * n);        // 一次内存拷贝，极快
+    } else {
+        for (int i = 0; i < n; i++) {
+            copy_construct_(src + i * size, dst + i * size);  // 逐个拷贝
+        }
+    }
+}
+
+// destruct_n：trivially_destructible 类型跳过析构
+void destruct_n(void *ptr, int64_t n) {
+    if (is_trivially_destructible) {
+        return;  // 什么都不做
+    } else {
+        for (int i = 0; i < n; i++) {
+            destruct_(ptr + i * size);  // 逐个析构
+        }
+    }
+}
+```
+
+对于 10000 个 `float`，`memcpy` 约 40KB 一次拷贝；逐个拷贝构造要调用 10000 次构造函数。差距可达 10-100 倍。
 
 ### 函数指针成员
 
