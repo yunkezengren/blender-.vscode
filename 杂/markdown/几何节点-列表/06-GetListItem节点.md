@@ -1,7 +1,7 @@
-# Get List Item 节点
+﻿# Get List Item 节点
 
 > 📖 系列文档：[目录](01-列表系统架构与核心数据结构.md) | [上一篇](05-ListLength与JoinList节点.md) | [下一篇](07-FilterList节点.md)
-> 源码文件：[node_geo_list_get_item.cc](file:///e:/blender-git/blender/source/blender/nodes/geometry/nodes/node_geo_list_get_item.cc)
+> 源码文件：[node_geo_list_get_item.cc](../../source/blender/nodes/geometry/nodes/node_geo_list_get_item.cc)
 
 ---
 

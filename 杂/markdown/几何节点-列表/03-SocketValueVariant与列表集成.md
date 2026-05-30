@@ -1,19 +1,33 @@
-# SocketValueVariant 与列表集成
+﻿# SocketValueVariant 与列表集成
 
 > 📖 系列文档：[目录](01-列表系统架构与核心数据结构.md) | [上一篇](02-隐式共享机制详解.md) | [下一篇](04-SocketItemsAccessor动态Socket模式.md)
-> 源码文件：[BKE_node_socket_value.hh](file:///e:/blender-git/blender/source/blender/blenkernel/BKE_node_socket_value.hh)、[node_socket_value.cc](file:///e:/blender-git/blender/source/blender/blenkernel/intern/node_socket_value.cc)
+> 源码文件：[BKE_node_socket_value.hh](../../source/blender/blenkernel/BKE_node_socket_value.hh)、[node_socket_value.cc](../../source/blender/blenkernel/intern/node_socket_value.cc)
 
 ---
 
 ## 目录
 
-1. [SocketValueVariant 概述](#1-socketvaluevariant-概述)
-2. [Kind 枚举与底层存储](#2-kind-枚举与底层存储)
-3. [列表的存入与取出](#3-列表的存入与取出)
-4. [is_list 与类型判断](#4-is_list-与类型判断)
-5. [convert_to_single — 列表转单值](#5-convert_to_single--列表转单值)
-6. [在惰性函数求值中的分发](#6-在惰性函数求值中的分发)
-7. [列表在各节点中的 SVV 使用模式](#7-列表在各节点中的-svv-使用模式)
+- [SocketValueVariant 与列表集成](#socketvaluevariant-与列表集成)
+  - [目录](#目录)
+  - [1. SocketValueVariant 概述](#1-socketvaluevariant-概述)
+  - [2. Kind 枚举与底层存储](#2-kind-枚举与底层存储)
+    - [Kind 与 Socket 数据类型的关系](#kind-与-socket-数据类型的关系)
+  - [3. 列表的存入与取出](#3-列表的存入与取出)
+    - [存入 — set\<GListPtr\>](#存入--setglistptr)
+    - [取出 — extract\<GListPtr\>](#取出--extractglistptr)
+    - [取出 — extract\<ListPtr\<T\>\>](#取出--extractlistptrt)
+  - [4. is\_list 与类型判断](#4-is_list-与类型判断)
+    - [类型判断方法一览](#类型判断方法一览)
+  - [5. convert\_to\_single — 列表转单值](#5-convert_to_single--列表转单值)
+  - [6. 在惰性函数求值中的分发](#6-在惰性函数求值中的分发)
+  - [7. 列表在各节点中的 SVV 使用模式](#7-列表在各节点中的-svv-使用模式)
+    - [List Length — 最简单](#list-length--最简单)
+    - [Join List — 多输入提取](#join-list--多输入提取)
+    - [Filter List — 动态类型判断](#filter-list--动态类型判断)
+    - [Get List Item — 两条路径](#get-list-item--两条路径)
+    - [SVV 类型流转总览](#svv-类型流转总览)
+  - [附录：关键 C++ 语法速查](#附录关键-c-语法速查)
+
 
 ---
 
