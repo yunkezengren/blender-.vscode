@@ -142,8 +142,6 @@ else if constexpr (std::is_same_v<T, nodes::GListPtr>) {
 }
 ```
 
-> **`extract` vs `get`**：`extract` 转移所有权（移动语义），调用后 SVV 中的值被清空；`get` 只读取，不改变 SVV。在节点执行中通常使用 `extract`，因为输入值只使用一次。
-
 ### 取出 — extract\<ListPtr\<T\>\>
 
 ```cpp
@@ -157,9 +155,28 @@ else if constexpr (nodes::is_ListPtr_v<T>) {
 }
 ```
 
-> **`is_ListPtr_v<T>`**：编译期类型特征，判断 `T` 是否是 `ListPtr<...>` 类型。这使得 `extract<ListPtr<float>>` 可以正确匹配到此分支。
-
-> **`.typed<base_type>()`**：将 `GListPtr` 转换为 `ListPtr<T>`。零开销的 `reinterpret_cast`。
+> **为什么 extract\<T\> 需要分四种 if constexpr 分支？** 因为 `SocketValueVariant` 内部统一存储 `GField` 和 `GListPtr`（泛型版本），但用户代码可能请求类型化版本 `Field<float>` 或 `ListPtr<int>`。四种分支处理四种请求：
+>
+> | 分支条件 | 用户请求 | 内部存储 | 处理方式 |
+> |---------|---------|---------|---------|
+> | `std::is_same_v<T, fn::GField>` | `extract<GField>()` | `GField` | 直接移动取出 |
+> | `fn::is_field_v<T>` | `extract<Field<float>>()` | `GField` | 取出 `GField` 后调用 `.typed<float>()` |
+> | `std::is_same_v<T, nodes::GListPtr>` | `extract<GListPtr>()` | `GListPtr` | 直接移动取出 |
+> | `nodes::is_ListPtr_v<T>` | `extract<ListPtr<int>>()` | `GListPtr` | 取出 `GListPtr` 后调用 `.typed<int>()` |
+>
+> **`is_field_v<T>` 和 `is_ListPtr_v<T>` 是什么？** 它们是编译期类型特征（变量模板），判断 `T` 是否是 `Field<...>` 或 `ListPtr<...>` 的特化：
+> ```cpp
+> template<typename T> constexpr bool is_field_v = false;
+> template<typename T> constexpr bool is_field_v<Field<T>> = true;  // 偏特化
+>
+> template<typename T> constexpr bool is_ListPtr_v = false;
+> template<typename T> constexpr bool is_ListPtr_v<ListPtr<T>> = true;  // 偏特化
+> ```
+> 这利用了 C++ 模板偏特化——只有当 `T` 匹配 `Field<U>` 或 `ListPtr<U>` 时，对应的特化版本才生效，`is_field_v` / `is_ListPtr_v` 才为 `true`。
+>
+> **为什么不能只检查 `is_same_v<T, GField>` 和 `is_same_v<T, GListPtr>`？** 因为用户代码经常写 `extract<Field<float>>()` 而非 `extract<GField>()`。如果只有 `is_same_v<T, GField>` 分支，`Field<float>` 不会匹配，编译器会报错"没有匹配的 extract 重载"。`is_field_v` 和 `is_ListPtr_v` 让任何 `Field<T>` 和 `ListPtr<T>` 都能正确匹配。
+>
+> **为什么 `Field<float>` 和 `GField` 需要分开处理？** 因为 `SVV` 内部只存 `GField`（泛型字段），不存 `Field<float>`（类型化字段）。`extract<Field<float>>()` 需要先取出 `GField`，再调用 `.typed<float>()` 转为类型化版本。而 `extract<GField>()` 直接取出，不需要转换。
 
 ---
 

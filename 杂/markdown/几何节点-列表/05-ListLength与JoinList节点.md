@@ -197,11 +197,31 @@ graph LR
     style D2 fill:#e67e22,color:#fff
 ```
 
-> **`Array<int, 16>`**：小数组优化。不超过 16 个元素时栈上分配。
+> **`Array<int, 16>`**：小数组优化（Small Buffer Optimization, SBO）。第二个模板参数 `16` 是内联缓冲区大小——当元素数 ≤ 16 时，数据直接存储在栈上的内联缓冲区中，不需要堆分配；超过 16 时才回退到堆分配。
+>
+> **优点**：①**避免堆分配**：堆分配（`malloc`/`new`）需要锁、遍历空闲列表、更新元数据，可能比栈分配慢 100 倍以上；②**缓存友好**：栈数据在当前函数的栈帧中，与局部变量在同一个缓存行；③**无碎片**：不产生堆碎片。Join List 节点通常只有几到十几个输入，16 个元素的缓冲区足够覆盖绝大多数情况。
 
 > **`offsets.total_size()`**：最后一个偏移值，即总大小。
 
-### 2.4 移动语义优化
+### 2.4 分配目标数组
+
+```cpp
+const CPPType &cpp_type = *bke::socket_type_to_geo_nodes_base_cpp_type(socket_type);
+GList::ArrayData array_data = GList::ArrayData::ForUninitialized(cpp_type, size);
+GMutableSpan dst_list_data(cpp_type, const_cast<void *>(array_data.data), size);
+```
+
+> **`socket_type_to_geo_nodes_base_cpp_type(socket_type)`**：将 Socket 类型枚举（如 `SOCK_FLOAT`）映射到对应的 `CPPType`（如 `CPPType::get<float>()`）。这是 Socket 类型系统与 CPPType 运行时类型系统之间的桥梁。实现是一个 `switch` 语句，常见类型直接返回（`SOCK_FLOAT` → `float`，`SOCK_INT` → `int`），不常见的走慢路径 `slow_socket_type_to_geo_nodes_base_cpp_type`（查找 `bNodeSocketType` 的 `base_cpp_type` 字段）。
+>
+> **为什么叫 "base" cpp_type？** 因为有些 Socket 类型在几何节点中有"基础类型"的概念。例如 `SOCK_VECTOR` 的基础类型是 `float3`，`SOCK_RGBA` 的基础类型是 `ColorGeometry4f`。这些是几何节点实际操作的 C++ 类型，与 Socket 的 UI 类型不一定相同。
+
+> **`GList::ArrayData::ForUninitialized(cpp_type, size)`**：分配一块足够容纳 `size` 个元素的内存，但**不初始化**。返回的 `ArrayData` 包含 `data`（内存指针）和 `sharing_info`（隐式共享信息）。
+>
+> **为什么用 ForUninitialized 而非 ForDefaultValue？** 因为接下来会逐个移动/拷贝数据到这块内存中，初始化是浪费——默认构造的值马上就被覆盖了。省掉 `default_construct_n` 调用，对于 `std::string` 等非平凡类型可以省掉大量无用构造。
+
+> **`const_cast<void*>(array_data.data)`**：`ArrayData::data` 是 `const void*`（因为 `ArrayData` 设计为只读视图），但 `GMutableSpan` 需要 `void*`（可变指针）。`const_cast` 移除 const，因为我们刚分配了这块内存，确实拥有写权限。
+
+### 2.5 移动语义优化
 
 ```cpp
 for (const int i : inputs.values.index_range()) {
@@ -232,11 +252,23 @@ for (const int i : inputs.values.index_range()) {
 
 > **双重可变性检查**：`list->is_mutable()` 检查 GList 是否被共享；`src_array_data->sharing_info->is_mutable()` 检查底层数据是否被共享。两者都为 true 才能安全移动。
 
-> **`move_construct_n`**：对数组中每个元素调用移动构造函数。移动后源对象处于"有效但未指定"状态。
+> **`cpp_type.move_construct_n(src, dst, n)`**：对数组中 `n` 个元素逐个调用移动构造函数。对于平凡类型（`float`、`int`）等价于 `memcpy`；对于非平凡类型（`std::string`、`GeometrySet`）逐个移动构造，转移所有权而非拷贝数据。移动后源对象处于"有效但未指定"状态（可能为空壳）。
 
-> **`materialize_to_uninitialized`**：将虚拟数组物化到未初始化内存。无论底层是 ArrayData 还是 SingleData，都能正确工作。
+> **`list->varray()`**：将列表数据作为 `GVArray`（泛型虚拟数组）暴露。无论底层是 `ArrayData`（连续内存）还是 `SingleData`（单值重复），都统一为虚拟数组接口。
 
-### 2.5 GeoNodesMultiInput — 多输入容器
+> **`materialize_to_uninitialized(dst)`**：将虚拟数组的所有元素写入 `dst` 指向的**未初始化内存**。内部会检查 `common_info()`：如果是 Span 模式，直接 `copy_construct_n`（对于平凡类型就是 `memcpy`）；如果是 Single 模式，用 `fill_construct_n`（重复构造同一个值）。比逐个 `get(i)` 高效得多。
+>
+> **为什么叫 "materialize"（物化）？** 虚拟数组的数据可能是"虚拟的"——按需计算而非存储在内存中。"物化"就是把虚拟数据变成实实在在的内存数据。
+
+> **`inputs.values[i].get_single_ptr()`**：从 `SocketValueVariant` 中获取单值的 `GMutablePointer`。`get_single_ptr()` 返回指向 `SVV` 内部存储值的可变指针。内部实现是 `GPointer(*socket_type_to_geo_nodes_base_cpp_type(socket_type()), value_.get())`。
+
+> **`cpp_type.move_construct(src, dst)`**：对单个元素调用移动构造。`src` 是 `void*`（源），`dst` 是 `void*`（目标，未初始化内存）。移动后 `src` 指向的对象处于"有效但未指定"状态。
+
+> **`GList::create(cpp_type, std::move(array_data), size)`**：在堆上创建 `GList` 对象，包装 `array_data` 和 `size`，返回 `GListPtr`（智能指针）。`std::move` 将 `array_data` 转为右值引用，表示"我要转移所有权，不再使用原变量"。
+
+> **`std::move(list)`**：C++11 的无条件右值转换。`std::move(list)` 本身不移动任何数据——它只是把 `list` 从左值转为右值引用，使得 `set_output` 的参数匹配移动语义的重载版本。真正的"移动"发生在 `set_output` 内部——它会把 `GListPtr` 的内部指针转移给输出，而不是增加引用计数。
+
+### 2.6 GeoNodesMultiInput — 多输入容器
 
 ```cpp
 auto inputs = params.extract_input<GeoNodesMultiInput<bke::SocketValueVariant>>("Value"_ustr);
