@@ -22,6 +22,7 @@
     - [IndexRange → IndexMask 的隐式转换](#indexrange--indexmask-的隐式转换)
   - [6. SingleData 的零开销过滤](#6-singledata-的零开销过滤)
   - [7. IndexMask::from\_bools 实现详解](#7-indexmaskfrom_bools-实现详解)
+    - [内部实现](#内部实现)
     - [为什么传入 memory 而不是函数内局部变量？](#为什么传入-memory-而不是函数内局部变量)
 
 ---
@@ -176,7 +177,64 @@ static GListPtr filter_list(const GListPtr &list, const IndexMask &mask)
 
 > **ArrayData 分支**：`array_utils::gather` 从源数组中按 `mask` 指定的索引收集元素到目标数组。例如 mask={0,2,4}，则取 src[0]、src[2]、src[4]。内部使用 SIMD 优化。`GList::from_garray` 将收集结果包装为 GList。
 
-> **SingleData 分支**：单值重复模式——所有元素都相同，过滤后仍然相同，只需改变 `size`。不需要 gather，直接 `GList::create(list_type, src_data, mask.size())` 创建新的 SingleData。
+> **`GArray<>` 为什么不写模板参数？** `GArray` 的完整声明是 `template<typename Allocator = GuardedAllocator> class GArray`——它只有一个模板参数：**分配器类型**，默认值是 `GuardedAllocator`。`<>` 表示使用默认参数，等价于 `GArray<GuardedAllocator>`。注意 `GArray` **没有元素类型参数**——它是泛型数组，元素类型在运行时通过 `CPPType` 指针存储（`const CPPType *type_`），而非编译期模板参数。这与 `Array<T>` 不同：`Array<float>` 在编译期知道类型，`GArray<>` 在运行时才知道类型。
+>
+> | 类 | 元素类型 | 分配器 | 何时知道类型 |
+> |------|---------|--------|------------|
+> | `Array<T>` | 编译期（模板参数 `T`） | 可选，默认 `GuardedAllocator` | 编译期 |
+> | `GArray<>` | 运行时（构造函数参数 `const CPPType &type`） | 可选，默认 `GuardedAllocator` | 运行期 |
+>
+> 所以 `GArray<> dst_data(list_type, mask.size())` 创建一个运行时类型为 `list_type` 的泛型数组，大小为 `mask.size()`。
+
+> **为什么 ArrayData 分支用 `from_garray` 而非 `GList::create`？** 两种方法都可以创建包含 ArrayData 的 GList，但 `from_garray` 做了**隐式共享**的包装——它把 `GArray` 包进 `ImplicitSharedValue<GArray<>>`，使得 GList 的数据可以被多个消费者共享（写时复制）。而 `GList::create` 是底层工厂方法，只做堆分配，不管隐式共享：
+>
+> ```cpp
+> // from_garray 的实现：自动包装隐式共享
+> GListPtr GList::from_garray(GArray<> array)
+> {
+>   auto *sharable_data = new ImplicitSharedValue<GArray<>>(std::move(array));
+>   ArrayData array_data;
+>   array_data.data = sharable_data->data.data();
+>   array_data.sharing_info = ImplicitSharingPtr<>(sharable_data);  // ← 关键：设置共享信息
+>   return GList::create(
+>       sharable_data->data.type(), std::move(array_data), sharable_data->data.size());
+> }
+> ```
+>
+> 如果直接用 `GList::create`，你需要手动构造 `ArrayData` 并设置 `sharing_info`——容易出错。`from_garray` 一步到位：`GArray` → 隐式共享包装 → `ArrayData` → `GList`。
+>
+> ```mermaid
+> flowchart LR
+>     GA["GArray<br/>dst_data"]
+>     ISV["ImplicitSharedValue<br/>GArray"]
+>     AD["ArrayData<br/>data + sharing_info"]
+>     GL["GListPtr"]
+>
+>     GA -->|"std::move"| ISV --> AD -->|"GList::create"| GL
+>
+>     style GA fill:#3498db,color:#fff
+>     style ISV fill:#f39c12,color:#fff
+>     style GL fill:#2ecc71,color:#fff
+> ```
+
+> **`GList::create` 为什么用 `MEM_new` 而非 `new`？** `MEM_new<GList>(__func__, ...)` 是 Blender 的内存分配函数，等价于 `new GList(...)` 但多了两个功能：
+>
+> 1. **内存泄漏检测**：`__func__`（当前函数名）作为分配标签，Blender 的 GuardedAlloc 系统可以在程序退出时报告"哪些分配没有被释放"，方便排查泄漏
+> 2. **统计信息**：Blender 可以统计每种类型的内存使用量，用于性能分析
+>
+> ```cpp
+> // MEM_new 的实现（简化）
+> template<typename T, typename... Args>
+> inline T *MEM_new(const char *allocation_name, Args &&...args)
+> {
+>   void *buffer = mem_mallocN_aligned(sizeof(T), alignof(T), allocation_name, ...);
+>   return new (buffer) T(std::forward<Args>(args)...);  // placement new
+> }
+> ```
+>
+> `MEM_new` = `malloc`（带标签）+ `placement new`（调用构造函数）。`new GList(...)` 也能工作，但无法被 Blender 的内存追踪系统监控。Blender 代码规范要求所有堆分配都使用 `MEM_*` 系列函数。
+
+> **SingleData 分支**：单值重复模式——所有元素都相同，过滤后仍然相同，只需改变 `size`。不需要 gather，直接 `GList::create(list_type, src_data, mask.size())` 创建新的 SingleData。这里用 `GList::create` 而非 `from_garray` 是因为 SingleData 不需要隐式共享包装——它只存一个值，共享开销不值得。
 
 ---
 
@@ -249,15 +307,15 @@ else if (filter_value.is_context_dependent_field()) {
 >     participant SVV as SocketValueVariant
 >     participant FE as FieldEvaluator
 >     participant LFC as ListFieldContext
->     participant Field as Field&lt;bool&gt;
+>     participant Field as Field<bool>
 >
->     SVV->>FE: extract&lt;Field&lt;bool&gt;&gt;()
+>     SVV->>FE: extract<Field<bool>>()
 >     FE->>FE: add(field)
 >     FE->>FE: evaluate()
 >     FE->>LFC: get_varray_for_input(IndexFieldInput)
 >     LFC-->>FE: VArray: [0, 1, 2, ..., n-1]
 >     FE->>Field: 用索引数组求值
->     Field-->>FE: VArray&lt;bool&gt;: [true, false, true, ...]
+>     Field-->>FE: VArray<bool>: [true, false, true, ...]
 >     FE->>FE: get_evaluated_as_mask(0)
 >     FE-->>FE: IndexMask: [0, 2, ...]
 > ```
@@ -288,9 +346,21 @@ else if (filter_value.is_list()) {
 
 > **`filter_value.get<GListPtr>()`**：从 `SocketValueVariant` 中**读取**列表指针。注意这里用 `get` 而非 `extract`——因为后面还需要 `filter_value` 的信息（如 `list->size()` 检查），而且 `GListPtr` 是共享指针，`get` 返回的是拷贝（增加引用计数），不会转移所有权。
 
+> **为什么变量名叫 `keep_list`？** 因为这个列表代表"要保留（keep）的元素"——列表中为 true 的位置对应"不被移除"的元素。Filter List 的 Selection 输入描述是 "A field or list representing the values that will not be removed"，所以 `keep_list` = "要保留的列表"。如果叫 `selection_list` 或 `filter_list` 则含义不够明确——是"用来过滤的列表"还是"过滤后保留的列表"？`keep_list` 一目了然。
+
 > **`keep_list->varray().typed<bool>()`**：这一行做了两件事，拆解如下：
 >
 > **第一步：`keep_list->varray()`** — 将列表数据转为泛型虚拟数组 `GVArray`
+>
+> **为什么函数名是 `varray()` 而非 `gvarray()`？** 因为 `GList` 本身已经是泛型类（`G` 前缀代表 Generic），它的成员函数不需要再加 `g` 前缀。`GList::varray()` 返回 `GVArray` 是自然的——就像 `GSpan::type()` 返回 `const CPPType&` 而非 `gtype()`。`G` 前缀只用于**类名**，不用于**方法名**。Blender 的命名惯例：类型化版本（`List<T>`）和泛型版本（`GList`）的方法名相同，只是返回类型不同。
+>
+> ```cpp
+> // GList（泛型）的方法
+> GVArray GList::varray() const;
+>
+> // List<T>（类型化）的方法
+> VArray<T> List<T>::varray() const;  // 同名，但返回类型化版本
+> ```
 >
 > ```cpp
 > GVArray GList::varray() const
