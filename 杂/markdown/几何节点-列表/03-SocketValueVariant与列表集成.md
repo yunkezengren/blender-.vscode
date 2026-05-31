@@ -82,6 +82,82 @@ class SocketValueVariant {
 >
 > `GListPtr` 的大小是 `sizeof(ImplicitSharingPtr<GList>)` = 一个指针大小（8 字节），远小于 32，因此存储在栈上。
 
+> **`std::any` 是什么？** C++17 标准库提供的类型擦除容器——"能装任何类型的盒子"。你可以往里面放 `int`、`float`、`std::string` 或任何可复制构造的类型，运行时再取出来。
+>
+> ```cpp
+> std::any a = 42;            // 装 int
+> a = 3.14f;                  // 换成 float
+> a = std::string("hello");   // 换成 string
+>
+> int val = std::any_cast<int>(a);  // 取出，类型必须匹配
+> ```
+>
+> `std::any` 的内部原理：用一块内存（内联缓冲区或堆分配）存储值，用一个类型擦除的"虚函数表"（函数指针集合）管理拷贝、移动、销毁操作。`std::any_cast<T>()` 检查类型是否匹配，匹配则返回值，不匹配抛出 `std::bad_any_cast` 异常。
+
+> **Blender `Any` vs `std::any` 的区别？** Blender 的 `Any`（定义在 [BLI_any.hh](../../source/blender/blenlib/BLI_any.hh)）是 `std::any` 的增强版，源码注释原文："A #Any is a type-safe container for single values of any copy constructible type. It is similar to #std::any but provides the following two additional features: 1. Adjustable inline buffer capacity and alignment. 2. Can store additional user-defined type information without increasing the stack size of #Any."
+>
+> | 特性 | `std::any` | Blender `Any` |
+> |------|-----------|---------------|
+> | 内联缓冲区大小 | 实现定义（通常 8-32 字节），不可控 | **可配置**（模板参数 `InlineBufferCapacity`） |
+> | 对齐要求 | 实现定义 | **可配置**（模板参数 `Alignment`） |
+> | 附加元数据 | ❌ 不支持 | ✅ **可配置**（模板参数 `ExtraInfo` + `ExtraData`） |
+> | 栈大小 | 通常 16-48 字节 | `InlineBufferCapacity + sizeof(Info*) + sizeof(ExtraData)` |
+> | 类型检查 | `std::any_cast` 抛异常 | `is<T>()` 返回 bool |
+>
+> **四个模板参数的含义**：
+>
+> ```cpp
+> Any<ExtraInfo, InlineBufferCapacity, Alignment, ExtraData>
+> //  ↓           ↓                    ↓          ↓
+> //  类型信息     内联缓冲区大小        对齐要求    利用对齐填充存储额外数据
+> ```
+>
+> | 参数 | `Any<void, 32, 16, AnyExtraData>` 中的值 | 含义 |
+> |------|----------------------------------------|------|
+> | `ExtraInfo = void` | 无额外类型信息 | `void` 表示不使用类型级额外信息 |
+> | `InlineBufferCapacity = 32` | 32 字节内联缓冲区 | 小于 32 字节的类型存在栈上，大于则 `std::unique_ptr` 堆分配 |
+> | `Alignment = 16` | 16 字节对齐 | 满足 SIMD 类型（如 `float4x4`）的对齐要求 |
+> | `ExtraData = AnyExtraData` | 利用对齐填充存储 Kind + socket_type | 对齐填充的"废料空间"被用来存额外数据，不增加总大小 |
+>
+> **`ExtraData` 的巧妙设计**：`Any` 的内联缓冲区按 16 字节对齐，但实际数据可能不需要全部 32 字节。对齐填充产生的"废料空间"被用来存储 `ExtraData`，**不增加 `Any` 的总栈大小**。源码注释："Depending on the Alignment template parameter, there may be extra padding space that's available to store some data. This type is stored after the buffer to use that space."
+>
+> ```mermaid
+> flowchart TD
+>     subgraph "Any 内部布局（栈上）"
+>         B["AlignedBuffer[32]<br/>内联缓冲区<br/>存储实际值"]
+>         E["ExtraData (AnyExtraData)<br/>Kind + socket_type<br/>利用对齐填充空间"]
+>         I["Info*<br/>指向类型信息表<br/>（拷贝/移动/销毁函数指针）"]
+>     end
+>     
+>     B --- E --- I
+>     
+>     subgraph "Info 表（静态数据）"
+>         COPY["copy_construct()"]
+>         MOVE["move_construct()"]
+>         DEST["destruct()"]
+>         GET["get()"]
+>         EI["extra_info"]
+>     end
+>     
+>     I -.-> COPY
+> 
+>     style B fill:#3498db,color:#fff
+>     style E fill:#f39c12,color:#fff
+>     style I fill:#e74c3c,color:#fff
+>     style COPY fill:#2ecc71,color:#fff
+> ```
+
+> **`AnyExtraData` 为什么存在？** 源码注释原文翻译："这允许在下面的 `Any` 中更快地查找正确的类型。例如，当获取整数 Socket 的值时，我们通常必须检查 `Any` 包含的是单个 `int` 还是字段。通过比较枚举来做这个检查更便宜。此外，要判断我们当前是否存储了单值，否则必须检查 `Any` 存储的是 int 还是 float 还是 boolean 等。"
+>
+> 没有 `AnyExtraData` 时，判断"当前是单值还是字段"需要调用 `value_.is<int>() || value_.is<float>() || ...`——遍历所有可能的类型。有了 `Kind` 枚举，只需 `kind_ == Kind::Single`——一次整数比较。
+>
+> | 方式 | 判断"是单值？" | 判断"是列表？" |
+> |------|--------------|--------------|
+> | 无 AnyExtraData | `value_.is<int>() \|\| value_.is<float>() \|\| ...` | `value_.is<GListPtr>()` |
+> | 有 AnyExtraData | `kind_ == Kind::Single` | `kind_ == Kind::List` |
+>
+> **`socket_type` 的作用**：同一个 Kind 可以对应不同的 Socket 类型（如 `SOCK_FLOAT`、`SOCK_INT`）。`socket_type` 记录了当前值属于哪种 Socket，避免从 `Any` 的类型信息反推。例如，`Kind::Single + SOCK_FLOAT` 表示存的是 `float`，`Kind::Single + SOCK_INT` 表示存的是 `int`。
+
 ### Kind 与 Socket 数据类型的关系
 
 | Kind | 对应的 C++ 类型 | socket_type 示例 |

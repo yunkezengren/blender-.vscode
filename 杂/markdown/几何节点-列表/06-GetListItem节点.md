@@ -271,10 +271,20 @@ const std::optional<eNodeSocketDatatype> socket_type =
 
 if (list_type.is<bke::SocketValueVariant>() || !socket_type_supports_fields(*socket_type)) {
   // 路径1：直接取值
+  // ...
+  if (list->cpp_type().is<bke::SocketValueVariant>()) {  // ← 为什么不用 list_type？
+    params.set_output("Value"_ustr, get_socket_value_item(list, index_int));
+  }
+  else {
+    params.set_output("Value"_ustr, get_single_item(list, *socket_type, index_int));
+  }
 }
 else {
   // 路径2：多函数执行
 }
+```
+
+> **为什么第 244 行写 `list->cpp_type().is<SocketValueVariant>()` 而非 `list_type.is<SocketValueVariant>()`？** 两者完全等价——`list_type` 就是第 227 行 `const CPPType &list_type = list->cpp_type()` 保存的引用，`list->cpp_type()` 返回的也是同一个 `CPPType&`。第 244 行重复调用是代码风格不一致，没有技术原因。使用 `list_type` 更好——避免一次函数调用（虽然 `cpp_type()` 只是返回成员引用，开销可忽略），且意图更清晰。
 ```
 
 > **`geo_nodes_base_cpp_type_to_socket_type(list_type)`**：将 `CPPType` 映射回 `eNodeSocketDatatype` 枚举。返回 `std::optional` 因为**不是所有 CPPType 都有对应的 Socket 类型**——`CPPType` 可以注册任意 C++ 类型，但 Socket 类型只有有限的几种。没有匹配时返回 `std::nullopt`。
@@ -286,6 +296,116 @@ else {
 > **`list_type.is<bke::SocketValueVariant>()` 为什么需要单独检查？** 因为 `SocketValueVariant` 是内部容器类型，`geo_nodes_base_cpp_type_to_socket_type` 的 if 链中**没有** `type.is<bke::SocketValueVariant>()` 这个分支，所以 `socket_type` 会是 `std::nullopt`。如果直接对 `*socket_type` 解引用会崩溃（空 optional 不能解引用），所以必须先检查。
 >
 > **调试器为什么报 "has no member 'is<bke::SocketValueVariant>()'"？** 这是调试器的显示限制，不是编译错误。`CPPType::is<T>()` 是模板成员函数，调试器无法在"成员列表"中显示模板实例化后的函数名。代码本身是正确的——`SocketValueVariant` 已注册到 CPPType 系统（`BLI_CPP_TYPE_REGISTER(bke::SocketValueVariant, ...)`），`is<SocketValueVariant>()` 可以正常调用。
+
+### 路径1：`index.convert_to_single()` 详解
+
+路径1的代码：
+
+```cpp
+if (!index.is_single()) {
+  params.error_message_add(NodeWarningType::Error, "Index must be a single value");
+  params.set_default_remaining_outputs();
+  return;
+}
+index.convert_to_single();
+const int index_int = index.get<int>();
+```
+
+> **`index.convert_to_single()` 做了什么？** 将 `SocketValueVariant` 转换为单值模式。`index` 可能是三种 Kind 之一：Single（单值）、Field（字段）、List（列表）。`convert_to_single` 确保它变成 Single 模式，以便后续用 `get<int>()` 直接取值。
+>
+> 实现源码（[node_socket_value.cc:469~497](../../source/blender/blenkernel/intern/node_socket_value.cc)）：
+>
+> ```cpp
+> void SocketValueVariant::convert_to_single()
+> {
+>   switch (this->kind()) {
+>     case Kind::Single: {
+>       /* Nothing to do. */
+>       break;  // 已经是单值，什么都不做
+>     }
+>     case Kind::Field: {
+>       /* Evaluates the field without inputs to try to get a single value.
+>        * If the field depends on context, the default value is used instead. */
+>       fn::GField field = std::move(value_.get<fn::GField>());
+>       void *buffer = this->allocate_single(this->socket_type());
+>       fn::evaluate_constant_field(field, buffer);
+>       break;  // 字段 → 尝试求值为常量
+>     }
+>     case Kind::List:
+>     case Kind::Grid: {
+>       /* Can't convert a grid to a single value, so just use the default value. */
+>       const CPPType &cpp_type = *socket_type_to_geo_nodes_base_cpp_type(this->socket_type());
+>       this->store_single(this->socket_type(), cpp_type.default_value());
+>       break;  // 列表/网格 → 使用默认值
+>     }
+>     case Kind::None: {
+>       BLI_assert_unreachable();
+>       break;
+>     }
+>   }
+> }
+> ```
+>
+> 三种转换路径：
+>
+> | 当前 Kind | 转换方式 | 说明 |
+> |-----------|---------|------|
+> | `Single` | 什么都不做 | 已经是单值 |
+> | `Field` | `evaluate_constant_field` | 尝试在无上下文的情况下求值字段。如果字段是常量（如 `1 + 2`），得到 `3`；如果依赖上下文（如 `position`），使用默认值 |
+> | `List` / `Grid` | `default_value()` | 无法从列表/网格提取单值，直接使用类型的默认值（如 `0`、`0.0`、`(0,0,0)`） |
+>
+> **为什么路径1要先检查 `!index.is_single()` 再调用 `convert_to_single()`？** 因为路径1不支持动态索引。如果 index 是字段或列表，说明用户连了一个动态索引，但当前元素类型（如 Geometry）不支持字段操作。所以先报错，不执行。但 `convert_to_single()` 仍然被调用——这是为了处理 index 可能是"常量字段"的情况（如一个整数常量被包装为字段），`convert_to_single()` 可以从中提取出单值。
+>
+> ```mermaid
+> flowchart TD
+>     Index["index (SocketValueVariant)"]
+>     Check{"index.is_single()?"}
+>     
+>     Check -->|"否"| Error["报错: Index must be a single value"]
+>     Check -->|"是"| CTS["convert_to_single()"]
+>     
+>     CTS --> Kind{"kind()?"}
+>     Kind -->|"Single"| Nop["什么都不做<br/>（已经是单值）"]
+>     Kind -->|"Field"| Eval["evaluate_constant_field()<br/>尝试求值常量字段"]
+>     Eval --> Const{"是常量?"}
+>     Const -->|"是"| GetValue["得到值（如 3）"]
+>     Const -->|"否"| Default1["使用默认值（如 0）"]
+>     Kind -->|"List/Grid"| Default2["使用默认值<br/>（无法从列表提取单值）"]
+>     
+>     Nop --> Get["index.get&lt;int&gt;()"]
+>     GetValue --> Get
+>     Default1 --> Get
+>     Default2 --> Get
+> 
+>     style Error fill:#e74c3c,color:#fff
+>     style Nop fill:#2ecc71,color:#fff
+>     style Eval fill:#3498db,color:#fff
+>     style Default2 fill:#f39c12,color:#fff
+>     style Get fill:#9b59b6,color:#fff
+> ```
+>
+> **`allocate_single` 做了什么？** 在 `SocketValueVariant` 内部的 `Any` 存储中分配指定类型的空间。它是一个 switch 语句，根据 `socket_type` 分配对应类型的内存：
+>
+> ```cpp
+> void *SocketValueVariant::allocate_single(const eNodeSocketDatatype socket_type)
+> {
+>   void *ptr = nullptr;
+>   switch (socket_type) {
+>     case SOCK_FLOAT:   ptr = value_.allocate<float>();           break;
+>     case SOCK_INT:     ptr = value_.allocate<int>();             break;
+>     case SOCK_VECTOR:  ptr = value_.allocate<float3>();          break;
+>     case SOCK_BOOLEAN: ptr = value_.allocate<bool>();            break;
+>     case SOCK_ROTATION: ptr = value_.allocate<math::Quaternion>(); break;
+>     case SOCK_MATRIX:  ptr = value_.allocate<float4x4>();        break;
+>     case SOCK_RGBA:    ptr = value_.allocate<ColorGeometry4f>(); break;
+>     case SOCK_STRING:  ptr = value_.allocate<std::string>();     break;
+>     // ... 更多类型
+>   }
+>   return ptr;
+> }
+> ```
+>
+> **`evaluate_constant_field` 做了什么？** 在无上下文的情况下求值字段。如果字段不依赖任何上下文输入（如 `1 + 2`），直接计算出结果。如果字段依赖上下文（如 `position.x`），无法求值，`buffer` 中保持 `allocate_single` 分配的未初始化内存——但 `convert_to_single` 会在之后设置 `kind_ = Single`，所以这个值会被当作默认值使用。
 >
 > ```mermaid
 > flowchart TD
