@@ -75,9 +75,29 @@ static void node_declare(NodeDeclarationBuilder &b)
 > | `.propagate_all()` | 匿名属性（几何体上的属性数据） | 搬家时带上家具 |
 > | `.propagate_references()` | 引用关系（输出引用了输入的数据） | 搬家时告诉新地址"我的信件还在旧邮箱" |
 >
-> Get List Item 需要两者，因为取出一个 GeometrySet 时，输出可能**直接共享**输入列表中的几何数据（隐式共享），也可能携带匿名属性。
+> 具体场景：列表中有 `[Mesh_A, Mesh_B, Mesh_C]`，Mesh_A 上有匿名属性 "position"。
 >
-> Filter List 只需要 `.propagate_all()`，因为它的输出是**新创建的列表**（gather 产生了新数组），不直接引用输入的数据。
+> **Get List Item（Index=0）**：输出 = Mesh_A。输出**直接共享**输入列表中的数据（隐式共享，同一块内存），所以需要 `propagate_references()` 告诉声明系统"输出引用了输入的数据，输入不能被提前释放"。同时 Mesh_A 上的 "position" 属性需要 `propagate_all()` 传播。
+>
+> **Filter List（选择 [0, 2]）**：输出 = `[Mesh_A, Mesh_C]`。输出是**新创建的数组**（gather 产生新内存），不直接引用输入，所以不需要 `propagate_references()`。但匿名属性仍需 `propagate_all()` 传播。
+>
+> ```mermaid
+> flowchart TD
+>     subgraph "Get List Item — 输出直接共享输入数据"
+>         GLI_In["输入列表<br/>[Mesh_A, Mesh_B, Mesh_C]"]
+>         GLI_Out["输出 = Mesh_A<br/>↑ 隐式共享，同一块内存"]
+>         GLI_In -.->|"隐式共享"| GLI_Out
+>     end
+>
+>     subgraph "Filter List — 输出是新创建的数组"
+>         FL_In["输入列表<br/>[Mesh_A, Mesh_B, Mesh_C]"]
+>         FL_Out["输出列表<br/>[Mesh_A, Mesh_C]<br/>↑ gather 创建新内存"]
+>         FL_In -->|"gather"| FL_Out
+>     end
+>
+>     style GLI_Out fill:#9b59b6,color:#fff
+>     style FL_Out fill:#2ecc71,color:#fff
+> ```
 
 ### DNA 存储
 
