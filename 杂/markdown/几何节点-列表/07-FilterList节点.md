@@ -19,6 +19,9 @@
     - [列表模式](#列表模式)
   - [5. 双输出：Selection 与 Inverted](#5-双输出selection-与-inverted)
     - [complement() 实现详解](#complement-实现详解)
+    - [表达式类型体系](#表达式类型体系)
+    - [ExprBuilder 的工作原理](#exprbuilder-的工作原理)
+    - [evaluate\_expression 的两阶段求值](#evaluate_expression-的两阶段求值)
     - [IndexRange → IndexMask 的隐式转换](#indexrange--indexmask-的隐式转换)
   - [6. SingleData 的零开销过滤](#6-singledata-的零开销过滤)
   - [7. IndexMask::from\_bools 实现详解](#7-indexmaskfrom_bools-实现详解)
@@ -204,7 +207,7 @@ static GListPtr filter_list(const GListPtr &list, const IndexMask &mask)
 > 如果直接用 `GList::create`，你需要手动构造 `ArrayData` 并设置 `sharing_info`——容易出错。`from_garray` 一步到位：`GArray` → 隐式共享包装 → `ArrayData` → `GList`。
 >
 > ```mermaid
-> flowchart LR
+> flowchart TD
 >     GA["GArray<br/>dst_data"]
 >     ISV["ImplicitSharedValue<br/>GArray"]
 >     AD["ArrayData<br/>data + sharing_info"]
@@ -460,6 +463,34 @@ IndexMask complement(const IndexMask &universe, LinearAllocator<> &memory) const
 IndexMask(IndexRange range);  // 非 explicit，允许隐式转换
 ```
 
+> **`explicit` 是什么？** C++ 关键字，用于修饰构造函数，**禁止隐式转换**。没有 `explicit` 的单参数构造函数允许编译器自动将参数类型转为类类型——这就是"隐式转换"。对比：
+>
+> ```cpp
+> class Foo {
+>   explicit Foo(int x);  // 有 explicit：禁止隐式转换
+> };
+> class Bar {
+>   Bar(int x);           // 无 explicit：允许隐式转换
+> };
+>
+> void func(const Foo &f);
+> void func(const Bar &b);
+>
+> func(42);       // Foo: ❌ 编译错误！不能隐式把 int 转为 Foo
+> func(Foo(42));  // Foo: ✅ 必须显式构造
+> func(42);       // Bar: ✅ 编译器自动调用 Bar(42)
+> ```
+>
+> **为什么 `IndexMask(IndexRange range)` 没有 `explicit`？** 因为 `IndexRange` 转 `IndexMask` 是**零开销、无歧义、无风险**的——`IndexRange` 就是"连续索引"，`IndexMask` 也是"一组索引"，语义完全兼容。加上 `explicit` 反而让代码更啰嗦——每次都要写 `IndexMask(IndexRange(5))` 而非直接 `IndexRange(5)`。
+>
+> **什么时候应该加 `explicit`？** 当隐式转换可能导致**意外行为**时。例如 `String(const char*)` 如果不加 `explicit`，`func("hello")` 会悄悄创建一个 `String` 对象，可能不是你想要的。
+>
+> | 情况 | 是否加 `explicit` | 原因 |
+> |------|------------------|------|
+> | `IndexMask(IndexRange)` | ❌ 不加 | 语义等价，零开销，方便 |
+> | `String(const char*)` | ✅ 加 | 隐式转换可能意外创建对象 |
+> | `GPointer(const CPPType&, const void*)` | ❌ 不加 | 两个参数，不会单参数隐式转换 |
+
 这个构造函数是 O(1) 的——它不需要分配任何内存，只是设置几个指针指向**预分配的静态数据**。Blender 在程序启动时创建了一个覆盖 `[0, 2^31)` 范围的静态 `IndexMask`，任何 `IndexRange` 都可以通过调整偏移量和大小来"切片"这个静态掩码，零堆分配。
 
 ```mermaid
@@ -497,52 +528,221 @@ IndexMask IndexMask::complement(const IndexMask &universe, LinearAllocator<> &me
 }
 ```
 
-它使用了 `IndexMask` 的**表达式求值系统**——定义在 [BLI_index_mask_expression.hh](../../source/blender/blenlib/BLI_index_mask_expression.hh) 中。这个系统支持集合运算：
+它使用了 `IndexMask` 的**表达式求值系统**——定义在 [BLI_index_mask_expression.hh](../../source/blender/blenlib/BLI_index_mask_expression.hh) 中。这个系统将集合运算建模为**表达式树**，然后统一求值。
 
-| 表达式类型 | 含义 | 类比 |
-|-----------|------|------|
-| `AtomicExpr` | 原子表达式（一个具体的 IndexMask） | 数字 |
-| `UnionExpr` | 并集（A ∪ B） | A + B |
-| `IntersectionExpr` | 交集（A ∩ B） | A × B |
-| `DifferenceExpr` | 差集（A - B） | A - B |
+### 表达式类型体系
 
-`complement(universe, this)` 等价于 `universe - this`，即 `subtract(&universe, {this})`。
+```mermaid
+classDiagram
+    class Expr {
+        +Type type
+        +int index
+        +Vector~const Expr*~ terms
+        +expression_array_size() int
+        +as_atomic() AtomicExpr
+        +as_union() UnionExpr
+        +as_intersection() IntersectionExpr
+        +as_difference() DifferenceExpr
+    }
 
-**`evaluate_expression` 的实现**（简化）：
+    class AtomicExpr {
+        +const IndexMask* mask
+    }
+
+    class UnionExpr {
+    }
+
+    class IntersectionExpr {
+    }
+
+    class DifferenceExpr {
+    }
+
+    Expr <|-- AtomicExpr
+    Expr <|-- UnionExpr
+    Expr <|-- IntersectionExpr
+    Expr <|-- DifferenceExpr
+
+    class ExprBuilder {
+        -ResourceScope scope_
+        -int expr_count_
+        +Term = variant~const Expr*, const IndexMask*, IndexRange~
+        +merge(Span~Term~) UnionExpr
+        +subtract(Term, Span~Term~) DifferenceExpr
+        +intersect(Span~Term~) IntersectionExpr
+        -term_to_expr(Term) Expr
+    }
+
+    ExprBuilder ..> Expr : creates
+
+    style Expr fill:#2c3e50,color:#fff
+    style AtomicExpr fill:#e74c3c,color:#fff
+    style UnionExpr fill:#3498db,color:#fff
+    style IntersectionExpr fill:#2ecc71,color:#fff
+    style DifferenceExpr fill:#f39c12,color:#fff
+    style ExprBuilder fill:#9b59b6,color:#fff
+```
+
+| 表达式类型 | 含义 | 数学符号 | 举例 |
+|-----------|------|---------|------|
+| `AtomicExpr` | 原子表达式（一个具体的 IndexMask） | A | `{0,2,4}` |
+| `UnionExpr` | 并集（所有项的并） | A ∪ B | `{0,2} ∪ {2,4} = {0,2,4}` |
+| `IntersectionExpr` | 交集（所有项的交） | A ∩ B | `{0,1,2} ∩ {1,2,3} = {1,2}` |
+| `DifferenceExpr` | 差集（第一项减去其余项） | A - B - C | `{0,1,2,3} - {1,3} = {0,2}` |
+
+**关键设计**：`DifferenceExpr` 的 `terms[0]` 是被减数（main），`terms[1:]` 是减数。所以 `subtract(&universe, {this})` 创建的表达式中，`terms[0] = universe`，`terms[1] = this`（selection）。
+
+### ExprBuilder 的工作原理
+
+`ExprBuilder` 是表达式工厂——它创建表达式节点并管理其生命周期（通过 `ResourceScope`）。
 
 ```cpp
-IndexMask evaluate_expression(const Expr &expression, LinearAllocator<> &memory)
+class ExprBuilder {
+ private:
+  ResourceScope scope_;      // 管理所有创建的表达式对象的生命周期
+  int expr_count_ = 0;       // 表达式计数器，用于分配 index
+
+ public:
+  using Term = std::variant<const Expr *, const IndexMask *, IndexRange>;
+  // Term 可以是：已构建的表达式 / IndexMask 指针 / IndexRange
+};
+```
+
+**`Term` 类型**：`std::variant<const Expr *, const IndexMask *, IndexRange>` — 三种输入形式：
+1. `const Expr *`：已经构建好的子表达式（支持嵌套）
+2. `const IndexMask *`：一个具体的索引掩码（自动包装为 `AtomicExpr`）
+3. `IndexRange`：一个连续范围（自动转为 `IndexMask` 再包装为 `AtomicExpr`）
+
+**`subtract` 的实现**：
+
+```cpp
+const DifferenceExpr &ExprBuilder::subtract(const Term &main_term,
+                                            const Span<Term> subtract_terms)
 {
-  const ExactEvalMode exact_eval_mode = determine_exact_eval_mode(expression);
-  IndexMask mask = evaluate_expression_impl(expression, memory, exact_eval_mode);
-  return mask;
+  Vector<const Expr *> term_expressions;
+  term_expressions.append(&this->term_to_expr(main_term));      // terms[0] = 被减数
+  for (const Term &subtract_term : subtract_terms) {
+    term_expressions.append(&this->term_to_expr(subtract_term)); // terms[1:] = 减数
+  }
+  DifferenceExpr &expr = scope_.construct<DifferenceExpr>();     // 在 ResourceScope 上分配
+  expr.type = Expr::Type::Difference;
+  expr.index = expr_count_++;                                    // 分配唯一编号
+  expr.terms = std::move(term_expressions);
+  return expr;
 }
 ```
 
-内部流程：
-1. **确定求值模式**：根据表达式结构选择最优的求值策略（位运算 vs 索引遍历）
-2. **粗粒度分割**：将全集按段（segment，每段最多 16384 个索引）分割，对每段判断结果是否为空/满/部分
-3. **细粒度求值**：对"部分"段逐索引精确判断
-4. **组装结果**：将所有段合并为最终的 `IndexMask`
+**`term_to_expr` 的实现**：将 `Term` 统一转为 `Expr`
+
+```cpp
+const Expr &ExprBuilder::term_to_expr(const Term &term)
+{
+  if (const Expr *const *expr = std::get_if<const Expr *>(&term)) {
+    return **expr;                    // 已经是表达式 → 直接返回
+  }
+  AtomicExpr &expr = scope_.construct<AtomicExpr>();  // 创建原子表达式
+  expr.type = Expr::Type::Atomic;
+  expr.index = expr_count_++;
+  if (const IndexRange *range = std::get_if<IndexRange>(&term)) {
+    expr.mask = &scope_.construct<IndexMask>(*range); // IndexRange → IndexMask → AtomicExpr
+  }
+  else {
+    expr.mask = std::get<const IndexMask *>(term);    // IndexMask* → AtomicExpr
+  }
+  return expr;
+}
+```
+
+**`complement` 调用 `subtract` 时的完整过程**：
+
+```cpp
+// 调用：builder.subtract(&universe, {this})
+// universe 是 IndexMask*，this 是 IndexMask*
+```
 
 ```mermaid
 flowchart TD
-    U["全集: [0,1,2,3,4,5,6,7]"]
-    S["选择: [0,2,4]"]
-    D["差集: 全集 - 选择"]
-
-    subgraph "表达式求值"
-        COARSE["粗粒度分割<br/>判断每段: 空/满/部分"]
-        FINE["细粒度求值<br/>对'部分'段逐索引判断"]
-        ASSEMBLE["组装结果<br/>合并所有段"]
+    subgraph "subtract(&universe, {this})"
+        S1["main_term = &universe<br/>subtract_terms = {this}"]
+        S2["term_to_expr(&universe)<br/>→ AtomicExpr{mask=&universe}"]
+        S3["term_to_expr(this)<br/>→ AtomicExpr{mask=this}"]
+        S4["DifferenceExpr<br/>terms=[universe_expr, this_expr]<br/>type=Difference"]
     end
 
-    D --> COARSE --> FINE --> ASSEMBLE
-    ASSEMBLE --> R["结果: [1,3,5,6,7]"]
+    S1 --> S2
+    S1 --> S3
+    S2 --> S4
+    S3 --> S4
 
-    style U fill:#3498db,color:#fff
-    style S fill:#e74c3c,color:#fff
+    subgraph "evaluate_expression"
+        E1["determine_exact_eval_mode<br/>选择：位运算 or 索引遍历"]
+        E2["evaluate_expression_impl"]
+        E3["粗粒度分割<br/>判断每段: 空/满/部分"]
+        E4["细粒度求值<br/>对'部分'段精确判断"]
+        E5["组装结果<br/>合并所有段"]
+    end
+
+    S4 --> E1 --> E2
+    E2 --> E3 --> E4 --> E5
+    E5 --> R["IndexMask: 补集"]
+
+    style S4 fill:#f39c12,color:#fff
     style R fill:#2ecc71,color:#fff
+```
+
+### evaluate_expression 的两阶段求值
+
+源码注释原文翻译：
+
+> 表达式求值有多个阶段：
+> 1. **粗粒度求值**：尝试找到可以平凡求值的段。例如，取两个重叠范围的并集可以在 O(1) 时间内完成。
+> 2. **精确求值**：对所有无法通过粗粒度求值完全求解的段，进行精确求值。根据启发式策略，使用基于索引或基于位的方法。
+> 3. **构建最终 IndexMask**：基于中间段结果构建。
+
+**粗粒度求值**的结果有三种段类型：
+
+| 段类型 | 含义 | 处理方式 |
+|--------|------|---------|
+| `Full` | 该范围内所有索引都在结果中 | 直接标记为"满"，无需逐索引判断 |
+| `Copy` | 结果就是某个输入掩码的副本 | 直接引用，零拷贝 |
+| `Unknown` | 粗粒度无法确定 | 需要进入精确求值 |
+
+**精确求值**有两种模式：
+
+| 模式 | 适用场景 | 原理 |
+|------|---------|------|
+| `Indices` | 简单表达式（少量项） | 直接操作排序索引数组 |
+| `Bits` | 复杂表达式（多层级） | 转为位图，用位运算求值，再转回索引 |
+
+```mermaid
+flowchart TD
+    subgraph "粗粒度求值"
+        U["全集: [0,1,2,3,4,5,6,7]"]
+        S["选择: [0,2,4]"]
+        C1["段 [0,4]: Unknown<br/>（部分选中，无法确定）"]
+        C2["段 [5,7]: Full<br/>（全部未选中 → 补集中全部保留）"]
+    end
+
+    subgraph "精确求值（仅 Unknown 段）"
+        F1["对 [0,4] 逐索引判断<br/>0→选中(排除), 1→未选中(保留), 2→选中(排除), 3→未选中(保留), 4→选中(排除)"]
+        F2["结果: [1,3]"]
+    end
+
+    subgraph "组装"
+        A["合并: [1,3] + [5,6,7]"]
+        R["最终: [1,3,5,6,7]"]
+    end
+
+    U --> C1
+    S --> C1
+    U --> C2
+    C1 --> F1 --> F2 --> A
+    C2 --> A
+    A --> R
+
+    style C2 fill:#2ecc71,color:#fff
+    style C1 fill:#f39c12,color:#fff
+    style R fill:#3498db,color:#fff
 ```
 
 ### IndexRange → IndexMask 的隐式转换
@@ -771,7 +971,42 @@ class IndexMaskMemory : public LinearAllocator<> {
 };
 ```
 
-对于小掩码（索引数据 < 1024 字节），完全不需要堆分配——数据直接存在栈上的内联缓冲区中。这个优化只有在调用者的栈帧上才有效——如果 `from_bools` 内部创建局部 `memory`，内联缓冲区在函数返回时就没了。
+> **`AlignedBuffer<1024, 8>` 是什么？** 一块 1024 字节、8 字节对齐的原始内存。它是 `IndexMaskMemory` 的成员变量，所以当你声明 `IndexMaskMemory memory;` 时，这 1024 字节**直接在当前函数的栈帧上分配**，不需要任何堆操作。`AlignedBuffer` 本质上是一个 `alignas(8) unsigned char data[1024]` 的包装。
+>
+> **`provide_buffer` 做了什么？** 告诉 `LinearAllocator`："先用这块内存，用完了再去堆上分配"。`LinearAllocator` 维护两个指针 `current_begin_` 和 `current_end_`，初始指向 `inline_buffer_` 的起止位置。分配时从 `current_begin_` 向前推进，直到用完 1024 字节后才调用 `malloc`。
+
+对于小掩码（索引数据 < 1024 字节），完全不需要堆分配——数据直接存在栈上的内联缓冲区中。
+
+**为什么说"这个优化只有在调用者的栈帧上才有效"？** 因为**栈帧的生命周期**绑定于函数调用。当函数返回时，它的整个栈帧被回收——所有局部变量（包括 `inline_buffer_`）的内存不再有效。
+
+```
+场景1：调用者创建 memory ✅
+┌──────────────────────────────────────┐
+│ 调用者栈帧 (node_geo_exec)           │
+│  IndexMaskMemory memory;             │
+│   inline_buffer_[1024] ← 数据在这里  │
+│  IndexMask mask → 指向 inline_buffer_│
+│                                      │
+│  mask 仍然有效 ✅                     │
+│  （memory 和 mask 在同一个栈帧中）    │
+└──────────────────────────────────────┘
+
+场景2：from_bools 内部创建 memory ❌
+┌──────────────────────────────────────┐
+│ 调用者栈帧                            │
+│  IndexMask mask → 指向 ???            │
+└──────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ from_bools 栈帧 (已返回，被回收)      │
+│  IndexMaskMemory local_memory;       │
+│   inline_buffer_[1024] ← 数据在这里  │
+│                                      │
+│  栈帧已回收！inline_buffer_ 不存在了  │
+│  mask 指向已回收的栈内存 → 悬空指针 ❌│
+└──────────────────────────────────────┘
+```
+
+如果 `from_bools` 内部创建局部 `memory`，函数返回后栈帧被回收，`IndexMask` 持有的指针就悬空了。只有当 `IndexMaskMemory` 的生命周期**长于** `IndexMask` 的使用时间，数据才有效——所以必须由调用者管理。
 
 ```mermaid
 flowchart TD

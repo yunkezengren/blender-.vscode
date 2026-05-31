@@ -262,6 +262,49 @@ flowchart TD
 
 **路径2**：支持字段的类型（Float、Int、Vector 等），可以使用动态索引（字段/列表）。
 
+### 路径选择的代码实现
+
+```cpp
+const CPPType &list_type = list->cpp_type();
+const std::optional<eNodeSocketDatatype> socket_type =
+    bke::geo_nodes_base_cpp_type_to_socket_type(list_type);
+
+if (list_type.is<bke::SocketValueVariant>() || !socket_type_supports_fields(*socket_type)) {
+  // 路径1：直接取值
+}
+else {
+  // 路径2：多函数执行
+}
+```
+
+> **`geo_nodes_base_cpp_type_to_socket_type(list_type)`**：将 `CPPType` 映射回 `eNodeSocketDatatype` 枚举。返回 `std::optional` 因为**不是所有 CPPType 都有对应的 Socket 类型**——`CPPType` 可以注册任意 C++ 类型，但 Socket 类型只有有限的几种。没有匹配时返回 `std::nullopt`。
+>
+> 内部实现是一个 if 链：`type.is<float>() → SOCK_FLOAT`，`type.is<int>() → SOCK_INT`，...，最后 `return std::nullopt`。
+>
+> **`return SOCK_FLOAT` 是隐式转换吗？** 是的。`SOCK_FLOAT` 是 `eNodeSocketDatatype` 枚举值，`std::optional<eNodeSocketDatatype>` 有非 explicit 构造函数接受 `eNodeSocketDatatype`，所以 `return SOCK_FLOAT` 隐式构造了 `std::optional(SOCK_FLOAT)`。等价于 `return std::optional<eNodeSocketDatatype>(SOCK_FLOAT)`。
+
+> **`list_type.is<bke::SocketValueVariant>()` 为什么需要单独检查？** 因为 `SocketValueVariant` 是内部容器类型，`geo_nodes_base_cpp_type_to_socket_type` 的 if 链中**没有** `type.is<bke::SocketValueVariant>()` 这个分支，所以 `socket_type` 会是 `std::nullopt`。如果直接对 `*socket_type` 解引用会崩溃（空 optional 不能解引用），所以必须先检查。
+>
+> **调试器为什么报 "has no member 'is<bke::SocketValueVariant>()'"？** 这是调试器的显示限制，不是编译错误。`CPPType::is<T>()` 是模板成员函数，调试器无法在"成员列表"中显示模板实例化后的函数名。代码本身是正确的——`SocketValueVariant` 已注册到 CPPType 系统（`BLI_CPP_TYPE_REGISTER(bke::SocketValueVariant, ...)`），`is<SocketValueVariant>()` 可以正常调用。
+>
+> ```mermaid
+> flowchart TD
+>     LT["list_type = list->cpp_type()"]
+>     Check1{"list_type.is<br/>&lt;SocketValueVariant&gt;()?"}
+>     
+>     Check1 -->|"是"| SVV["socket_type = nullopt<br/>走 get_socket_value_item 路径"]
+>     Check1 -->|"否"| ST["socket_type = SOCK_FLOAT/INT/..."]
+>     
+>     ST --> Check2{"socket_type_supports_fields<br/>(*socket_type)?"}
+>     Check2 -->|"否"| Single["走 get_single_item 路径<br/>（Geometry、Object 等）"]
+>     Check2 -->|"是"| Field["走 SampleIndexFunction 路径<br/>（Float、Int、Vector 等）"]
+> 
+>     style Check1 fill:#e74c3c,color:#fff
+>     style SVV fill:#f39c12,color:#fff
+>     style Single fill:#e67e22,color:#fff
+>     style Field fill:#2ecc71,color:#fff
+> ```
+
 ---
 
 ## 6. get_single_item — 直接取值
