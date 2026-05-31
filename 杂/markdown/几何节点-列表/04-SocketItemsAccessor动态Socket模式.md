@@ -1,4 +1,4 @@
-﻿# SocketItemsAccessor 动态 Socket 模式
+﻿﻿# SocketItemsAccessor 动态 Socket 模式
 
 > 📖 系列文档：[目录](01-列表系统架构与核心数据结构.md) | [上一篇](03-SocketValueVariant与列表集成.md) | [下一篇](05-ListLength与JoinList节点.md)
 > 源码文件：[NOD_socket_items.hh](../../source/blender/nodes/NOD_socket_items.hh)、[NOD_geo_field_to_list.hh](../../source/blender/nodes/geometry/include/NOD_geo_field_to_list.hh)、[NOD_geo_closure_to_list.hh](../../source/blender/nodes/geometry/include/NOD_geo_closure_to_list.hh)

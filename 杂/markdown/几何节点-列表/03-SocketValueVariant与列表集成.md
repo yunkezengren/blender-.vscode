@@ -1,4 +1,4 @@
-﻿# SocketValueVariant 与列表集成
+﻿﻿# SocketValueVariant 与列表集成
 
 > 📖 系列文档：[目录](01-列表系统架构与核心数据结构.md) | [上一篇](02-隐式共享机制详解.md) | [下一篇](04-SocketItemsAccessor动态Socket模式.md)
 > 源码文件：[BKE_node_socket_value.hh](../../source/blender/blenkernel/BKE_node_socket_value.hh)、[node_socket_value.cc](../../source/blender/blenkernel/intern/node_socket_value.cc)

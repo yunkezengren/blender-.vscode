@@ -1,4 +1,4 @@
-﻿# List Length 与 Join List 节点
+﻿﻿# List Length 与 Join List 节点
 
 > 📖 系列文档：[目录](01-列表系统架构与核心数据结构.md) | [上一篇](04-SocketItemsAccessor动态Socket模式.md) | [下一篇](06-GetListItem节点.md)
 > 源码文件：[node_geo_list_length.cc](../../source/blender/nodes/geometry/nodes/node_geo_list_length.cc)、[node_geo_join_list.cc](../../source/blender/nodes/geometry/nodes/node_geo_join_list.cc)

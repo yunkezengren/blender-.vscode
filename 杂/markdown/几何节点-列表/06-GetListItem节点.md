@@ -66,9 +66,18 @@ static void node_declare(NodeDeclarationBuilder &b)
 
 > **`StructureType::Dynamic`**：输出结构类型取决于 Index 输入的实际类型。Auto 模式下由推断系统决定；用户也可以手动指定为 Single/Field/List。
 
-> **`.propagate_all({list.index()})`**：声明此输出需要传播来自 List 输入的匿名属性。
+> **`.propagate_all({list.index()})`**：传播**匿名属性**（如 Store Named Attribute 节点创建的属性）。从列表中取出一个几何体后，该几何体上的匿名属性仍然有效，需要传播到下游。
 
-> **`.propagate_references()`**：标记此输出需要传播引用信息。
+> **`.propagate_references()`**：传播**引用关系**——告诉声明系统"此输出的数据可能直接引用了输入列表中的数据"。与 `.propagate_all()` 的区别：
+>
+> | 传播方式 | 传播什么 | 类比 |
+> |---------|---------|------|
+> | `.propagate_all()` | 匿名属性（几何体上的属性数据） | 搬家时带上家具 |
+> | `.propagate_references()` | 引用关系（输出引用了输入的数据） | 搬家时告诉新地址"我的信件还在旧邮箱" |
+>
+> Get List Item 需要两者，因为取出一个 GeometrySet 时，输出可能**直接共享**输入列表中的几何数据（隐式共享），也可能携带匿名属性。
+>
+> Filter List 只需要 `.propagate_all()`，因为它的输出是**新创建的列表**（gather 产生了新数组），不直接引用输入的数据。
 
 ### DNA 存储
 
