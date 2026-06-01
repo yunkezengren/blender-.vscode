@@ -79,6 +79,48 @@ graph LR
     style CC fill:#2ecc71,color:#fff
 ```
 
+### 涉及文件完整列表
+
+| 文件 | 修改行数 | 变更类型 | 职责 |
+|------|---------|---------|------|
+| `node_geo_field_to_list.cc` | +247 | 新增 | 节点完整实现（声明/执行/注册/生命周期） |
+| `NOD_geo_field_to_list.hh` | +95 | 新增 | FieldToListItemsAccessor 定义 |
+| `rna_nodetree.cc` | +63/-1 | 修改 | RNA 属性定义 |
+| `DNA_node_types.h` | +16 | 修改 | GeometryNodeFieldToList(Item) DNA 结构 |
+| `list_function_eval.cc` | +12/-19 | 修改 | ListFieldContext 重构（提取为独立类） |
+| `list_function_eval.hh` | +9 | 修改 | ListFieldContext 声明提取 |
+| `CMakeLists.txt` | +2/-1 | 修改 | 构建系统更新 |
+| `node_add_menu_geometry.py` | +1/-1 | 修改 | 菜单注册（List → Field to List） |
+| `node_geo_list.cc` | -121 | 删除 | 旧 List 节点移除 |
+| `basic_eval.blend` | +2/-2 | 修改 | 测试文件更新 |
+| `get_item_dynamic.blend` | +2/-2 | 修改 | 测试文件更新 |
+| `to_single_value.blend` | +2/-2 | 修改 | 测试文件更新 |
+
+> 共 12 个文件，+451/-149（净增 302 行）
+
+### 为什么这么多代码？
+
+Field to List 的核心执行逻辑（`node_geo_exec`）仅约 50 行，但整个提交新增 451 行。约 **89% 是管道代码**（plumbing），用于将节点接入 Blender 的各个子系统：
+
+| 子系统 | 行数 | 占比 | 说明 |
+|--------|------|------|------|
+| 节点实现 | +247 | 55% | 声明/执行/注册/生命周期函数/UI/链接搜索 |
+| Accessor | +95 | 21% | Socket Items 框架适配器（项 CRUD/标识符/类型支持） |
+| RNA | +63 | 14% | Python API 和 UI 属性定义 |
+| DNA | +16 | 4% | 持久化存储结构（.blend 文件格式） |
+| 其他 | +30 | 7% | 构建系统/菜单/字段求值重构 |
+
+这是 Blender 节点系统的固有特征——每个节点必须集成以下子系统：
+
+1. **DNA**（~16行）：持久化存储结构，定义 .blend 文件中的二进制布局，保证文件格式向后兼容
+2. **RNA**（~63行）：Python API 和 UI 属性系统，每个动态项需要定义 `socket_type`、`name`、`identifier` 等属性
+3. **Accessor**（~95行）：Socket Items 框架的适配器，定义项的 CRUD、标识符映射、类型支持等
+4. **节点实现**（~247行）：核心逻辑 + 生命周期函数（init/free/copy/blend_write/blend_read）+ UI 布局 + 链接搜索 + 注册
+5. **构建系统**（~2行）：CMakeLists.txt
+6. **菜单注册**（~1行）：node_add_menu_geometry.py
+
+SocketItemsAccessor 模式已经大幅减少了重复代码（通用的 UI 绘制、操作符注册、序列化逻辑都由框架提供），但每个节点仍需编写自己的 Accessor 适配器和生命周期函数。
+
 ---
 
 ## 2. 节点声明 — 动态 Socket 项

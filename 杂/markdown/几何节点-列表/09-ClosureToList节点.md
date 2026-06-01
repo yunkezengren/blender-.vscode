@@ -42,7 +42,7 @@
 Closure to List 是所有列表节点中最复杂的，涉及 19 个文件的修改（741 行新增），因为它需要闭包执行、并行化、计算上下文、Socket 自动同步、多种输出类型等多个子系统协作：
 
 ```mermaid
-graph TB
+graph LR
     C2L["Closure to List 节点"]
 
     subgraph "节点实现 (308行)"
@@ -130,27 +130,32 @@ graph TB
 |------|---------|---------|------|
 | `node_geo_closure_to_list.cc` | +308 | 新增 | 节点完整实现 |
 | `NOD_geo_closure_to_list.hh` | +98 | 新增 | Accessor 定义 |
-| `BKE_compute_contexts.hh` | +13 | 修改 | ClosureToListComputeContext 声明 |
-| `compute_contexts.cc` | +17 | 修改 | 上下文哈希/打印实现 |
-| `sync_sockets.cc` | +93 | 修改 | Socket 自动同步 |
-| `geometry_nodes_closure.cc` | +19 | 修改 | ClosureSignature::from_closure_to_list_node |
-| `DNA_node_types.h` | +16 | 修改 | DNA 存储结构 |
 | `rna_nodetree.cc` | +131 | 修改 | RNA 属性定义 |
-| `node_add_menu_geometry.py` | +1 | 修改 | 菜单注册 |
-| `node_draw.cc` | +1 | 修改 | 节点绘制 |
-| `NOD_geometry_nodes_closure_signature.hh` | +1 | 修改 | 签名前向声明 |
+| `sync_sockets.cc` | +93 | 修改 | Socket 自动同步 |
+| `compute_contexts.cc` | +17 | 修改 | 上下文哈希/打印实现 |
+| `geometry_nodes_closure.cc` | +19 | 修改 | ClosureSignature::from_closure_to_list_node |
+| `BKE_compute_contexts.hh` | +13 | 修改 | ClosureToListComputeContext 声明 |
+| `DNA_node_types.h` | +16 | 修改 | GeometryNodeClosureToList(Item) DNA 结构 |
+| `node_declaration.cc` | +20/-4 | 修改 | references_other_outputs() 实现 + anonymous_attribute_output 重构 |
 | `NOD_node_declaration.hh` | +7 | 修改 | references_other_outputs() 声明 |
 | `NOD_sync_sockets.hh` | +4 | 修改 | 同步接口声明 |
-| `node_declaration.cc` | +24/-4 | 修改 | references_other_outputs() 实现 + 重构 |
-| `node_common.cc` | +1 | 修改 | 通用节点支持（include 头文件） |
+| `CMakeLists.txt` | +2 | 修改 | 构建系统更新 |
 | `trace_values.cc` | +3 | 修改 | 值追踪集成 |
+| `node_add_menu_geometry.py` | +1 | 修改 | 菜单注册 |
+| `node_draw.cc` | +1 | 修改 | 节点绘制 |
+| `node_common.cc` | +1 | 修改 | 通用节点 include |
+| `NOD_geometry_nodes_closure_signature.hh` | +1 | 修改 | 签名前向声明 |
+| `closure_to_list_anonymous_attributes.blend` | +3 | 新增 | 测试文件 |
+| `closure_to_list.blend` | +3 | 新增 | 测试文件 |
+
+> 共 19 个文件，+741/-4（净增 737 行）
 
 ---
 
 ## 2. 与 Field to List 的根本区别
 
 ```mermaid
-graph TB
+graph LR
     subgraph "Field to List — 字段求值"
         FT2["输入: Field (数学表达式)"]
         FT3["过程: FieldEvaluator 批量求值"]
@@ -218,7 +223,7 @@ classDiagram
         +char* name = nullptr
     }
 
-    note for GeometryNodeClosureToListItem "比 FieldToListItem 多了:\n1. structure_type — 闭包输出可以是 Single/Field/List\n2. _pad[1] — 内存对齐填充"
+    note for GeometryNodeClosureToListItem "比 FieldToListItem 多了:<br/>1. structure_type — 闭包输出可以是 Single/Field/List <br/> 2. _pad[1] — 内存对齐填充"
 ```
 
 **字段详解**：
@@ -401,7 +406,7 @@ struct ClosureToListItemsAccessor : public socket_items::SocketItemsAccessorDefa
 ### 关键常量与方法详解
 
 ```mermaid
-graph TB
+graph LR
     subgraph "类型特征"
         HT["has_type = true<br/>项有数据类型选择"]
         HN["has_name = true<br/>项有名称"]
@@ -436,7 +441,7 @@ graph TB
 这是 Closure to List 与 Field to List 最关键的区别之一。Field to List 的每个项都有对应的输入 Socket（如 `"Item_0"` 用于接收 Field），但 Closure to List **没有**——所有输入都通过唯一的 Closure 输入传递。
 
 ```mermaid
-graph LR
+graph TD
     subgraph "Field to List — 每项有输入"
         FL_In0["⬅ Value_0 (Float Field)"]
         FL_In1["⬅ Value_1 (Vector Field)"]
