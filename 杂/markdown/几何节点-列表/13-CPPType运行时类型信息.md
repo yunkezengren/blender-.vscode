@@ -163,10 +163,10 @@ flowchart LR
 | `GeometrySet` | ❌ | ❌ | ❌ | 内部有共享指针 |
 | 有虚函数的类 | ❌ | ❌ | ❌ | 虚函数表指针不能 memcpy |
 
-**在 CPPType 中的实际影响**：
+**在 CPPType 中的实际影响**（以下为**示意代码**，展示优化逻辑，非 Blender 源码中的实际实现）：
 
 ```cpp
-// copy_construct_n：trivial 类型用 memcpy，否则逐个拷贝构造
+// 示意：copy_construct_n 的优化逻辑
 void copy_construct_n(const void *src, void *dst, int64_t n) {
     if (is_trivial) {
         memcpy(dst, src, size * n);        // 一次内存拷贝，极快
@@ -177,7 +177,7 @@ void copy_construct_n(const void *src, void *dst, int64_t n) {
     }
 }
 
-// destruct_n：trivially_destructible 类型跳过析构
+// 示意：destruct_n 的优化逻辑
 void destruct_n(void *ptr, int64_t n) {
     if (is_trivially_destructible) {
         return;  // 什么都不做
@@ -189,7 +189,33 @@ void destruct_n(void *ptr, int64_t n) {
 }
 ```
 
-对于 10000 个 `float`，`memcpy` 约 40KB 一次拷贝；逐个拷贝构造要调用 10000 次构造函数。差距可达 10-100 倍。
+> **实际实现**：Blender 源码中，这些优化在**类型注册时**就决定了——通过 `if constexpr (std::is_trivially_copy_constructible_v<T>)` 在编译期选择函数指针。例如 [BLI_cpp_type_make.hh:375~387](../../source/blender/blenlib/BLI_cpp_type_make.hh) 的注册逻辑：
+>
+> ```cpp
+> if constexpr (std::is_copy_constructible_v<T>) {
+>   if constexpr (std::is_trivially_copy_constructible_v<T>) {
+>     // trivial 类型：直接用 copy_assign_（内部是 memcpy）
+>     copy_construct_ = copy_assign_;
+>     copy_construct_n_ = copy_assign_n_;
+>   }
+>   else {
+>     // 非 trivial 类型：逐个调用构造函数
+>     copy_construct_ = copy_construct_cb<T>;
+>     copy_construct_n_ = copy_construct_n_cb<T>;
+>   }
+> }
+> ```
+>
+> **实际例子对比**：
+>
+> | 类型 | `is_trivial` | `copy_construct_n_` 指向 | `destruct_n_` 指向 | 10000 个元素的操作 |
+> |------|-------------|-------------------------|-------------------|-------------------|
+> | `int` | ✅ true | `copy_assign_n_`（内部 `memcpy`） | `nullptr`（跳过） | `memcpy` 一次拷贝 40KB，零析构 |
+> | `float3` | ✅ true | `copy_assign_n_`（内部 `memcpy`） | `nullptr`（跳过） | `memcpy` 一次拷贝 120KB，零析构 |
+> | `GeometrySet` | ❌ false | `copy_construct_cb<T>`（逐个构造） | `destruct_cb<T>`（逐个析构） | 逐个调用构造函数，逐个析构共享指针 |
+> | `std::string` | ❌ false | `copy_construct_cb<T>`（逐个构造） | `destruct_cb<T>`（逐个析构） | 逐个深拷贝字符串内容，逐个释放堆内存 |
+>
+> 对于 10000 个 `int`，`memcpy` 约 40KB 一次拷贝；逐个拷贝构造要调用 10000 次构造函数。差距可达 10-100 倍。对于 `GeometrySet`，逐个构造需要增加引用计数、逐个析构需要减少引用计数——无法批量优化。
 
 ### 函数指针成员
 
