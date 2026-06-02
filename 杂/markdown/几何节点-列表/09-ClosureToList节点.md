@@ -1,4 +1,4 @@
-﻿﻿# Closure to List 节点
+﻿# Closure to List 节点
 
 > 📖 系列文档：[目录](01-列表系统架构与核心数据结构.md) | [上一篇](08-FieldToList节点.md) | [下一篇](10-列表函数求值系统.md)
 > 源码文件：[node_geo_closure_to_list.cc](../../source/blender/nodes/geometry/nodes/node_geo_closure_to_list.cc)

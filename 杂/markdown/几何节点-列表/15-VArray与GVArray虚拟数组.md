@@ -270,14 +270,14 @@ static GVArray from_empty(const CPPType &type);
 
 ```mermaid
 sequenceDiagram
-    participant VA as VArray&lt;float&gt;
+    participant VA as VArray<float>
     participant GVA as GVArray
-    participant VA2 as VArray&lt;float&gt;
+    participant VA2 as VArray<float>
 
     Note over VA: 编译期类型 float
     VA->>GVA: 隐式转换<br/>检查 common_info<br/>Span/Single → 零开销<br/>其他 → 包装为 GVArrayImpl_For_VArray
-    Note over GVA: 运行时类型 CPPType::get&lt;float&gt;()
-    GVA->>VA2: typed&lt;float&gt;()<br/>检查 common_info<br/>Span/Single → 零开销<br/>其他 → 包装为 VArrayImpl_For_GVArray
+    Note over GVA: 运行时类型 CPPType::get<float>()
+    GVA->>VA2: typed<float>()<br/>检查 common_info<br/>Span/Single → 零开销<br/>其他 → 包装为 VArrayImpl_For_GVArray
 ```
 
 ### VArray → GVArray（隐式转换）
