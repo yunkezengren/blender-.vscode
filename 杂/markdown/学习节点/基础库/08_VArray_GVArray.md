@@ -74,7 +74,48 @@ flowchart TB
 
 ## 2. VArray 解决什么痛点
 
-### 2.1 痛点一：调用者不想做数据转换
+### 2.1 文件头注释详解
+
+源码文件 [BLI_virtual_array.hh](../../source/blender/blenlib/BLI_virtual_array.hh) 开头的注释翻译：
+
+> **"A virtual array is a data structure that behaves similarly to an array, but its elements are accessed through virtual methods."**
+>
+> 虚拟数组是一种行为类似数组的数据结构，但它的元素通过虚方法访问。
+
+> **"Its purpose is to allow code that uses arrays to also work with data that is not actually stored as an array. For example, a virtual array can represent a single value that is used for every index, or it can represent a function that computes a value for each index."**
+>
+> 它的目的是让使用数组的代码也能处理**实际上不是以数组形式存储的数据**。例如，虚拟数组可以表示"每个索引都返回同一个值"，或者"每个索引通过函数计算值"。
+
+> **"The disadvantage of using a virtual array is that calling a virtual method for every element access has some overhead compared to accessing elements in a plain array. However, in many cases, the overhead is negligible or is offset by the benefits of not having to convert data into an array format first."**
+>
+> 缺点是：每次元素访问都要调用虚方法，比直接访问数组有额外开销。但在很多场景下，这个开销可以忽略，或者被"不需要先把数据转成数组格式"的优势所抵消。
+
+> **"In some cases, the overhead of virtual method calls can be avoided by "devirtualizing" the virtual array. This means that the code that uses the virtual array is compiled multiple times for different storage types. This is useful when the overhead of virtual method calls is significant."**
+>
+> 某些情况下，可以通过"去虚拟化"避免虚方法调用开销——即为不同的存储类型编译多份代码。当虚方法开销显著时很有用。
+
+```mermaid
+flowchart TD
+    PROBLEM["痛点：数据不总是数组"]
+    
+    P1["所有值相同<br/>（如全部非循环）<br/>存 1 个值 vs 1000 个值"]
+    P2["值需要计算<br/>（如 position.x）<br/>没有预存数据"]
+    P3["数据在容器中<br/>（如 Vector&lt;T&gt;）<br/>需要统一接口"]
+    
+    SOL["VArray 解决方案"]
+    S1["VArrayImpl_For_Single<br/>单值广播"]
+    S2["VArrayImpl_For_Func<br/>函数生成"]
+    S3["VArrayImpl_For_Span<br/>包装数组"]
+    
+    PROBLEM --> P1 --> S1 --> SOL
+    PROBLEM --> P2 --> S2 --> SOL
+    PROBLEM --> P3 --> S3 --> SOL
+    
+    style PROBLEM fill:#e74c3c,color:#fff
+    style SOL fill:#2ecc71,color:#fff
+```
+
+### 2.2 痛点一：调用者不想做数据转换
 
 假设你写了一个函数，接受一组浮点数做某种计算：
 
@@ -194,7 +235,35 @@ flowchart TB
     style FUNC fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
 ```
 
-### 3.2 实现一：VArrayImpl_For_Span（包装数组）
+### 3.2 VArrayImpl — 抽象基类注释详解
+
+```cpp
+// BLI_virtual_array.hh:88~99
+template<typename T> class VArrayImpl {
+ public:
+  virtual ~VArrayImpl() = default;
+
+  /* Get the element at the given index. */
+  virtual T get(const int64_t index) const = 0;
+
+  /* Return info about the virtual array implementation that allows for
+   * optimizations. For example, it may tell whether the virtual array is
+   * stored as a span or as a single value. */
+  virtual CommonVArrayInfo common_info() const
+  {
+    return CommonVArrayInfo{};
+  }
+  // ...
+};
+```
+
+> **`get(index)` 注释**："Get the element at the given index."——获取给定索引处的元素。这是所有虚拟数组实现的核心方法——每个子类都必须实现它。
+>
+> **`common_info()` 注释**："Return info about the virtual array implementation that allows for optimizations. For example, it may tell whether the virtual array is stored as a span or as a single value."——返回虚拟数组实现的信息，用于优化。例如，可以告诉调用者底层是 Span 还是 Single。
+>
+> **为什么 `common_info()` 有默认实现？** 因为不是所有实现都需要特殊优化。`VArrayImpl_For_Func`（函数生成）就用默认实现（返回 `Type::Any`），因为函数没有可优化的内部结构。而 `VArrayImpl_For_Span` 和 `VArrayImpl_For_Single` 重写了此方法，返回 `Type::Span` 和 `Type::Single`，让调用者可以走快速路径。
+
+### 3.3 实现一：VArrayImpl_For_Span（包装数组）
 
 ```cpp
 // BLI_virtual_array.hh:204~264
@@ -254,7 +323,39 @@ template<typename T> class VArrayImpl_For_Single final : public VArrayImpl<T> {
 
 **用例**：`curves.cyclic()` 在所有曲线都是非循环时，底层就是这个实现。
 
-### 3.4 实现三：VArrayImpl_For_Func（函数生成）
+### 3.5 实现三：VArrayImpl_For_Func（函数生成）
+
+```cpp
+// BLI_virtual_array.hh:375~423
+template<typename T, typename GetFunc> class VArrayImpl_For_Func final : public VArrayImpl<T> {
+```
+
+> **类注释**："This class makes it easy to create a virtual array for an existing function or lambda. The `GetFunc` should take a single `index` argument and return the value at that index."——这个类让为已有函数或 lambda 创建虚拟数组变得容易。`GetFunc` 应该接受一个 `index` 参数并返回该索引处的值。
+>
+> **为什么用模板参数 `GetFunc` 而非 `std::function<T(int64_t)>`？** 性能！`GetFunc` 是模板参数，编译器可以内联 lambda 的调用。`std::function` 有类型擦除开销（虚函数调用 + 堆分配）。源码也提供了 `from_std_func` 作为慢速替代——注释说："Same as #from_func, but uses a std::function instead of a template. This is slower, but requires less code generation. Therefore this should be used in non-performance critical code."（和 from_func 相同，但用 std::function 代替模板。更慢，但需要更少的代码生成。因此应该用在非性能关键代码中。）
+
+### 3.6 实现四：VArrayImpl_For_DerivedSpan（派生 Span）
+
+```cpp
+// BLI_virtual_array.hh:428~495
+template<typename StructT,
+         typename ElemT,
+         ElemT (*GetFunc)(const StructT &),
+         void (*SetFunc)(StructT &, ElemT) = nullptr>
+class VArrayImpl_For_DerivedSpan final : public VMutableArrayImpl<ElemT> {
+```
+
+> **类注释**："This is `final` so that #may_have_ownership can be implemented reliably."——标记为 `final` 以便 `may_have_ownership` 能可靠实现。`final` 阻止进一步继承，确保 `common_info()` 的 `may_have_ownership` 逻辑不会被错误覆盖。
+>
+> **这是什么？** 一个"转换视图"——底层存储的是 `StructT` 数组，但对外暴露为 `ElemT` 数组。每次 `get(index)` 调用 `GetFunc(data_[index])` 把 `StructT` 转为 `ElemT`。
+>
+> **模板参数**：
+> - `StructT`：底层存储的结构类型（如 `float4`）
+> - `ElemT`：对外暴露的元素类型（如 `float3`）
+> - `GetFunc`：从 `StructT` 提取 `ElemT` 的函数指针
+> - `SetFunc`：将 `ElemT` 写回 `StructT` 的函数指针（可选，`nullptr` 表示只读）
+>
+> **用例**：Blender 的自定义属性存储为 `float4`（4 字节对齐），但用户访问的是 `float3`（3 字节）。`VArrayImpl_For_DerivedSpan` 提供了一个零拷贝的"视图"——不需要把 `float4[]` 转成 `float3[]`，每次访问时调用转换函数。
 
 ```cpp
 // BLI_virtual_array.hh:375~423
@@ -277,7 +378,7 @@ template<typename T, typename GetFunc> class VArrayImpl_For_Func final : public 
 - 用于字段求值结果、派生属性等
 - 最灵活，但也最慢（每次都有函数调用开销）
 
-### 3.5 CommonVArrayInfo：快速类型探测
+### 3.7 CommonVArrayInfo：快速类型探测
 
 ```cpp
 // BLI_virtual_array.hh:47~71
@@ -293,6 +394,14 @@ struct CommonVArrayInfo {
   const void *data;  // 指向底层数据
 };
 ```
+
+> **`may_have_ownership` 注释**（源码中的 `VArrayImpl_For_Span_final` 和 `VArrayImpl_For_DerivedSpan`）："Whether the virtual array implementation may own the memory. This is useful to determine whether the data can be accessed safely even after the original data source has been modified or freed."——虚拟数组实现是否可能拥有内存。用于判断即使原始数据源被修改或释放后，数据是否仍然安全访问。
+>
+> - `Span` 模式：`may_have_ownership = true`（可能拥有，取决于是否通过 `from_container` 创建）
+> - `Single` 模式：`may_have_ownership = true`（拥有单值的拷贝）
+> - `Func` 模式：`may_have_ownership = true`（函数可能持有捕获变量的所有权）
+>
+> **`VArrayImpl_For_DerivedSpan` 特殊处理**：它的 `may_have_ownership = false`——因为它只是一个视图，不拥有底层数据。
 
 **作用**：通过一次虚函数调用 `common_info()`，外部就能知道底层是什么类型，从而选择优化路径。
 
@@ -459,6 +568,93 @@ T VArray<T>::operator[](int64_t index) const;
 ---
 
 ## 7. 可写版本与辅助类
+
+### 7.0 VArrayCommon 注释详解
+
+```cpp
+// BLI_virtual_array.hh:504~511
+/**
+ * Utility class to reduce code duplication for methods available on #VArray and #VMutableArray.
+ * Deriving #VMutableArray from #VArray would have some issues:
+ * - Static methods on #VArray would also be available on #VMutableArray.
+ * - It would allow assigning a #VArray to a #VMutableArray under some circumstances which is not
+ *   allowed and could result in hard to find bugs.
+ */
+template<typename T> class VArrayCommon {
+```
+
+> **为什么用 `VArrayCommon` 而非让 `VMutableArray` 继承 `VArray`？** 注释解释了两个问题：
+>
+> 1. **静态方法泄漏**：如果 `VMutableArray` 继承 `VArray`，`VArray` 的静态方法（如 `VArray::from_single`）也会出现在 `VMutableArray` 上——但 `from_single` 创建的是只读虚拟数组，不应该出现在可写类型上
+> 2. **隐式转换风险**：继承会允许在某些情况下把 `VArray` 赋值给 `VMutableArray`——这是不允许的，因为只读数组不能当可写数组用，可能导致难以发现的 bug
+>
+> 所以 `VArrayCommon` 是**组合**而非继承——`VArray` 和 `VMutableArray` 都继承 `VArrayCommon`，共享通用方法，但各自有独立的接口。
+
+### 7.0.1 VArray 类注释详解
+
+```cpp
+// BLI_virtual_array.hh:720~724
+/**
+ * A #VArray wraps a virtual array implementation and provides easy access to its elements. It can
+ * be copied and moved. While it is relatively small, it should still be passed by reference if
+ * possible (other than e.g. #Span).
+ */
+template<typename T> class VArray : public VArrayCommon<T> {
+```
+
+> **"It can be copied and moved"**——VArray 可以拷贝和移动。拷贝 VArray 是浅拷贝——只复制 `impl_`（`AnyDerived`），不复制底层数据。底层通过 `shared_ptr` 共享。
+>
+> **"While it is relatively small, it should still be passed by reference if possible (other than e.g. #Span)"**——虽然 VArray 相对较小（约 32-48 字节），但仍然应该尽量按引用传递。注意 `Span` 不同——`Span` 只有 16 字节（指针+大小），按值传递和按引用传递性能差不多，所以 `Span` 通常按值传递。但 `VArray` 包含 `AnyDerived`，拷贝需要增加引用计数，开销更大。
+
+### 7.0.2 `operator[]` 注释详解
+
+```cpp
+// BLI_virtual_array.hh:543~549
+/**
+ * Get the element at a specific index.
+ * \note This can't return a reference because the value may be computed on the fly. This also
+ * implies that one can not use this method for assignments.
+ */
+T operator[](const int64_t index) const
+{
+  BLI_assert(*this);
+  BLI_assert(index >= 0);
+  BLI_assert(index < this->size());
+  return impl_->get(index);
+}
+```
+
+> **"This can't return a reference because the value may be computed on the fly"**——不能返回引用，因为值可能是即时计算的。`VArrayImpl_For_Func` 每次调用 `get()` 都计算一个新值，这个值存在临时变量中，函数返回后就没了——无法返回引用。
+>
+> **"This also implies that one can not use this method for assignments"**——这也意味着不能用 `[]` 赋值。`varray[i] = value` 需要返回引用，但 `operator[]` 返回值（`T`），不是引用（`T&`）。可写版本用 `VMutableArray::set(index, value)` 代替。
+
+### 7.0.3 varray_tag 注释详解
+
+```cpp
+// BLI_virtual_array.hh:707~718
+/**
+ * Various tags to disambiguate constructors of virtual arrays.
+ * Generally it is easier to use `VArray::from_*` functions to construct virtual arrays, but
+ * sometimes being able to use the constructor can result in better performance. For example, when
+ * constructing the virtual array directly in a vector. Without the constructor one would have to
+ * construct the virtual array first and then move it into the vector.
+ */
+namespace varray_tag {
+struct span {};
+struct single_ref {};
+struct single {};
+}  // namespace varray_tag
+```
+
+> **"Various tags to disambiguate constructors"**——各种标签，用于消除构造函数的歧义。因为 `VArray` 的构造函数可能接受多种参数类型，标签帮助编译器区分。
+>
+> **"Sometimes being able to use the constructor can result in better performance"**——有时用构造函数比 `from_*` 静态方法性能更好。例如直接在 vector 中构造虚拟数组——用构造函数可以原地构造（`vector.emplace_back(varray_tag::span{}, my_span)`），用 `from_*` 则需要先构造再移动。
+>
+> | 标签 | 对应 | 等价静态方法 |
+> |------|------|------------|
+> | `varray_tag::span` | 从 Span 构造 | `VArray::from_span()` |
+> | `varray_tag::single` | 从单值构造（拷贝） | `VArray::from_single()` |
+> | `varray_tag::single_ref` | 从单值引用构造 | 无直接等价 |
 
 ### 7.1 VMutableArray<T>
 
