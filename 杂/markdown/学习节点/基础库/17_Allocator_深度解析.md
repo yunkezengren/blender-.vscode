@@ -1460,6 +1460,72 @@ flowchart LR
 
 ---
 
+## 附录 A-1：STRINGIFY 宏与 AT 宏详解
+
+### 为什么 AT 宏需要 STRINGIFY？
+
+```cpp
+// BLI_utildefines.h:585
+#define AT __FILE__ ":" STRINGIFY(__LINE__)
+```
+
+`AT` 用在 Allocator 的 `allocate` 调用中，生成 `"文件名:行号"` 字符串用于内存调试。它依赖 `STRINGIFY` 宏将 `__LINE__` 转为字符串。
+
+### 三个 STRINGIFY 宏
+
+```cpp
+// BLI_utildefines.h:443~445
+#define STRINGIFY_ARG(x) "" #x
+#define STRINGIFY_APPEND(a, b) "" a #b
+#define STRINGIFY(x) STRINGIFY_APPEND("", x)
+```
+
+### 核心问题：为什么需要两层宏？
+
+C 预处理器有一条关键规则：**当宏参数出现在 `#`（字符串化）旁边时，该参数不会被展开。**
+
+```mermaid
+flowchart TD
+    subgraph "❌ 直接用 STRINGIFY_APPEND"
+        A1["STRINGIFY_APPEND(\"\", __LINE__)"]
+        A2["#b 阻止展开 → \"__LINE__\""]
+        A1 --> A2
+    end
+    subgraph "✅ 用 STRINGIFY 包装"
+        B1["STRINGIFY(__LINE__)"]
+        B2["→ STRINGIFY_APPEND(\"\", __LINE__)<br/>外层替换时 x 旁无 #，__LINE__ 展开"]
+        B3["→ STRINGIFY_APPEND(\"\", 476)<br/>内层 #b 字符串化 476 → \"476\""]
+        B1 --> B2 --> B3
+    end
+
+    style A2 fill:#e74c3c,color:#fff
+    style B3 fill:#2ecc71,color:#fff,stroke:#27ae60,stroke-width:3px
+```
+
+### 逐步展开 AT 宏
+
+```
+AT
+→ __FILE__ ":" STRINGIFY(__LINE__)
+→ "BLI_array.hh" ":" STRINGIFY_APPEND("", __LINE__)
+→ "BLI_array.hh" ":" STRINGIFY_APPEND("", 476)    ← __LINE__ 展开了！
+→ "BLI_array.hh" ":" "" "476"
+→ "BLI_array.hh:476"                               ← 最终结果
+```
+
+### 命名与用途
+
+| 宏 | 全称 | 功能 |
+|----|------|------|
+| `STRINGIFY_ARG` | string-ify **arg**ument | 把参数**原样**转字符串（不展开宏） |
+| `STRINGIFY_APPEND` | string-ify **append** | 字符串拼接 + 字符串化（内部辅助） |
+| `STRINGIFY` | string-ify | 把参数**展开后的值**转字符串（日常使用） |
+| `AT` | **at**（位置） | `__FILE__` + `:` + `__LINE__` → 内存调试标识 |
+
+> 💡 **记忆**：`STRINGIFY_ARG` → 参数的**名字**，`STRINGIFY` → 参数的**值**。这是 C 预处理器的经典惯用法——**双层字符串化技巧（Double-Stringify Trick）**。
+
+---
+
 ## 附录 A：allocate_zero、memset、calloc 详解
 
 ### A.1 allocate_zero 是什么？
