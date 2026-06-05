@@ -1,6 +1,6 @@
 # Filter List 节点
 
-> 📖 系列文档：[目录](01-列表系统架构与核心数据结构.md) | [上一篇](06-GetListItem节点.md) | [下一篇](08-FieldToList节点.md)
+> 📖 系列文档：[目录](01-列表系统架构与核心数据结构.md) | [上一篇](06-GetListItem节点.md) | [下一篇](07.5-SortList节点.md)
 > 源码文件：[node_geo_filter_list.cc](../../source/blender/nodes/geometry/nodes/node_geo_filter_list.cc)
 
 ---

@@ -52,6 +52,7 @@
 | [`207d331f708`](https://projects.blender.org/blender/blender/commit/207d331f708) | 2026-05-21 | **Geometry Nodes: Filter List node** — 新增过滤列表节点 |
 | [`f6ae6f7368a`](https://projects.blender.org/blender/blender/commit/f6ae6f7368a) | 2026-05-27 | Support empty exclusion list in Transfer Attributes node |
 | [`e7e84d44608`](https://projects.blender.org/blender/blender/commit/e7e84d44608) | 2026-05-28 | **Geometry Nodes: Closure to List node** — 新增闭包转列表节点 |
+| [`a62bcf847a3`](https://projects.blender.org/blender/blender/commit/a62bcf847a3) | 2026-06-03 | **Geometry Nodes: Sort List node** — 新增排序列表节点，从 Sort Elements 提取共享排序算法 |
 
 ---
 
@@ -68,7 +69,8 @@
     ├── 273ee80a021  (2026-04-30) Move lists out of experimental
     │
     ├── 207d331f708  (2026-05-21) Filter List node (新节点)
-    └── e7e84d44608  (2026-05-28) Closure to List node (新节点)
+    ├── e7e84d44608  (2026-05-28) Closure to List node (新节点)
+    └── a62bcf847a3  (2026-06-03) Sort List node (新节点，共享排序算法)
 ```
 
 ---
@@ -84,6 +86,7 @@
 | `source/blender/nodes/geometry/nodes/node_geo_list_get_item.cc` | "Get List Item" 节点 |
 | `source/blender/nodes/geometry/nodes/node_geo_list_length.cc` | "List Length" 节点 |
 | `source/blender/nodes/geometry/nodes/node_geo_closure_to_list.cc` | "Closure to List" 节点（新增） |
+| `source/blender/nodes/geometry/nodes/node_geo_sort_list.cc` | "Sort List" 节点（新增） |
 | `source/blender/nodes/geometry/nodes/node_geo_items_to_list.cc` | "Items to List" 节点（新增） |
 
 ### 核心实现文件

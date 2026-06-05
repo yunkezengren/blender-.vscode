@@ -16,6 +16,7 @@ set Branch=blender
 set nj_Branch=E:\blender-git\%Branch%_ninja_lite_debug
 make nobuild ninja lite debug builddir %nj_Branch%
 cd %nj_Branch%
+code CmakeCache.txt
 
 @REM set nj_Branch=E:\blender-git\%Branch%_ninja_debug
 @REM make nobuild ninja debug builddir %nj_Branch%
@@ -24,9 +25,7 @@ cd %nj_Branch%
 @REM set nj_Branch=E:\blender-git\%Branch%_ninja_debug_developer
 @REM make nobuild ninja debug developer builddir %nj_Branch%
 @REM cd %nj_Branch%
-
-
-code CmakeCache.txt
+@REM code CmakeCache.txt
 
 @REM   可以按需要启用一些
 @REM   启用 CMAKE_EXPORT_COMPILE_COMMANDS: 会在构建目录中创建 compile_commands.json  Vscode c++ 扩展需要这个(用clangd可能不需要了)
