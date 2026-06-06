@@ -35,6 +35,10 @@
     - [output\_is\_required 优化](#output_is_required-优化)
     - [Socket 类型验证](#socket-类型验证)
   - [8. 并行执行详解](#8-并行执行详解)
+    - [8.1 ClosurePtr — 闭包的共享指针](#81-closureptr--闭包的共享指针)
+    - [8.2 ClosureFunctionIndices — LF 输入/输出索引映射](#82-closurefunctionindices--lf-输入输出索引映射)
+    - [8.3 并行执行核心代码](#83-并行执行核心代码)
+    - [8.4 关键函数与类详解](#84-关键函数与类详解)
     - [闭包参数的生命周期](#闭包参数的生命周期)
     - [线程安全分析](#线程安全分析)
   - [9. evaluate\_closure\_eagerly 内部机制](#9-evaluate_closure_eagerly-内部机制)
@@ -51,7 +55,12 @@
     - [与其他计算上下文的对比](#与其他计算上下文的对比)
   - [11. 结果收集的两种路径](#11-结果收集的两种路径)
     - [快速路径（所有结果都是单值）](#快速路径所有结果都是单值)
+    - [socket\_type\_to\_geo\_nodes\_base\_cpp\_type 详解](#socket_type_to_geo_nodes_base_cpp_type-详解)
+    - [get\_single\_ptr\_raw 和 const\_cast 详解](#get_single_ptr_raw-和-const_cast-详解)
+    - [type.move\_construct 详解](#typemove_construct-详解)
     - [通用路径（结果包含复杂类型）](#通用路径结果包含复杂类型)
+    - [GList::from\_container 详解](#glistfrom_container-详解)
+    - [construct\_socket\_default\_value 详解](#construct_socket_default_value-详解)
     - [何时走快速路径 vs 通用路径？](#何时走快速路径-vs-通用路径)
     - [快速路径的性能优势](#快速路径的性能优势)
   - [12. 节点生命周期函数](#12-节点生命周期函数)
@@ -65,6 +74,14 @@
     - [生命周期函数总览](#生命周期函数总览)
   - [13. 闭包签名（Closure Signature）详解](#13-闭包签名closure-signature详解)
     - [ClosureSignature 类结构](#closuresignature-类结构)
+    - [ClosureSignature::Item 详解](#closuresignatureitem-详解)
+    - [ItemKeyGetter — 为什么需要单独的类？](#itemkeygetter--为什么需要单独的类)
+    - [CustomIDVectorSet 详解](#customidvectorset-详解)
+      - [定义](#定义)
+      - [模板参数](#模板参数)
+      - [CustomIDHash — 自定义哈希](#customidhash--自定义哈希)
+      - [CustomIDEqual — 自定义相等判断](#customidequal--自定义相等判断)
+      - [在 ClosureSignature 中的使用](#在-closuresignature-中的使用)
     - [from\_closure\_to\_list\_node 实现](#from_closure_to_list_node-实现)
     - [签名的作用](#签名的作用)
     - [三种签名工厂方法对比](#三种签名工厂方法对比)
@@ -764,6 +781,37 @@ for (const int i : closure_results.index_range()) {
 
 > **`placement new`**：在已分配的 `Array<Array<...>>` 内存上构造内部 `Array`。外层 `Array` 使用 `NoInitialization`，所以需要手动构造每个元素。这是 C++ 的高级用法——将对象构造与内存分配分离。
 
+```mermaid
+flowchart TD
+    subgraph "closure_results 内存布局"
+        OUTER["Array&lt;Array&lt;SocketValueVariant&gt;&gt;<br/>size = required_items.size()"]
+        O0["closure_results[0]<br/>Array&lt;SVV&gt;(count, NoInit)"]
+        O1["closure_results[1]<br/>Array&lt;SVV&gt;(count, NoInit)"]
+        O2["closure_results[2]<br/>Array&lt;SVV&gt;(count, NoInit)"]
+
+        I00["[0] ?"] --> I01["[1] ?"] --> I02["[2] ?"] --> I03["..."]
+        I10["[0] ?"] --> I11["[1] ?"] --> I12["[2] ?"] --> I13["..."]
+        I20["[0] ?"] --> I21["[1] ?"] --> I22["[2] ?"] --> I23["..."]
+    end
+
+    OUTER --> O0
+    OUTER --> O1
+    OUTER --> O2
+    O0 --> I00
+    O1 --> I10
+    O2 --> I20
+
+    NOTE["? = 未初始化内存<br/>闭包执行后会就地构造"]
+
+    style OUTER fill:#2c3e50,color:#fff
+    style NOTE fill:#e74c3c,color:#fff
+    style I00 fill:#95a5a6,color:#fff
+    style I10 fill:#95a5a6,color:#fff
+    style I20 fill:#95a5a6,color:#fff
+```
+
+> **二维数组结构**：`closure_results[required_i][list_i]` 存储第 `required_i` 个输出项在第 `list_i` 次闭包执行的结果。外层按输出项索引，内层按列表索引。
+
 ### output_is_required 优化
 
 ```cpp
@@ -802,17 +850,121 @@ if (socket_types.as_span().contains(nullptr)) {
 
 ## 8. 并行执行详解
 
+### 8.1 ClosurePtr — 闭包的共享指针
+
+```cpp
+ClosurePtr closure = params.extract_input<ClosurePtr>("Closure"_ustr);
+```
+
+`ClosurePtr` 是 `ImplicitSharingPtr<Closure>` 的类型别名：
+
+```cpp
+// NOD_geometry_nodes_closure_fwd.hh
+class Closure;
+using ClosurePtr = ImplicitSharingPtr<Closure>;
+```
+
+`Closure` 类本身继承自 `ImplicitSharingMixin`，包含以下关键成员：
+
+```cpp
+// NOD_geometry_nodes_closure.hh
+class Closure : public ImplicitSharingMixin {
+ private:
+  std::shared_ptr<ClosureSignature> signature_;            // 闭包签名
+  std::optional<ClosureSourceLocation> source_location_;   // 源码位置（调试用）
+  std::shared_ptr<ClosureEvalLog> eval_log_;               // 求值日志
+  std::unique_ptr<ResourceScope> scope_;                   // 资源作用域（持有 LF 等资源）
+  const fn::lazy_function::LazyFunction &function_;        // 内部的惰性函数
+  ClosureFunctionIndices indices_;                         // 输入/输出索引映射
+  Vector<bke::SocketValueVariant> default_input_values_;   // 默认输入值
+  Vector<const bke::SocketValueVariant *> captured_values_; // 捕获的值
+};
+```
+
+```mermaid
+classDiagram
+    class Closure {
+        -shared_ptr~ClosureSignature~ signature_
+        -unique_ptr~ResourceScope~ scope_
+        -LazyFunction& function_
+        -ClosureFunctionIndices indices_
+        -Vector~SocketValueVariant~ default_input_values_
+        -Vector~SocketValueVariant*~ captured_values_
+        +signature() ClosureSignature&
+        +function() LazyFunction&
+        +indices() ClosureFunctionIndices&
+        +default_input_value(i) SocketValueVariant&
+    }
+
+    class ClosurePtr {
+        <<ImplicitSharingPtr~Closure~>>
+    }
+
+    ClosurePtr --> Closure : 共享指针
+```
+
+> **注释翻译**：
+> - *"A closure is like a node group that is passed around as a value."* — 闭包就像一个作为值传递的节点组
+> - *"Internally, a closure is a lazy-function."* — 内部是一个惰性函数
+> - *"It's not yet supported to request the potentially captured values from the Closure Zone lazily."* — 目前不支持从闭包区域惰性请求可能捕获的值
+
+### 8.2 ClosureFunctionIndices — LF 输入/输出索引映射
+
+闭包内部是一个 `LazyFunction`，但 LF 的输入/输出比闭包签名多得多——除了"主输入/输出"外，还有"输出使用标记"、"输入使用标记"、"数据引用集"等辅助输入/输出。`ClosureFunctionIndices` 描述了这些索引的映射关系。
+
+```cpp
+struct ClosureFunctionIndices {
+  struct {
+    IndexRange main;                          // 主输入（如 Index、Value）
+    IndexRange output_usages;                 // 每个输出的使用标记（bool）
+    Map<int, int> output_data_reference_sets; // 输出数据引用集（匿名属性传播）
+  } inputs;
+  struct {
+    IndexRange main;            // 主输出（如 Value、Position）
+    IndexRange input_usages;    // 每个输入的使用标记（bool）
+  } outputs;
+};
+```
+
+```mermaid
+flowchart TD
+    subgraph "LazyFunction 输入"
+        MI["main 输入<br/>[0, 1, ..., N-1]<br/>Index, Value, ..."]
+        OU["output_usages 输入<br/>[N, N+1, ..., N+M-1]<br/>bool: 输出0是否使用? 输出1是否使用?"]
+        DR["output_data_reference_sets 输入<br/>散列映射<br/>GeometryNodesReferenceSet"]
+    end
+
+    subgraph "LazyFunction 输出"
+        MO["main 输出<br/>[0, 1, ..., M-1]<br/>Value, Position, ..."]
+        IU["input_usages 输出<br/>[M, M+1, ..., M+N-1]<br/>bool: 输入0是否使用? 输入1是否使用?"]
+    end
+
+    style MI fill:#3498db,color:#fff
+    style OU fill:#e67e22,color:#fff
+    style DR fill:#9b59b6,color:#fff
+    style MO fill:#2ecc71,color:#fff
+    style IU fill:#f39c12,color:#fff
+```
+
+> **为什么需要 `output_usages`？** Lazy Function 框架是惰性求值的——只有被请求的输出才会被计算。`output_usages` 告诉闭包"哪些输出需要计算"，避免不必要的计算。
+>
+> **为什么需要 `input_usages`？** 闭包可能想知道"调用者是否需要某个输入"，从而决定是否跳过该输入的获取。
+>
+> **`output_data_reference_sets`** — 匿名属性传播。告诉闭包"哪些匿名属性需要传播到输出"。
+
+### 8.3 并行执行核心代码
+
 ```cpp
 const bke::bNodeSocketType *int_type = bke::node_socket_type_find("NodeSocketInt");
 threading::parallel_for(IndexRange(count), 8, [&](const IndexRange range) {
   ClosureEagerEvalParams closure_params;
 
-  // 创建输入：Index
+  /* Create inputs. */
   closure_params.inputs.resize(1);
   closure_params.inputs[0].key = "Index";
   closure_params.inputs[0].type = int_type;
 
-  // 创建输出：与动态项对应
+  /* Create outputs. */
   closure_params.outputs.resize(required_items.size());
   for (const int required_i : required_items.index_range()) {
     const int item_i = required_items[required_i];
@@ -821,16 +973,15 @@ threading::parallel_for(IndexRange(count), 8, [&](const IndexRange range) {
   }
 
   for (const int64_t list_i : range) {
-    // 设置当前索引作为输入
+    /* Create input value. */
     BLI_assert(list_i < std::numeric_limits<int>::max());
     closure_params.inputs[0].value = bke::SocketValueVariant::From(int(list_i));
 
-    // 设置输出位置
+    /* Set output locations. */
     for (const int required_i : required_items.index_range()) {
       closure_params.outputs[required_i].value = &closure_results[required_i][list_i];
     }
 
-    // 创建计算上下文
     const bke::ClosureToListComputeContext context(
         parent_user_data.compute_context, node.identifier, int(list_i));
     GeoNodesUserData user_data = parent_user_data;
@@ -838,13 +989,146 @@ threading::parallel_for(IndexRange(count), 8, [&](const IndexRange range) {
     user_data.verbose_log = should_log_verbose_in_context(user_data, context.hash());
     closure_params.user_data = &user_data;
 
-    // 执行闭包
     evaluate_closure_eagerly(*closure, closure_params);
   }
 });
 ```
 
-> **`grain_size = 8`**：每个任务至少处理 8 个索引。注释原文："The grain size is completely arbitrary since we don't know how expensive the closure is. However since the closure evaluation itself has fairly high overhead, it makes to optimize for the case where each task has a relatively high cost."
+### 8.4 关键函数与类详解
+
+#### `bke::node_socket_type_find("NodeSocketInt")`
+
+通过 Socket 的 `idname`（字符串标识符）查找全局注册的 `bNodeSocketType` 对象。每个 Socket 类型（Float、Int、Vector 等）在 Blender 启动时注册到全局类型表中。
+
+```mermaid
+flowchart LR
+    ID["'NodeSocketInt'"] --> FIND["node_socket_type_find()"]
+    REG["全局类型表"] --> FIND
+    FIND --> RESULT["bNodeSocketType*<br/>包含：base_cpp_type<br/>geometry_nodes_default_value<br/>..."]
+
+    style FIND fill:#3498db,color:#fff
+    style RESULT fill:#2ecc71,color:#fff
+```
+
+> **`bNodeSocketType`** — Socket 类型的元信息。包含：
+> - `base_cpp_type` — 对应的 `CPPType`（如 `CPPType::get<int>()`）
+> - `geometry_nodes_default_value` — 几何节点中的默认值（`SocketValueVariant`）
+> - `idname` — 类型标识符（如 `"NodeSocketInt"`）
+
+#### `bke::SocketValueVariant::From(int(list_i))`
+
+工厂方法，从值创建 `SocketValueVariant`：
+
+```cpp
+// BKE_node_socket_value.hh
+template<typename T> inline SocketValueVariant SocketValueVariant::From(T &&value)
+{
+  SocketValueVariant value_variant;
+  value_variant.set(std::forward<T>(value));
+  return value_variant;
+}
+```
+
+> **注释翻译**：*"Create a new #SocketValueVariant from the given value."* — 从给定值创建新的 SocketValueVariant。
+
+> **为什么用 `From` 而不是构造函数？** `SocketValueVariant` 的构造函数是默认构造（创建空值），而 `From` 是显式的工厂方法，语义更清晰——"从值创建"。
+
+```mermaid
+flowchart LR
+    INDEX["list_i = 3"]
+    FROM["SocketValueVariant::From(3)"]
+    SVV["SocketValueVariant<br/>kind=Single<br/>value=3 (int)"]
+
+    INDEX --> FROM --> SVV
+
+    style FROM fill:#3498db,color:#fff
+    style SVV fill:#2ecc71,color:#fff
+```
+
+#### `closure_params.inputs[0].value` 赋值
+
+每次循环更新输入值。`InputItem::value` 是 `SocketValueVariant` 类型（不是指针），赋值时自动管理内存。`From` 返回的临时对象被移动赋值到 `inputs[0].value`。
+
+> **为什么 `key` 和 `type` 只设置一次？** 所有循环迭代的输入结构相同（都叫 "Index"，都是 Int 类型），只是值不同。将不变的部分提到循环外，避免重复的字符串拷贝和类型查找。
+
+#### `closure_params.outputs[required_i].value = &closure_results[required_i][list_i]`
+
+将输出位置指向 `closure_results` 中的对应位置。`OutputItem::value` 是 `SocketValueVariant *`——指向未初始化内存的指针。`evaluate_closure_eagerly` 会在这个位置就地构造值。
+
+```mermaid
+flowchart TD
+    subgraph "closure_params.outputs"
+        O0["outputs[0].value"]
+        O1["outputs[1].value"]
+    end
+
+    subgraph "closure_results"
+        R0_3["closure_results[0][3]<br/>未初始化"]
+        R1_3["closure_results[1][3]<br/>未初始化"]
+    end
+
+    O0 -->|"指向"| R0_3
+    O1 -->|"指向"| R1_3
+
+    EVAL["evaluate_closure_eagerly()"]
+    EVAL -->|"new (ptr) SocketValueVariant(...)"| R0_3
+    EVAL -->|"new (ptr) SocketValueVariant(...)"| R1_3
+
+    style O0 fill:#3498db,color:#fff
+    style O1 fill:#3498db,color:#fff
+    style R0_3 fill:#e67e22,color:#fff
+    style R1_3 fill:#e67e22,color:#fff
+    style EVAL fill:#9b59b6,color:#fff
+```
+
+> **`&closure_results[required_i][list_i]`**：取地址操作。`closure_results[required_i]` 是 `Array<SocketValueVariant>`，`[list_i]` 返回元素的引用，`&` 取得指针。这个指针指向未初始化的内存——`evaluate_closure_eagerly` 负责在此处构造值。
+
+#### `ClosureToListComputeContext` — 计算上下文
+
+```cpp
+const bke::ClosureToListComputeContext context(
+    parent_user_data.compute_context, node.identifier, int(list_i));
+```
+
+每个列表索引需要独立的计算上下文，因为：
+1. **日志隔离**：不同索引的日志需要区分（调试时能看到"第3个元素的闭包求值"）
+2. **缓存隔离**：惰性函数框架的缓存以计算上下文为键，不同索引不能共享缓存
+3. **匿名属性传播**：属性传播依赖计算上下文确定来源
+
+```mermaid
+flowchart TD
+    PARENT["parent_compute_context<br/>（Closure to List 节点的外部上下文）"]
+    C0["context(list_i=0)<br/>hash = hash(parent, node_id, 0)"]
+    C1["context(list_i=1)<br/>hash = hash(parent, node_id, 1)"]
+    C2["context(list_i=2)<br/>hash = hash(parent, node_id, 2)"]
+
+    PARENT --> C0
+    PARENT --> C1
+    PARENT --> C2
+
+    style PARENT fill:#2c3e50,color:#fff
+    style C0 fill:#e74c3c,color:#fff
+    style C1 fill:#3498db,color:#fff
+    style C2 fill:#2ecc71,color:#fff
+```
+
+#### `GeoNodesUserData user_data = parent_user_data`
+
+复制父级 `user_data`，然后修改 `compute_context` 指针。这是值类型复制——不会影响父级数据。每个线程、每个索引都有独立的 `user_data` 实例。
+
+> **为什么不能共享 `user_data`？** 因为 `compute_context` 指针指向栈上的 `context` 变量，而 `context` 在每次循环迭代中都是不同的。如果共享 `user_data`，所有迭代会使用同一个 `compute_context`，导致日志和缓存混乱。
+
+#### `should_log_verbose_in_context`
+
+```cpp
+user_data.verbose_log = should_log_verbose_in_context(user_data, context.hash());
+```
+
+检查当前计算上下文是否需要详细日志。Blender 的节点编辑器可以右键节点选择"查看日志"，此时只有该节点对应的计算上下文会记录详细日志，其他上下文跳过以节省性能。
+
+> **注释翻译**：*"The grain size is completely arbitrary since we don't know how expensive the closure is. However since the closure evaluation itself has fairly high overhead, it makes to optimize for the case where each task has a relatively high cost."*
+>
+> 翻译：粒度大小完全是任意的，因为我们不知道闭包有多昂贵。然而，由于闭包求值本身有相当高的开销，优化每个任务有相对高成本的情况是有意义的。
 
 > **`BLI_assert(list_i < std::numeric_limits<int>::max())`**：确保索引值不超出 `int` 范围。`list_i` 是 `int64_t`，但闭包输入的 Index 是 `int` 类型。
 
@@ -1237,6 +1521,82 @@ if (std::all_of(values.begin(), values.end(), [](const bke::SocketValueVariant &
 
 > **`socket_type_to_geo_nodes_base_cpp_type`**：将 Socket 类型映射到对应的 `CPPType`。例如 `SOCK_FLOAT` → `CPPType::get<float>()`，`SOCK_GEOMETRY` → `CPPType::get<GeometrySet>()`。
 
+#### `socket_type_to_geo_nodes_base_cpp_type` 详解
+
+这个函数将 DNA 中存储的 `eNodeSocketDatatype` 枚举映射到运行时的 `CPPType` 引用：
+
+```cpp
+// node.cc:5794~5831
+const CPPType *socket_type_to_geo_nodes_base_cpp_type(const eNodeSocketDatatype type)
+{
+  const CPPType *cpp_type;
+  switch (type) {
+    case SOCK_FLOAT:    cpp_type = &CPPType::get<float>();              break;
+    case SOCK_INT:      cpp_type = &CPPType::get<int>();                break;
+    case SOCK_RGBA:     cpp_type = &CPPType::get<ColorGeometry4f>();    break;
+    case SOCK_BOOLEAN:  cpp_type = &CPPType::get<bool>();               break;
+    case SOCK_VECTOR:   cpp_type = &CPPType::get<float3>();             break;
+    case SOCK_ROTATION: cpp_type = &CPPType::get<math::Quaternion>();   break;
+    case SOCK_MATRIX:   cpp_type = &CPPType::get<float4x4>();           break;
+    case SOCK_BUNDLE:   cpp_type = &CPPType::get<nodes::BundlePtr>();   break;
+    case SOCK_CLOSURE:  cpp_type = &CPPType::get<nodes::ClosurePtr>();  break;
+    default:            cpp_type = slow_socket_type_to_geo_nodes_base_cpp_type(type); break;
+  }
+  return cpp_type;
+}
+```
+
+```mermaid
+flowchart LR
+    subgraph "DNA 枚举 → CPPType 映射"
+        F["SOCK_FLOAT"] --> FT["CPPType::get&lt;float&gt;()"]
+        I["SOCK_INT"] --> IT["CPPType::get&lt;int&gt;()"]
+        V["SOCK_VECTOR"] --> VT["CPPType::get&lt;float3&gt;()"]
+        B["SOCK_BOOLEAN"] --> BT["CPPType::get&lt;bool&gt;()"]
+        G["SOCK_GEOMETRY"] --> GT["CPPType::get&lt;GeometrySet&gt;()"]
+        S["SOCK_STRING"] --> ST["CPPType::get&lt;std::string&gt;()"]
+    end
+
+    style F fill:#3498db,color:#fff
+    style FT fill:#2ecc71,color:#fff
+```
+
+> **为什么叫 "base" cpp_type？** 因为 Socket 类型可能有子类型（如 Float 的子类型有 Factor、Distance、Angle 等），但几何节点内部统一使用基础类型（Float 就是 `float`，不管子类型是什么）。
+>
+> **`default` 分支**：对于不常见的类型（如 `SOCK_GEOMETRY`、`SOCK_STRING`、`SOCK_OBJECT` 等），走 `slow_socket_type_to_geo_nodes_base_cpp_type`——通过 `node_socket_type_find_static` 查找 `bNodeSocketType`，再取其 `base_cpp_type`。慢路径是为了避免在 switch 中列出所有类型。
+
+#### `get_single_ptr_raw()` 和 `const_cast` 详解
+
+```cpp
+void *closure_result = const_cast<void *>(values[list_i].get_single_ptr_raw());
+```
+
+1. `get_single_ptr_raw()` — 返回 `const void*`，指向 `SocketValueVariant` 内部存储的单值数据
+2. `const_cast<void*>` — 去掉 `const`，因为 `move_construct` 的源参数是 `const void*`... 等等，`move_construct` 签名是 `void move_construct(const void *src, void *dst)`，源参数本身就是 `const void*`！
+
+> **那为什么还要 `const_cast`？** 实际上这里的 `const_cast` 是为了将 `const void*` 转为 `void*`，因为 `move_construct` 的源参数签名确实是 `const void*`，所以这个 `const_cast` 在技术上是多余的。但它可能是为了与其他需要 `void*` 的 API 兼容，或者是历史遗留代码。
+
+#### `type.move_construct(src, dst)` 详解
+
+`CPPType::move_construct` 是泛型移动构造——对 trivial 类型用 `memcpy`，对非 trivial 类型调用移动构造函数：
+
+```mermaid
+flowchart TD
+    MC["type.move_construct(src, dst)"]
+    CHECK{"type.is_trivially_move_constructible?"}
+    MEMCPY["memcpy(dst, src, size)<br/>trivial 类型：int, float, float3"]
+    MOVE["T::T(std::move(*src))<br/>非 trivial 类型：std::string, GeometrySet"]
+
+    MC --> CHECK
+    CHECK -->|"是"| MEMCPY
+    CHECK -->|"否"| MOVE
+
+    style MEMCPY fill:#2ecc71,color:#fff
+    style MOVE fill:#e67e22,color:#fff
+```
+
+> **移动 vs 拷贝**：移动后源对象处于"有效但未指定"的状态。对于 `GeometrySet`，移动后源对象的几何数据为空；对于 `std::string`，移动后源字符串为空。这比拷贝（需要深拷贝所有数据）快得多。
+
 ### 通用路径（结果包含复杂类型）
 
 ```cpp
@@ -1247,7 +1607,69 @@ else {
 
 > **为什么需要两种路径？** 当闭包输出的是几何体列表或字段列表时，每个 `SocketValueVariant` 本身包含 `GListPtr` 或 `GField`。这种情况下不能简单放入 `GArray`（`GArray` 要求元素是同一 `CPPType` 的平凡布局），而 `SocketValueVariant` 的变体性质使得直接构建 `GArray` 更合理。
 
-> **`GList::from_container`**：从 `Array<SocketValueVariant>` 构建 `GList`。内部会遍历数组，提取每个 `SocketValueVariant` 中的值，构建类型擦除的列表。
+#### `GList::from_container` 详解
+
+```cpp
+// NOD_geometry_nodes_list.hh:175~185
+template<typename ContainerT> inline GListPtr GList::from_container(ContainerT &&container)
+{
+  using T = typename std::decay_t<ContainerT>::value_type;
+  static_assert(std::is_convertible_v<ContainerT, MutableSpan<T>>);
+  auto *sharable_data = new ImplicitSharedValue<std::decay_t<ContainerT>>(
+      std::forward<ContainerT>(container));
+  ArrayData array_data;
+  array_data.data = sharable_data->data.data();
+  array_data.sharing_info = ImplicitSharingPtr<>(sharable_data);
+  return GList::create(CPPType::get<T>(), std::move(array_data), sharable_data->data.size());
+}
+```
+
+> **注释翻译**：
+> - `using T = typename std::decay_t<ContainerT>::value_type` — 提取容器的元素类型。对于 `Array<SocketValueVariant>`，`T = SocketValueVariant`
+> - `static_assert(std::is_convertible_v<ContainerT, MutableSpan<T>>)` — 编译期检查：容器必须能转为 `MutableSpan<T>`（即元素在内存中连续）
+> - `ImplicitSharedValue<ContainerT>` — 将容器包装为隐式共享对象。`sharable_data->data` 就是原始容器
+> - `array_data.data = sharable_data->data.data()` — 指向容器内部的连续数据
+> - `array_data.sharing_info = ImplicitSharingPtr<>(sharable_data)` — 共享指针管理容器生命周期
+
+```mermaid
+flowchart TD
+    subgraph "from_container 内部"
+        CONTAINER["Array&lt;SocketValueVariant&gt;<br/>[SVV{0}, SVV{1}, SVV{2}]"]
+        SHARED["ImplicitSharedValue&lt;Array&lt;SVV&gt;&gt;<br/>ref_count=1"]
+        AD["ArrayData<br/>data → SVV[0]<br/>sharing_info → SHARED"]
+        GLIST["GList<br/>type = CPPType::get&lt;SVV&gt;()<br/>data = ArrayData<br/>size = 3"]
+    end
+
+    CONTAINER -->|"std::move"| SHARED
+    SHARED --> AD
+    AD --> GLIST
+
+    style SHARED fill:#9b59b6,color:#fff
+    style GLIST fill:#2ecc71,color:#fff
+```
+
+> **`std::decay_t<ContainerT>`** — 去除引用和 const 修饰。例如 `Array<SVV>&&` → `Array<SVV>`。确保 `ImplicitSharedValue` 存储的是值类型，不是引用。
+>
+> **`std::forward<ContainerT>(container)`** — 完美转发。如果 `ContainerT` 是右值引用，则移动；如果是左值引用，则拷贝。在 `from_container(std::move(values))` 调用中，`values` 被移动到 `ImplicitSharedValue` 中。
+
+#### `construct_socket_default_value` 详解
+
+在 `evaluate_closure_eagerly` 中，当闭包不提供某个输出时，使用此函数构造默认值：
+
+```cpp
+// geometry_nodes_lazy_function.cc:388~392
+void construct_socket_default_value(const bke::bNodeSocketType &stype, void *r_value)
+{
+  BLI_assert(stype.geometry_nodes_default_value);
+  new (r_value) SocketValueVariant(*stype.geometry_nodes_default_value);
+}
+```
+
+> **注释翻译**：在 `r_value` 指向的未初始化内存上，用 `stype.geometry_nodes_default_value` 构造 `SocketValueVariant`。
+>
+> **`geometry_nodes_default_value`** — 每个 `bNodeSocketType` 都有一个 `geometry_nodes_default_value` 字段，指向该类型的默认 `SocketValueVariant`。例如 `NodeSocketFloat` 的默认值是 `0.0f`，`NodeSocketInt` 的默认值是 `0`。
+>
+> **`new (r_value) SocketValueVariant(...)`** — placement new，在指定内存位置构造对象。与 `from_container` 中 `OutputItem::value` 的设计一致——输出位置是未初始化内存，必须用 placement new 构造。
 
 ### 何时走快速路径 vs 通用路径？
 
@@ -1502,9 +1924,209 @@ classDiagram
     ClosureSignature --> Item : inputs / outputs
 ```
 
-> **`CustomIDVectorSet<Item, ItemKeyGetter>`**：一个有序集合，元素按 `key` 去重。`ItemKeyGetter` 提取 `key` 作为唯一标识。这意味着签名中不能有同名的输入/输出。
+> **`CustomIDVectorSet<Item, ItemKeyGetter>`**：一个有序集合，元素按 `key` 去重。`ItemKeyGetter` 提取 `key` 作为唯一标识。这意味着签名中不能有同名的输入/输出。详见下方 [CustomIDVectorSet 详解](#customidvectorset-详解)。
 
 > **`operator==` 使用 `= default`**：C++20 的默认比较运算符，逐一比较所有成员。用于签名比较（同步机制中判断是否需要更新）。
+
+### ClosureSignature::Item 详解
+
+```cpp
+struct Item {
+  std::string key;                                    // Socket 的唯一标识名
+  const bke::bNodeSocketType *type = nullptr;         // Socket 的数据类型（如 Float、Int、Vector）
+  NodeSocketInterfaceStructureType structure_type;    // 结构类型（Single / Field / List / Dynamic）
+
+  friend bool operator==(const Item &a, const Item &b) = default;
+};
+```
+
+> **注释翻译**：
+> - `key` — 闭包输入/输出的唯一标识符，对应 Socket 的 `identifier`（如 `"Value"`、`"Position"`）
+> - `type` — 指向 `bNodeSocketType` 的指针，描述 Socket 的数据类型。不是枚举值，而是指向全局注册的类型对象
+> - `structure_type` — 结构类型，决定这个输入/输出是单值、字段还是列表
+> - `operator==` — C++20 默认比较，逐一比较 `key`、`type`、`structure_type` 三个成员
+
+```mermaid
+flowchart TD
+    ITEM["Item"]
+    KEY["key: std::string<br/>唯一标识名<br/>如 'Position', 'Value'"]
+    TYPE["type: bNodeSocketType*<br/>数据类型<br/>如 SOCK_FLOAT, SOCK_VECTOR"]
+    STYPE["structure_type<br/>Single / Field / List / Dynamic"]
+
+    ITEM --> KEY
+    ITEM --> TYPE
+    ITEM --> STYPE
+
+    style KEY fill:#e74c3c,color:#fff
+    style TYPE fill:#3498db,color:#fff
+    style STYPE fill:#2ecc71,color:#fff
+```
+
+### ItemKeyGetter — 为什么需要单独的类？
+
+```cpp
+struct ItemKeyGetter {
+  std::string operator()(const Item &item)
+  {
+    return item.key;
+  }
+};
+```
+
+**问题**：`ClosureSignature` 需要一个集合，集合中的元素按 `key` 去重——即两个 `Item` 如果 `key` 相同就视为重复。但普通的 `VectorSet<Item>` 会用 `Item` 的整体（`key` + `type` + `structure_type`）来计算哈希和判断相等，这不是我们想要的。
+
+**解决方案**：`ItemKeyGetter` 是一个**函数对象**（functor），它从 `Item` 中提取 `key`。`CustomIDVectorSet` 使用这个提取器来计算哈希和判断相等——只看 `key`，忽略 `type` 和 `structure_type`。
+
+```mermaid
+flowchart LR
+    subgraph "普通 VectorSet&lt;Item&gt;"
+        ITEM1["Item{key='A', type=Float}"]
+        ITEM2["Item{key='A', type=Int}"]
+        HASH1["哈希 = hash(key + type + structure_type)"]
+        EQ1["相等 = key && type && structure_type 全相同"]
+        RESULT1["两个 Item 不相等<br/>都能加入集合 ❌"]
+    end
+
+    subgraph "CustomIDVectorSet&lt;Item, ItemKeyGetter&gt;"
+        ITEM3["Item{key='A', type=Float}"]
+        ITEM4["Item{key='A', type=Int}"]
+        GETTER["ItemKeyGetter<br/>提取 item.key"]
+        HASH2["哈希 = hash(item.key)"]
+        EQ2["相等 = item.key 相同"]
+        RESULT2["两个 Item 相等<br/>第二个被拒绝 ✅"]
+    end
+
+    ITEM1 --> HASH1 --> EQ1 --> RESULT1
+    ITEM3 --> GETTER --> HASH2 --> EQ2 --> RESULT2
+
+    style RESULT1 fill:#e74c3c,color:#fff
+    style RESULT2 fill:#2ecc71,color:#fff
+    style GETTER fill:#9b59b6,color:#fff
+```
+
+> **为什么不用 `std::unordered_set` + 自定义哈希？** Blender 的 `VectorSet` 是有序的——元素按插入顺序存储，可以通过索引访问。闭包签名需要保持输入/输出的顺序（第一个输出是 `Value`，第二个是 `Position`...），`std::unordered_set` 无法保证这一点。
+
+### CustomIDVectorSet 详解
+
+`CustomIDVectorSet` 是 Blender 的 `VectorSet` 的变体，专门用于"元素本身不是键，但元素有某个属性可以作为键"的场景。
+
+#### 定义
+
+```cpp
+// BLI_vector_set.hh:1157~1162
+template<typename T, typename GetIDFn, int64_t InlineBufferCapacity = 4>
+using CustomIDVectorSet = VectorSet<T,
+                                    InlineBufferCapacity,
+                                    DefaultProbingStrategy,
+                                    CustomIDHash<T, GetIDFn>,
+                                    CustomIDEqual<T, GetIDFn>>;
+```
+
+> **注释翻译**：
+> - *"Used for a set where the key itself isn't used for the hash or equality but some part of the key instead."* — 用于这样的集合：元素本身不直接用于哈希和相等判断，而是用元素的某个部分。
+> - *"For example the string identifiers of node types."* — 例如节点类型的字符串标识符。
+> - *"#GetIDFn should have an implementation that returns a hashable and equality comparable type"* — `GetIDFn` 应该返回一个可哈希、可比较相等的类型。
+> - *"i.e. `StringRef operator()(const bNode *value) { return value->idname; }`"* — 例如从 `bNode*` 提取 `idname`。
+
+#### 模板参数
+
+| 参数 | 含义 | 在 ClosureSignature 中的实例化 |
+|------|------|------|
+| `T` | 元素类型 | `Item` |
+| `GetIDFn` | 从元素提取 ID 的函数对象 | `ItemKeyGetter` |
+| `InlineBufferCapacity` | 内联缓冲区容量 | `4`（默认） |
+
+#### CustomIDHash — 自定义哈希
+
+```cpp
+// BLI_vector_set.hh:1120~1131
+template<typename T, typename GetIDFn> struct CustomIDHash {
+  using CustomIDType = decltype(GetIDFn{}(std::declval<T>()));
+
+  uint64_t operator()(const T &value) const
+  {
+    return get_default_hash(GetIDFn{}(value));  // 对元素：先提取ID，再哈希
+  }
+  uint64_t operator()(const CustomIDType &value) const
+  {
+    return get_default_hash(value);  // 对ID本身：直接哈希
+  }
+};
+```
+
+> **`CustomIDType`** — `GetIDFn` 返回的类型。对于 `ItemKeyGetter`，返回 `std::string`。
+>
+> **两个 `operator()`** — 支持两种查找方式：
+> 1. `hash(Item{...})` — 从 `Item` 提取 `key` 再哈希
+> 2. `hash("Position")` — 直接对字符串哈希（用于 `contains_as("Position")` 等查找）
+
+#### CustomIDEqual — 自定义相等判断
+
+```cpp
+// BLI_vector_set.hh:1133~1148
+template<typename T, typename GetIDFn> struct CustomIDEqual {
+  using CustomIDType = decltype(GetIDFn{}(std::declval<T>()));
+
+  bool operator()(const T &a, const T &b) const
+  {
+    return GetIDFn{}(a) == GetIDFn{}(b);  // 两个元素：比较提取的ID
+  }
+  bool operator()(const CustomIDType &a, const T &b) const
+  {
+    return a == GetIDFn{}(b);  // ID vs 元素：比较ID和提取的ID
+  }
+  bool operator()(const T &a, const CustomIDType &b) const
+  {
+    return GetIDFn{}(a) == b;  // 元素 vs ID：比较提取的ID和ID
+  }
+};
+```
+
+> **三个 `operator()`** — 支持三种比较场景：
+> 1. `Item == Item` — 比较两个 `Item` 的 `key`（用于去重）
+> 2. `"Position" == Item` — 用字符串查找 `Item`（用于 `find_as`）
+> 3. `Item == "Position"` — 反向查找
+
+```mermaid
+flowchart LR
+    subgraph "CustomIDVectorSet 工作原理"
+        ADD["signature.inputs.add(Item{key='Value', type=Float})"]
+        HASH["CustomIDHash: hash('Value')"]
+        SLOT["哈希表槽位"]
+        ARRAY["有序数组: [Item{key='Value', ...}]"]
+
+        FIND["signature.inputs.contains_as('Value')"]
+        HASH2["CustomIDHash: hash('Value')"]
+        EQUAL["CustomIDEqual: 'Value' == Item.key"]
+        FOUND["找到！"]
+
+        ADD --> HASH --> SLOT --> ARRAY
+        FIND --> HASH2 --> EQUAL --> FOUND
+    end
+
+    style ADD fill:#3498db,color:#fff
+    style FIND fill:#2ecc71,color:#fff
+    style HASH fill:#e67e22,color:#fff
+    style EQUAL fill:#9b59b6,color:#fff
+```
+
+#### 在 ClosureSignature 中的使用
+
+```cpp
+CustomIDVectorSet<Item, ItemKeyGetter> inputs;
+CustomIDVectorSet<Item, ItemKeyGetter> outputs;
+```
+
+这意味着：
+- `inputs.add(Item{.key = "Index", ...})` — 添加输入项，按 `"Index"` 去重
+- `inputs.contains_as("Index")` — 检查是否有名为 `"Index"` 的输入（不需要构造完整 `Item`）
+- `find_input_index("Value")` — 通过 `key` 查找输入的索引位置
+- 两个同名输入会被自动去重（第二个 `add` 被忽略）
+
+> **为什么用 `CustomIDVectorSet` 而不是 `Map<std::string, Item>`？**
+> - `VectorSet` 保持插入顺序，`Map` 不保证
+> - `VectorSet` 可以通过索引访问（`inputs[0]`），`Map` 只能通过键访问
+> - 闭包签名需要按顺序遍历所有输入/输出，`VectorSet` 的迭代就是顺序遍历
 
 ### from_closure_to_list_node 实现
 

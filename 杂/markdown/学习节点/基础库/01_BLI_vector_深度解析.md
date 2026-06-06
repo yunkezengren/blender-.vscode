@@ -808,3 +808,209 @@ flowchart TB
 | `BLI_stack.hh` | `source/blender/blenlib/` | Stack（基于 Vector） |
 | `BLI_map.hh` | `source/blender/blenlib/` | Map（基于 Vector 的开放寻址） |
 | `BLI_set.hh` | `source/blender/blenlib/` | Set（基于 Vector 的开放寻址） |
+
+---
+
+## 🧩 CustomIDVectorSet — 用子属性作为键的有序集合
+
+> 源码位置：[BLI_vector_set.hh](../../source/blender/blenlib/BLI_vector_set.hh) 第 1120~1162 行
+
+### 核心问题
+
+普通的 `VectorSet<T>` 用 `T` 的整体来计算哈希和判断相等。但有时我们希望：**集合中的元素按某个子属性去重**，而非按元素整体。
+
+例如，`ClosureSignature` 中的 `Item` 有三个成员（`key`、`type`、`structure_type`），但我们只想按 `key` 去重——两个 `Item` 如果 `key` 相同就视为重复，不管 `type` 是否相同。
+
+```mermaid
+flowchart LR
+    subgraph "问题场景"
+        A["Item{key='Value', type=Float}"]
+        B["Item{key='Value', type=Int}"]
+        Q["只想按 key 去重<br/>这两个应该算重复"]
+    end
+
+    A --> Q
+    B --> Q
+
+    style Q fill:#e74c3c,color:#fff
+```
+
+### CustomIDHash — 自定义哈希函数
+
+```cpp
+// BLI_vector_set.hh:1120~1131
+template<typename T, typename GetIDFn> struct CustomIDHash {
+  using CustomIDType = decltype(GetIDFn{}(std::declval<T>()));
+
+  uint64_t operator()(const T &value) const
+  {
+    return get_default_hash(GetIDFn{}(value));  // 对元素：先提取ID，再哈希
+  }
+  uint64_t operator()(const CustomIDType &value) const
+  {
+    return get_default_hash(value);  // 对ID本身：直接哈希
+  }
+};
+```
+
+> **注释翻译**：
+> - `GetIDFn` — 从元素中提取 ID 的函数对象
+> - `CustomIDType` — `GetIDFn` 返回的类型，通过 `decltype` 自动推导
+> - 第一个 `operator()` — 对元素哈希时，先提取 ID 再哈希
+> - 第二个 `operator()` — 对 ID 本身哈希时，直接哈希（支持 `contains_as` 查找）
+
+**`decltype(GetIDFn{}(std::declval<T>()))` 语法解释**：
+
+这是一个编译期类型推导表达式：
+1. `GetIDFn{}` — 默认构造一个 `GetIDFn` 函数对象
+2. `std::declval<T>()` — 返回一个 `T&&` 引用，不需要 `T` 可默认构造
+3. `GetIDFn{}(std::declval<T>())` — 调用 `GetIDFn` 的 `operator()`，传入 `T` 类型的参数
+4. `decltype(...)` — 获取整个表达式的返回类型
+
+例如，`ItemKeyGetter` 返回 `std::string`，所以 `CustomIDType = std::string`。
+
+### CustomIDEqual — 自定义相等判断
+
+```cpp
+// BLI_vector_set.hh:1133~1148
+template<typename T, typename GetIDFn> struct CustomIDEqual {
+  using CustomIDType = decltype(GetIDFn{}(std::declval<T>()));
+
+  bool operator()(const T &a, const T &b) const
+  {
+    return GetIDFn{}(a) == GetIDFn{}(b);  // 两个元素：比较提取的ID
+  }
+  bool operator()(const CustomIDType &a, const T &b) const
+  {
+    return a == GetIDFn{}(b);  // ID vs 元素：比较ID和提取的ID
+  }
+  bool operator()(const T &a, const CustomIDType &b) const
+  {
+    return GetIDFn{}(a) == b;  // 元素 vs ID：比较提取的ID和ID
+  }
+};
+```
+
+> **三个 `operator()` 重载** — 支持三种比较场景，使 `VectorSet` 的 `contains_as`、`find_as` 等方法可以用 ID 类型（如 `StringRef`）直接查找，无需构造完整的 `T` 对象：
+>
+> | 重载 | 场景 | 示例 |
+> |------|------|------|
+> | `(T, T)` | 两个元素比较（去重） | `Item{...} == Item{...}` → 比较 `key` |
+> | `(CustomIDType, T)` | 用 ID 查找元素 | `"Value" == Item{...}` → `"Value" == item.key` |
+> | `(T, CustomIDType)` | 反向查找 | `Item{...} == "Value"` → `item.key == "Value"` |
+
+### CustomIDVectorSet — 类型别名
+
+```cpp
+// BLI_vector_set.hh:1150~1162
+/**
+ * Used for a set where the key itself isn't used for the hash or equality but some part of the
+ * key instead. For example the string identifiers of node types.
+ *
+ * #GetIDFn should have an implementation that returns a hashable and equality comparable type,
+ * i.e. `StringRef operator()(const bNode *value) { return value->idname; }`.
+ */
+template<typename T, typename GetIDFn, int64_t InlineBufferCapacity = 4>
+using CustomIDVectorSet = VectorSet<T,
+                                    InlineBufferCapacity,
+                                    DefaultProbingStrategy,
+                                    CustomIDHash<T, GetIDFn>,
+                                    CustomIDEqual<T, GetIDFn>>;
+```
+
+> **注释翻译**：
+> - *"Used for a set where the key itself isn't used for the hash or equality but some part of the key instead."* — 用于这样的集合：元素本身不直接用于哈希和相等判断，而是用元素的某个部分。
+> - *"For example the string identifiers of node types."* — 例如节点类型的字符串标识符。
+> - *"#GetIDFn should have an implementation that returns a hashable and equality comparable type"* — `GetIDFn` 应该返回一个可哈希、可比较相等的类型。
+> - *"i.e. `StringRef operator()(const bNode *value) { return value->idname; }`"* — 例如从 `bNode*` 提取 `idname`。
+
+### 模板参数映射
+
+`CustomIDVectorSet` 通过替换 `VectorSet` 的 `Hash` 和 `IsEqual` 参数实现自定义行为：
+
+```mermaid
+flowchart TD
+    VS["VectorSet&lt;T, InlineBuffer, Probing, Hash, IsEqual, Slot, Allocator&gt;"]
+    CID["CustomIDVectorSet&lt;T, GetIDFn, InlineBuffer&gt;"]
+
+    VS -->|"Hash = DefaultHash&lt;T&gt;"| DH["默认：用 T 整体哈希"]
+    VS -->|"IsEqual = DefaultEquality&lt;T&gt;"| DE["默认：用 T 的 operator=="]
+    CID -->|"Hash = CustomIDHash&lt;T, GetIDFn&gt;"| CH["自定义：用 GetIDFn(T) 哈希"]
+    CID -->|"IsEqual = CustomIDEqual&lt;T, GetIDFn&gt;"| CE["自定义：用 GetIDFn(T) 比较"]
+
+    style DH fill:#95a5a6,color:#fff
+    style DE fill:#95a5a6,color:#fff
+    style CH fill:#3498db,color:#fff
+    style CE fill:#3498db,color:#fff
+```
+
+### 实际使用示例
+
+#### 示例 1：ClosureSignature（闭包签名）
+
+```cpp
+// NOD_geometry_nodes_closure_signature.hh
+struct ItemKeyGetter {
+  std::string operator()(const Item &item) { return item.key; }
+};
+
+CustomIDVectorSet<Item, ItemKeyGetter> inputs;   // 按 key 去重
+CustomIDVectorSet<Item, ItemKeyGetter> outputs;
+
+inputs.add({.key = "Index", .type = SOCK_INT, .structure_type = Single});
+inputs.add({.key = "Value", .type = SOCK_FLOAT, .structure_type = Field});
+inputs.contains_as("Index");  // true — 不需要构造 Item，直接用字符串查找
+inputs.index_of_as("Value");  // 1 — 返回 "Value" 在有序数组中的位置
+```
+
+#### 示例 2：节点类型集合（注释中的例子）
+
+```cpp
+// 假设有一个 GetIDFn 从 bNode* 提取 idname
+struct NodeIDNameGetter {
+  StringRef operator()(const bNode *node) { return node->idname; }
+};
+
+CustomIDVectorSet<const bNode *, NodeIDNameGetter> node_set;
+// 按 idname 去重，可以用 idname 字符串直接查找
+node_set.contains_as("GeometryNodeSortList");  // 不需要 bNode* 对象
+```
+
+### 与其他方案的对比
+
+| 方案 | 有序 | 索引访问 | ID 查找 | 去重依据 |
+|------|------|---------|---------|---------|
+| `Vector<T>` | ✅ | ✅ | ❌ 需遍历 | 无去重 |
+| `VectorSet<T>` | ✅ | ✅ | ✅ | `T` 整体 |
+| `CustomIDVectorSet<T, GetIDFn>` | ✅ | ✅ | ✅ | `GetIDFn(T)` |
+| `Map<ID, T>` | ❌ | ❌ | ✅ | `ID` |
+| `std::unordered_set<T, CustomHash>` | ❌ | ❌ | ❌ | 自定义 |
+
+```mermaid
+flowchart LR
+    subgraph "选择决策树"
+        Q1{"需要去重？"}
+        Q2{"去重依据是元素整体？"}
+        Q3{"需要保持顺序？"}
+        Q4{"需要索引访问？"}
+
+        VEC["Vector&lt;T&gt;<br/>不去重，纯序列"]
+        MAP["Map&lt;ID, T&gt;<br/>无序，按键去重"]
+        VS["VectorSet&lt;T&gt;<br/>有序，按整体去重"]
+        CIVS["CustomIDVectorSet&lt;T, Fn&gt;<br/>有序，按子属性去重"]
+
+        Q1 -->|"否"| VEC
+        Q1 -->|"是"| Q2
+        Q2 -->|"是"| Q3
+        Q2 -->|"否"| CIVS
+        Q3 -->|"否"| MAP
+        Q3 -->|"是"| Q4
+        Q4 -->|"否"| MAP
+        Q4 -->|"是"| VS
+    end
+
+    style CIVS fill:#2ecc71,color:#fff
+    style VS fill:#3498db,color:#fff
+    style MAP fill:#e67e22,color:#fff
+    style VEC fill:#95a5a6,color:#fff
+```
