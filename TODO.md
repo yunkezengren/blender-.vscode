@@ -290,3 +290,5 @@ copy_v4_v4_uchar(wt->wcol.inner, wt->wcol.inner_sel);        // 不行,菜单枚
 - 合并捆包 自动 分离出的形状为什么不对上
 - 为什么合并捆包和分离 的捆包是圆形？
 - 闭包转列表的闭包如果是自动，为什么会触发更新, 因为 闭包转列表 输出缺少自动？
+
+- 文件浏览器 覆盖 的红色 为什么加暗(比起主题里) source/blender/editors/interface/interface_widgets.cc:3151~3159
