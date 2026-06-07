@@ -39,6 +39,13 @@
     - [8.2 ClosureFunctionIndices — LF 输入/输出索引映射](#82-closurefunctionindices--lf-输入输出索引映射)
     - [8.3 并行执行核心代码](#83-并行执行核心代码)
     - [8.4 关键函数与类详解](#84-关键函数与类详解)
+      - [`bke::node_socket_type_find("NodeSocketInt")`](#bkenode_socket_type_findnodesocketint)
+      - [`bke::SocketValueVariant::From(int(list_i))`](#bkesocketvaluevariantfromintlist_i)
+      - [`closure_params.inputs[0].value` 赋值](#closure_paramsinputs0value-赋值)
+      - [`closure_params.outputs[required_i].value = &closure_results[required_i][list_i]`](#closure_paramsoutputsrequired_ivalue--closure_resultsrequired_ilist_i)
+      - [`ClosureToListComputeContext` — 计算上下文](#closuretolistcomputecontext--计算上下文)
+      - [`GeoNodesUserData user_data = parent_user_data`](#geonodesuserdata-user_data--parent_user_data)
+      - [`should_log_verbose_in_context`](#should_log_verbose_in_context)
     - [闭包参数的生命周期](#闭包参数的生命周期)
     - [线程安全分析](#线程安全分析)
   - [9. evaluate\_closure\_eagerly 内部机制](#9-evaluate_closure_eagerly-内部机制)
@@ -55,12 +62,12 @@
     - [与其他计算上下文的对比](#与其他计算上下文的对比)
   - [11. 结果收集的两种路径](#11-结果收集的两种路径)
     - [快速路径（所有结果都是单值）](#快速路径所有结果都是单值)
-    - [socket\_type\_to\_geo\_nodes\_base\_cpp\_type 详解](#socket_type_to_geo_nodes_base_cpp_type-详解)
-    - [get\_single\_ptr\_raw 和 const\_cast 详解](#get_single_ptr_raw-和-const_cast-详解)
-    - [type.move\_construct 详解](#typemove_construct-详解)
+      - [`socket_type_to_geo_nodes_base_cpp_type` 详解](#socket_type_to_geo_nodes_base_cpp_type-详解)
+      - [`get_single_ptr_raw()` 和 `const_cast` 详解](#get_single_ptr_raw-和-const_cast-详解)
+      - [`type.move_construct(src, dst)` 详解](#typemove_constructsrc-dst-详解)
     - [通用路径（结果包含复杂类型）](#通用路径结果包含复杂类型)
-    - [GList::from\_container 详解](#glistfrom_container-详解)
-    - [construct\_socket\_default\_value 详解](#construct_socket_default_value-详解)
+      - [`GList::from_container` 详解](#glistfrom_container-详解)
+      - [`construct_socket_default_value` 详解](#construct_socket_default_value-详解)
     - [何时走快速路径 vs 通用路径？](#何时走快速路径-vs-通用路径)
     - [快速路径的性能优势](#快速路径的性能优势)
   - [12. 节点生命周期函数](#12-节点生命周期函数)
@@ -777,38 +784,9 @@ for (const int i : closure_results.index_range()) {
 }
 ```
 
-> **`NoInitialization{}`**：不初始化内存。因为闭包执行会覆盖每个位置，跳过初始化节省时间。
+> **`NoInitialization{}`**：不初始化内存。因为闭包执行会覆盖每个位置，跳过初始化节省时间。`NoInitialization` 定义在 `BLI_memory_utils.hh` 中，但 `node_geo_closure_to_list.cc` 没有直接包含它——因为 `BLI_array.hh` 已经包含了 `BLI_memory_utils.hh`，`NoInitialization` 通过传递性包含可用。
 
-> **`placement new`**：在已分配的 `Array<Array<...>>` 内存上构造内部 `Array`。外层 `Array` 使用 `NoInitialization`，所以需要手动构造每个元素。这是 C++ 的高级用法——将对象构造与内存分配分离。
-
-```mermaid
-flowchart TD
-    subgraph "closure_results 内存布局"
-        OUTER["Array&lt;Array&lt;SocketValueVariant&gt;&gt;<br/>size = required_items.size()"]
-        O0["closure_results[0]<br/>Array&lt;SVV&gt;(count, NoInit)"]
-        O1["closure_results[1]<br/>Array&lt;SVV&gt;(count, NoInit)"]
-        O2["closure_results[2]<br/>Array&lt;SVV&gt;(count, NoInit)"]
-
-        I00["[0] ?"] --> I01["[1] ?"] --> I02["[2] ?"] --> I03["..."]
-        I10["[0] ?"] --> I11["[1] ?"] --> I12["[2] ?"] --> I13["..."]
-        I20["[0] ?"] --> I21["[1] ?"] --> I22["[2] ?"] --> I23["..."]
-    end
-
-    OUTER --> O0
-    OUTER --> O1
-    OUTER --> O2
-    O0 --> I00
-    O1 --> I10
-    O2 --> I20
-
-    NOTE["? = 未初始化内存<br/>闭包执行后会就地构造"]
-
-    style OUTER fill:#2c3e50,color:#fff
-    style NOTE fill:#e74c3c,color:#fff
-    style I00 fill:#95a5a6,color:#fff
-    style I10 fill:#95a5a6,color:#fff
-    style I20 fill:#95a5a6,color:#fff
-```
+> **placement new**：在已分配的 `Array<Array<...>>` 内存上构造内部 `Array`。外层 `Array` 使用 `NoInitialization`，所以需要手动构造每个元素。这是 C++ 的高级用法——将对象构造与内存分配分离。
 
 > **二维数组结构**：`closure_results[required_i][list_i]` 存储第 `required_i` 个输出项在第 `list_i` 次闭包执行的结果。外层按输出项索引，内层按列表索引。
 
@@ -846,6 +824,129 @@ if (socket_types.as_span().contains(nullptr)) {
 
 > **为什么需要验证？** 项的 `socket_type` 存储在 DNA 中，可能来自旧版本的 .blend 文件，其中的类型枚举值在当前版本中已不存在。
 
+> **为什么 `contains(nullptr)` 能直接查找空指针？**
+>
+> `socket_types` 是 `Array<const bNodeSocketType *>`——元素类型 `T` 是**指针**。`as_span()` 返回 `Span<const bNodeSocketType *>`。`contains(nullptr)` 检查数组中是否有任何指针等于 `nullptr`。
+>
+> 这完全合法：`T = const bNodeSocketType *`，`value = nullptr`，比较 `element == nullptr` 就是检查"这个指针是否为空"。
+>
+> ```mermaid
+> flowchart TD
+>     subgraph "socket_types: Array&lt;const bNodeSocketType*&gt;"
+>         S0["[0] 0x7f30... → FloatType"]
+>         S1["[1] nullptr ❌"]
+>         S2["[2] 0x7f30... → IntType"]
+>     end
+>
+>     CONTAINS["contains(nullptr)"]
+>     CHECK0["[0] == nullptr? → false"]
+>     CHECK1["[1] == nullptr? → true ✅"]
+>
+>     CONTAINS --> CHECK0 --> CHECK1
+>
+>     style S1 fill:#e74c3c,color:#fff
+>     style CHECK1 fill:#2ecc71,color:#fff
+> ```
+>
+> **为什么不用 `contains_ptr`？** 两个方法做的是完全不同的事：
+>
+> | 方法 | 问题 | 时间复杂度 | 含义 |
+> |------|------|-----------|------|
+> | `contains(value)` | "数组中有没有值等于 `value` 的元素？" | O(n) 线性搜索 | **值比较** |
+> | `contains_ptr(ptr)` | "内存地址 `ptr` 是否落在数组的内存范围内？" | O(1) 常数时间 | **地址检查** |
+>
+> ```cpp
+> // contains：逐个比较值
+> for (const T &element : *this) {
+>   if (element == value) return true;  // 值相等？
+> }
+>
+> // contains_ptr：检查地址范围
+> return (this->begin() <= ptr) && (ptr < this->end());  // 地址在范围内？
+> ```
+>
+> `contains_ptr(nullptr)` 永远返回 `false`——因为 `nullptr`（地址 0）不可能落在数组的数据内存范围内。这不是我们想要的！我们要的是"数组中有没有空指针"，不是"空地址是否在数组范围内"。
+>
+> ```mermaid
+> flowchart TD
+>     subgraph "内存布局"
+>         ADDR["数组数据: 0x7f3000 ~ 0x7f3030"]
+>         NULL["nullptr = 0x0"]
+>     end
+>
+>     CP["contains_ptr(nullptr)"]
+>     CP_RESULT["0x0 在 [0x7f3000, 0x7f3030) 范围内？<br/>→ false ❌（永远）"]
+>
+>     C["contains(nullptr)"]
+>     C_RESULT["遍历每个元素：<br/>element == nullptr？<br/>→ 可能为 true ✅"]
+>
+>     CP --> CP_RESULT
+>     C --> C_RESULT
+>
+>     style CP_RESULT fill:#e74c3c,color:#fff
+>     style C_RESULT fill:#2ecc71,color:#fff
+> ```
+
+> **`*this` 是什么？**
+>
+> `this` 是 C++ 成员函数中的隐式指针，指向调用该函数的对象本身。`*this` 是对指针的解引用，得到**对象本身**（引用）。
+>
+> 在 `Span<T>::contains` 中，`*this` 就是那个 `Span<T>` 对象。`for (const T &element : *this)` 等价于 `for (const T &element : span)`——遍历 Span 中的所有元素。
+>
+> ```cpp
+> Span<int> span = {1, 2, 3};
+> span.contains(2);
+> // 在 contains 内部：
+> // this = &span（指向 span 的指针）
+> // *this = span（span 对象本身）
+> // for (const int &element : *this) → 遍历 span 的元素 [1, 2, 3]
+> ```
+>
+> **为什么用 `*this` 而不是直接用成员变量？** 因为 range-based for 循环需要一个可迭代的对象，而 `*this` 就是 `Span<T>` 本身，它有 `begin()` 和 `end()` 方法。也可以写成 `for (const T &element : Span<T>(*this))`，但 `*this` 更简洁。
+
+> **有 `begin()` 和 `end()` 就够了吗？**
+>
+> 不完全够。C++ range-based for 循环 `for (auto x : obj)` 实际展开为：
+>
+> ```cpp
+> auto && __range = obj;
+> auto __begin = __range.begin();   // 或 begin(__range) via ADL
+> auto __end = __range.end();       // 或 end(__range) via ADL
+> for (; __begin != __end; ++__begin) {
+>   auto x = *__begin;
+>   // 循环体
+> }
+> ```
+>
+> 所以 `begin()` 和 `end()` 返回的对象还必须支持三个操作：
+>
+> | 操作 | 含义 | `Span<T>::iterator` 的实现 |
+> |------|------|---------------------------|
+> | `operator!=` | 判断是否到达末尾 | 比较内部指针 |
+> | `operator++` | 移动到下一个元素 | 指针 +1 |
+> | `operator*` | 解引用获取当前元素 | 返回 `T&` |
+>
+> `Span<T>` 的迭代器就是裸指针 `T*`，天然支持这三个操作。对于更复杂的容器（如 `Map`、`VectorSet`），迭代器是自定义类，需要手动实现这些操作符。
+
+> **如果 `T = const bNodeSocketType *`，那 `const T *data_` 是什么类型？**
+>
+> 这需要理解 C++ 指针声明的阅读方法。
+>
+> #### 从右往左读规则
+>
+> 从变量名开始，往左读：`*` 表示"指针"，`const` 表示"不可修改"。
+
+> **为什么 `*data_` 不可改？** 因为 `Span<T>` 的 `data_` 成员是 `const T *`——指向 const 的指针。当 `T` 本身是指针时，`const T *` 意味着"指向 const 指针的指针"，所以 `*data_`（数组中的指针元素）不可修改。这是 `Span` 的只读语义——你不能通过 `Span` 修改数组内容，只能读取。
+>
+> **`T` 是不是主要是指针？** 不一定。`T` 是模板参数，可以是任何类型：
+>
+> - `Span<const bNodeSocketType *>` — T 是指针，存储多个类型信息
+> - `Span<SocketValueVariant>` — T 不是指针，存储值
+> - `Span<int>` — T 不是指针，存储整数
+> - `Span<float3>` — T 不是指针，存储向量
+>
+> 当 `T` 是指针时，`Span<T>` 的内存布局就是**指针数组**——连续存储的指针，每个指针指向实际对象。`contains(nullptr)` 就是检查指针数组中有没有空指针。
+
 ---
 
 ## 8. 并行执行详解
@@ -864,6 +965,62 @@ class Closure;
 using ClosurePtr = ImplicitSharingPtr<Closure>;
 ```
 
+> **为什么 `ClosurePtr` 是简单的 `using` 别名，而 `GListPtr` 是独立的类？**
+>
+> 两者的底层都是 `ImplicitSharingPtr`，但设计不同：
+>
+> | 特性 | `ClosurePtr` | `GListPtr` |
+> |------|-------------|------------|
+> | 定义方式 | `using ClosurePtr = ImplicitSharingPtr<Closure>` | `class GListPtr { ImplicitSharingPtr<GList> data_; ... }` |
+> | 类型擦除 | 不需要（闭包只有一种类型） | 需要（`GListPtr` → `ListPtr<T>` 转换） |
+> | 额外方法 | 无 | `get_for_write()`、`typed<T>()` |
+> | `operator->` | 返回 `Closure*`（继承自带） | 返回 `const GList*`（自定义，只读） |
+>
+> **核心原因**：`GListPtr` 需要一个**只读的 `operator->`**（返回 `const GList*`），防止用户通过共享指针直接修改共享数据。而写操作必须通过 `get_for_write()`——它会执行写时复制（COW）。`ImplicitSharingPtr` 的默认 `operator->` 返回非 const 指针，无法提供这种保护。
+>
+> 此外，`GListPtr` 还需要 `typed<T>()` 方法实现类型擦除到具体类型的转换，以及 `ListPtr<T>` 的模板包装。这些功能无法通过 `using` 别名实现。
+>
+> `ClosurePtr` 没有这些需求——闭包不需要 COW（闭包是不可变的），也不需要类型擦除（闭包只有一种类型），所以简单的 `using` 别名就足够了。
+>
+> **COW（Copy-On-Write，写时复制）是什么？**
+>
+> COW 是一种优化策略：多个对象**共享**同一份数据，只有当某个对象需要**修改**时才真正复制。
+>
+> ```
+> 初始状态：A → [共享数据] ← B    （共享，零拷贝）
+> A 修改时：A → [A 的副本]        （A 写时复制）
+>            B → [原数据]          （B 不受影响）
+> ```
+>
+> 在 `GListPtr` 中，`get_for_write()` 就是 COW 的实现——检查引用计数，如果 >1 说明有别人也在共享这份数据，先复制一份再返回可写引用；如果 =1 说明只有自己在用，直接修改即可。
+>
+> **为什么闭包不需要 COW？** 闭包创建后就是**不可变的**——你不会"修改"一个闭包的内部状态，只会创建新的闭包或销毁旧的。没有修改操作，自然不需要写时复制。`ClosurePtr` 只需要共享读取和引用计数销毁，`ImplicitSharingPtr` 的默认行为就足够了。
+
+```mermaid
+flowchart LR
+    subgraph "ClosurePtr（简单别名）"
+        CP["using ClosurePtr = ImplicitSharingPtr&lt;Closure&gt;"]
+        CP_ARROW["operator-> → Closure*<br/>（默认行为）"]
+        CP --> CP_ARROW
+    end
+
+    subgraph "GListPtr（独立类）"
+        GP["class GListPtr {<br/>  ImplicitSharingPtr&lt;GList&gt; data_;<br/>  const GList* operator->();<br/>  GList& get_for_write();<br/>  ListPtr&lt;T&gt; typed();<br/>}"]
+        GP_RO["operator-> → const GList*<br/>（只读！）"]
+        GP_W["get_for_write() → GList&<br/>（写时复制）"]
+        GP_T["typed&lt;T&gt;() → ListPtr&lt;T&gt;<br/>（类型擦除转换）"]
+        GP --> GP_RO
+        GP --> GP_W
+        GP --> GP_T
+    end
+
+    style CP fill:#2ecc71,color:#fff
+    style GP fill:#3498db,color:#fff
+    style GP_RO fill:#95a5a6,color:#fff
+    style GP_W fill:#e74c3c,color:#fff
+    style GP_T fill:#9b59b6,color:#fff
+```
+
 `Closure` 类本身继承自 `ImplicitSharingMixin`，包含以下关键成员：
 
 ```cpp
@@ -874,6 +1031,60 @@ class Closure : public ImplicitSharingMixin {
   std::optional<ClosureSourceLocation> source_location_;   // 源码位置（调试用）
   std::shared_ptr<ClosureEvalLog> eval_log_;               // 求值日志
   std::unique_ptr<ResourceScope> scope_;                   // 资源作用域（持有 LF 等资源）
+```
+
+> **`ResourceScope`（资源作用域）是什么？**
+>
+> `ResourceScope` 是一个 RAII 容器，接管任意类型资源的所有权，在自身析构时按**逆序**释放所有资源。
+>
+> ```cpp
+> // BLI_resource_scope.hh
+> class ResourceScope : NonMovable {
+>  private:
+>   struct ResourceData {
+>     void *data;
+>     void (*free)(void *data);  // 析构函数指针
+>   };
+>   ResourceDataList resources_;       // 所有资源
+>   LinearAllocator<> &allocator_;     // 线性分配器
+>  public:
+>   template<typename T> T &construct(Args &&...args);  // 在作用域内构造对象
+>   void add(std::unique_ptr<T> value);                 // 添加已构造的对象
+> };
+> ```
+>
+> **注释翻译**：
+> - *"A ResourceScope takes ownership of arbitrary data/resources. Those resources will be destructed and/or freed when the ResourceScope is destructed."* — ResourceScope 接管任意数据/资源的所有权，在自身析构时释放
+> - *"Destruction happens in reverse order. That allows resources to depend on other resources that have been added before."* — 析构按逆序进行，允许后添加的资源依赖先添加的资源
+> - *"A ResourceScope can also be thought of as a dynamic/runtime version of normal scopes in C++ that are surrounded by braces."* — ResourceScope 可以看作 C++ 花括号作用域的动态/运行时版本
+>
+> **为什么 Closure 需要 ResourceScope？** 闭包内部持有一个 `LazyFunction`（惰性函数），构建 LazyFunction 时需要分配各种辅助资源（子节点的 LF、类型转换器、中间缓冲区等）。这些资源的生命周期必须与闭包一样长。`ResourceScope` 统一管理这些资源的所有权——当闭包被销毁时，`ResourceScope` 自动释放所有资源。
+
+> ```mermaid
+> flowchart TD
+>     CLOSURE["Closure"]
+>     SCOPE["unique_ptr&lt;ResourceScope&gt;<br/>scope_"]
+>     LF["LazyFunction<br/>（闭包的核心函数）"]
+>     RES1["子节点 LF #1"]
+>     RES2["子节点 LF #2"]
+>     RES3["类型转换器"]
+>     RES4["中间缓冲区"]
+>
+>     CLOSURE --> SCOPE
+>     CLOSURE -->|"function_ 引用"| LF
+>     SCOPE --> RES1
+>     SCOPE --> RES2
+>     SCOPE --> RES3
+>     SCOPE --> RES4
+>
+>     NOTE["ResourceScope 保证：<br/>1. LF 的生命周期 ≥ Closure<br/>2. 所有辅助资源一起释放<br/>3. 逆序析构（后构造的先释放）"]
+>
+>     style SCOPE fill:#9b59b6,color:#fff
+>     style LF fill:#3498db,color:#fff
+>     style NOTE fill:#e67e22,color:#fff
+> ```
+>
+> **`NonMovable`**：`ResourceScope` 继承自 `NonMovable`，禁止移动和拷贝。因为资源的析构函数指针指向的内存属于 `ResourceScope` 本身，移动会导致悬垂指针。
   const fn::lazy_function::LazyFunction &function_;        // 内部的惰性函数
   ClosureFunctionIndices indices_;                         // 输入/输出索引映射
   Vector<bke::SocketValueVariant> default_input_values_;   // 默认输入值
@@ -1032,6 +1243,28 @@ template<typename T> inline SocketValueVariant SocketValueVariant::From(T &&valu
 > **注释翻译**：*"Create a new #SocketValueVariant from the given value."* — 从给定值创建新的 SocketValueVariant。
 
 > **为什么用 `From` 而不是构造函数？** `SocketValueVariant` 的构造函数是默认构造（创建空值），而 `From` 是显式的工厂方法，语义更清晰——"从值创建"。
+
+> **为什么写 `int(list_i)` 而不是直接用 `list_i`？**
+>
+> `list_i` 的类型是 `int64_t`（64 位整数），但闭包的 Index 输入类型是 `int`（32 位整数）。`int(list_i)` 是 C 风格的类型转换，将 64 位截断为 32 位。
+>
+> **为什么循环变量是 `int64_t`？** `IndexRange` 的迭代器返回 `int64_t`——Blender 的索引类型统一使用 64 位，以支持超大数据集。但 Socket 的 Int 类型是 32 位的（DNA 中 `bNodeSocketValueInt` 存储 `int`），所以必须转换。
+>
+> **`BLI_assert(list_i < std::numeric_limits<int>::max())`** 就是这个转换的安全检查——确保截断不会丢失数据。如果 `list_i` 超过 `INT_MAX`（约 21 亿），程序会在调试模式下中止。
+
+```mermaid
+flowchart TD
+    RANGE["IndexRange(count)<br/>元素类型: int64_t"]
+    LOOP["for (const int64_t list_i : range)"]
+    CHECK["BLI_assert(list_i &lt; INT_MAX)"]
+    CAST["int(list_i)<br/>int64_t → int<br/>64位 → 32位"]
+    FROM["SocketValueVariant::From(int)"]
+
+    RANGE --> LOOP --> CHECK --> CAST --> FROM
+
+    style CAST fill:#e74c3c,color:#fff
+    style CHECK fill:#f39c12,color:#fff
+```
 
 ```mermaid
 flowchart LR
