@@ -11,6 +11,9 @@
   - [目录](#目录)
   - [1. SocketValueVariant 概述](#1-socketvaluevariant-概述)
   - [2. Kind 枚举与底层存储](#2-kind-枚举与底层存储)
+    - [Any 的关键成员函数](#any-的关键成员函数)
+    - [Any 里存的是什么？](#any-里存的是什么)
+    - [为什么 SocketValueVariant 使用 Any？](#为什么-socketvaluevariant-使用-any)
     - [Kind 与 Socket 数据类型的关系](#kind-与-socket-数据类型的关系)
   - [3. 列表的存入与取出](#3-列表的存入与取出)
     - [存入 — set\<GListPtr\>](#存入--setglistptr)
@@ -20,12 +23,12 @@
     - [类型判断方法一览](#类型判断方法一览)
   - [5. convert\_to\_single — 列表转单值](#5-convert_to_single--列表转单值)
   - [6. 在惰性函数求值中的分发](#6-在惰性函数求值中的分发)
-  - [7. 列表在各节点中的 SocketValueVariant 使用模式](#7-列表在各节点中的-SocketValueVariant-使用模式)
+  - [7. 列表在各节点中的 SocketValueVariant 使用模式](#7-列表在各节点中的-socketvaluevariant-使用模式)
     - [List Length — 最简单](#list-length--最简单)
     - [Join List — 多输入提取](#join-list--多输入提取)
     - [Filter List — 动态类型判断](#filter-list--动态类型判断)
     - [Get List Item — 两条路径](#get-list-item--两条路径)
-    - [SocketValueVariant 类型流转总览](#SocketValueVariant-类型流转总览)
+    - [SocketValueVariant 类型流转总览](#socketvaluevariant-类型流转总览)
   - [附录：关键 C++ 语法速查](#附录关键-c-语法速查)
 
 
@@ -85,11 +88,24 @@ class SocketValueVariant {
 > **`std::any` 是什么？** C++17 标准库提供的类型擦除容器——"能装任何类型的盒子"。你可以往里面放 `int`、`float`、`std::string` 或任何可复制构造的类型，运行时再取出来。
 >
 > ```cpp
+> // 基本用法：存取不同类型的值
 > std::any a = 42;            // 装 int
 > a = 3.14f;                  // 换成 float
 > a = std::string("hello");   // 换成 string
 >
-> int val = std::any_cast<int>(a);  // 取出，类型必须匹配
+> // 取出时必须知道原始类型，否则抛异常
+> int val = std::any_cast<int>(a);  // 错误！a 当前存的是 string，会抛 std::bad_any_cast
+> std::string s = std::any_cast<std::string>(a);  // 正确
+>
+> // 安全取出：先检查类型
+> if (a.type() == typeid(std::string)) {
+>     std::string s = std::any_cast<std::string>(a);
+> }
+>
+> // 存自定义类型（必须可复制构造）
+> struct Vec3 { float x, y, z; };
+> std::any v = Vec3{1.0f, 2.0f, 3.0f};
+> Vec3 vec = std::any_cast<Vec3>(v);
 > ```
 >
 > `std::any` 的内部原理：用一块内存（内联缓冲区或堆分配）存储值，用一个类型擦除的"虚函数表"（函数指针集合）管理拷贝、移动、销毁操作。`std::any_cast<T>()` 检查类型是否匹配，匹配则返回值，不匹配抛出 `std::bad_any_cast` 异常。
