@@ -365,6 +365,82 @@ else {
 
 > **为什么 Get List Item 不支持负数索引？** 源码用 `IndexRange(list->size()).contains(index_int)` 检查索引范围——`IndexRange` 生成 `[0, 1, ..., size-1]`，负数不在范围内，直接报 "Index out of range"。C++ 的 `[]` 索引不支持负数（对普通数组是未定义行为），Blender 的 `GSpan[index]`、`VArray[index]` 都用 `int64_t` 索引。如果需要从末尾取元素，可以用 `List Length - 1 - N` 的方式。
 
+### 路径2：`execute_multi_function_on_value_variant` 多函数执行
+
+路径2是 Get List Item 的核心——当元素类型支持字段时（Float、Int、Vector 等），使用 `SampleIndexFunction` + `execute_multi_function_on_value_variant` 实现动态索引取值。
+
+```cpp
+// node_geo_list_get_item.cc:204-216
+std::string error_message;
+bke::SocketValueVariant output_value;
+if (!execute_multi_function_on_value_variant(
+        std::make_shared<SampleIndexFunction>(std::move(list)),
+        {&index},
+        {&output_value},
+        params.user_data(),
+        error_message))
+{
+  params.set_default_remaining_outputs();
+  params.error_message_add(NodeWarningType::Error, std::move(error_message));
+  return;
+}
+
+params.set_output("Value"_ustr, std::move(output_value));
+```
+
+**逐步解析**：
+
+1. **`std::make_shared<SampleIndexFunction>(std::move(list))`** — 将列表包装为 `SampleIndexFunction` 多函数对象，用 `shared_ptr` 管理生命周期。`std::move(list)` 转移列表所有权，之后 `list` 变空。
+
+2. **`{&index}`** — 输入参数数组，包含一个指向 `SocketValueVariant` 的指针（Index 输入）。Index 可以是单值、字段或列表。
+
+3. **`{&output_value}`** — 输出参数数组，包含一个指向空 `SocketValueVariant` 的指针。执行后 `output_value` 被填充为结果。
+
+4. **`execute_multi_function_on_value_variant`** — 根据 Index 的实际类型选择执行路径：
+   - Index 是单值 → `execute_multi_function_on_value_variant__single`：对单个索引执行 `SampleIndexFunction`，输出单值
+   - Index 是字段 → `execute_multi_function_on_value_variant__field`：对每个索引执行，输出字段
+   - Index 是列表 → `execute_multi_function_on_value_variant__list`：对每个索引执行，输出列表
+
+5. **返回值 `false`** — 执行失败（如类型不匹配），设置默认输出并显示错误信息。
+
+6. **`std::move(output_value)`** — 转移结果所有权到输出 Socket，避免拷贝。
+
+```mermaid
+flowchart TD
+    subgraph "路径2: 多函数执行"
+        LIST["GListPtr<br/>[A, B, C, D, E]"]
+        SIF["SampleIndexFunction<br/>f(i) = list[i]"]
+        INDEX["Index: SocketValueVariant"]
+        
+        LIST -->|"std::move"| SIF
+        
+        INDEX --> CHECK{"Index 类型?"}
+        CHECK -->|"Single"| SINGLE["__single 路径<br/>输出: 单值"]
+        CHECK -->|"Field"| FIELD["__field 路径<br/>输出: 字段"]
+        CHECK -->|"List"| LISTPATH["__list 路径<br/>输出: 列表"]
+        
+        SIF --> SINGLE
+        SIF --> FIELD
+        SIF --> LISTPATH
+    end
+
+    style SIF fill:#3498db,color:#fff
+    style SINGLE fill:#2ecc71,color:#fff
+    style FIELD fill:#9b59b6,color:#fff
+    style LISTPATH fill:#e67e22,color:#fff
+```
+
+> **为什么用 `execute_multi_function_on_value_variant` 而非 `__list` 版本？** 因为 Get List Item 的输出**不一定是列表**——Index 是单值时输出单值，Index 是字段时输出字段，Index 是列表时才输出列表。`execute_multi_function_on_value_variant`（不带后缀）是**统一入口**，根据输入类型自动选择正确的执行路径。`__list` 版本假设输入/输出都是列表模式，不适合这里。
+>
+> | 函数 | 输入模式 | 输出模式 | 使用场景 |
+> |------|---------|---------|---------|
+> | `execute_multi_function_on_value_variant` | Single/Field/List | 自动匹配 | Get List Item（输出类型取决于 Index） |
+> | `execute_multi_function_on_value_variant__list` | Single/Field/List | 总是 List | 函数节点的列表模式（如 Math 节点） |
+> | `execute_multi_function_on_value_variant__field` | Single/Field | 总是 Field | 函数节点的字段模式 |
+> | `execute_multi_function_on_value_variant__single` | Single | 总是 Single | 函数节点的单值模式 |
+
+> **`std::make_shared` vs `MEM_new`**：`SampleIndexFunction` 用 `std::make_shared` 而非 Blender 的 `MEM_new`，因为它需要被 `shared_ptr` 管理（字段系统中 `FieldOperation` 持有 `shared_ptr<MultiFunction>`）。`MEM_new` 分配的内存不能用 `shared_ptr` 管理——`shared_ptr` 用 `delete` 释放，`MEM_new` 需要 `MEM_delete` 释放，两者不兼容。
+
 ```mermaid
 flowchart TD
     LT["list_type = list->cpp_type()"]

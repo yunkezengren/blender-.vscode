@@ -28,7 +28,7 @@ code CmakeCache.txt
 @REM code CmakeCache.txt
 
 @REM   可以按需要启用一些
-@REM   启用 CMAKE_EXPORT_COMPILE_COMMANDS: 会在构建目录中创建 compile_commands.json  Vscode c++ 扩展需要这个(用clangd可能不需要了)
+@REM   启用 CMAKE_EXPORT_COMPILE_COMMANDS: 在构建目录创建 compile_commands.json, MS C++ 扩展和Clangd需要
 @REM   禁用 WITH_UNITY_BUILD: (Clangd要禁用这个)
 @REM   启用 echo: CMAKE_VERBOSE_MAKEFILE: 会在终端里每行都输出
 @REM  lite 还需要这三个
