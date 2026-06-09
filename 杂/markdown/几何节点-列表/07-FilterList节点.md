@@ -13,6 +13,7 @@
     - [核心设计](#核心设计)
   - [2. 节点声明](#2-节点声明)
   - [3. 核心过滤函数 filter\_list](#3-核心过滤函数-filter_list)
+      - [`array_utils::gather` 超级详解](#array_utilsgather-超级详解)
   - [4. 三种过滤模式](#4-三种过滤模式)
     - [单值模式](#单值模式)
     - [字段模式](#字段模式)
@@ -178,7 +179,232 @@ static GListPtr filter_list(const GListPtr &list, const IndexMask &mask)
 
 > **`if constexpr`**：编译期分支。在编译时决定保留哪个分支，另一个分支的代码根本不存在（不会编译）。比运行时 `if` 更高效，且允许两个分支有不兼容的代码。**必须配合 `typename T`**——因为 `if constexpr (std::is_same_v<T, ...>)` 需要在编译期知道 `T` 是什么，而 `auto` 不是类型名，无法参与这个判断。
 
-> **ArrayData 分支**：`array_utils::gather` 从源数组中按 `mask` 指定的索引收集元素到目标数组。例如 mask={0,2,4}，则取 src[0]、src[2]、src[4]。内部使用 SIMD 优化。`GList::from_garray` 将收集结果包装为 GList。
+> **ArrayData 分支**：`array_utils::gather` 从源数组中按 `mask` 指定的索引收集元素到目标数组。例如 mask={0,2,4}，则取 src[0]、src[2]、src[4]。`GList::from_garray` 将收集结果包装为 GList。
+
+#### `array_utils::gather` 超级详解
+
+`gather` 有 6 个重载，Filter List 调用的是 `gather(GSpan, IndexMask, GMutableSpan)` 版本：
+
+```mermaid
+flowchart LR
+    CALL["array_utils::gather()"]
+    
+    OV1["gather(GVArray, IndexMask, GMutableSpan)<br/>核心泛型版本"]
+    OV2["gather(GSpan, IndexMask, GMutableSpan)<br/>GSpan 便捷版本 ← Filter List 用这个"]
+    OV3["gather(VArray&lt;T&gt;, IndexMask, MutableSpan&lt;T&gt;)<br/>类型化模板版本"]
+    OV4["gather(Span&lt;T&gt;, Span&lt;IndexT&gt;, IndexMask, MutableSpan&lt;T&gt;)<br/>Span+索引数组版本"]
+    OV5["gather(Span&lt;T&gt;, Span&lt;IndexT&gt;, MutableSpan&lt;T&gt;)<br/>简化版（无 dst_mask）"]
+    OV6["gather(VArray&lt;T&gt;, Span&lt;IndexT&gt;, ...)<br/>VArray+索引数组版本"]
+    
+    CALL --> OV1
+    CALL --> OV2
+    CALL --> OV3
+    CALL --> OV4
+    CALL --> OV5
+    CALL --> OV6
+    
+    OV2 -->|"委托"| OV1
+    OV5 -->|"委托"| OV4
+
+    style OV1 fill:#e74c3c,color:#fff
+    style OV2 fill:#e67e22,color:#fff
+    style OV3 fill:#3498db,color:#fff
+```
+
+**重载2：GSpan → GVArray 的桥接**
+
+```cpp
+// array_utils.cc:75-81
+void gather(const GSpan src,
+            const IndexMask &indices,
+            GMutableSpan dst,
+            const exec_mode::Mode mode)
+{
+  gather(GVArray::from_span(src), indices, dst, mode);
+}
+```
+
+`GVArray::from_span(src)` 构造一个 `GVArray`——**零开销包装**，不拷贝数据，只记指针：
+
+```cpp
+// BLI_generic_virtual_array.hh:895-898
+inline GVArray GVArray::from_span(GSpan span)
+{
+  return GVArray(varray_tag::span{}, span);
+}
+
+// BLI_generic_virtual_array.hh:800-806
+inline GVArray::GVArray(varray_tag::span /*tag*/, const GSpan span)
+{
+  // 注释翻译："使用 const_cast 是因为底层虚拟数组实现在 const 和非 const 数据之间共享"
+  GMutableSpan mutable_span{span.type(), const_cast<void *>(span.data()), span.size()};
+  this->emplace<GVArrayImpl_For_GSpan_final>(mutable_span);
+}
+```
+
+`GVArrayImpl_For_GSpan_final` 内部只存一个 `GMutableSpan`——不拷贝数据，只记指针。它的 `get(i)` 就是 `span[i]`。
+
+```mermaid
+flowchart LR
+    subgraph "GSpan → GVArray 包装（零拷贝）"
+        GS["GSpan<br/>type=float<br/>data=0x1000<br/>size=5"]
+        GV["GVArray<br/>impl_ → GVArrayImpl_For_GSpan_final"]
+        IMPL["GVArrayImpl_For_GSpan_final<br/>span_ = GMutableSpan<br/>data=0x1000, size=5"]
+        DATA["原始数据 0x1000<br/>[1.0, 2.0, 3.0, 4.0, 5.0]"]
+    end
+
+    GS --> GV
+    GV --> IMPL
+    IMPL -->|"引用（不拷贝）"| DATA
+
+    style GV fill:#3498db,color:#fff
+    style IMPL fill:#e67e22,color:#fff
+    style DATA fill:#2ecc71,color:#fff
+```
+
+**重载1：核心 `gather(GVArray, IndexMask, GMutableSpan)`**
+
+```cpp
+// array_utils.cc:56-73
+void gather(const GVArray &src,
+            const IndexMask &indices,
+            GMutableSpan dst,
+            const exec_mode::Mode mode)
+{
+  BLI_assert(src.type() == dst.type());
+  BLI_assert(indices.size() == dst.size());
+  if (!mode.is_parallel) {
+    src.materialize_compressed(indices, dst.data());  // ← 核心操作
+  }
+  else {
+    const int64_t grain_size = calc_copy_grain_size(mode, src.type().size);
+    threading::parallel_for(indices.index_range(), grain_size, [&](const IndexRange range) {
+      src.materialize_compressed(indices.slice(range), dst.slice(range).data());
+    });
+  }
+}
+```
+
+**核心操作就是一行**：`src.materialize_compressed(indices, dst.data())`
+
+- `materialize_compressed`：将 `src` 中 `indices` 指定位置的值**压缩写入** `dst`
+- "压缩" = `dst[pos] = src[indices[i]]`，其中 `pos` 是连续位置 `[0, 1, 2, ...]`，`indices[i]` 是源中的索引
+
+```
+src     = [A, B, C, D, E]        （原始数据）
+indices = [0, 2, 4]              （IndexMask：取第0、2、4个）
+dst     = [A, C, E]              （结果：连续存放）
+
+materialize_compressed 做的事：
+dst[0] = src[0] = A
+dst[1] = src[2] = C
+dst[2] = src[4] = E
+```
+
+```mermaid
+flowchart LR
+    subgraph "gather 操作"
+        SRC["src (GVArray)<br/>[A, B, C, D, E]"]
+        IDX["indices (IndexMask)<br/>[0, 2, 4]"]
+        DST["dst (GMutableSpan)<br/>[A, C, E]"]
+    end
+
+    IDX -->|"0 → src[0]"| DST
+    IDX -->|"2 → src[2]"| DST
+    IDX -->|"4 → src[4]"| DST
+    SRC --> DST
+
+    style SRC fill:#3498db,color:#fff
+    style IDX fill:#e67e22,color:#fff
+    style DST fill:#2ecc71,color:#fff
+```
+
+**`materialize_compressed` 的三种实现**
+
+`GVArray` 是多态的——底层可能是 `GSpan`（连续内存）、单值（广播）或函数（按需计算）。`materialize_compressed` 对每种情况有不同优化：
+
+| 底层类型 | `materialize_compressed` 实现 | 性能 |
+|---------|------|------|
+| **Span**（连续内存） | `index_mask::detail::gather_assign(data_, mask, dst)` — 高度优化的 gather | 最快（可能是 SIMD） |
+| **Single**（单值广播） | `initialized_fill_n(dst, mask.size(), value_)` — 批量填充 | 快（memset 级别） |
+| **Func**（函数计算） | `mask.foreach_index([&](i, pos) { dst[pos] = get_func_(i); })` — 逐个调用 | 最慢 |
+
+```mermaid
+flowchart TD
+    MC["materialize_compressed(mask, dst)"]
+    
+    CHECK{"底层实现类型？"}
+    
+    SPAN["Span 实现<br/>gather_assign()<br/>SIMD 优化的 gather<br/>O(mask.size())"]
+    SINGLE["Single 实现<br/>initialized_fill_n()<br/>memset 级别填充<br/>O(mask.size())"]
+    FUNC["Func 实现<br/>foreach_index + get_func_()<br/>逐个调用函数<br/>O(mask.size())"]
+    
+    MC --> CHECK
+    CHECK -->|"Span"| SPAN
+    CHECK -->|"Single"| SINGLE
+    CHECK -->|"Func"| FUNC
+
+    style SPAN fill:#2ecc71,color:#fff
+    style SINGLE fill:#3498db,color:#fff
+    style FUNC fill:#e74c3c,color:#fff
+```
+
+**Filter List 中 gather 的完整流程**
+
+```mermaid
+sequenceDiagram
+    participant FL as filter_list
+    participant GATHER as array_utils::gather
+    participant FROM_SPAN as GVArray::from_span
+    participant MC as materialize_compressed
+    participant GA as gather_assign
+
+    FL->>FL: GArray dst_data(float, mask.size()=3)
+    Note over FL: 分配 3×4=12 字节<br/>默认初始化
+
+    FL->>GATHER: gather(GSpan(float, 0x1000, 5), mask=[0,2,4], dst_data)
+    
+    GATHER->>FROM_SPAN: GVArray::from_span(GSpan(float, 0x1000, 5))
+    Note over FROM_SPAN: 零拷贝！只创建 GVArrayImpl_For_GSpan_final<br/>内部 span_ 指向 0x1000
+    FROM_SPAN-->>GATHER: GVArray (包装了 0x1000)
+
+    GATHER->>MC: src.materialize_compressed(mask=[0,2,4], dst.data())
+    Note over MC: 底层是 Span 实现<br/>调用 gather_assign
+    MC->>GA: gather_assign(data_=[1,2,3,4,5], mask=[0,2,4], dst)
+    Note over GA: dst[0] = data_[0] = 1<br/>dst[1] = data_[2] = 3<br/>dst[2] = data_[4] = 5
+    GA-->>MC: 完成
+    MC-->>GATHER: 完成
+    GATHER-->>FL: dst_data = [1, 3, 5]
+
+    FL->>FL: GList::from_garray(std::move(dst_data))
+    Note over FL: 返回过滤后的列表
+```
+
+> **传入 `GArray` 而非 `GMutableSpan`？** `GArray` 可以隐式转换为 `GMutableSpan`（通过 `operator GMutableSpan()`），`GMutableSpan` 可以隐式转换为 `GSpan`（通过 `operator GSpan()`）。所以 `gather(GSpan, ...)` 接受 `GArray` 参数——隐式转换链：`GArray` → `GMutableSpan` → `GSpan`。这是安全的，因为 `gather` 只读取 `dst` 的大小信息。
+
+**并行执行**
+
+当 `mode.is_parallel` 为 true（默认）时，`gather` 将 `indices` 分成多个块，每个线程处理一个块：
+
+```cpp
+threading::parallel_for(indices.index_range(), grain_size, [&](const IndexRange range) {
+  src.materialize_compressed(indices.slice(range), dst.slice(range).data());
+});
+```
+
+`grain_size` 由 `calc_copy_grain_size` 计算——类型越大，粒度越小（因为每个元素的拷贝开销更大，值得并行）：
+
+```cpp
+// grain_size = max(1, 32768 / type_size)
+// float (4B): grain_size = 8192
+// float3 (12B): grain_size = 2730
+// float4x4 (64B): grain_size = 512
+// std::string (32B): grain_size = 1024
+```
+
+> **注释翻译**（源码第 28-30 行）：
+> `"The grain size should roughly depend on the work being done per index, which roughly corresponds with the size of the type being copied."`
+> 粒度大小应大致取决于每个索引所做的工作量，这大致对应于被拷贝类型的大小。
 
 > **`GArray<>` 为什么不写模板参数？** `GArray` 的完整声明是 `template<typename Allocator = GuardedAllocator> class GArray`——它只有一个模板参数：**分配器类型**，默认值是 `GuardedAllocator`。`<>` 表示使用默认参数，等价于 `GArray<GuardedAllocator>`。注意 `GArray` **没有元素类型参数**——它是泛型数组，元素类型在运行时通过 `CPPType` 指针存储（`const CPPType *type_`），而非编译期模板参数。这与 `Array<T>` 不同：`Array<float>` 在编译期知道类型，`GArray<>` 在运行时才知道类型。
 >
