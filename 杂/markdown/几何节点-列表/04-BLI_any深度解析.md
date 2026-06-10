@@ -1044,7 +1044,57 @@ flowchart TD
 >
 > **"值处于移动后状态"指什么？** 移动构造函数"偷走"了源对象的资源（如 `std::string` 的内部缓冲区），源对象变成一个**合法但值不确定**的对象。你可以安全地析构它或给它赋新值，但不应该读取它的值（结果未指定）。
 
-### 6.2.2 拷贝和移动构造为什么有相同的 `std::copy_n` 分支？
+### 6.2.2 `&buffer_` vs `buffer_.ptr()` — 都是取缓冲区地址
+
+`buffer_` 的类型是 `AlignedBuffer<InlineBufferCapacity, alignment>`，其结构为：
+
+```cpp
+template<size_t Size, size_t Alignment> class AlignedBuffer {
+  struct alignas(Alignment) Sized {
+    std::byte buffer_[Size > 0 ? Size : 1];  // 唯一成员
+  };
+  BLI_NO_UNIQUE_ADDRESS BufferType buffer_;   // 唯一成员变量
+
+public:
+  operator void*()   { return this; }  // 隐式转换 → 对象地址
+  void *ptr()        { return this; }  // 显式方法 → 对象地址
+};
+```
+
+`AlignedBuffer` 只有一个成员 `buffer_`（字节数组），所以**对象地址 = 数组起始地址**。`&buffer_`、`buffer_.ptr()`、隐式转换到 `void*`，三者返回的值**完全相同**。
+
+> **如何知道 `.ptr()` 调用的是哪个重载？** C++ 根据对象的 const 属性选择：
+> ```cpp
+> void *ptr()              // 非 const 版本 — 对象可修改时调用
+> const void *ptr() const  // const 版本 — 对象不可修改时调用
+>
+> AlignedBuffer buf;       buf.ptr();   // → void*
+> const AlignedBuffer &cbuf = buf;  cbuf.ptr();  // → const void*
+> ```
+> `static_cast<std::byte *>(buffer_.ptr())` 需要 `void*`（非 const），所以调用非 const 版本。
+
+> **为什么 `.ptr()` 返回 `void *`？** `AlignedBuffer` 是原始内存缓冲区——不关心存储的是什么类型。`void *` 是"通用指针"，可以转换为任何对象指针类型。这让 `AlignedBuffer` 能存储任意类型的对象。
+
+> **`std::byte` 是什么？** C++17 引入的类型，表示原始字节。与 `unsigned char` 的区别：`unsigned char` 既是字节也是字符（可打印、可算术），`std::byte` 只是字节（不能打印、不能直接算术）。`std::copy_n` 操作字节时用 `std::byte*` 比 `unsigned char*` 更语义清晰。
+
+> **为什么 void/byte 指针能存其他类型并转成其他类型？** C++ 允许任何对象指针与 `void*` / `std::byte*` 之间双向转换。这是类型擦除的基础——存储时不知道类型（用 `void*`），取出时恢复类型（用 `static_cast<T*>`）。但必须确保转换后的类型和实际存储的类型一致，否则 UB：
+> ```cpp
+> int x = 42;
+> void *p = &x;
+> float *pf = static_cast<float*>(p);  // ❌ UB！实际存的是 int，不是 float
+> ```
+
+| 写法 | 含义 | 何时用 |
+|------|------|--------|
+| `&buffer_` | 取成员变量的地址 | 传给函数指针接口（如 `copy_construct(&buffer_, ...)`） |
+| `buffer_.ptr()` | 显式获取缓冲区指针 | 做指针运算时更清晰（如 `static_cast<std::byte*>(buffer_.ptr())`） |
+| 直接传 `buffer_` | 利用 `operator void*()` 隐式转换 | 也可以，但不够显式 |
+
+三种写法结果相同，Blender 混用了——`copy_construct` 用 `&buffer_`，`std::copy_n` 用 `.ptr()`，只是风格差异。
+
+### 6.2.3 拷贝和移动构造为什么有相同的 `std::copy_n` 分支？
+
+> **为什么用 `std::copy_n` 而不是 `memcpy`？** 对 `std::byte*`（平凡类型），编译器会将 `std::copy_n` 优化为和 `memcpy` 完全相同的代码，但 `std::copy_n` 更 C++ 风格——类型安全（编译期检查迭代器类型）、不需要 `#include <cstring>`、不使用 `void*`。
 
 ```cpp
 // 拷贝构造 (173-177)
@@ -1101,6 +1151,19 @@ template<typename T> const T &get() const
 ```
 
 注意 `if constexpr` 分支在编译期就确定了，**零运行时开销**。
+
+> **非 const 版本的 `get()` 如何实现？** 复用 const 版本的代码：
+> ```cpp
+> template<typename T> T &get() {
+>     return const_cast<T &>(const_cast<const Any *>(this)->get<T>());
+> }
+> ```
+> 步骤分解：
+> 1. `const_cast<const Any *>(this)` — 把 `this`（`Any*`）转成 `const Any*`
+> 2. `.get<T>()` — 调用 const 版本，返回 `const T&`
+> 3. `const_cast<T &>(...)` — 把 `const T&` 转成 `T&`（去掉 const）
+>
+> 这样避免了写两份相同的逻辑——const 版本写一次，非 const 版本复用。这是 C++ 的常见模式（Scott Meyers 推荐）。
 
 ### 6.4 析构
 
