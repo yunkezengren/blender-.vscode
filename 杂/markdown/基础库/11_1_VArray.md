@@ -1,0 +1,2102 @@
+# BLI_virtual_array.hh 逐行深度解析
+
+> 对 [BLI_virtual_array.hh](file:///e:/blender-git/blender/source/blender/blenlib/BLI_virtual_array.hh) 的逐行深度解析。
+> 翻译重要注释、解释非基础语法、结合几何节点实际使用。
+>
+> 关联文档：[11_VArray_GVArray.md](11_VArray_GVArray.md)（概览级指南）
+> 关联源码：[BLI_any_derived.hh](file:///e:/blender-git/blender/source/blender/blenlib/BLI_any_derived.hh)、[BLI_generic_virtual_array.hh](file:///e:/blender-git/blender/source/blender/blenlib/BLI_generic_virtual_array.hh)
+
+---
+
+## 目录
+
+1. [文件头注释详解](#1-文件头注释详解)
+2. [CommonVArrayInfo — 快速类型探测结构体](#2-commonvarrayinfo--快速类型探测结构体)
+3. [VArrayImpl\<T\> — 抽象基类](#3-varrayimplt--抽象基类)
+4. [VMutableArrayImpl\<T\> — 可变版基类](#4-vmutablearrayimplt--可变版基类)
+5. [VArrayImpl_For_Span — 连续数组包装](#5-varrayimpl_for_span--连续数组包装)
+6. [VArrayImpl_For_Span_final — 不可继承版 Span](#6-varrayimpl_for_span_final--不可继承版-span)
+7. [VArrayImpl_For_ArrayContainer — 拥有容器所有权](#7-varrayimpl_for_arraycontainer--拥有容器所有权)
+8. [VArrayImpl_For_Single — 单值广播](#8-varrayimpl_for_single--单值广播)
+9. [VArrayImpl_For_Func — 函数生成](#9-varrayimpl_for_func--函数生成)
+10. [VArrayImpl_For_DerivedSpan — 派生 Span（转换视图）](#10-varrayimpl_for_derivedspan--派生-span转换视图)
+11. [VArrayCommon\<T\> — 公共基类](#11-varraycommont--公共基类)
+12. [varray_tag — 构造函数消歧标签](#12-varray_tag--构造函数消歧标签)
+13. [VArray\<T\> — 只读虚拟数组](#13-varrayt--只读虚拟数组)
+14. [VMutableArray\<T\> — 可变虚拟数组](#14-vmutablearrayt--可变虚拟数组)
+15. [VArraySpan\<T\> — VArray→Span 适配器](#15-varrayspant--varrayspan-适配器)
+16. [MutableVArraySpan\<T\> — 可写版适配器](#16-mutablevarrayspant--可写版适配器)
+17. [SingleAsSpan + VArrayRef — 去虚拟化辅助](#17-singleasspan--varrayref--去虚拟化辅助)
+18. [VArrayDevirtualizer + devirtualize_varray — 去虚拟化优化](#18-varraydevirtualizer--devirtualize_varray--去虚拟化优化)
+19. [几何节点实际使用案例](#19-几何节点实际使用案例)
+
+---
+
+## 1. 文件头注释详解
+
+```cpp
+// BLI_virtual_array.hh:1~24
+```
+
+```cpp
+/** \file
+ * \ingroup bli
+ *
+ * A virtual array is a data structure that behaves similarly to an array, but its elements are
+ * accessed through virtual methods. This improves the decoupling of a function from its callers,
+ * because it does not have to know exactly how the data is laid out in memory, or if it is stored
+ * in memory at all. It could just as well be computed on the fly.
+```
+
+> **翻译**：虚拟数组是一种行为类似数组的数据结构，但它的元素通过虚方法访问。这改善了函数与调用者之间的解耦——函数不需要知道数据在内存中具体如何布局，甚至不需要知道数据是否存储在内存中。数据完全可以是即时计算的。
+
+```cpp
+ * Taking a virtual array as parameter instead of a more specific non-virtual type has some
+ * tradeoffs. Access to individual elements of the individual elements is slower due to function
+ * call overhead. On the other hand, potential callers don't have to convert the data into the
+ * specific format required for the function. This can be a costly conversion if only few of the
+ * elements are accessed in the end.
+```
+
+> **翻译**：用虚拟数组作为参数而非更具体的非虚拟类型，有一些权衡。单个元素的访问更慢（因为函数调用开销）。但另一方面，调用者不需要把数据转换成函数要求的特定格式——如果最终只访问少量元素，格式转换可能代价很高。
+
+```cpp
+ * Functions taking a virtual array as input can still optimize for different data layouts. For
+ * example, they can check if the array references contiguous memory internally or if it is the
+ * same value for all indices. Whether it is worth optimizing for different data layouts in a
+ * function has to be decided on a case by case basis. One should always do some benchmarking to
+ * see if the increased compile time and binary size is worth it.
+```
+
+> **翻译**：接受虚拟数组作为输入的函数仍然可以针对不同的数据布局做优化。例如，可以检查数组内部是否引用了连续内存，或者是否所有索引返回同一个值。是否值得为不同数据布局做优化，需要逐案决定。应该做基准测试，看看增加的编译时间和二进制大小是否值得。
+
+```mermaid
+flowchart TB
+    subgraph 核心权衡["VArray 的核心权衡"]
+        PRO["灵活性 ✅<br/>调用者无需转换数据格式<br/>支持 Span/Single/Func 等多种底层"]
+        CON["开销 ⚠️<br/>虚函数调用比直接访问慢<br/>去虚拟化优化增加编译时间和二进制大小"]
+    end
+
+    subgraph 优化策略["优化策略"]
+        O1["common_info() 快速探测<br/>一次虚调用判断底层类型"]
+        O2["is_span() / is_single()<br/>走快速路径"]
+        O3["devirtualize_varray<br/>编译期生成多版本"]
+    end
+
+    CON --> O1
+    CON --> O2
+    CON --> O3
+
+    style PRO fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style CON fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+```
+
+### 1.1 include 分析
+
+```cpp
+#include <functional>      // std::function（from_std_func 用）
+#include <optional>        // std::optional（get_if_single 返回）
+
+#include "BLI_any_derived.hh"       // AnyDerived——VArray 内部存储的核心
+#include "BLI_array.hh"             // Array<T>——VArraySpan/MutableVArraySpan 的 owned_data_
+#include "BLI_devirtualize_parameters.hh"  // call_with_devirtualized_parameters
+#include "BLI_index_mask.hh"        // IndexMask——materialize 的参数
+#include "BLI_span.hh"              // Span<T>/MutableSpan<T>
+```
+
+> **关键依赖**：`BLI_any_derived.hh` 是 VArray 的底层存储——`VArrayCommon::impl_` 的类型就是 `AnyDerived<const VArrayImpl<T>>`。AnyDerived 提供小缓冲区优化（SBO），小实现内联存储，大的用 `shared_ptr` 堆分配。
+
+---
+
+## 2. CommonVArrayInfo — 快速类型探测结构体
+
+```cpp
+// BLI_virtual_array.hh:47~71
+```
+
+```cpp
+/**
+ * Used to quickly check if a varray is a span or a single value. This struct also allows
+ * retrieving multiple pieces of data with a single virtual method call.
+ */
+struct CommonVArrayInfo {
+```
+
+> **翻译**：用于快速检查 varray 是 span 还是单值。这个结构体还允许通过**一次虚函数调用**获取多块数据。
+>
+> **为什么重要？** 虚函数调用有开销。如果分别调用 `is_span()`、`get_internal_span()`，每次都是虚函数调用。`common_info()` 一次调用就返回所有信息——类型、数据指针、所有权标志。
+
+```cpp
+  enum class Type : uint8_t {
+    /* Is not one of the common special types below. */
+    Any,
+    Span,
+    Single,
+  };
+```
+
+> **`: uint8_t`**：指定底层类型为 `uint8_t`，节省内存（1 字节而非默认 `int` 的 4 字节）。
+
+| Type 值 | 含义 | data 指向 | 典型实现类 |
+|---------|------|----------|-----------|
+| `Any` | 通用类型（无法优化） | 无效 | `VArrayImpl_For_Func` |
+| `Span` | 连续内存 | `T*` 数组首地址 | `VArrayImpl_For_Span` |
+| `Single` | 所有索引同一值 | `T*` 单值地址 | `VArrayImpl_For_Single` |
+
+```cpp
+  /** True when the #data becomes a dangling pointer when the virtual array is destructed. */
+  bool may_have_ownership = true;
+```
+
+> **翻译**：当虚拟数组析构时 `data` 是否会变成悬空指针。
+>
+> **`may_have_ownership` 的含义**：不是"是否拥有"，而是"**可能**拥有"。用于判断数据是否安全——如果 `may_have_ownership = false`，说明数据不归 varray 管，即使 varray 析构了数据仍然安全。
+>
+> - `VArrayImpl_For_Span`：`true`（可能拥有，取决于是否通过 `from_container` 创建）
+> - `VArrayImpl_For_Span_final`：`false`（不拥有，只是引用外部数据）
+> - `VArrayImpl_For_Single`：`true`（拥有单值的拷贝）
+> - `VArrayImpl_For_DerivedSpan`：`true`（可能拥有底层 StructT 数组）
+
+```cpp
+  /**
+   * Points either to nothing, a single value, or an array of values, depending on #type.
+   * If this is a span of a mutable virtual array, it is safe to cast away const.
+   */
+  const void *data;
+```
+
+> **翻译**：根据 `type`，可能指向空、单个值、或值数组。如果是可变虚拟数组的 span，可以安全地 `const_cast` 去掉 const。
+>
+> **"cast away const" 的含义**：`data` 是 `const void*`，但如果底层是 `VMutableArrayImpl` 的 Span，数据实际是可修改的。`MutableVArraySpan::get_internal_span()` 就做了 `const_cast`。
+
+```cpp
+  CommonVArrayInfo() = default;
+  CommonVArrayInfo(const Type _type, const bool _may_have_ownership, const void *_data)
+      : type(_type), may_have_ownership(_may_have_ownership), data(_data)
+  {
+  }
+};
+```
+
+```mermaid
+flowchart LR
+    subgraph "common_info() 返回值"
+        CI["CommonVArrayInfo"]
+        T["type: Type<br/>Any / Span / Single"]
+        O["may_have_ownership: bool<br/>数据是否可能被 varray 拥有"]
+        D["data: const void*<br/>指向底层数据"]
+    end
+
+    CI --> T
+    CI --> O
+    CI --> D
+
+    subgraph "Span 模式"
+        S["data → T 数组首地址<br/>may_have_ownership 取决于实现"]
+    end
+    subgraph "Single 模式"
+        SI["data → 单个 T 值的地址<br/>may_have_ownership = true"]
+    end
+    subgraph "Any 模式"
+        A["data → 无效<br/>必须通过 get() 访问"]
+    end
+
+    T --> S
+    T --> SI
+    T --> A
+
+    style S fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style SI fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+    style A fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#880e4f
+```
+
+---
+
+## 3. VArrayImpl\<T\> — 抽象基类
+
+```cpp
+// BLI_virtual_array.hh:77~165
+```
+
+```cpp
+/**
+ * Implements the specifics of how the elements of a virtual array are accessed. It contains a
+ * bunch of virtual methods that are wrapped by #VArray.
+ */
+template<typename T> class VArrayImpl {
+```
+
+> **翻译**：实现虚拟数组元素访问方式的具体细节。包含一组虚方法，由 `VArray` 包装对外暴露。
+>
+> **设计模式**：这是**桥接模式**（Bridge Pattern）——`VArray` 是接口层，`VArrayImpl` 是实现层，两者独立变化。
+
+```cpp
+ protected:
+  /**
+   * Number of elements in the virtual array. All virtual arrays have a size, but in some cases it
+   * may make sense to set it to the max value.
+   */
+  int64_t size_;
+```
+
+> **翻译**：虚拟数组中的元素数量。所有虚拟数组都有大小，但在某些情况下可以设为最大值。
+>
+> **"set it to the max value"**：`INT64_MAX`。用于表示"无限大小"的虚拟数组——比如 `VArrayImpl_For_Single` 的单值广播，理论上可以无限延伸。但实际中很少这样做。
+
+```cpp
+ public:
+  VArrayImpl(const int64_t size) : size_(size)
+  {
+    BLI_assert(size_ >= 0);
+  }
+
+  virtual ~VArrayImpl() = default;
+
+  int64_t size() const
+  {
+    return size_;
+  }
+```
+
+> **构造函数**：接受 `int64_t size`，断言非负。`virtual ~VArrayImpl() = default` 确保通过基类指针删除时正确调用派生类析构函数。
+
+```cpp
+  /**
+   * Get the element at #index. This does not return a reference, because the value may be computed
+   * on the fly.
+   */
+  virtual T get(int64_t index) const = 0;
+```
+
+> **翻译**：获取 `index` 处的元素。不返回引用，因为值可能是即时计算的。
+>
+> **核心纯虚函数**——每个子类必须实现。返回 `T`（值）而非 `T&`（引用），因为 `VArrayImpl_For_Func` 每次调用都计算新值，无法返回引用。
+
+```cpp
+  virtual CommonVArrayInfo common_info() const
+  {
+    return {};
+  }
+```
+
+> **默认实现**：返回 `CommonVArrayInfo{}`（`Type::Any`，`may_have_ownership = true`，`data = nullptr`）。不提供特殊优化的子类（如 `VArrayImpl_For_Func`）使用此默认。
+
+### 3.1 materialize — 按索引复制到目标数组
+
+```cpp
+  /**
+   * Copy values from the virtual array into the provided span. The index of the value in the
+   * virtual array is the same as the index in the span.
+   */
+  virtual void materialize(const IndexMask &mask, T *dst, const bool dst_is_uninitialized) const
+  {
+    if constexpr (std::is_trivially_copyable_v<T>) {
+      mask.foreach_index([&](const int64_t i) { dst[i] = this->get(i); });
+    }
+    else {
+      if (dst_is_uninitialized) {
+        mask.foreach_index([&](const int64_t i) { new (dst + i) T(this->get(i)); });
+      }
+      else {
+        mask.foreach_index([&](const int64_t i) { dst[i] = this->get(i); });
+      }
+    }
+  }
+```
+
+> **翻译**：将虚拟数组的值复制到提供的 span。虚拟数组中的索引和 span 中的索引相同。
+>
+> **三个参数**：
+> - `mask`：`IndexMask`，指定要复制哪些索引（不是全部）
+> - `dst`：目标内存
+> - `dst_is_uninitialized`：目标内存是否未初始化
+>
+> **`if constexpr std::is_trivially_copyable_v<T>`**：编译期分支——平凡可拷贝类型不需要关心初始化状态，直接赋值就行。非平凡类型需要区分：
+> - `dst_is_uninitialized = true`：用 **placement new** 构造（`new (dst + i) T(get(i))`）
+> - `dst_is_uninitialized = false`：直接赋值（`dst[i] = get(i)`），会先析构旧值再赋值
+>
+> **为什么区分？** 对非平凡类型（如 `std::string`），在未初始化内存上赋值是 UB——必须先构造。在已初始化内存上 placement new 会导致旧值泄漏（不析构）。
+
+```mermaid
+flowchart TB
+    subgraph "materialize(mask, dst, dst_is_uninitialized)"
+        CHECK{"T 是平凡可拷贝？"}
+        CHECK -->|"是"| TRIVIAL["dst[i] = get(i)<br/>直接赋值，不关心初始化状态"]
+        CHECK -->|"否"| NONTRIVIAL{"dst_is_uninitialized?"}
+        NONTRIVIAL -->|"true"| UNINIT["new (dst+i) T(get(i))<br/>placement new 构造"]
+        NONTRIVIAL -->|"false"| INIT["dst[i] = get(i)<br/>赋值（先析构旧值）"]
+    end
+
+    style TRIVIAL fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style UNINIT fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+    style INIT fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+```
+
+### 3.2 materialize_compressed — 压缩复制
+
+```cpp
+  /**
+   * Copy values from the virtual array into the provided span. Contrary to #materialize, the index
+   * in virtual array is not the same as the index in the output span. Instead, the span is filled
+   * without gaps.
+   */
+  virtual void materialize_compressed(const IndexMask &mask,
+                                      T *dst,
+                                      const bool dst_is_uninitialized) const
+  {
+    if constexpr (std::is_trivially_copyable_v<T>) {
+      mask.foreach_index([&](const int64_t i, const int64_t pos) { dst[pos] = this->get(i); });
+    }
+    else {
+      if (dst_is_uninitialized) {
+        mask.foreach_index(
+            [&](const int64_t i, const int64_t pos) { new (dst + pos) T(this->get(i)); });
+      }
+      else {
+        mask.foreach_index([&](const int64_t i, const int64_t pos) { dst[pos] = this->get(i); });
+      }
+    }
+  }
+```
+
+> **翻译**：将值复制到 span。与 `materialize` 不同，虚拟数组中的索引和输出 span 中的索引不同——span 无间隙填充。
+>
+> **`materialize` vs `materialize_compressed`**：
+>
+> | 方法 | 索引映射 | 示例：mask = {2, 5, 7} |
+> |------|---------|------------------------|
+> | `materialize` | `dst[i] = get(i)` | dst[2]=get(2), dst[5]=get(5), dst[7]=get(7) |
+> | `materialize_compressed` | `dst[pos] = get(i)` | dst[0]=get(2), dst[1]=get(5), dst[2]=get(7) |
+>
+> **`foreach_index` 的双参数版本**：`(int64_t i, int64_t pos)`——`i` 是虚拟数组中的索引，`pos` 是在 mask 中的位置（从 0 开始递增）。
+
+### 3.3 try_assign_GVArray — 泛型转换钩子
+
+```cpp
+  /**
+   * If this virtual wraps another #GVArray, this method should assign the wrapped array to the
+   * provided reference. This allows losslessly converting between generic and typed virtual
+   * arrays in all cases.
+   * Return true when the virtual array was assigned and false when nothing was done.
+   */
+  virtual bool try_assign_GVArray(GVArray & /*varray*/) const
+  {
+    return false;
+  }
+```
+
+> **翻译**：如果这个虚拟数组包装了另一个 `GVArray`，此方法应该将被包装的数组赋给提供的引用。这允许在所有情况下无损地在泛型和类型化虚拟数组之间转换。成功赋值返回 true，否则 false。
+>
+> **用途**：`VArrayImpl_For_GVArray<T>` 包装了一个 `GVArray`。当 `GVArray::typed<T>()` 被调用时，如果发现底层已经是 `VArrayImpl_For_GVArray<T>`，可以直接取出原始 `GVArray`，避免嵌套包装。
+>
+> **`/*varray*/`**：参数名被注释掉——表示这个参数在默认实现中未使用，但保留参数名作为文档。
+
+---
+
+## 4. VMutableArrayImpl\<T\> — 可变版基类
+
+```cpp
+// BLI_virtual_array.hh:168~202
+```
+
+```cpp
+/** Similar to #VArrayImpl, but adds methods that allow modifying the referenced elements. */
+template<typename T> class VMutableArrayImpl : public VArrayImpl<T> {
+ public:
+  using VArrayImpl<T>::VArrayImpl;
+```
+
+> **翻译**：类似 `VArrayImpl`，但增加了修改引用元素的方法。
+>
+> **`using VArrayImpl<T>::VArrayImpl;`**：**继承构造函数**——让 `VMutableArrayImpl` 继承 `VArrayImpl` 的所有构造函数。这样 `VMutableArrayImpl(size)` 直接等价于 `VArrayImpl(size)`，不需要手写转发构造函数。
+
+```cpp
+  /**
+   * Assign the provided #value to the #index.
+   */
+  virtual void set(int64_t index, T value) = 0;
+```
+
+> **翻译**：将 `value` 赋给 `index` 位置。纯虚函数——每个可变实现必须提供。
+
+```cpp
+  /**
+   * Copy all elements from the provided span into the virtual array.
+   */
+  virtual void set_all(Span<T> src)
+  {
+    const CommonVArrayInfo info = this->common_info();
+    if (info.type == CommonVArrayInfo::Type::Span) {
+      initialized_copy_n(
+          src.data(), this->size_, const_cast<T *>(static_cast<const T *>(info.data)));
+    }
+    else {
+      const int64_t size = this->size_;
+      for (int64_t i = 0; i < size; i++) {
+        this->set(i, src[i]);
+      }
+    }
+  }
+```
+
+> **翻译**：将 span 中的所有元素复制到虚拟数组。
+>
+> **优化分支**：
+> - `Type::Span`：直接 `memcpy` 级别的 `initialized_copy_n`，一次调用搞定
+> - 其他：逐个 `set(i, src[i])`，每次都有虚函数调用
+>
+> **`const_cast<T *>(static_cast<const T *>(info.data))`**：`info.data` 是 `const void*`，先 `static_cast<const T*>` 再 `const_cast<T*>` 去掉 const。安全是因为 `common_info()` 注释说了"If this is a span of a mutable virtual array, it is safe to cast away const"。
+
+```cpp
+  virtual bool try_assign_GVMutableArray(GVMutableArray & /*varray*/) const
+  {
+    return false;
+  }
+};
+```
+
+> 与 `try_assign_GVArray` 类似，用于可变版本的反向转换。
+
+---
+
+## 5. VArrayImpl_For_Span — 连续数组包装
+
+```cpp
+// BLI_virtual_array.hh:204~268
+```
+
+```cpp
+/**
+ * A virtual array implementation that references that wraps a span. This implementation is used by
+ * mutable and immutable spans to avoid code duplication.
+ */
+template<typename T> class VArrayImpl_For_Span : public VMutableArrayImpl<T> {
+ protected:
+  T *data_ = nullptr;
+```
+
+> **翻译**：引用/包装 span 的虚拟数组实现。这个实现被可变和不可变 span 共用，以避免代码重复。
+>
+> **设计要点**：`VArrayImpl_For_Span` 继承 `VMutableArrayImpl`（可变），不可变版本 `VArrayImpl_For_Span_final` 也继承它——只读通过不暴露 `set()` 实现（`final` 阻止外部调用）。
+
+```cpp
+ public:
+  VArrayImpl_For_Span(const MutableSpan<T> data)
+      : VMutableArrayImpl<T>(data.size()), data_(data.data())
+  {
+  }
+```
+
+> 构造函数接受 `MutableSpan<T>`（可变 span），提取指针和大小。注意：`data_` 是 `T*`（非 const），即使是只读使用也能写入——安全性由上层 `VArray` vs `VMutableArray` 保证。
+
+```cpp
+ protected:
+  VArrayImpl_For_Span(const int64_t size) : VMutableArrayImpl<T>(size) {}
+```
+
+> **protected 构造函数**：只设大小，不设 `data_`。给 `VArrayImpl_For_ArrayContainer` 用——它需要先构造基类，再设置 `data_`。
+
+```cpp
+  T get(const int64_t index) const final
+  {
+    return data_[index];
+  }
+
+  void set(const int64_t index, T value) final
+  {
+    data_[index] = value;
+  }
+```
+
+> **`final`**：阻止派生类再重写。`VArrayImpl_For_Span_final` 不需要重写 `get/set`，只需要重写 `common_info()`。
+
+```cpp
+  CommonVArrayInfo common_info() const override
+  {
+    return CommonVArrayInfo(CommonVArrayInfo::Type::Span, true, data_);
+  }
+```
+
+> `may_have_ownership = true`——默认假设可能拥有数据。`VArrayImpl_For_Span_final` 会重写为 `false`。
+
+### 5.1 materialize 优化版
+
+```cpp
+  void materialize(const IndexMask &mask, T *dst, const bool dst_is_uninitialized) const override
+  {
+    if constexpr (std::is_trivially_copyable_v<T>) {
+      index_mask::detail::copy_assign(data_, mask, dst);
+    }
+    else {
+      if (dst_is_uninitialized) {
+        mask.foreach_index([&](const int64_t i) { new (dst + i) T(data_[i]); });
+      }
+      else {
+        mask.foreach_index([&](const int64_t i) { dst[i] = data_[i]; });
+      }
+    }
+  }
+```
+
+> **vs 基类版本**：基类用 `this->get(i)`（虚函数调用），这里直接 `data_[i]`（直接内存访问）。对平凡类型还用了 `index_mask::detail::copy_assign`——可能是 SIMD 优化的批量复制。
+
+```cpp
+  void materialize_compressed(const IndexMask &mask,
+                              T *dst,
+                              const bool dst_is_uninitialized) const override
+  {
+    if constexpr (std::is_trivially_copyable_v<T>) {
+      index_mask::detail::gather_assign(data_, mask, dst);
+    }
+    // ... 非平凡类型同基类
+  }
+```
+
+> **`gather_assign`**：类似 `array_utils::gather`——从 `data_` 中按 mask 指定的索引收集元素，紧密排列到 `dst`。
+
+---
+
+## 6. VArrayImpl_For_Span_final — 不可继承版 Span
+
+```cpp
+// BLI_virtual_array.hh:270~295
+```
+
+```cpp
+/**
+ * A version of #VArrayImpl_For_Span that can not be subclassed. This allows safely overwriting the
+ * #may_have_ownership method.
+ */
+template<typename T> class VArrayImpl_For_Span_final final : public VArrayImpl_For_Span<T> {
+ public:
+  using VArrayImpl_For_Span<T>::VArrayImpl_For_Span;
+
+  VArrayImpl_For_Span_final(const Span<T> data)
+      /* Cast const away, because the implementation for const and non const spans is shared. */
+      : VArrayImpl_For_Span<T>({const_cast<T *>(data.data()), data.size()})
+  {
+  }
+```
+
+> **翻译**：`VArrayImpl_For_Span` 的不可继承版本。允许安全地覆盖 `may_have_ownership`。
+>
+> **为什么 `final`？** 如果可以被继承，子类可能重写 `common_info()` 改变 `may_have_ownership`，导致判断不可靠。`final` 保证 `common_info()` 的行为不会被覆盖。
+>
+> **`const_cast<T *>(data.data())`**：`Span<T>` 的 `data()` 返回 `const T*`，但 `VArrayImpl_For_Span` 的构造函数接受 `MutableSpan<T>`。这里 `const_cast` 去掉 const——安全，因为 `VArrayImpl_For_Span_final` 通过只读的 `VArray` 接口暴露，`set()` 虽然存在但不会被外部调用。
+
+```cpp
+ private:
+  CommonVArrayInfo common_info() const final
+  {
+    return CommonVArrayInfo(CommonVArrayInfo::Type::Span, false, this->data_);
+  }
+};
+```
+
+> **`may_have_ownership = false`**——不拥有数据，只是引用外部 Span。这是与 `VArrayImpl_For_Span` 的关键区别。
+>
+> **`private:` + `final`**：`private` 阻止外部调用，`final` 阻止子类重写（虽然已经是 `final` 类了，双重保险）。
+
+```cpp
+template<typename T>
+inline constexpr bool is_trivial_extended_v<VArrayImpl_For_Span_final<T>> = true;
+```
+
+> **`is_trivial_extended_v` 特化**：标记此类为"平凡扩展"——意味着 `AnyDerived` 可以安全地用 `memcpy` 拷贝它（不需要调用拷贝构造函数）。`VArrayImpl_For_Span_final` 只有一个 `T*`，确实是平凡可拷贝的。
+
+---
+
+## 7. VArrayImpl_For_ArrayContainer — 拥有容器所有权
+
+```cpp
+// BLI_virtual_array.hh:297~312
+```
+
+```cpp
+/**
+ * A variant of `VArrayImpl_For_Span` that owns the underlying data.
+ * The `Container` type has to implement a `size()` and `data()` method.
+ * The `data()` method has to return a pointer to the first element in the continuous array of
+ * elements.
+ */
+template<typename Container, typename T = typename Container::value_type>
+class VArrayImpl_For_ArrayContainer : public VArrayImpl_For_Span<T> {
+ private:
+  Container container_;
+
+ public:
+  VArrayImpl_For_ArrayContainer(Container container)
+      : VArrayImpl_For_Span<T>(int64_t(container.size())), container_(std::move(container))
+  {
+    this->data_ = const_cast<T *>(container_.data());
+  }
+};
+```
+
+> **翻译**：`VArrayImpl_For_Span` 的变体，拥有底层数据的所有权。`Container` 类型必须实现 `size()` 和 `data()` 方法。`data()` 必须返回连续数组首元素的指针。
+>
+> **模板参数**：
+> - `Container`：容器类型（如 `Array<int>`、`Vector<float>`）
+> - `T = typename Container::value_type`：从容器类型推导元素类型
+>
+> **`typename Container::value_type`**：`typename` 告诉编译器 `Container::value_type` 是类型名而非值。这是**依赖类型**——依赖于模板参数 `Container`。
+>
+> **工作原理**：
+> 1. 先调用 `VArrayImpl_For_Span(size)` 的 protected 构造函数（只设大小，不设 `data_`）
+> 2. 用 `std::move` 把容器存入 `container_` 成员（拥有所有权）
+> 3. 设置 `this->data_ = container_.data()`——指向容器内部的连续数组
+>
+> **为什么 `const_cast`？** `container_.data()` 对 const 容器返回 `const T*`，但 `data_` 是 `T*`。安全——容器归我们所有，不会通过 const 路径修改。
+
+```mermaid
+flowchart TB
+    subgraph "VArrayImpl_For_ArrayContainer 内存布局"
+        AC["VArrayImpl_For_ArrayContainer"]
+        SIZE["size_: 5"]
+        CONT["container_: Array&lt;int&gt;<br/>[10, 20, 30, 40, 50]"]
+        DATA["data_: T* → container_ 内部数组"]
+    end
+
+    DATA -.->|"指向"| CONT
+
+    style AC fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style CONT fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style DATA fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+```
+
+---
+
+## 8. VArrayImpl_For_Single — 单值广播
+
+```cpp
+// BLI_virtual_array.hh:314~373
+```
+
+```cpp
+/**
+ * A virtual array implementation that returns the same value for every index. This class is final
+ * so that it can be devirtualized by the compiler in some cases (e.g. when #devirtualize_varray is
+ * used).
+ */
+template<typename T> class VArrayImpl_For_Single final : public VArrayImpl<T> {
+ private:
+  T value_;
+```
+
+> **翻译**：对所有索引返回同一值的虚拟数组实现。标记为 `final` 以便编译器在某些情况下去虚拟化（例如使用 `devirtualize_varray` 时）。
+>
+> **`final` 与去虚拟化的关系**：编译器知道 `final` 类不会有派生类，所以 `get()` 的虚调用可以被**去虚拟化**（devirtualization）——直接内联，不需要通过虚表。这是 C++ 编译器的重要优化。
+
+```cpp
+ public:
+  VArrayImpl_For_Single(T value, const int64_t size)
+      : VArrayImpl<T>(size), value_(std::move(value))
+  {
+  }
+```
+
+> `std::move(value)`：避免不必要的拷贝。如果 `T` 是 `std::string`，移动比拷贝快得多。
+
+```cpp
+ protected:
+  T get(const int64_t /*index*/) const override
+  {
+    return value_;
+  }
+```
+
+> **`/*index*/`**：参数名被注释掉——这个实现不使用 index，所有索引返回同一个值。保留参数名作为文档。
+
+```cpp
+  CommonVArrayInfo common_info() const override
+  {
+    return CommonVArrayInfo(CommonVArrayInfo::Type::Single, true, &value_);
+  }
+```
+
+> `data` 指向 `&value_`——单值的地址。外部可以通过 `*static_cast<const T*>(info.data)` 直接读取值，不需要调用 `get()`。
+
+### 8.1 materialize 优化
+
+```cpp
+  void materialize(const IndexMask &mask, T *dst, const bool dst_is_uninitialized) const override
+  {
+    if constexpr (std::is_trivially_copyable_v<T>) {
+      index_mask::detail::fill(dst, value_, mask);
+    }
+    else {
+      if (dst_is_uninitialized) {
+        mask.foreach_index([&](const int64_t i) { new (dst + i) T(value_); });
+      }
+      else {
+        mask.foreach_index([&](const int64_t i) { dst[i] = value_; });
+      }
+    }
+  }
+```
+
+> **`index_mask::detail::fill`**：对 mask 中的每个索引，填充 `value_`。可能使用 SIMD 优化。
+>
+> **vs 基类版本**：基类用 `this->get(i)` 获取值再赋值，这里直接用 `value_`——编译器可以更好地优化（常量传播）。
+
+```cpp
+  void materialize_compressed(const IndexMask &mask,
+                              T *dst,
+                              const bool dst_is_uninitialized) const override
+  {
+    if constexpr (std::is_trivially_copyable_v<T>) {
+      initialized_fill_n(dst, mask.size(), value_);
+    }
+    else {
+      if (dst_is_uninitialized) {
+        uninitialized_fill_n(dst, mask.size(), value_);
+      }
+      else {
+        initialized_fill_n(dst, mask.size(), value_);
+      }
+    }
+  }
+```
+
+> **`materialize_compressed` 的极致优化**：既然所有值都一样，直接 `fill` 整个目标区域——不需要逐索引遍历。`mask.size()` 是元素数量，`fill_n` 填充这么多份 `value_`。
+
+```cpp
+template<typename T>
+inline constexpr bool is_trivial_extended_v<VArrayImpl_For_Single<T>> = is_trivial_extended_v<T>;
+```
+
+> **条件性平凡标记**：如果 `T` 本身是平凡扩展的，那么 `VArrayImpl_For_Single<T>` 也是。因为 `VArrayImpl_For_Single` 只多了一个 `T value_` 成员——如果 `T` 可以 `memcpy`，整个类也可以。
+
+---
+
+## 9. VArrayImpl_For_Func — 函数生成
+
+```cpp
+// BLI_virtual_array.hh:375~426
+```
+
+```cpp
+/**
+ * This class makes it easy to create a virtual array for an existing function or lambda. The
+ * `GetFunc` should take a single `index` argument and return the value at that index.
+ */
+template<typename T, typename GetFunc> class VArrayImpl_For_Func final : public VArrayImpl<T> {
+ private:
+  GetFunc get_func_;
+```
+
+> **翻译**：这个类让为已有函数或 lambda 创建虚拟数组变得容易。`GetFunc` 应该接受一个 `index` 参数并返回该索引处的值。
+>
+> **`GetFunc` 是模板参数而非 `std::function`**：性能关键！模板参数允许编译器内联 lambda 调用。`std::function` 有类型擦除开销（虚函数调用 + 可能的堆分配）。
+
+```cpp
+ public:
+  VArrayImpl_For_Func(const int64_t size, GetFunc get_func)
+      : VArrayImpl<T>(size), get_func_(std::move(get_func))
+  {
+  }
+```
+
+> `std::move(get_func)`：lambda 通常是轻量的，但可能捕获了 `vector` 等重对象，移动更安全。
+
+```cpp
+ private:
+  T get(const int64_t index) const override
+  {
+    return get_func_(index);
+  }
+```
+
+> 每次访问调用 `get_func_(index)`。如果 `get_func_` 是 lambda，编译器通常可以内联。
+
+> **注意**：`VArrayImpl_For_Func` **没有重写** `common_info()`——使用基类默认（`Type::Any`）。因为函数生成的数据没有可优化的内部结构。
+
+### 9.1 几何节点中的典型使用
+
+```cpp
+// node_geo_input_mesh_edge_vertices.cc:29~41
+static VArray<int> construct_edge_verts_gvarray(const Mesh &mesh,
+                                                const VertNumber vertex,
+                                                const AttrDomain domain)
+{
+  const Span<int2> edges = mesh.edges();
+  if (domain == AttrDomain::Edge) {
+    if (vertex == VertNumber::V1) {
+      return VArray<int>::from_func(edges.size(), [edges](const int i) { return edges[i][0]; });
+    }
+    return VArray<int>::from_func(edges.size(), [edges](const int i) { return edges[i][1]; });
+  }
+  return {};
+}
+```
+
+> **解读**：`edges[i][0]` 和 `edges[i][1]` 分别是边的两个顶点索引。用 `from_func` 创建虚拟数组——每次访问 `varray[i]` 时计算 `edges[i][0]`，不需要预分配数组。
+
+---
+
+## 10. VArrayImpl_For_DerivedSpan — 派生 Span（转换视图）
+
+```cpp
+// BLI_virtual_array.hh:428~502
+```
+
+```cpp
+/**
+ * \note This is `final` so that #may_have_ownership can be implemented reliably.
+ */
+template<typename StructT,
+         typename ElemT,
+         ElemT (*GetFunc)(const StructT &),
+         void (*SetFunc)(StructT &, ElemT) = nullptr>
+class VArrayImpl_For_DerivedSpan final : public VMutableArrayImpl<ElemT> {
+```
+
+> **翻译**：标记为 `final` 以便 `may_have_ownership` 能可靠实现。
+>
+> **四个模板参数**：
+>
+> | 参数 | 含义 | 示例 |
+> |------|------|------|
+> | `StructT` | 底层存储的结构类型 | `float4` |
+> | `ElemT` | 对外暴露的元素类型 | `float3` |
+> | `GetFunc` | 从 StructT 提取 ElemT 的**函数指针** | `[](const float4& v) → float3 { return xyz; }` |
+> | `SetFunc` | 将 ElemT 写回 StructT 的函数指针（可选） | `[](float4& v, float3 x) { v.xyz = x; }` |
+>
+> **`ElemT (*GetFunc)(const StructT &)`**：这是**函数指针类型**，不是 lambda。函数指针在编译期确定，可以被内联。
+>
+> **`SetFunc = nullptr`**：默认值 `nullptr` 表示只读。如果提供 `SetFunc`，则可写。
+
+```cpp
+ private:
+  StructT *data_;
+
+ public:
+  VArrayImpl_For_DerivedSpan(const MutableSpan<StructT> data)
+      : VMutableArrayImpl<ElemT>(data.size()), data_(data.data())
+  {
+  }
+```
+
+> 底层存储的是 `StructT*`，不是 `ElemT*`。
+
+```cpp
+  template<typename OtherStructT,
+           typename OtherElemT,
+           OtherElemT (*OtherGetFunc)(const OtherStructT &),
+           void (*OtherSetFunc)(OtherStructT &, OtherElemT)>
+  friend class VArrayImpl_For_DerivedSpan;
+```
+
+> **友元声明**：允许不同模板参数的 `VArrayImpl_For_DerivedSpan` 实例互访私有成员。用于构造函数中的类型转换。
+
+```cpp
+  ElemT get(const int64_t index) const override
+  {
+    return GetFunc(data_[index]);
+  }
+
+  void set(const int64_t index, ElemT value) override
+  {
+    SetFunc(data_[index], std::move(value));
+  }
+```
+
+> `get(index)`：取 `StructT`，调用 `GetFunc` 转为 `ElemT`。
+> `set(index, value)`：调用 `SetFunc` 将 `ElemT` 写回 `StructT`。
+>
+> **注意**：`SetFunc` 不是虚函数——它是模板参数（函数指针），编译期确定。如果 `SetFunc = nullptr`，`set()` 仍然存在（继承自 `VMutableArrayImpl`），但调用会崩溃——安全性由上层保证（只读 `VArray` 不会调用 `set`）。
+
+```cpp
+template<typename StructT,
+         typename ElemT,
+         ElemT (*GetFunc)(const StructT &),
+         void (*SetFunc)(StructT &, ElemT)>
+inline constexpr bool
+    is_trivial_extended_v<VArrayImpl_For_DerivedSpan<StructT, ElemT, GetFunc, SetFunc>> = true;
+```
+
+> 标记为平凡扩展——只包含一个 `StructT*`，确实是平凡可拷贝的。
+
+### 10.1 几何节点中的使用
+
+```cpp
+// VArray::from_derived_span 的调用方式
+template<typename StructT, T (*GetFunc)(const StructT &)>
+static VArray from_derived_span(Span<StructT> values)
+{
+  MutableSpan<StructT> span{const_cast<StructT *>(values.data()), values.size()};
+  return VArray::from<VArrayImpl_For_DerivedSpan<StructT, T, GetFunc>>(span);
+}
+```
+
+> **`const_cast`**：`from_derived_span` 接受 `Span<StructT>`（const），但 `VArrayImpl_For_DerivedSpan` 需要 `MutableSpan`。`const_cast` 安全——因为 `SetFunc = nullptr`（默认），不会修改数据。
+
+---
+
+## 11. VArrayCommon\<T\> — 公共基类
+
+```cpp
+// BLI_virtual_array.hh:504~680
+```
+
+```cpp
+/**
+ * Utility class to reduce code duplication for methods available on #VArray and #VMutableArray.
+ * Deriving #VMutableArray from #VArray would have some issues:
+ * - Static methods on #VArray would also be available on #VMutableArray.
+ * - It would allow assigning a #VArray to a #VMutableArray under some circumstances which is not
+ *   allowed and could result in hard to find bugs.
+ */
+template<typename T> class VArrayCommon {
+ protected:
+  AnyDerived<const VArrayImpl<T>> impl_;
+```
+
+> **翻译**：工具类，减少 `VArray` 和 `VMutableArray` 共有方法的代码重复。让 `VMutableArray` 继承 `VArray` 有问题：
+> 1. `VArray` 的静态方法会泄漏到 `VMutableArray`（如 `from_single` 创建只读数组，不应出现在可写类型上）
+> 2. 某些情况下允许把 `VArray` 赋给 `VMutableArray`——只读数组不能当可写用，可能导致难发现的 bug
+>
+> **`AnyDerived<const VArrayImpl<T>> impl_`**：核心存储！`AnyDerived` 提供小缓冲区优化：
+> - 小的 `VArrayImpl` 子类（如 `VArrayImpl_For_Single<int>`）内联存储（约 16 字节）
+> - 大的子类（如 `VArrayImpl_For_Func` 捕获了 vector）用 `shared_ptr` 堆分配
+>
+> **`const VArrayImpl<T>`**：基类指针是 const——即使是 `VMutableArray`，`impl_` 也存储为 `const VArrayImpl<T>*`。`VMutableArray::get_impl()` 通过 `const_cast` + `reinterpret_cast` 转回 `VMutableArrayImpl<T>*`。
+
+### 11.1 构造函数
+
+```cpp
+  VArrayCommon() = default;
+
+  /**
+   * Wrap an existing #VArrayImpl and don't take ownership of it. This should rarely be used in
+   * practice.
+   */
+  VArrayCommon(const VArrayImpl<T> *impl) : impl_(impl) {}
+
+  /**
+   * Wrap an existing #VArrayImpl that is contained in a #std::shared_ptr. This takes ownership.
+   */
+  VArrayCommon(std::shared_ptr<const VArrayImpl<T>> impl) : impl_(std::move(impl)) {}
+```
+
+> **翻译**：
+> - 裸指针构造：包装已有的 `VArrayImpl`，**不获取所有权**。实践中很少使用。
+> - `shared_ptr` 构造：包装 `VArrayImpl`，**获取所有权**。
+>
+> **`AnyDerived` 的三种存储模式**：
+> 1. 内联：`emplace<ImplT>(args...)` 直接在缓冲区构造
+> 2. 裸指针：`AnyDerived(Base*)` 不拥有，不负责析构
+> 3. `shared_ptr`：`AnyDerived(shared_ptr<Base>)` 共享所有权
+
+```cpp
+  template<typename ImplT, typename... Args> void emplace(Args &&...args)
+  {
+    impl_.template emplace<ImplT>(std::forward<Args>(args)...);
+  }
+```
+
+> **`impl_.template emplace<ImplT>`**：`template` 关键字消歧——因为 `impl_` 的类型依赖模板参数 `T`，编译器不知道 `emplace` 后面的 `<` 是比较运算符还是模板参数开始。`template` 告诉编译器这是模板。
+
+### 11.2 operator bool
+
+```cpp
+  operator bool() const
+  {
+    return impl_;
+  }
+```
+
+> **隐式转换为 bool**：`impl_` 有 `operator bool()`，检查是否持有有效实现。空 `VArray` 返回 `false`。
+
+### 11.3 operator[]
+
+```cpp
+  T operator[](const int64_t index) const
+  {
+    BLI_assert(*this);
+    BLI_assert(index >= 0);
+    BLI_assert(index < this->size());
+    return impl_->get(index);
+  }
+```
+
+> **返回 `T` 而非 `T&`**：因为值可能是即时计算的（`VArrayImpl_For_Func`），无法返回引用。
+>
+> **三个断言**：
+> 1. `*this`：VArray 非空（`operator bool`）
+> 2. `index >= 0`：索引非负
+> 3. `index < size()`：索引在范围内
+
+### 11.4 size / first / last / is_empty / index_range
+
+```cpp
+  int64_t size() const
+  {
+    if (!impl_) { return 0; }
+    return impl_->size();
+  }
+
+  T first() const { return (*this)[0]; }
+
+  T last(const int64_t n = 0) const
+  {
+    return (*this)[this->size() - 1 - n];
+  }
+
+  bool is_empty() const { return this->size() == 0; }
+
+  IndexRange index_range() const { return IndexRange(this->size()); }
+```
+
+> **`last(n)`**：`n=0` 返回最后一个元素，`n=1` 返回倒数第二个，以此类推。
+
+### 11.5 common_info / is_span / is_single
+
+```cpp
+  CommonVArrayInfo common_info() const
+  {
+    BLI_assert(*this);
+    return impl_->common_info();
+  }
+
+  bool is_span() const
+  {
+    BLI_assert(*this);
+    const CommonVArrayInfo info = impl_->common_info();
+    return info.type == CommonVArrayInfo::Type::Span;
+  }
+
+  Span<T> get_internal_span() const
+  {
+    BLI_assert(this->is_span());
+    const CommonVArrayInfo info = impl_->common_info();
+    return Span<T>(static_cast<const T *>(info.data), this->size());
+  }
+
+  bool is_single() const
+  {
+    BLI_assert(*this);
+    const CommonVArrayInfo info = impl_->common_info();
+    return info.type == CommonVArrayInfo::Type::Single;
+  }
+
+  T get_internal_single() const
+  {
+    BLI_assert(this->is_single());
+    const CommonVArrayInfo info = impl_->common_info();
+    return *static_cast<const T *>(info.data);
+  }
+```
+
+> **注意**：`is_span()` 和 `is_single()` 各自调用了 `common_info()`——如果两个都调用，就是两次虚函数调用。优化代码应该先调用一次 `common_info()`，然后检查 `type`。
+
+```cpp
+  std::optional<T> get_if_single() const
+  {
+    const CommonVArrayInfo info = impl_->common_info();
+    if (info.type != CommonVArrayInfo::Type::Single) {
+      return std::nullopt;
+    }
+    return *static_cast<const T *>(info.data);
+  }
+```
+
+> **`std::optional<T>`**：如果 VArray 是 Single 模式，返回单值；否则返回 `std::nullopt`。比 `is_single() + get_internal_single()` 更安全——不需要先断言。
+
+### 11.6 materialize 系列
+
+```cpp
+  void materialize(MutableSpan<T> r_span) const
+  {
+    this->materialize(IndexMask(this->size()), r_span);
+  }
+
+  void materialize(const IndexMask &mask, MutableSpan<T> r_span) const
+  {
+    BLI_assert(mask.min_array_size() <= this->size());
+    impl_->materialize(mask, r_span.data(), false);
+  }
+
+  void materialize_to_uninitialized(MutableSpan<T> r_span) const
+  {
+    this->materialize_to_uninitialized(IndexMask(this->size()), r_span);
+  }
+
+  void materialize_to_uninitialized(const IndexMask &mask, MutableSpan<T> r_span) const
+  {
+    BLI_assert(mask.min_array_size() <= this->size());
+    impl_->materialize(mask, r_span.data(), true);
+  }
+```
+
+> **4 个 materialize 方法**：
+>
+> | 方法 | mask | dst_is_uninitialized |
+> |------|------|---------------------|
+> | `materialize(span)` | 全部 | false（已初始化） |
+> | `materialize(mask, span)` | 部分 | false |
+> | `materialize_to_uninitialized(span)` | 全部 | true（未初始化） |
+> | `materialize_to_uninitialized(mask, span)` | 部分 | true |
+
+```cpp
+  void materialize_compressed(const IndexMask &mask, MutableSpan<T> r_span) const
+  {
+    impl_->materialize_compressed(mask, r_span.data(), false);
+  }
+
+  void materialize_compressed_to_uninitialized(const IndexMask &mask, MutableSpan<T> r_span) const
+  {
+    impl_->materialize_compressed(mask, r_span.data(), true);
+  }
+```
+
+> 压缩版本——目标索引从 0 开始紧密排列。
+
+### 11.7 try_assign_GVArray / get_implementation
+
+```cpp
+  bool try_assign_GVArray(GVArray &varray) const
+  {
+    return impl_->try_assign_GVArray(varray);
+  }
+
+  const VArrayImpl<T> *get_implementation() const
+  {
+    return impl_.get();
+  }
+```
+
+> **`get_implementation()`**：返回底层 `VArrayImpl<T>*`。用于需要直接操作实现类的场景（如 `VMutableArray::get_impl()`）。
+
+---
+
+## 12. varray_tag — 构造函数消歧标签
+
+```cpp
+// BLI_virtual_array.hh:707~718
+```
+
+```cpp
+/**
+ * Various tags to disambiguate constructors of virtual arrays.
+ * Generally it is easier to use `VArray::from_*` functions to construct virtual arrays, but
+ * sometimes being able to use the constructor can result in better performance. For example, when
+ * constructing the virtual array directly in a vector. Without the constructor one would have to
+ * construct the virtual array first and then move it into the vector.
+ */
+namespace varray_tag {
+struct span {};
+struct single_ref {};
+struct single {};
+}  // namespace varray_tag
+```
+
+> **翻译**：各种标签，用于消除虚拟数组构造函数的歧义。通常用 `VArray::from_*` 静态方法更方便，但有时用构造函数性能更好——例如直接在 vector 中构造，避免先构造再移动。
+>
+> **标签模式（Tag Dispatch）**：空结构体作为构造函数参数，编译器根据类型区分重载。
+
+| 标签 | 构造方式 | 等价静态方法 |
+|------|---------|------------|
+| `varray_tag::span` | `VArray(varray_tag::span{}, my_span)` | `VArray::from_span(my_span)` |
+| `varray_tag::single` | `VArray(varray_tag::single{}, value, size)` | `VArray::from_single(value, size)` |
+| `varray_tag::single_ref` | `VArray(varray_tag::single_ref{}, &value, size)` | 无直接等价 |
+
+> **`single` vs `single_ref`**：`single` 拷贝值，`single_ref` 引用值（不拷贝）。
+
+---
+
+## 13. VArray\<T\> — 只读虚拟数组
+
+```cpp
+// BLI_virtual_array.hh:720~812
+```
+
+```cpp
+/**
+ * A #VArray wraps a virtual array implementation and provides easy access to its elements. It can
+ * be copied and moved. While it is relatively small, it should still be passed by reference if
+ * possible (other than e.g. #Span).
+ */
+template<typename T> class VArray : public VArrayCommon<T> {
+  friend VMutableArray<T>;
+```
+
+> **翻译**：`VArray` 包装虚拟数组实现，提供便捷的元素访问。可以拷贝和移动。虽然相对较小，但仍应尽量按引用传递（与 `Span` 不同）。
+>
+> **`friend VMutableArray<T>`**：让 `VMutableArray` 可以访问 `VArray` 的 protected 成员（如 `impl_`）。
+
+### 13.1 构造函数
+
+```cpp
+  VArray() = default;
+
+  VArray(const VArrayImpl<T> *impl) : VArrayCommon<T>(impl) {}
+
+  VArray(std::shared_ptr<const VArrayImpl<T>> impl) : VArrayCommon<T>(std::move(impl)) {}
+
+  VArray(varray_tag::span /*tag*/, Span<T> span)
+  {
+    this->template emplace<VArrayImpl_For_Span_final<T>>(span);
+  }
+
+  VArray(varray_tag::single /*tag*/, T value, const int64_t size)
+  {
+    this->template emplace<VArrayImpl_For_Single<T>>(std::move(value), size);
+  }
+```
+
+> **`varray_tag::span` 构造函数**：用 `VArrayImpl_For_Span_final`（不可继承版），因为从 `Span<T>` 构造的 VArray 不拥有数据。
+>
+> **`this->template emplace<...>`**：`template` 消歧——`this` 的类型依赖模板参数 `T`，编译器不知道 `emplace` 后面的 `<` 是什么。
+
+### 13.2 工厂方法
+
+```cpp
+  template<typename ImplT, typename... Args> static VArray from(Args &&...args)
+  {
+    static_assert(std::is_base_of_v<VArrayImpl<T>, ImplT>);
+    VArray varray;
+    varray.template emplace<ImplT>(std::forward<Args>(args)...);
+    return varray;
+  }
+```
+
+> **`from<ImplT>(args...)`**：通用工厂方法。`static_assert` 确保 `ImplT` 是 `VArrayImpl<T>` 的子类。
+>
+> **NRVO**：返回值优化——`varray` 直接构造在调用者的栈上，无需移动。
+
+```cpp
+  static VArray from_single(T value, const int64_t size)
+  {
+    return VArray(varray_tag::single{}, std::move(value), size);
+  }
+
+  static VArray from_span(Span<T> values)
+  {
+    return VArray(varray_tag::span{}, values);
+  }
+```
+
+> 便捷工厂——转发到标签构造函数。
+
+```cpp
+  template<typename GetFunc> static VArray from_func(const int64_t size, GetFunc get_func)
+  {
+    return VArray::from<VArrayImpl_For_Func<T, decltype(get_func)>>(size, std::move(get_func));
+  }
+```
+
+> **`decltype(get_func)`**：获取 `get_func` 的精确类型（lambda 类型无法手写）。`VArrayImpl_For_Func<T, GetFunc>` 的第二个模板参数用这个推导出的类型。
+
+```cpp
+  static VArray from_std_func(const int64_t size, std::function<T(int64_t index)> get_func)
+  {
+    return VArray::from_func(size, get_func);
+  }
+```
+
+> **`from_std_func`**：用 `std::function` 代替模板。更慢（类型擦除），但减少代码生成。用于非性能关键代码。
+
+```cpp
+  template<typename StructT, T (*GetFunc)(const StructT &)>
+  static VArray from_derived_span(Span<StructT> values)
+  {
+    MutableSpan<StructT> span{const_cast<StructT *>(values.data()), values.size()};
+    return VArray::from<VArrayImpl_For_DerivedSpan<StructT, T, GetFunc>>(span);
+  }
+```
+
+> **`T (*GetFunc)(const StructT &)`**：函数指针作为模板参数——编译期确定，可以内联。
+>
+> **`const_cast`**：`Span<StructT>` 是只读的，但 `VArrayImpl_For_DerivedSpan` 需要 `MutableSpan`。安全——因为 `SetFunc = nullptr`（默认），不会修改。
+
+```cpp
+  template<typename ContainerT> static VArray from_container(ContainerT container)
+  {
+    return VArray::from<VArrayImpl_For_ArrayContainer<ContainerT>>(std::move(container));
+  }
+```
+
+> **`from_container`**：拥有容器所有权的版本。容器被移动到 `VArrayImpl_For_ArrayContainer` 内部，VArray 析构时容器一起析构。
+
+```mermaid
+flowchart TB
+    subgraph "VArray 工厂方法"
+        FS["from_span<br/>零拷贝引用"]
+        FSI["from_single<br/>单值广播"]
+        FF["from_func<br/>函数生成"]
+        FC["from_container<br/>拥有所有权"]
+        FDS["from_derived_span<br/>转换视图"]
+        F["from&lt;ImplT&gt;<br/>自定义实现"]
+    end
+
+    subgraph "对应实现类"
+        S["VArrayImpl_For_Span_final"]
+        SI["VArrayImpl_For_Single"]
+        FU["VArrayImpl_For_Func"]
+        CO["VArrayImpl_For_ArrayContainer"]
+        DS["VArrayImpl_For_DerivedSpan"]
+        CU["自定义 VArrayImpl 子类"]
+    end
+
+    FS --> S
+    FSI --> SI
+    FF --> FU
+    FC --> CO
+    FDS --> DS
+    F --> CU
+
+    style FS fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style FSI fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+    style FF fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#880e4f
+    style FC fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style FDS fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
+```
+
+---
+
+## 14. VMutableArray\<T\> — 可变虚拟数组
+
+```cpp
+// BLI_virtual_array.hh:814~900
+```
+
+```cpp
+template<typename T> class VMutableArray : public VArrayCommon<T> {
+ public:
+  VMutableArray() = default;
+
+  VMutableArray(const VMutableArrayImpl<T> *impl) : VArrayCommon<T>(impl) {}
+
+  VMutableArray(std::shared_ptr<const VMutableArrayImpl<T>> impl)
+      : VArrayCommon<T>(std::move(impl))
+  {
+  }
+```
+
+> 构造函数与 `VArray` 类似，但接受 `VMutableArrayImpl<T>*`。
+
+### 14.1 工厂方法
+
+```cpp
+  template<typename ImplT, typename... Args> static VMutableArray from(Args &&...args)
+  {
+    static_assert(std::is_base_of_v<VMutableArrayImpl<T>, ImplT>);
+    VMutableArray varray;
+    varray.template emplace<ImplT>(std::forward<Args>(args)...);
+    return varray;
+  }
+
+  static VMutableArray from_span(MutableSpan<T> values)
+  {
+    return VMutableArray::from<VArrayImpl_For_Span_final<T>>(values);
+  }
+
+  template<typename StructT, T (*GetFunc)(const StructT &), void (*SetFunc)(StructT &, T)>
+  static VMutableArray from_derived_span(MutableSpan<StructT> values)
+  {
+    return VMutableArray::from<VArrayImpl_For_DerivedSpan<StructT, T, GetFunc, SetFunc>>(values);
+  }
+
+  template<typename ContainerT> static VMutableArray from_container(ContainerT container)
+  {
+    return VMutableArray::from<VArrayImpl_For_ArrayContainer<ContainerT>>(std::move(container));
+  }
+```
+
+> **与 `VArray` 的区别**：
+> - `from_span` 接受 `MutableSpan<T>`（可变），不是 `Span<T>`
+> - `from_derived_span` 必须提供 `SetFunc`（可写）
+> - 没有 `from_single`（单值不可写——写哪个？）、`from_func`（函数不可写）
+
+### 14.2 隐式转换为 VArray
+
+```cpp
+  /** Convert to a #VArray by copying. */
+  operator VArray<T>() const &
+  {
+    VArray<T> varray;
+    *static_cast<VArrayCommon<T> *>(&varray) = *this;
+    return varray;
+  }
+
+  /** Convert to a #VArray by moving. */
+  operator VArray<T>() && noexcept
+  {
+    VArray<T> varray;
+    *static_cast<VArrayCommon<T> *>(&varray) = std::move(*this);
+    return varray;
+  }
+```
+
+> **两个转换运算符**：
+> - `const &`：拷贝转换——`impl_` 被拷贝（`shared_ptr` 引用计数 +1）
+> - `&& noexcept`：移动转换——`impl_` 被移动（零开销）
+>
+> **`*static_cast<VArrayCommon<T>*>(&varray) = *this`**：直接对基类部分赋值。`VArray` 和 `VMutableArray` 都继承 `VArrayCommon<T>`，基类部分（`impl_`）可以直接拷贝/移动。
+
+### 14.3 get_internal_span / set / set_all
+
+```cpp
+  MutableSpan<T> get_internal_span() const
+  {
+    BLI_assert(this->is_span());
+    const CommonVArrayInfo info = this->get_impl()->common_info();
+    return MutableSpan<T>(const_cast<T *>(static_cast<const T *>(info.data)), this->size());
+  }
+
+  void set(const int64_t index, T value)
+  {
+    BLI_assert(index >= 0);
+    BLI_assert(index < this->size());
+    this->get_impl()->set(index, std::move(value));
+  }
+
+  void set_all(Span<T> src)
+  {
+    BLI_assert(src.size() == this->size());
+    this->get_impl()->set_all(src);
+  }
+```
+
+> **`const_cast`**：`info.data` 是 `const void*`，但可变虚拟数组的数据实际是可修改的。
+
+### 14.4 get_impl — 关键的 const_cast
+
+```cpp
+ private:
+  VMutableArrayImpl<T> *get_impl() const
+  {
+    /* This cast is valid by the invariant that a #VMutableArray->impl_ is always a
+     * #VMutableArrayImpl. */
+    return reinterpret_cast<VMutableArrayImpl<T> *>(
+        const_cast<VArrayImpl<T> *>((this->impl_.get())));
+  }
+```
+
+> **不变量**：`VMutableArray` 的 `impl_` 虽然存储为 `AnyDerived<const VArrayImpl<T>>`，但实际对象一定是 `VMutableArrayImpl<T>`（可变实现）。
+>
+> **双重转换**：
+> 1. `this->impl_.get()` → `const VArrayImpl<T>*`（AnyDerived 返回 const 基类指针）
+> 2. `const_cast<VArrayImpl<T>*>` → 去掉 const
+> 3. `reinterpret_cast<VMutableArrayImpl<T>*>` → 转为派生类指针
+>
+> **为什么不用 `static_cast`？** `static_cast` 需要完整的类型定义和明确的继承关系。`reinterpret_cast` 更底层——直接重新解释指针。这里安全是因为不变量保证。
+
+---
+
+## 15. VArraySpan\<T\> — VArray→Span 适配器
+
+```cpp
+// BLI_virtual_array.hh:910~1003
+```
+
+```cpp
+/**
+ * In many cases a virtual array is a span internally. In those cases, access to individual could
+ * be much more efficient than calling a virtual method. When the underlying virtual array is not a
+ * span, this class allocates a new array and copies the values over.
+ *
+ * This should be used in those cases:
+ *  - All elements in the virtual array are accessed multiple times.
+ *  - In most cases, the underlying virtual array is a span, so no copy is necessary to benefit
+ *    from faster access.
+ *  - An API is called, that does not accept virtual arrays, but only spans.
+ */
+template<typename T> class VArraySpan final : public Span<T> {
+```
+
+> **翻译**：很多情况下虚拟数组内部就是 span。这时直接访问比虚方法调用高效得多。当底层不是 span 时，此类分配新数组并复制值。
+>
+> **适用场景**：
+> 1. 虚拟数组的所有元素被多次访问
+> 2. 大多数情况下底层是 span（不需要拷贝就能获得快速访问）
+> 3. API 只接受 span，不接受虚拟数组
+
+```cpp
+ private:
+  VArray<T> varray_;
+  Array<T> owned_data_;
+```
+
+> **两个成员**：
+> - `varray_`：持有原始 VArray（保持底层实现存活）
+> - `owned_data_`：如果底层不是 Span，物化后的数据存这里
+
+```cpp
+  VArraySpan(VArray<T> &&varray) : Span<T>(), varray_(std::move(varray))
+  {
+    if (!varray_) {
+      return;
+    }
+    this->size_ = varray_.size();
+    const CommonVArrayInfo info = varray_.common_info();
+    if (info.type == CommonVArrayInfo::Type::Span) {
+      this->data_ = static_cast<const T *>(info.data);
+    }
+    else {
+      owned_data_.~Array();
+      new (&owned_data_) Array<T>(varray_.size(), NoInitialization{});
+      varray_.materialize_to_uninitialized(owned_data_);
+      this->data_ = owned_data_.data();
+    }
+  }
+```
+
+> **构造逻辑**：
+> 1. 如果 VArray 为空，直接返回
+> 2. 如果底层是 Span：直接引用 `info.data`，**零拷贝**
+> 3. 否则：分配 `owned_data_`，物化所有值，**有拷贝**
+>
+> **`owned_data_.~Array()` + `new (&owned_data_) Array<T>(...)`**：先显式析构 `owned_data_`（默认构造的空 Array），然后 placement new 重新构造。这是因为 `VArraySpan` 继承 `Span<T>`，`Span<T>` 的默认构造函数不初始化 `data_` 和 `size_`——所以 `owned_data_` 已经被默认构造了，需要先析构再重建。
+>
+> **`NoInitialization{}`**：不初始化数组元素——因为 `materialize_to_uninitialized` 会用 placement new 构造每个元素，不需要先默认初始化。
+
+```mermaid
+flowchart TB
+    subgraph "VArraySpan 构造"
+        START["VArraySpan(varray)"]
+        CHECK{"varray 为空？"}
+        CHECK2{"底层是 Span？"}
+    end
+
+    subgraph "空路径"
+        EMPTY["直接返回<br/>data_ = nullptr<br/>size_ = 0"]
+    end
+
+    subgraph "Span 路径（零拷贝）"
+        SPAN["data_ = info.data<br/>直接引用底层内存"]
+    end
+
+    subgraph "非 Span 路径（有拷贝）"
+        ALLOC["分配 owned_data_"]
+        MAT["materialize_to_uninitialized<br/>物化所有值"]
+        PTR["data_ = owned_data_.data()"]
+    end
+
+    START --> CHECK
+    CHECK -->|"是"| EMPTY
+    CHECK -->|"否"| CHECK2
+    CHECK2 -->|"是"| SPAN
+    CHECK2 -->|"否"| ALLOC --> MAT --> PTR
+
+    style SPAN fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style ALLOC fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+```
+
+### 15.1 移动构造和赋值
+
+```cpp
+  VArraySpan(VArraySpan &&other)
+      : varray_(std::move(other.varray_)), owned_data_(std::move(other.owned_data_))
+  {
+    if (!varray_) { return; }
+    this->size_ = varray_.size();
+    const CommonVArrayInfo info = varray_.common_info();
+    if (info.type == CommonVArrayInfo::Type::Span) {
+      this->data_ = static_cast<const T *>(info.data);
+    }
+    else {
+      this->data_ = owned_data_.data();
+    }
+    other.data_ = nullptr;
+    other.size_ = 0;
+  }
+```
+
+> **移动后需要重新设置 `data_`**：因为 `owned_data_` 移动后地址可能变了，`data_` 必须更新。Span 路径的 `data_` 不变（指向 varray 内部数据）。
+>
+> **`other.data_ = nullptr; other.size_ = 0;`**：清空源对象，防止悬空指针。
+
+```cpp
+  VArraySpan &operator=(VArraySpan &&other)
+  {
+    if (this == &other) { return *this; }
+    std::destroy_at(this);
+    new (this) VArraySpan(std::move(other));
+    return *this;
+  }
+```
+
+> **move-and-swap 模式的变体**：先析构自己（`std::destroy_at`），然后 placement new 构造新对象。比逐成员赋值更简洁，且正确处理所有情况。
+
+---
+
+## 16. MutableVArraySpan\<T\> — 可写版适配器
+
+```cpp
+// BLI_virtual_array.hh:1016~1114
+```
+
+```cpp
+/**
+ * Same as #VArraySpan, but for a mutable span.
+ * The important thing to note is that when changing this span, the results might not be
+ * immediately reflected in the underlying virtual array (only when the virtual array is a span
+ * internally). The #save method can be used to write all changes to the underlying virtual array,
+ * if necessary.
+ */
+template<typename T> class MutableVArraySpan final : public MutableSpan<T> {
+```
+
+> **翻译**：与 `VArraySpan` 相同，但是可变 span。重要提示：修改此 span 时，结果可能不会立即反映到底层虚拟数组中（只有底层是 span 时才会立即生效）。`save()` 方法可用于将所有修改写回底层虚拟数组。
+
+```cpp
+ private:
+  VMutableArray<T> varray_;
+  Array<T> owned_data_;
+  bool save_has_been_called_ = false;
+  bool show_not_saved_warning_ = true;
+```
+
+> **`save_has_been_called_`**：追踪是否调用了 `save()`——析构时检查，未调用则警告。
+> **`show_not_saved_warning_`**：允许禁用警告（`disable_not_applied_warning()`）。
+
+```cpp
+  MutableVArraySpan(VMutableArray<T> varray, const bool copy_values_to_span = true)
+      : MutableSpan<T>(), varray_(std::move(varray))
+  {
+    if (!varray_) { return; }
+
+    this->size_ = varray_.size();
+    const CommonVArrayInfo info = varray_.common_info();
+    if (info.type == CommonVArrayInfo::Type::Span) {
+      this->data_ = const_cast<T *>(static_cast<const T *>(info.data));
+    }
+    else {
+      if (copy_values_to_span) {
+        owned_data_.~Array();
+        new (&owned_data_) Array<T>(varray_.size(), NoInitialization{});
+        varray_.materialize_to_uninitialized(owned_data_);
+      }
+      else {
+        owned_data_.reinitialize(varray_.size());
+      }
+      this->data_ = owned_data_.data();
+    }
+  }
+```
+
+> **`copy_values_to_span` 参数**：
+> - `true`（默认）：先物化现有值到 `owned_data_`，然后可以修改
+> - `false`：只分配空间，不物化——用于完全覆盖的场景（如 `fill`）
+>
+> **`owned_data_.reinitialize(size)`**：分配 `size` 个元素的空间，值初始化（对平凡类型零初始化，对非平凡类型默认构造）。比 `~Array() + placement new` 更简洁。
+
+### 16.1 save() — 写回机制
+
+```cpp
+  void save()
+  {
+    save_has_been_called_ = true;
+    if (this->data_ != owned_data_.data()) {
+      return;  // 底层就是 Span，修改已直接生效
+    }
+    varray_.set_all(owned_data_);  // 将临时数组写回
+  }
+```
+
+> **关键判断**：`this->data_ != owned_data_.data()` 意味着底层是 Span（`data_` 指向 varray 内部），修改已经直接生效，不需要写回。否则 `data_` 指向 `owned_data_`，修改在临时数组中，需要 `set_all` 写回。
+
+### 16.2 析构警告
+
+```cpp
+  ~MutableVArraySpan()
+  {
+    if (varray_) {
+      if (show_not_saved_warning_) {
+        if (!save_has_been_called_) {
+          internal::print_mutable_varray_span_warning();
+        }
+      }
+    }
+  }
+```
+
+> **忘记 `save()` 会警告**：如果 `MutableVArraySpan` 析构时没有调用 `save()`，且没有禁用警告，就打印警告。防止修改丢失。
+
+```mermaid
+sequenceDiagram
+    participant User as 用户代码
+    participant MVS as MutableVArraySpan
+    participant VA as VMutableArray
+    participant OD as owned_data_
+
+    User->>MVS: 构造(varray)
+    alt 底层是 Span
+        MVS->>VA: data_ = info.data (直接引用)
+    else 底层非 Span
+        MVS->>OD: 分配 + 物化
+        MVS->>MVS: data_ = owned_data_.data()
+    end
+
+    User->>MVS: span[i] = new_value (修改)
+
+    User->>MVS: save()
+    alt data_ == owned_data_.data()
+        MVS->>VA: set_all(owned_data_) (写回)
+    else data_ != owned_data_.data()
+        Note over MVS: 无需写回，已直接生效
+    end
+
+    User->>MVS: 析构
+    alt 未调用 save()
+        MVS->>User: ⚠️ 警告：修改可能丢失
+    end
+```
+
+---
+
+## 17. SingleAsSpan + VArrayRef — 去虚拟化辅助
+
+```cpp
+// BLI_virtual_array.hh:1116~1150
+```
+
+### 17.1 SingleAsSpan
+
+```cpp
+template<typename T> class SingleAsSpan {
+ private:
+  T value_;
+  int64_t size_;
+
+ public:
+  SingleAsSpan(T value, int64_t size) : value_(std::move(value)), size_(size)
+  {
+    BLI_assert(size_ >= 0);
+  }
+
+  SingleAsSpan(const VArray<T> &varray) : SingleAsSpan(varray.get_internal_single(), varray.size())
+  {
+  }
+
+  const T &operator[](const int64_t index) const
+  {
+    BLI_assert(index >= 0);
+    BLI_assert(index < size_);
+    UNUSED_VARS_NDEBUG(index);
+    return value_;
+  }
+};
+```
+
+> **用途**：将单值 VArray 包装成 Span 接口——`operator[]` 返回 `const T&`（引用！），而不是 `T`（值）。用于去虚拟化优化——当编译器知道底层是 Single 时，可以用 `SingleAsSpan` 替代 `VArray`，消除虚函数调用。
+>
+> **`UNUSED_VARS_NDEBUG(index)`**：在 Release 模式下（`NDEBUG` 定义），`index` 未使用，用这个宏消除"未使用变量"警告。
+
+### 17.2 VArrayRef
+
+```cpp
+template<typename T> class VArrayRef {
+ private:
+  const VArray<T> &ref_;
+
+ public:
+  VArrayRef(const VArray<T> &ref) : ref_(ref) {}
+
+  T operator[](const int64_t index) const
+  {
+    return ref_[index];
+  }
+};
+```
+
+> **轻量引用包装**：持有 `VArray<T>&`，`operator[]` 转发到 `VArray::operator[]`。用于去虚拟化的回退路径——当无法优化为 Span 或 Single 时，用 `VArrayRef` 保持虚函数调用。
+
+---
+
+## 18. VArrayDevirtualizer + devirtualize_varray — 去虚拟化优化
+
+```cpp
+// BLI_virtual_array.hh:1152~1219
+```
+
+### 18.1 VArrayDevirtualizer
+
+```cpp
+/** To be used with #call_with_devirtualized_parameters. */
+template<typename T, bool UseSingle, bool UseSpan> struct VArrayDevirtualizer {
+  const VArray<T> &varray;
+
+  template<typename Fn> bool devirtualize(const Fn &fn) const
+  {
+    const CommonVArrayInfo info = this->varray.common_info();
+    const int64_t size = this->varray.size();
+    if constexpr (UseSingle) {
+      if (info.type == CommonVArrayInfo::Type::Single) {
+        return fn(SingleAsSpan<T>(*static_cast<const T *>(info.data), size));
+      }
+    }
+    if constexpr (UseSpan) {
+      if (info.type == CommonVArrayInfo::Type::Span) {
+        return fn(Span<T>(static_cast<const T *>(info.data), size));
+      }
+    }
+    return false;
+  }
+};
+```
+
+> **翻译**：配合 `call_with_devirtualized_parameters` 使用。
+>
+> **模板参数**：
+> - `UseSingle`：是否尝试 Single 优化
+> - `UseSpan`：是否尝试 Span 优化
+>
+> **`devirtualize(fn)`**：
+> 1. 获取 `common_info()`
+> 2. 如果是 Single 且 `UseSingle=true`：调用 `fn(SingleAsSpan<T>)`，返回 true
+> 3. 如果是 Span 且 `UseSpan=true`：调用 `fn(Span<T>)`，返回 true
+> 4. 否则返回 false（无法去虚拟化）
+>
+> **`fn` 的参数类型不确定**：可能是 `SingleAsSpan<T>`、`Span<T>` 或 `VArrayRef<T>`。`fn` 必须是泛型 lambda（`auto&&` 参数）。
+
+### 18.2 devirtualize_varray
+
+```cpp
+/**
+ * Generate multiple versions of the given function optimized for different virtual arrays.
+ * One has to be careful with nesting multiple devirtualizations, because that results in an
+ * exponential number of function instantiations (increasing compile time and binary size).
+ *
+ * Generally, this function should only be used when the virtual method call overhead to get an
+ * element from a virtual array is significant.
+ */
+template<typename T, typename Func>
+inline void devirtualize_varray(const VArray<T> &varray, const Func &func, bool enable = true)
+{
+  if (enable) {
+    if (call_with_devirtualized_parameters(
+            std::make_tuple(VArrayDevirtualizer<T, true, true>{varray}), func))
+    {
+      return;
+    }
+  }
+  func(VArrayRef<T>(varray));
+}
+```
+
+> **翻译**：为不同虚拟数组生成多个优化版本的函数。嵌套多个去虚拟化会导致指数级函数实例化（增加编译时间和二进制大小）。通常只在虚方法调用开销显著时使用。
+>
+> **`enable` 参数**：允许运行时禁用去虚拟化——用于调试或性能测试。
+>
+> **工作流程**：
+> 1. 尝试 `call_with_devirtualized_parameters`——为 Single 和 Span 生成特化版本
+> 2. 如果成功（返回 true），直接返回
+> 3. 如果失败（底层是 Any），回退到 `func(VArrayRef<T>(varray))`——虚函数调用
+
+### 18.3 devirtualize_varray2
+
+```cpp
+template<typename T1, typename T2, typename Func>
+inline void devirtualize_varray2(const VArray<T1> &varray1,
+                                 const VArray<T2> &varray2,
+                                 const Func &func,
+                                 bool enable = true)
+{
+  if (enable) {
+    if (call_with_devirtualized_parameters(
+            std::make_tuple(VArrayDevirtualizer<T1, true, true>{varray1},
+                            VArrayDevirtualizer<T2, true, true>{varray2}),
+            func))
+    {
+      return;
+    }
+  }
+  func(VArrayRef<T1>(varray1), VArrayRef<T2>(varray2));
+}
+```
+
+> **同时去虚拟化两个 VArray**：比嵌套两个 `devirtualize_varray` 更好，因为实例化更少。
+>
+> **代码膨胀**：
+>
+> | 去虚拟化方式 | 实例化数量 |
+> |------------|-----------|
+> | 1 个 varray × 3 种类型 | 3 |
+> | 2 个 varray × 3 种类型 | 9 |
+> | 3 个 varray × 3 种类型 | 27 |
+> | 嵌套 2 个 devirtualize_varray | 3 × 3 = 9（同上，但编译更慢） |
+
+```mermaid
+flowchart TB
+    subgraph "devirtualize_varray 工作流"
+        START["devirtualize_varray(varray, func)"]
+        CHECK{"enable?"}
+        CDP["call_with_devirtualized_parameters"]
+        CHECK2{"底层类型？"}
+    end
+
+    subgraph "Single 路径"
+        S["func(SingleAsSpan&lt;T&gt;)<br/>单值广播，无虚调用"]
+    end
+
+    subgraph "Span 路径"
+        SP["func(Span&lt;T&gt;)<br/>直接内存访问，无虚调用"]
+    end
+
+    subgraph "回退路径"
+        F["func(VArrayRef&lt;T&gt;)<br/>虚函数调用"]
+    end
+
+    START --> CHECK
+    CHECK -->|"false"| F
+    CHECK -->|"true"| CDP
+    CDP --> CHECK2
+    CHECK2 -->|"Single"| S
+    CHECK2 -->|"Span"| SP
+    CHECK2 -->|"Any"| F
+
+    style S fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style SP fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style F fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#880e4f
+```
+
+---
+
+## 19. 几何节点实际使用案例
+
+### 19.1 模式总览
+
+```mermaid
+flowchart TB
+    subgraph "几何节点中的 VArray 使用模式"
+        M1["from_func<br/>按需计算的字段输入"]
+        M2["from_container<br/>计算结果拥有所有权"]
+        M3["from_single<br/>统一值优化"]
+        M4["from_span<br/>零拷贝包装已有数据"]
+        M5["FieldEvaluator<br/>获取求值后的 VArray"]
+        M6["GList::varray()<br/>列表→虚拟数组"]
+        M7["VArraySpan<br/>需要连续内存时"]
+    end
+
+    style M1 fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style M2 fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style M3 fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+    style M4 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
+    style M5 fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#880e4f
+    style M6 fill:#e0f7fa,stroke:#00838f,stroke-width:2px,color:#006064
+    style M7 fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#f57f17
+```
+
+### 19.2 from_func — 按需计算
+
+```cpp
+// node_geo_input_mesh_edge_vertices.cc:29~41
+static VArray<int> construct_edge_verts_gvarray(const Mesh &mesh,
+                                                const VertNumber vertex,
+                                                const AttrDomain domain)
+{
+  const Span<int2> edges = mesh.edges();
+  if (domain == AttrDomain::Edge) {
+    if (vertex == VertNumber::V1) {
+      return VArray<int>::from_func(edges.size(), [edges](const int i) { return edges[i][0]; });
+    }
+    return VArray<int>::from_func(edges.size(), [edges](const int i) { return edges[i][1]; });
+  }
+  return {};
+}
+```
+
+> **解读**：边的顶点索引不需要单独存储——每次访问 `varray[i]` 时从 `edges[i]` 中提取。`from_func` 避免了预分配 `Array<int>`。
+
+### 19.3 from_container — 拥有所有权
+
+```cpp
+// node_geo_accumulate_field.cc:258
+g_output = VArray<T>::from_container(std::move(outputs));
+```
+
+> **解读**：`outputs` 是 `Array<T>`，计算结果需要持久化。`from_container` 将数组移动到 VArray 内部，VArray 拥有数据所有权。
+
+### 19.4 from_single — 统一值
+
+```cpp
+// node_geo_sort_list.cc:113
+r_varray = VArray<T>::from_single(default_value, list_size);
+```
+
+> **解读**：当列表为空或数据不匹配时，用默认值填充。`from_single` 只存一个值，内存 O(1)。
+
+### 19.5 FieldEvaluator 获取 VArray
+
+```cpp
+// node_geo_accumulate_field.cc:214~221
+fn::FieldEvaluator evaluator{source_context, domain_size};
+evaluator.add(input_);
+evaluator.add(group_index_);
+evaluator.evaluate();
+const GVArray g_values = evaluator.get_evaluated(0);
+const VArray<int> group_indices = evaluator.get_evaluated<int>(1);
+const VArray<T> values = g_values.typed<T>();
+```
+
+> **最常见的模式**：通过 `FieldEvaluator` 求值字段，结果以 `GVArray` 返回，用 `typed<T>()` 转为 `VArray<T>`。
+
+### 19.6 GList::varray() — 列表→虚拟数组
+
+```cpp
+// geometry_nodes_list.cc:141~151
+GVArray GList::varray() const
+{
+  if (const auto *array_data = std::get_if<ArrayData>(&data_)) {
+    return GVArray::from_span(GSpan(cpp_type_, array_data->data, size_));
+  }
+  if (const auto *single_data = std::get_if<SingleData>(&data_)) {
+    return GVArray::from_single_ref(cpp_type_, size_, single_data->value);
+  }
+  BLI_assert_unreachable();
+  return {};
+}
+```
+
+> **GList 的两种存储完美映射到 VArray 的两种优化**：
+> - `ArrayData` → `GVArray::from_span`（零拷贝）
+> - `SingleData` → `GVArray::from_single_ref`（零拷贝）
+
+### 19.7 VArraySpan — 需要连续内存
+
+```cpp
+// node_geo_blur_attribute.cc:397
+VArraySpan<float> neighbor_weights = evaluator.get_evaluated<float>(1);
+```
+
+> **解读**：模糊属性算法需要随机访问权重数组。如果底层已经是 Span，零拷贝；否则物化。
+
+### 19.8 自定义 VArrayImpl — 顶点权重
+
+```cpp
+// blenkernel/intern/deform.cc:1655~1757
+class VArrayImpl_For_VertexWeights final : public VMutableArrayImpl<float> {
+ private:
+  MDeformVert *dverts_;
+  const int dvert_index_;
+ public:
+  float get(const int64_t index) const override { ... }
+  void set(const int64_t index, const float value) override { ... }
+};
+
+VArray<float> varray_for_deform_verts(Span<MDeformVert> dverts, const int defgroup_index)
+{
+  return VArray<float>::from<VArrayImpl_For_VertexWeights>(dverts, defgroup_index);
+}
+```
+
+> **解读**：Blender 的顶点权重存储在 `MDeformVert` 结构中（每个顶点一个变长权重列表）。`VArrayImpl_For_VertexWeights` 将这个复杂结构包装为简单的 `VArray<float>`——外部代码不需要知道 `MDeformVert` 的存在。
+
+---
+
+## 附录：类型特征变量
+
+```cpp
+template<typename T> static constexpr bool is_VArray_v = false;
+template<typename T> static constexpr bool is_VArray_v<VArray<T>> = true;
+
+template<typename T> static constexpr bool is_VMutableArray_v = false;
+template<typename T> static constexpr bool is_VMutableArray_v<VMutableArray<T>> = true;
+```
+
+> **变量模板特化**：编译期判断类型是否为 `VArray<T>` 或 `VMutableArray<T>`。用于模板约束或 `if constexpr` 分支。
+>
+> **`static constexpr`**：`constexpr` 编译期求值，`static` 每个翻译单元一份（内联）。在头文件中定义安全——不会违反 ODR。

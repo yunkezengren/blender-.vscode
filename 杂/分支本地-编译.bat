@@ -31,6 +31,7 @@ code CmakeCache.txt
 @REM   启用 CMAKE_EXPORT_COMPILE_COMMANDS: 在构建目录创建 compile_commands.json, MS C++ 扩展和Clangd需要
 @REM   禁用 WITH_UNITY_BUILD: (Clangd要禁用这个)
 @REM   启用 echo: CMAKE_VERBOSE_MAKEFILE: 会在终端里每行都输出
+@REM   启用 WITH_WINDOWS_SCCACHE
 @REM  lite 还需要这三个
 @REM   启用 WITH_TBB  已经默认启用了
 @REM   启用 ime: WITH_INPUT_IME

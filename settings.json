@@ -45,6 +45,10 @@
     "files.exclude": { //隐藏文件和文件夹
         // "**/temp": true,     //隐藏temp文件夹
         // "*.settings": true,
+        ".trae": true,
+        ".opencode": true,
+        ".agents": true,
+        ".vscode/杂/markdown": true,
         ".history": true,
         "**/.history": false,
         "**/__pycache__": true,
@@ -101,14 +105,17 @@
         ".vscode/bookmarks.json": true,
         ".vscode/bookmarksh_data.json": true,
     },
+    "search.exclude": {
+        ".vscode/杂/markdown": true,
+    },
     "editor.rulers": [
         {
-            "column": 120,
+            "column": 100,
             "color": "#00000040"
         },
         {
-            "column": 200,
-            "color": "#FF000040"
+            "column": 120,
+            "color": "#0066ff74"
         },
     ],
     "autoHide.autoHideSideBar": false,
