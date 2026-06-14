@@ -2780,11 +2780,34 @@ template<typename T> static constexpr bool is_VMutableArray_v<VMutableArray<T>> 
 > ```
 > 编译器匹配规则：`is_VArray_v<int>` 匹配通用版本（false），`is_VArray_v<VArray<int>>` 匹配偏特化版本（true）。
 >
-> 这不是"弱智"——C++ 标准库的类型特征（`std::is_same_v`、`std::is_integral_v` 等）也都是这么实现的。C++20 有了 `concept` 可以更优雅：
+> 这不是"弱智"——C++ 标准库的类型特征（`std::is_same_v`、`std::is_integral_v` 等）也都是这么实现的。
+>
+> **为什么不用 `std::is_same_v<T, VArray<T>>`？** 因为写不出来：
 > ```cpp
-> // C++20 concept 写法
-> template<typename T> concept is_VArray = requires { typename T::value_type; } && std::is_same_v<T, VArray<typename T::value_type>>;
+> // ❌ T 出现了两次——如果 T=VArray<int>，右边变成 VArray<VArray<int>>？不对！
+> std::is_same_v<T, VArray<T>>
+>
+> // ❌ 想表达"是某种 VArray"，但语法不支持占位符
+> std::is_same_v<T, VArray<???>>
 > ```
-> 但 Blender 需要 C++17 兼容，只能用偏特化。
+> 偏特化 = **模式匹配**——`is_VArray_v<VArray<T>>` 匹配"任何 `VArray<...>`"，`T` 是提取出来的内部类型：
+> ```cpp
+> is_VArray_v<int>           → 通用版本 → false
+> is_VArray_v<VArray<int>>   → 偏特化，T=int → true
+> is_VArray_v<VArray<float>> → 偏特化，T=float → true
+> ```
+> `std::is_same_v` 做不到这种模式匹配。
+>
+> **使用场景**——`if constexpr` 分支：
+> ```cpp
+> template<typename T>
+> void process(T value) {
+>     if constexpr (is_VArray_v<T>) {
+>         cout << value.size();  // T 是 VArray，有 .size()
+>     } else {
+>         cout << value;         // T 是普通类型
+>     }
+> }
+> ```
 >
 > **`static constexpr`**：`constexpr` 编译期求值，`static` 每个翻译单元一份（内联）。在头文件中定义安全——不会违反 ODR。
