@@ -8,18 +8,69 @@
 
 ## 目录
 
-1. [从一个问题出发](#1-从一个问题出发)
-2. [VArray 解决什么痛点](#2-varray-解决什么痛点)
-3. [VArray\<T\> — 类型化虚拟数组](#3-varrayt--类型化虚拟数组)
-4. [VArray vs Span vs Array](#4-varray-vs-span-vs-array)
-5. [源码中的真实用例](#5-源码中的真实用例)
-6. [GVArray — 类型擦除版](#6-gvarray--类型擦除版)
-7. [VArray 与 GVArray 的互转](#7-varray-与-gvarray-的互转)
-8. [可写版本与辅助类](#8-可写版本与辅助类)
-9. [去虚拟化优化](#9-去虚拟化优化)
-10. [GArray 与 GVArray 的协作](#10-garray-与-gvarray-的协作)
-11. [在列表系统中的应用](#11-在列表系统中的应用)
-12. [总结速查表](#12-总结速查表)
+- [VArray / GVArray 完全指南](#varray--gvarray-完全指南)
+  - [目录](#目录)
+  - [1. 从一个问题出发](#1-从一个问题出发)
+    - [1.1 这行代码在干什么？](#11-这行代码在干什么)
+    - [1.2 先看一下 `CurvesGeometry::cyclic()` 可能返回什么](#12-先看一下-curvesgeometrycyclic-可能返回什么)
+  - [2. VArray 解决什么痛点](#2-varray-解决什么痛点)
+    - [2.1 文件头注释详解](#21-文件头注释详解)
+    - [2.2 痛点一：调用者不想做数据转换](#22-痛点一调用者不想做数据转换)
+    - [2.3 痛点二：有些数据根本不存在于内存中](#23-痛点二有些数据根本不存在于内存中)
+    - [2.4 痛点三：性能与灵活性的权衡](#24-痛点三性能与灵活性的权衡)
+  - [3. VArray\<T\> — 类型化虚拟数组](#3-varrayt--类型化虚拟数组)
+    - [3.1 类层次结构](#31-类层次结构)
+    - [3.2 VArrayImpl — 抽象基类注释详解](#32-varrayimpl--抽象基类注释详解)
+    - [3.3 实现一：VArrayImpl\_For\_Span（包装数组）](#33-实现一varrayimpl_for_span包装数组)
+    - [3.4 实现二：VArrayImpl\_For\_Single（单值广播）](#34-实现二varrayimpl_for_single单值广播)
+    - [3.5 实现三：VArrayImpl\_For\_Func（函数生成）](#35-实现三varrayimpl_for_func函数生成)
+    - [3.6 实现四：VArrayImpl\_For\_DerivedSpan（派生 Span — 转换视图）](#36-实现四varrayimpl_for_derivedspan派生-span--转换视图)
+    - [3.7 CommonVArrayInfo：快速类型探测](#37-commonvarrayinfo快速类型探测)
+    - [3.8 工厂方法](#38-工厂方法)
+  - [4. VArray vs Span vs Array](#4-varray-vs-span-vs-array)
+    - [选择指南](#选择指南)
+  - [5. 源码中的真实用例](#5-源码中的真实用例)
+    - [5.1 用例一：curves.cyclic()（属性读取）](#51-用例一curvescyclic属性读取)
+    - [5.2 用例二：字段求值结果](#52-用例二字段求值结果)
+    - [5.3 用例三：函数参数解耦](#53-用例三函数参数解耦)
+  - [6. GVArray — 类型擦除版](#6-gvarray--类型擦除版)
+    - [6.1 为什么需要 GVArray？](#61-为什么需要-gvarray)
+    - [6.2 类层次结构](#62-类层次结构)
+    - [6.3 与 VArray\<T\> 的关键区别](#63-与-varrayt-的关键区别)
+    - [6.4 get() 方法 — 泛型值获取](#64-get-方法--泛型值获取)
+    - [6.5 工厂方法](#65-工厂方法)
+    - [6.6 GVArray 与 VArray 的关系](#66-gvarray-与-varray-的关系)
+  - [7. VArray 与 GVArray 的互转](#7-varray-与-gvarray-的互转)
+    - [7.1 VArray → GVArray（隐式转换）](#71-varray--gvarray隐式转换)
+    - [7.2 GVArray → VArray（typed\<T\>()）](#72-gvarray--varraytypedt)
+  - [8. 可写版本与辅助类](#8-可写版本与辅助类)
+    - [8.1 VArrayCommon 注释详解](#81-varraycommon-注释详解)
+    - [8.2 VArray 类注释详解](#82-varray-类注释详解)
+    - [8.3 `operator[]` 注释详解](#83-operator-注释详解)
+    - [8.4 varray\_tag 注释详解](#84-varray_tag-注释详解)
+    - [8.5 VMutableArray\<T\>](#85-vmutablearrayt)
+    - [8.6 VArraySpan：VArray → Span 的桥梁](#86-varrayspanvarray--span-的桥梁)
+    - [8.7 MutableVArraySpan：可写版 + save() 机制](#87-mutablevarrayspan可写版--save-机制)
+  - [9. 去虚拟化优化](#9-去虚拟化优化)
+    - [9.1 问题：虚函数调用有开销](#91-问题虚函数调用有开销)
+    - [9.2 解决方案：编译期生成多版本](#92-解决方案编译期生成多版本)
+    - [9.3 注意事项](#93-注意事项)
+  - [10. GArray 与 GVArray 的协作](#10-garray-与-gvarray-的协作)
+    - [10.1 所有权语义对比](#101-所有权语义对比)
+    - [10.2 GArray → GVArray：from\_garray](#102-garray--gvarrayfrom_garray)
+    - [10.3 典型数据流：GArray 作为字段求值缓冲区](#103-典型数据流garray-作为字段求值缓冲区)
+    - [10.4 域转换中的 GArray](#104-域转换中的-garray)
+  - [11. 在列表系统中的应用](#11-在列表系统中的应用)
+    - [11.1 GList 使用 GVArray](#111-glist-使用-gvarray)
+    - [11.2 List\<T\> 使用 VArray\<T\>](#112-listt-使用-varrayt)
+    - [11.3 GList::from\_garray 使用 GArray](#113-glistfrom_garray-使用-garray)
+    - [11.4 Closure to List 使用 GArray](#114-closure-to-list-使用-garray)
+  - [12. 总结速查表](#12-总结速查表)
+    - [概念速查](#概念速查)
+    - [场景选择](#场景选择)
+    - [类关系总览](#类关系总览)
+  - [相关文件](#相关文件)
+
 
 ---
 
@@ -649,8 +700,8 @@ flowchart TB
     VA_I -->|擦除类型| GVA
     VA_3 -->|擦除类型| GVA
 
-    GVA -->|typed&lt;float&gt;()| VA_F
-    GVA -->|typed&lt;int&gt;()| VA_I
+    GVA -->|"typed&lt;float&gt;()"| VA_F
+    GVA -->|"typed&lt;int&gt;()"| VA_I
 
     style GVA fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#880e4f
 ```
@@ -663,14 +714,14 @@ flowchart TB
 
 ```mermaid
 sequenceDiagram
-    participant VA as VArray&lt;float&gt;
+    participant VA as VArray<float>
     participant GVA as GVArray
-    participant VA2 as VArray&lt;float&gt;
+    participant VA2 as VArray<float>
 
     Note over VA: 编译期类型 float
     VA->>GVA: 隐式转换<br/>检查 common_info<br/>Span/Single → 零开销<br/>其他 → 包装为 GVArrayImpl_For_VArray
-    Note over GVA: 运行时类型 CPPType::get&lt;float&gt;()
-    GVA->>VA2: typed&lt;float&gt;()<br/>检查 common_info<br/>Span/Single → 零开销<br/>其他 → 包装为 VArrayImpl_For_GVArray
+    Note over GVA: 运行时类型 CPPType::get<float>()
+    GVA->>VA2: typed<float>()<br/>检查 common_info<br/>Span/Single → 零开销<br/>其他 → 包装为 VArrayImpl_For_GVArray
 ```
 
 ### 7.1 VArray → GVArray（隐式转换）
@@ -714,7 +765,7 @@ template<typename T> VArray<T> GVArray::typed() const
 > **零开销转换条件**：当 `VArray` 内部是 Span 或 Single 模式时，可以零开销转换——只需提取 `data` 指针和 `size`，不需要适配器。其他情况需要创建适配器对象，有额外开销。
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph "零开销转换"
         Z1["VArray(Span) → GVArray(Span)"]
         Z2["VArray(Single) → GVArray(Single)"]
