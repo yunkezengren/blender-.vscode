@@ -1870,6 +1870,15 @@ template<typename T> class VMutableArray : public VArrayCommon<T> {
 > // 3. *static_cast<...> → 解引用，得到 VArrayCommon<T>&
 > // 4. = *this → 把 *this 赋值给基类部分
 > ```
+> **等价写法**——可以真的拆成两行：
+> ```cpp
+> VArrayCommon<T>& base_ref = varray;  // ① 引用绑定（不是赋值！零开销）
+> base_ref = *this;                     // ② 唯一的赋值操作
+> ```
+> **① 不是赋值！** `base_ref` 是引用类型（`&`），初始化引用 = 绑定别名，不复制任何东西。之后 `base_ref` 和 `varray` 的基类部分指向同一块内存。类比 `int& ref = x;`——`ref` 只是 `x` 的别名。
+>
+> **为什么能直接修改基类部分？** 这是 C++ 的基本能力——对象切片赋值。`VArray<T>` 继承 `VArrayCommon<T>`，基类部分就是 `impl_` 成员。对基类引用赋值 = 只改 `impl_`，不影响 `VArray<T>` 自己的成员（它也没有额外成员）。
+>
 > **为什么这么做？** `VArray<T>` 和 `VMutableArray<T>` 都继承自 `VArrayCommon<T>`，但它们之间没有继承关系。不能直接 `varray = *this`（类型不同）。通过转成基类引用赋值，只拷贝 `impl_` 部分。
 >
 > **`const &` vs `&& noexcept` 语法详解**：
@@ -1925,6 +1934,12 @@ template<typename T> class VMutableArray : public VArrayCommon<T> {
 > VArray<int> a = mutable_varray;          // mutable_varray 是左值 → 匹配 const & 版本（拷贝）
 > VArray<int> b = std::move(mutable_varray); // std::move 结果是右值 → 匹配 && 版本（移动）
 > ```
+>
+> **为什么移动版本有 `noexcept`？** 移动操作不抛异常——`std::move(*this)` 只转移 `impl_`（指针+`shared_ptr` 移动），不分配内存，不可能失败。标记 `noexcept` 让编译器做更强优化：
+> - `std::vector` 扩容时，如果元素移动构造是 `noexcept`，用移动；否则用拷贝（更安全但更慢）
+> - `std::swap` 对 `noexcept` 类型可以用更快的实现
+>
+> 拷贝版本没有 `noexcept`——`shared_ptr` 拷贝时引用计数 +1（原子操作），理论上可能失败（虽然极端罕见）。
 
 ### 14.3 get_internal_span / set / set_all
 
@@ -2387,12 +2402,160 @@ inline void devirtualize_varray(const VArray<T> &varray, const Func &func, bool 
 
 > **翻译**：为不同虚拟数组生成多个优化版本的函数。嵌套多个去虚拟化会导致指数级函数实例化（增加编译时间和二进制大小）。通常只在虚方法调用开销显著时使用。
 >
+> **去虚拟化是干什么的？** VArray 的 `operator[]` 内部是虚函数调用——每次访问都查虚表，比直接数组访问慢 5~10 倍。去虚拟化 = 运行时检查 VArray 内部类型，如果是 Span 就直接用指针，如果是 Single 就直接用值——跳过虚函数调用：
+> ```cpp
+> // 虚函数调用（慢）
+> VArray<float> varray = ...;
+> for (int i = 0; i < 100000; i++) {
+>     sum += varray[i];  // 每次查虚表 → 虚函数调用
+> }
+>
+> // 去虚拟化后（快）
+> devirtualize_varray(varray, [&](auto values) {
+>     for (int i = 0; i < 100000; i++) {
+>         sum += values[i];  // values 可能是 Span<float>*，直接内存读取
+>     }
+> });
+> ```
+>
+> **为什么传入一个函数参数？** 因为不同类型需要不同的循环体，但逻辑相同。用 lambda 把"做什么"和"怎么访问"分离——编译器为每种 `values` 类型生成一份循环代码，逻辑相同但访问方式不同。
+>
+> **为什么是 3 份代码？** `if constexpr` 控制的是**编译期是否包含这段代码**，不是运行时分支：
+> ```cpp
+> if constexpr (UseSingle) {     // 编译期：true → 代码存在；false → 代码不存在
+>     if (info.type == Type::Single) {  // 运行时：检查 VArray 实际类型
+>         return fn(SingleAsSpan<T>(...));  // ①
+>     }
+> }
+> if constexpr (UseSpan) {       // 编译期：同上
+>     if (info.type == Type::Span) {    // 运行时
+>         return fn(Span<T>(...));          // ②
+>     }
+> }
+> return false;
+> ```
+> `devirtualize_varray` 用 `VArrayDevirtualizer<T, true, true>`，两个 `if constexpr` 都为 true → 两段代码都存在。`if constexpr` 只是允许禁用某种优化，不影响实例化数量。
+>
+> 第 3 种（`VArrayRef` 回退）在**外面**的 `devirtualize_varray` 里：
+> ```cpp
+> if (call_with_devirtualized_parameters(..., func)) return;  // ①或②成功
+> func(VArrayRef<T>(varray));  // ③ 回退
+> ```
+> **3 种类型的来源**：`fn` 被调用 3 次，每次参数类型不同（`SingleAsSpan`/`Span`/`VArrayRef`）。`fn` 是模板 lambda，C++ 模板规则：**每种不同的类型参数生成独立的代码**。`if constexpr` 不影响这个数量。
+>
+> **为什么指数级？** 每个 VArray 有 2 种优化路径 + 1 种回退。2 个 VArray = 3 × 3 = 9 种组合，每种组合的参数类型不同，C++ 模板无法合并：
+> ```
+> varray1=Single + varray2=Single → fn(SingleAsSpan, SingleAsSpan)
+> varray1=Single + varray2=Span   → fn(SingleAsSpan, Span)
+> varray1=Single + varray2=通用   → fn(SingleAsSpan, VArrayRef)
+> ...（共 9 种）
+> ```
+>
+> **"3 份代码"具体是什么？** 假设 lambda 是 `result[i] = values[i] * 2`，编译器生成 3 个不同函数：
+> ```cpp
+> // 版本1：values 是 SingleAsSpan → values[i] 直接返回同一个值
+> void fn_v1(SingleAsSpan<float> values) { for (...) result[i] = values.value_ * 2; }
+> // 版本2：values 是 Span → values[i] 直接指针偏移
+> void fn_v2(Span<float> values) { for (...) result[i] = values.data_[i] * 2; }
+> // 版本3：values 是 VArrayRef → values[i] 虚函数调用
+> void fn_v3(VArrayRef<float> values) { for (...) result[i] = values.ref_.get(i) * 2; }
+> ```
+> 运行时只执行其中一个——取决于 VArray 的内部类型。
+>
+> **"9 份代码"具体是什么？** 2 个 VArray 时，编译器生成 9 个函数：
+> ```cpp
+> combo1(SingleAsSpan, SingleAsSpan) → v1.value_ + v2.value_           // 最快
+> combo2(SingleAsSpan, Span)         → v1.value_ + v2.data_[i]
+> combo3(SingleAsSpan, VArrayRef)    → v1.value_ + v2.ref_.get(i)
+> combo4(Span, SingleAsSpan)         → v1.data_[i] + v2.value_
+> combo5(Span, Span)                 → v1.data_[i] + v2.data_[i]       // 最常见！
+> combo6(Span, VArrayRef)            → v1.data_[i] + v2.ref_.get(i)
+> combo7(VArrayRef, SingleAsSpan)    → v1.ref_.get(i) + v2.value_
+> combo8(VArrayRef, Span)            → v1.ref_.get(i) + v2.data_[i]
+> combo9(VArrayRef, VArrayRef)       → v1.ref_.get(i) + v2.ref_.get(i) // 最慢
+> ```
+> 运行时只执行其中一个——取决于两个 VArray 的内部类型组合。
+>
+> **实际中不会到 243 个！** Blender 只提供 `devirtualize_varray`（1 个）和 `devirtualize_varray2`（2 个），没有 `devirtualize_varray5`。注释是警告"别自己嵌套写"。
+>
+> | VArray 数量 | 实际组合数 | 可控？ |
+> |------------|----------|--------|
+> | 1 | 3 | ✅ 完全可控 |
+> | 2 | 9 | ✅ 可控 |
+> | 3（嵌套） | 27 | ⚠️ 较多 |
+> | 5（嵌套） | 243 | ❌ 不推荐 |
+>
+> **为什么影响编译时间和二进制大小？**
+> - **编译时间**：编译器要实例化、类型检查、优化每个版本。243 个版本的优化时间远超 1 个
+> - **二进制大小**：每个版本都编译进 .o 文件。代码膨胀导致指令缓存命中率下降，反而可能变慢
+>
+> **"嵌套"是什么意思？** 在一个 `devirtualize_varray` 的回调里再调用另一个 `devirtualize_varray`：
+> ```cpp
+> // 嵌套写法（能用，但编译慢）
+> devirtualize_varray(varray1, [&](auto values1) {       // 3 种实例化
+>     devirtualize_varray(varray2, [&](auto values2) {   // 每种再 × 3 = 9 种实例化
+>         for (int64_t i = 0; i < size; i++) {
+>             result[i] = values1[i] + values2[i];  // 两个都无虚函数调用！
+>         }
+>     });
+> });
+> ```
+>
+> **为什么不能顺序调用两次？** 顺序调用意味着分别处理两个 VArray——但你需要**同时使用**两个 VArray 的值：
+> ```cpp
+> // 顺序调用（不行！）
+> devirtualize_varray(varray1, [&](auto values1) {
+>     // values1 被优化了，但 varray2 没有优化
+>     for (int64_t i = 0; i < size; i++) {
+>         result[i] = values1[i] + varray2[i];  // varray2[i] 还是虚函数调用！
+>     }
+> });
+> ```
+> 你需要 `values1[i]` 和 `values2[i]` 在**同一个循环**里同时使用。顺序调用做不到——一次只优化一个。必须嵌套才能让两个 VArray 在同一作用域内都被优化。
+>
+> **什么时候需要同时去虚拟化两个？** 几何节点中很常见——两个属性逐元素运算：
+> - 混合属性：`result[i] = factor[i] * a[i] + (1-factor[i]) * b[i]`
+> - 顶点运算：`result[i] = position[i].x + position[i].y`
+>
+> **`devirtualize_varray2`（更好）**：
+> ```cpp
+> devirtualize_varray2(varray1, varray2, [&](auto values1, auto values2) {
+>     for (int64_t i = 0; i < size; i++) {
+>         result[i] = values1[i] + values2[i];  // 两个都无虚函数调用！
+>     }
+> });
+> ```
+> **两种写法都是 9 种组合，区别在编译速度**：
+> - **嵌套**：编译器分两阶段——先实例化外层 3 种，每种再展开内层 3 种。反复解析模板，编译慢
+> - **varray2**：编译器一次处理——`call_with_devirtualized_parameters` 直接生成 9 种组合，编译快
+>
 > **`enable` 参数**：允许运行时禁用去虚拟化——用于调试或性能测试。
 >
 > **工作流程**：
 > 1. 尝试 `call_with_devirtualized_parameters`——为 Single 和 Span 生成特化版本
 > 2. 如果成功（返回 true），直接返回
 > 3. 如果失败（底层是 Any），回退到 `func(VArrayRef<T>(varray))`——虚函数调用
+>
+> **`std::make_tuple`**：把多个值**捆在一起**——类型可以不同：
+> ```cpp
+> auto t = std::make_tuple(42, 3.14, "hello");
+> // t 包含 3 个值：int, double, const char*
+> // 访问：std::get<0>(t) = 42, std::get<1>(t) = 3.14
+> ```
+> **为什么这里用 tuple？** `call_with_devirtualized_parameters` 需要处理"1 个 VArray"或"2 个 VArray"。用 tuple 统一接口——不管几个参数，都打包成一个 tuple 传进去：
+> ```cpp
+> // 1 个 VArray → tuple 有 1 个元素
+> call_with_devirtualized_parameters(
+>     std::make_tuple(VArrayDevirtualizer<float>{v1}),
+>     func);
+>
+> // 2 个 VArray → tuple 有 2 个元素
+> call_with_devirtualized_parameters(
+>     std::make_tuple(VArrayDevirtualizer<float>{v1},
+>                     VArrayDevirtualizer<int>{v2}),
+>     func);
+> ```
+> `call_with_devirtualized_parameters` 内部遍历 tuple 的每个元素，对每个调用 `devirtualize()`，生成所有组合。
 
 ### 18.3 devirtualize_varray2
 
