@@ -812,6 +812,17 @@ template<typename T> class VArrayImpl_For_Span_final final : public VArrayImpl_F
 
 > **`may_have_ownership = false`**——不拥有数据，只是引用外部 Span。这是与 `VArrayImpl_For_Span` 的关键区别。
 >
+> **`VArrayImpl_For_Span_final` vs `VArrayImpl_For_Span` 对比**：
+>
+> | | `VArrayImpl_For_Span` | `VArrayImpl_For_Span_final` |
+> |---|---|---|
+> | `final` | 否（可被继承） | 是（不可继承） |
+> | `may_have_ownership` | `true`（默认，可能拥有数据） | `false`（不拥有数据） |
+> | 用途 | 基类，给 `ArrayContainer` 继承 | 直接使用，包装外部 Span |
+> | `common_info()` | `override`（可被重写） | `final`（不可重写） |
+>
+> `VArrayImpl_For_Span` 是"可继承版本"——`VArrayImpl_For_ArrayContainer` 继承它，拥有数据所有权。`VArrayImpl_For_Span_final` 是"终态版本"——不拥有数据，`final` 保证 `may_have_ownership = false` 不会被覆盖。
+>
 > **`private:` + `final`**：`private` 阻止外部调用，`final` 阻止子类重写（虽然已经是 `final` 类了，双重保险）。
 >
 > **为什么 `VArrayImpl_For_Span` 用 `protected`，而 `VArrayImpl_For_Span_final` 用 `private`？** 因为 `VArrayImpl_For_Span` 有派生类（`VArrayImpl_For_Span_final` 和 `VArrayImpl_For_ArrayContainer`），`protected` 允许派生类访问。`VArrayImpl_For_Span_final` 是 `final` 类，没有派生类，用 `private` 更严格——连 friend 之外的代码都不能直接调用。
@@ -1339,6 +1350,21 @@ template<typename T> class VArrayCommon {
 > - 裸指针构造：包装已有的 `VArrayImpl`，**不获取所有权**。实践中很少使用。
 > - `shared_ptr` 构造：包装 `VArrayImpl`，**获取所有权**。
 >
+> **`VArrayCommon() = default`**：默认构造函数——`impl_` 初始化为空，此时 `operator bool()` 返回 `false`，`size()` 返回 0。表示"没有虚拟数组"。
+>
+> **`= default` 生成的默认构造函数做了什么？** 逐成员默认初始化：
+> ```cpp
+> VArrayCommon() = default;
+> // 编译器生成的等价代码：
+> VArrayCommon() : impl_() {}  // 调用 AnyDerived 的默认构造函数
+>
+> // AnyDerived 的默认构造函数：
+> AnyDerived() : impl_(nullptr), storage_() {}
+> // impl_ = nullptr（空指针），storage_ = 空 Any（没有值）
+> ```
+>
+> **`impl_(std::move(impl))` 对 `shared_ptr` 移动**：`std::move` 作用于 `shared_ptr` 本身（不是指针指向的对象），移动后源 `shared_ptr` 变为空，目标接管引用计数——零拷贝的指针转移。如果用拷贝 `impl_(impl)`，引用计数 +1（原子操作，有开销）。
+>
 > **`AnyDerived` 的三种存储模式**：
 > 1. 内联：`emplace<ImplT>(args...)` 直接在缓冲区构造
 > 2. 裸指针：`AnyDerived(Base*)` 不拥有，不负责析构
@@ -1382,6 +1408,10 @@ template<typename T> class VArrayCommon {
 > 1. `*this`：VArray 非空（`operator bool`）
 > 2. `index >= 0`：索引非负
 > 3. `index < size()`：索引在范围内
+>
+> **`impl_->get(index)` 为什么能跳转？** `impl_` 是 `AnyDerived<const VArrayImpl<T>>`，`AnyDerived` 重载了 `operator->()` 返回内部存储的 `Base*` 指针。所以 `impl_->` 等价于 `impl_.get()->`，`get()` 返回 `const VArrayImpl<T>*`，然后通过虚函数派发调用具体子类的 `get()`。
+>
+> **`(*this)[index]` 中的 `(*this)`**：`this` 是指向当前对象的指针，`*this` 解引用得到对象本身。`(*this)[index]` = 对自身调用 `operator[]`。等价于 `this->operator[](index)`。在 `get()` 方法中，`(*this)[index]` 复用了 `operator[]` 的逻辑（包括断言检查）。
 
 ### 11.4 size / first / last / is_empty / index_range
 
@@ -1523,6 +1553,8 @@ template<typename T> class VArrayCommon {
 ```
 
 > **`get_implementation()`**：返回底层 `VArrayImpl<T>*`。用于需要直接操作实现类的场景（如 `VMutableArray::get_impl()`）。
+>
+> **`impl_.get()`**：`AnyDerived::get()` 方法，返回内部存储的 `Base*` 指针（即 `const VArrayImpl<T>*`）。不是虚函数调用——直接返回 `impl_` 成员指针。和 `impl_->` 不同：`->` 是运算符重载（也返回指针），`.get()` 是显式方法。
 
 ---
 
@@ -1579,6 +1611,17 @@ template<typename T> class VArray : public VArrayCommon<T> {
 
 > **翻译**：`VArray` 包装虚拟数组实现，提供便捷的元素访问。可以拷贝和移动。虽然相对较小，但仍应尽量按引用传递（与 `Span` 不同）。
 >
+> **为什么 VArray 要按引用传递而 Span 不用？**
+> - `Span` 只有 16 字节（指针+大小），拷贝成本和引用一样——按值传递反而更快（避免间接寻址）
+> - `VArray` 包含 `AnyDerived<const VArrayImpl<T>>`——内联存储约 32 字节 + `shared_ptr` 控制块。拷贝时如果内部是 `shared_ptr`，引用计数 +1（原子操作，有开销）。按引用传递避免这些开销
+>
+> **Span 按值为什么更快？**
+> | | 按值 `Span<int> s` | 按引用 `const Span<int>& s` |
+> |---|---|---|
+> | 传递内容 | 16 字节（两个寄存器） | 8 字节指针（一个寄存器） |
+> | 访问 `s[i]` | 直接读寄存器 | 先读指针，再间接寻址 |
+> | 实际性能 | **更快**（无间接寻址） | 稍慢（多一次指针解引用） |
+>
 > **`friend VMutableArray<T>`**：让 `VMutableArray` 可以访问 `VArray` 的 protected 成员（如 `impl_`）。
 
 ### 13.1 构造函数
@@ -1619,7 +1662,13 @@ template<typename T> class VArray : public VArrayCommon<T> {
 
 > **`from<ImplT>(args...)`**：通用工厂方法。`static_assert` 确保 `ImplT` 是 `VArrayImpl<T>` 的子类。
 >
-> **NRVO**：返回值优化——`varray` 直接构造在调用者的栈上，无需移动。
+> **NRVO（Named Return Value Optimization）**：命名返回值优化——编译器让 `varray` 直接构造在调用者的栈上，无需移动。
+> ```cpp
+> VArray<int> create() {
+>     VArray<int> varray = ...;  // 没有 NRVO：先构造 varray，再移动到返回值
+>     return varray;             // 有 NRVO：varray 直接构造在调用者的返回值位置
+> }                              // 没有 move，没有析构——零开销
+> ```
 
 ```cpp
   static VArray from_single(T value, const int64_t size)
@@ -1652,6 +1701,23 @@ template<typename T> class VArray : public VArrayCommon<T> {
 ```
 
 > **`from_std_func`**：用 `std::function` 代替模板。更慢（类型擦除），但减少代码生成。用于非性能关键代码。
+>
+> **"减少代码生成"是什么意思？** 模板为每个不同类型生成不同的机器码——**代码膨胀**：
+> ```cpp
+> // from_func：每个 lambda 类型生成不同的代码
+> auto f1 = [](int i) { return i * 2; };
+> auto f2 = [](int i) { return i + 1; };
+> VArray<int> v1 = VArray<int>::from_func(100, f1);  // 生成 VArrayImpl_For_Func<int, __lambda_1>
+> VArray<int> v2 = VArray<int>::from_func(100, f2);  // 生成 VArrayImpl_For_Func<int, __lambda_2>
+> // 两个完全不同的类 → 两份机器码
+>
+> // from_std_func：所有 callable 共用同一份代码
+> std::function<int(int)> f1 = [](int i) { return i * 2; };
+> std::function<int(int)> f2 = [](int i) { return i + 1; };
+> VArray<int> v1 = VArray<int>::from_std_func(100, f1);  // 都用 VArrayImpl_For_Func<int, std::function<int(int)>>
+> VArray<int> v2 = VArray<int>::from_std_func(100, f2);  // 同一份机器码
+> ```
+> `std::function` 类型擦除后类型相同，只生成一份代码。代价是运行时稍慢（虚函数调用）。
 
 ```cpp
   template<typename StructT, T (*GetFunc)(const StructT &)>
@@ -1716,6 +1782,14 @@ flowchart TB
 ```cpp
 // BLI_virtual_array.hh:814~900
 ```
+
+> **`VMutableArrayImpl` 继承 `VArrayImpl`，但 `VMutableArray` 不继承 `VArray`**——为什么？
+>
+> 如果 `VMutableArray` 继承 `VArray`：
+> 1. `VArray` 的静态方法（如 `from_single`）会泄漏到 `VMutableArray`——创建只读数组不应出现在可写类型上
+> 2. 可能意外把 `VArray` 赋给 `VMutableArray`——只读当可写用，导致 bug
+>
+> Impl 层可以继承（`VMutableArrayImpl` 继承 `VArrayImpl`），因为 Impl 是内部实现，有 `protected` 保护。接口层不行——安全性要求更严格。所以两者都继承 `VArrayCommon<T>`（共享代码），但互不继承。
 
 ```cpp
 template<typename T> class VMutableArray : public VArrayCommon<T> {
@@ -1789,7 +1863,68 @@ template<typename T> class VMutableArray : public VArrayCommon<T> {
 > - `const &`：拷贝转换——`impl_` 被拷贝（`shared_ptr` 引用计数 +1）
 > - `&& noexcept`：移动转换——`impl_` 被移动（零开销）
 >
-> **`*static_cast<VArrayCommon<T>*>(&varray) = *this`**：直接对基类部分赋值。`VArray` 和 `VMutableArray` 都继承 `VArrayCommon<T>`，基类部分（`impl_`）可以直接拷贝/移动。
+> **`*static_cast<VArrayCommon<T>*>(&varray) = *this` 语法拆解**：
+> ```cpp
+> // 1. &varray → 取 varray 的地址，类型 VArray<T>*
+> // 2. static_cast<VArrayCommon<T>*>(&varray) → 转为基类指针
+> // 3. *static_cast<...> → 解引用，得到 VArrayCommon<T>&
+> // 4. = *this → 把 *this 赋值给基类部分
+> ```
+> **为什么这么做？** `VArray<T>` 和 `VMutableArray<T>` 都继承自 `VArrayCommon<T>`，但它们之间没有继承关系。不能直接 `varray = *this`（类型不同）。通过转成基类引用赋值，只拷贝 `impl_` 部分。
+>
+> **`const &` vs `&& noexcept` 语法详解**：
+>
+> `const &` 和 `&&` 不是合在一起的——它们是**两个独立的东西**叠加：
+> ```cpp
+> operator VArray<T>() const &     // ① const  ② &  → 两个独立的限定符
+> operator VArray<T>() && noexcept // ① 无const  ② && → 两个独立的限定符
+> ```
+>
+> **`const`** — 和普通成员函数的 const 一样，承诺不修改 `*this`：
+> - `const &` 版本有 `const`——拷贝转换不修改源对象
+> - `&&` 版本**没有** `const`——移动转换会修改源对象（把 `impl_` 置空）
+>
+> **`&` / `&&`** — **ref-qualifier**（引用限定符，C++11），控制"当 `*this` 是左值还是右值时匹配"：
+> ```cpp
+> struct S {
+>     void f() &;    // 只有 *this 是左值时才能调用
+>     void f() &&;   // 只有 *this 是右值时才能调用
+> };
+> S s;
+> s.f();            // s 是左值 → 匹配 f() &
+> S().f();          // S() 是右值 → 匹配 f() &&
+> std::move(s).f(); // std::move(s) 是右值 → 匹配 f() &&
+> ```
+>
+> **完整拆解**：
+> ```cpp
+> // 版本1：拷贝转换
+> operator VArray<T>() const &
+> //                    ↑     ↑
+> //                    ①     ②
+> // ① const：不修改 *this（拷贝不改变源）
+> // ② &：*this 是左值时匹配
+>
+> // 版本2：移动转换
+> operator VArray<T>() && noexcept
+> //                    ↑     ↑
+> // ① 无 const：会修改 *this（移动后源对象变空）
+> // ② &&：*this 是右值时匹配
+> ```
+>
+> **为什么需要 ref-qualifier？** 没有它，两个重载无法区分——都会匹配，编译器报歧义：
+> ```cpp
+> // 没有 ref-qualifier（错误！歧义）
+> operator VArray<T>() const;   // 拷贝版本
+> operator VArray<T>();         // 移动版本？和上面冲突！
+> VArray<int> a = m;            // 两个都能匹配 → 歧义
+> ```
+>
+> ```cpp
+> VMutableArray<int> mutable_varray = ...;
+> VArray<int> a = mutable_varray;          // mutable_varray 是左值 → 匹配 const & 版本（拷贝）
+> VArray<int> b = std::move(mutable_varray); // std::move 结果是右值 → 匹配 && 版本（移动）
+> ```
 
 ### 14.3 get_internal_span / set / set_all
 
@@ -1837,7 +1972,24 @@ template<typename T> class VMutableArray : public VArrayCommon<T> {
 > 2. `const_cast<VArrayImpl<T>*>` → 去掉 const
 > 3. `reinterpret_cast<VMutableArrayImpl<T>*>` → 转为派生类指针
 >
-> **为什么不用 `static_cast`？** `static_cast` 需要完整的类型定义和明确的继承关系。`reinterpret_cast` 更底层——直接重新解释指针。这里安全是因为不变量保证。
+> **为什么用 `reinterpret_cast` 而非 `static_cast`？** 两步 `static_cast` 完全合法：
+> ```cpp
+> // 两步 static_cast（也能编译通过）
+> static_cast<VMutableArrayImpl<T>*>(
+>     const_cast<VArrayImpl<T>*>(this->impl_.get()));
+> ```
+> `const_cast` 去掉 const，`static_cast` 向下转型——两步都没问题。选择 `reinterpret_cast` 是**故意**的——它比 `static_cast` 更危险，但这里正是要表达"这个转换依赖不变量，编译器无法验证，靠我们保证安全"。`static_cast` 给人虚假的安全感（编译器检查了继承关系，但不检查运行时类型），`reinterpret_cast` 明确告诉读者"这是危险的，别随便改"。
+>
+> **`get_impl()` 后的函数为什么有的能跳转有的不能？**
+>
+> | 函数 | 首次声明位置 | 能否 Ctrl 跳转 |
+> |------|-------------|---------------|
+> | `common_info()` | `VArrayImpl<T>`（基类） | 不能 |
+> | `set()` | `VArrayImpl<T>`（基类） | 不能 |
+> | `set_all()` | `VArrayImpl<T>`（基类） | 不能 |
+> | `try_assign_GVMutableArray()` | `VMutableArrayImpl<T>`（派生类独有） | 能 |
+>
+> `set()`、`common_info()` 等在基类 `VArrayImpl<T>` 中也有声明。IDE 的 IntelliSense 在模板代码中遇到同名函数出现在继承链的多个位置时，无法确定跳到哪个声明——干脆不跳。`try_assign_GVMutableArray()` 只在 `VMutableArrayImpl<T>` 中声明，没有歧义，所以能跳。这是 IDE 在模板+继承+虚函数场景下的已知局限。
 
 ---
 
