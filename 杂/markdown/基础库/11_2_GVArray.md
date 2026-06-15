@@ -1540,23 +1540,23 @@ GVArray GList::varray() const
 >         AD["ArrayData<br/>const void* data<br/>int64_t size"]
 >         SD["SingleData<br/>const void* value"]
 >     end
-
+>
 >     subgraph "GVArray 构造"
 >         GVA1["GVArray::from_span<br/>Span 模式<br/>零拷贝"]
 >         GVA2["GVArray::from_single_ref<br/>Single 模式<br/>零拷贝"]
 >     end
-
+>
 >     subgraph "后续使用"
 >         T1["typed&lt;float&gt;()<br/>→ VArray&lt;float&gt;"]
 >         T2["typed&lt;int&gt;()<br/>→ VArray&lt;int&gt;"]
 >     end
-
+>
 >     AD --> GVA1
 >     SD --> GVA2
 >     GVA1 --> T1
 >     GVA1 --> T2
 >     GVA2 --> T1
-
+>
 >     style GVA1 fill:#3498db,color:#fff
 >     style GVA2 fill:#e67e22,color:#fff
 > ```
@@ -1647,7 +1647,7 @@ GVArray get_varray_for_context(...) const final
 > sequenceDiagram
 >     participant Node as Blur Attribute 节点
 >     participant FE as FieldEvaluator
->     participant GA as GArray&lt;&gt;
+>     participant GA as GArray<>;
 >     participant GVA as GVArray
 >
 >     Node->>GA: GArray<>(cpp_type, domain_size)
@@ -1670,31 +1670,31 @@ GVArray adapt_domain(const GVArray &varray, const AttrDomain from, const AttrDom
 ```
 
 > **域适配的核心数据流**：
->
+
 > ```mermaid
 > flowchart LR
 >     subgraph "源域"
 >         S["GVArray<br/>Corner 域<br/>（面角属性）"]
 >     end
-
+> 
 >     subgraph "适配过程"
 >         A1["GArray&lt;&gt; values<br/>分配目标域大小"]
 >         A2["typed&lt;T&gt;()<br/>转为 VArray&lt;T&gt;"]
 >         A3["逐元素计算<br/>混合/传播"]
 >         A4["from_garray<br/>转为 GVArray"]
 >     end
-
+> 
 >     subgraph "目标域"
 >         D["GVArray<br/>Point 域<br/>（顶点属性）"]
 >     end
-
+> 
 >     S --> A1 --> A2 --> A3 --> A4 --> D
-
+> 
 >     style S fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
 >     style D fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
 > ```
->
-> **Corner → Point 适配实现**：
+
+**Corner → Point 适配实现**：
 > ```cpp
 > // mesh_attributes.cc:71~83
 > static GVArray adapt_mesh_domain_corner_to_point(const Mesh &mesh, const GVArray &varray)
