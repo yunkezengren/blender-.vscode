@@ -260,20 +260,6 @@ color_blend_v3_v3(wt->wcol.inner, wt->wcol.inner_sel, 0.2f); // 不行,暗色主
 copy_v4_v4_uchar(wt->wcol.inner, wt->wcol.inner_sel);        // 不行,菜单枚举 活动 和 选中 一个颜色了
 ```
 
-
-
-
-### 表格交互
-- ? 重排列时不要绘制列分割线,
-- ? 列分割线有时绘制了,该消失时不消失啊,因为工具提示? 改成拖动列分割线时才绘制?
-- 支持Ctrl 中键缩放表格
-- 进入编辑模式是否撤回灰显,网格和曲线不一致
-- float3, int3三列等宽,对于 1e10.00,0.00,0.00,效果不好
-- 双击列表 物体 列 ,宽度自动调整不正确
-- 其他ID也可以加上表格显示?
-- 字符串需要悬浮提示
-- 字符串列需要悬浮提示 - 字符串接口悬浮提示文本显示不全
-
 ### 节点操作bug
 - Ctrl X删除节点 多输入连线会乱(这个节点的输入也连到了多输入时)
 - 连线拖动搜索不考虑接口形状是否兼容的啊
@@ -290,12 +276,45 @@ copy_v4_v4_uchar(wt->wcol.inner, wt->wcol.inner_sel);        // 不行,菜单枚
 - 合并捆包 自动 分离出的形状为什么不对上
 - 为什么合并捆包和分离 的捆包是圆形？
 - 闭包转列表的闭包如果是自动，为什么会触发更新, 因为 闭包转列表 输出缺少自动？
-- 比较节点漏了 材质?
+
 - 比较节点理应支持更多类型
 - 预览器 显示 声音 其他ID也应该显示. 
 - 以及电子表格的列表, 以及自动列宽
 - 文件浏览器/文件ID: 字体名中文不支持?
 - 预览器输入接口形状改成自动?
-- 阻输入的添加新接口按钮
+- 组输入的添加新接口按钮
 
 - 文件浏览器 覆盖 的红色 为什么加暗(比起主题里) source/blender/editors/interface/interface_widgets.cc:3151~3159
+
+
+### 清理 
+
+> File: e:\blender-git\blender\source\blender\geometry\intern\reorder.cc
+> 490: std::optional<Array<int>> sort_indices_by_weights(const int domain_size,
+domain_size 不合适,列表排序也会调用 source/blender/nodes/geometry/nodes/node_geo_sort_list.cc:166~167
+
+
+## 节点耗时
+
+File: source\blender\editors\space_node\node_draw.cc 2516: node.is_type("GeometryNodeListLength"_ustr)))
+缺少 排序列表 以及其他列表相关节点
+
+
+### 表格交互
+- ? 重排列时不要绘制列分割线,
+- ? 列分割线有时绘制了,该消失时不消失啊,因为工具提示? 改成拖动列分割线时才绘制?
+- 支持Ctrl 中键缩放表格
+- 进入编辑模式是否撤回灰显,网格和曲线不一致
+- 
+- float3, int3三列等宽,对于 1e10.00,0.00,0.00,效果不好
+- 整数调整列宽要考虑 , 的宽度啊
+- 字节颜色宽度调整不正确
+- 
+- 列表 ... 的悬浮提示
+- 
+- ID列表自动调整不正确
+- 存了不同类型值得列表列自动调整不正确
+- 其他ID也可以加上表格显示
+- 
+- 字符串需要悬浮提示
+- 字符串接口悬浮提示文本显示不全
