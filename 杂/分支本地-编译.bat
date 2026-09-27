@@ -5,17 +5,15 @@ cd /d E:/blender-git/blender
 @REM set Branch=test-branch
 set Branch=blender
 
-@REM set nj_release_Branch=E:\blender-git\%Branch%_ninja_release
-@REM make nobuild ninja builddir %nj_release_Branch%
-@REM cd %nj_release_Branch%
+set nj_release_Branch=E:\blender-git\%Branch%_ninja_release
+make nobuild ninja builddir %nj_release_Branch%
+cd %nj_release_Branch%
 
-@REM set nj_Branch=E:\blender-git\%Branch%_ninja_lite
-@REM make nobuild ninja lite builddir %nj_Branch%
+@REM set nj_Branch=E:\blender-git\%Branch%_ninja_lite_debug
+@REM make nobuild ninja lite debug builddir %nj_Branch%
 @REM cd %nj_Branch%
 
-set nj_Branch=E:\blender-git\%Branch%_ninja_lite_debug
-make nobuild ninja lite debug builddir %nj_Branch%
-cd %nj_Branch%
+
 code CmakeCache.txt
 
 
@@ -34,12 +32,18 @@ code CmakeCache.txt
 @REM   启用 echo: CMAKE_VERBOSE_MAKEFILE: 会在终端里每行都输出
 @REM   启用 WITH_WINDOWS_SCCACHE
 @REM  lite 还需要这三个
-@REM   启用 WITH_TBB  已经默认启用了
 @REM   启用 ime: WITH_INPUT_IME
 @REM   启用 i18n: WITH_INTERNATIONAL
+@REM   启用 WITH_TBB  已经默认启用了
 
 @REM   此外: CMAKE_BUILD_TYPE 可以改, lite时是Release
 @REM   问的AI, 我是4核8线程, 所以 j8 会创建8个线程还是进程, 卡的话可以开少点
-@REM rebuild -j8
+
+
+rebuild -j8
+
+@REM make clean or ninja -t clean depending on your build system will do it
+make clean
+ninja -t clean
 
 pause

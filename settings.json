@@ -2,6 +2,7 @@
     // "C_Cpp.errorSquiggles": "disabled",
     "files.autoSave": "onWindowChange",
     "C_Cpp.clang_format_path": "E:/blender-git/blender/lib/windows_x64/llvm/bin/clang-format.exe",
+    "clang-format.executable": "E:/blender-git/blender/lib/windows_x64/llvm/bin/clang-format.exe",
     // ! .vscode/c_cpp_properties.json   includePath 功能类似
     "C_Cpp.default.compileCommands": "E:/blender-git/blender_ninja_lite_debug/compile_commands.json",
     // "C_Cpp.default.compileCommands": "E:/blender-git/ninja_lite_debug_change-socket-shape/compile_commands.json",
@@ -11,10 +12,12 @@
     "editor.formatOnType": true,
     "[cpp]": {
         // "editor.defaultFormatter": "psycha0s.cpp-format",
-        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+        // "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+        "editor.defaultFormatter": "xaver.clang-format", // 因为Blender的 clang-format 和 clangd 带的版本不同,单独装了插件
     },
     "[c]": {
-        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+        // "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+        "editor.defaultFormatter": "xaver.clang-format"
     },
     "python.analysis.diagnosticMode": "openFilesOnly",
     "python.analysis.include": [
@@ -47,7 +50,7 @@
         // "*.settings": true,
         ".trae": true,
         ".opencode": true,
-        ".agents": true,
+        // ".agents": true,
         ".vscode/杂/markdown": true,
         ".history": true,
         "**/.history": false,
