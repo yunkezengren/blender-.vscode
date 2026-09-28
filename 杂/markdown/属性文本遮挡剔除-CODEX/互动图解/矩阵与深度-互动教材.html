@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>从矩阵到属性文本遮挡 · 互动教材</title>
+  <style>
+    :root{--ink:#162239;--muted:#5b6879;--paper:#f5f1e8;--card:#fffdf8;--line:#dcd7cd;--teal:#087f78;--teal2:#dff4ef;--orange:#cc6437;--orange2:#fff0df;--blue:#3c5fa1;--dark:#172841;--shadow:0 18px 50px rgba(19,35,53,.09)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.78 "Segoe UI","Microsoft YaHei",sans-serif}a{color:var(--blue)}a:hover{color:var(--teal)}
+    .shell{max-width:1460px;margin:auto;display:grid;grid-template-columns:245px minmax(0,1fr);min-height:100vh}.side{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 19px;background:#ecede8;border-right:1px solid var(--line)}.brand{font-weight:800;letter-spacing:.04em;font-size:14px;color:var(--teal);margin:0 10px 24px}.side a{display:block;text-decoration:none;color:var(--muted);padding:9px 11px;margin:2px 0;border-radius:10px;font-size:14px}.side a:hover,.side a:focus{background:var(--teal2);color:var(--teal)}.side .small{font-size:12px;color:var(--muted);padding:16px 11px;border-top:1px solid var(--line);margin-top:20px}
+    main{padding:34px clamp(22px,4vw,70px) 100px;min-width:0}.eyebrow{text-transform:uppercase;letter-spacing:.2em;color:var(--teal);font-size:12px;font-weight:800}.hero{background:linear-gradient(125deg,#162a43,#26415a 58%,#087f78);border-radius:26px;color:white;padding:clamp(28px,5vw,70px);box-shadow:var(--shadow);position:relative;overflow:hidden}.hero:after{content:"M";position:absolute;right:1%;top:-40%;font:500px Georgia,serif;opacity:.055;pointer-events:none}.hero h1{font-size:clamp(34px,4vw,64px);line-height:1.12;letter-spacing:-.035em;margin:12px 0}.hero p{max-width:760px;color:#dfe8ed;font-size:18px}.hero .eyebrow{color:#9fe3d7}.pill{display:inline-block;border:1px solid #ffffff55;border-radius:99px;padding:4px 12px;font-size:12px;color:#d6f2ed;margin:12px 5px 0 0}
+    section{margin-top:68px;scroll-margin-top:24px}h2{font-size:clamp(27px,3vw,39px);line-height:1.2;letter-spacing:-.025em;margin:0 0 15px}h3{font-size:20px;margin:27px 0 10px}.lead{color:var(--muted);font-size:18px;max-width:820px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:19px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:var(--shadow)}.card p:last-child{margin-bottom:0}.accent{border-top:4px solid var(--teal)}.warm{border-top:4px solid var(--orange)}.wide{grid-column:1/-1}.callout{background:var(--teal2);border-left:4px solid var(--teal);padding:17px 20px;border-radius:0 12px 12px 0;margin:22px 0}.warning{background:var(--orange2);border-color:var(--orange)}
+    .formula{font:16px/1.65 Consolas,"Cascadia Code",monospace;background:var(--dark);color:#eef7f6;border-radius:13px;padding:17px 20px;overflow:auto;white-space:pre}.code{font:13px/1.65 Consolas,monospace;background:#edf0ef;padding:12px 16px;border-radius:10px;overflow:auto}.flow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:25px 0}.step{background:white;border:1px solid var(--line);padding:13px 15px;border-radius:12px;font-size:14px}.arrow{color:var(--orange);font-weight:800}.num{color:var(--teal);font:700 1.15em Consolas,monospace}.result{background:#edf8f4;border:1px solid #b7dcd3;border-radius:12px;padding:16px 19px;min-height:58px}.result strong{color:var(--teal)}.small{font-size:13px;color:var(--muted)}
+    label{display:block;font-weight:700;font-size:13px;margin:13px 0 4px}.slider-row{display:flex;align-items:center;gap:12px}.slider-row input{flex:1;accent-color:var(--teal)}output{font:700 14px Consolas,monospace;min-width:55px;text-align:right;color:var(--teal)}.diagram{background:#f7f9f7;border-radius:12px;border:1px solid var(--line);width:100%;height:auto;max-height:260px}.legend{display:flex;gap:15px;flex-wrap:wrap;font-size:13px;color:var(--muted)}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;background:var(--teal)}.dot.orange{background:var(--orange)}.dot.blue{background:var(--blue)}
+    .matrix{display:inline-grid;grid-template-columns:repeat(4,minmax(44px,1fr));gap:4px;border-left:2px solid var(--teal);border-right:2px solid var(--teal);padding:6px 10px;font:14px Consolas,monospace;max-width:100%;overflow:auto}.matrix span{text-align:right;padding:2px 4px}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:14px;background:white;border-radius:14px;overflow:hidden}th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}th{background:#e8eeea;color:#294a4a}tr:last-child td{border-bottom:0}.quiz{border:1px dashed var(--teal);border-radius:14px;padding:18px 22px;background:#f8fffc}details{border:1px solid var(--line);border-radius:12px;background:white;margin:12px 0;padding:12px 16px}summary{cursor:pointer;font-weight:700}footer{border-top:1px solid var(--line);margin-top:70px;padding-top:20px;color:var(--muted);font-size:13px}
+    @media(max-width:850px){.shell{display:block}.side{position:static;height:auto;display:flex;flex-wrap:wrap;gap:3px;padding:13px}.brand{width:100%;margin:0 6px}.side a{padding:5px 8px}.side .small{display:none}main{padding:18px 18px 70px}.grid{grid-template-columns:1fr}.hero{border-radius:16px}}@media print{.side,.controls{display:none}.shell{display:block}main{padding:0}.hero{color:#162239;background:white;box-shadow:none;border:1px solid #ccc}.hero p{color:#333}.card{box-shadow:none}section{break-inside:avoid}details{display:block}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <nav class="side" aria-label="章节导航">
+    <div class="brand">ATTRIBUTE TEXT · LAB</div>
+    <a href="#start">00 · 从问题出发</a><a href="#vectors">01 · 向量与齐次坐标</a><a href="#matrix">02 · 对象矩阵和逆矩阵</a><a href="#ray">03 · 实例 AABB 射线</a><a href="#projection">04 · 投影矩阵与深度</a><a href="#subpixel">05 · 子像素平面补偿</a><a href="#source">06 · 对照源码</a>
+    <div class="small">本页为独立 HTML，可离线打开。滑块计算只用于理解数学；最终运行值以 Blender 当前视图矩阵与深度缓冲为准。</div>
+  </nav>
+  <main>
+    <header class="hero" id="start">
+      <div class="eyebrow">BLENDER · 交互式源码教材</div>
+      <h1>一个文字锚点，<br>如何穿过矩阵与深度？</h1>
+      <p>从本地坐标走到世界空间，再投影到像素；用逆矩阵找实例包围盒前表面，用深度判断文字是否被挡。每一步都有可调数字。</p>
+      <span class="pill">无外部字体或脚本</span><span class="pill">离线可读</span><span class="pill">基于当前分支源码</span>
+    </header>
+
+    <section id="vectors">
+      <div class="eyebrow">01 / 基础</div><h2>先分清“点”和“方向”</h2>
+      <p class="lead">三维数值 <code>(x,y,z)</code> 可以表示空间位置，也可以表示方向。第四个齐次分量决定平移是否作用到它。</p>
+      <div class="grid">
+        <div class="card accent"><h3>位置：w = 1</h3><div class="formula">p = (x, y, z, 1)
+M · p = 旋转缩放后的坐标 + 平移</div><p>点云的 <code>positions[i]</code>、实例的 <code>local_anchor</code> 都是位置。代码用 <code>math::transform_point</code> 把点变到世界空间。</p></div>
+        <div class="card warm"><h3>方向：w = 0</h3><div class="formula">d = (dx, dy, dz, 0)
+M · d = 旋转缩放后的方向</div><p>实例射线的 <code>toward_camera</code> 是方向。代码用 <code>math::transform_direction</code>，平移不应混进来。</p></div>
+      </div>
+      <div class="callout"><strong>手算：</strong>对象沿 x 平移 3，x 轴缩放 2。位置 x=1 变成 2×1+3=5；方向 dx=1 只变成 2×1=2。</div>
+      <p>齐次坐标还允许透视投影。仿射对象矩阵的最后一行在数学列向量排版下通常是 <code>(0,0,0,1)</code>；投影矩阵可以让输出的 <code>w</code> 依赖点与相机的距离。随后用 <code>x/w</code>、<code>y/w</code> 得到远小近大的画面。</p>
+    </section>
+
+    <section id="matrix">
+      <div class="eyebrow">02 / 变换</div><h2>对象矩阵：先做谁，后做谁？</h2>
+      <p class="lead">采用列向量数学记法，<code>p_world = T · R · S · p_local</code>。最右侧的 <code>S</code> 先作用。下面只取 x 轴的缩放和平移，便于把每个数字算出来。</p>
+      <div class="grid">
+        <div class="card accent controls"><h3>调整对象变换</h3>
+          <label for="localX">本地位置 x</label><div class="slider-row"><input id="localX" type="range" min="-3" max="3" step="0.1" value="1"><output id="localXVal"></output></div>
+          <label for="scaleX">对象 x 缩放</label><div class="slider-row"><input id="scaleX" type="range" min="0.5" max="4" step="0.1" value="2"><output id="scaleXVal"></output></div>
+          <label for="translateX">对象世界 x 平移</label><div class="slider-row"><input id="translateX" type="range" min="-5" max="8" step="0.1" value="3"><output id="translateXVal"></output></div>
+          <div class="result" id="matrixResult" aria-live="polite"></div>
+        </div>
+        <div class="card"><h3>对应的 4×4 例子</h3><p>下方矩阵是数学列向量排版，源码存储下标不应直接照搬它的“第几行第几列”。</p><div class="matrix" id="matrixView" aria-label="对象变换矩阵"></div><p class="small">逆变换：<code>local_x = (world_x − translate_x) / scale_x</code>。若输入是方向，则只除缩放，不减平移。</p></div>
+      </div>
+      <h3>在分支里用到的三种矩阵</h3>
+      <div class="tablewrap"><table><thead><tr><th>矩阵</th><th>输入与输出</th><th>所在代码</th></tr></thead><tbody>
+        <tr><td><code>object_to_world</code></td><td>对象本地点 → 世界点</td><td>网格值位置、点云中心、实例世界原点</td></tr>
+        <tr><td><code>world_to_object</code></td><td>世界方向 → 实例本地方向</td><td>实例 AABB 射线</td></tr>
+        <tr><td><code>rv3d-&gt;persmat</code></td><td>世界点 → 裁剪空间</td><td>属性文字带 <code>GLOBALSPACE</code> 时的投影</td></tr>
+        <tr><td><code>rv3d-&gt;persmatob</code></td><td>对象本地点 → 裁剪空间</td><td>不带世界坐标位的通用文字路径</td></tr>
+      </tbody></table></div>
+      <div class="callout warning"><strong>最常见错误：</strong>点云锚点已被手动变成世界坐标，后续公共函数传 <code>identity()</code>。再传对象矩阵就会变换两次。</div>
+    </section>
+
+    <section id="ray">
+      <div class="eyebrow">03 / 几何</div><h2>逆矩阵让射线和 AABB 处于同一空间</h2>
+      <p class="lead">实例对象的包围盒在对象本地空间。先把从实例原点到相机的世界方向转回本地，再求射线离开盒子的参数。</p>
+      <div class="flow"><span class="step">相机世界位置 K</span><span class="arrow">→</span><span class="step">世界方向 K−C</span><span class="arrow">→</span><span class="step">逆矩阵作用于方向</span><span class="arrow">→</span><span class="step">本地射线与 AABB</span><span class="arrow">→</span><span class="step">出口 <code>exit_t</code></span></div>
+      <div class="grid">
+        <div class="card accent controls"><h3>沿 x 轴的射线演示</h3><p class="small">此演示沿用上面的对象平移/缩放；射线从对象本地原点出发，盒 x 范围为 [−半宽, +半宽]。</p>
+          <label for="cameraX">相机世界 x</label><div class="slider-row"><input id="cameraX" type="range" min="-10" max="25" step="0.1" value="13"><output id="cameraXVal"></output></div>
+          <label for="boxHalf">本地 AABB 半宽</label><div class="slider-row"><input id="boxHalf" type="range" min="0.2" max="4" step="0.1" value="1"><output id="boxHalfVal"></output></div>
+          <div class="result" id="rayResult" aria-live="polite"></div>
+        </div>
+        <div class="card"><h3>为什么 <code>t=1</code> 是相机？</h3><div class="formula">C = object_to_world · (0,0,0,1)
+D_world = K − C
+D_local = inverse(object_to_world) · (D_world,0)
+P_local(t) = O + t · D_local</div><p>方向没有归一化。<code>t=1</code> 表示走完整个“原点到相机”的向量。对象在朝相机方向的盒出口若 <code>0 &lt; exit_t &lt; 1</code>，就位于相机之前。</p></div>
+      </div>
+      <svg class="diagram" viewBox="0 0 800 170" role="img" aria-label="从本地原点向相机发射射线，依次穿过包围盒出口与相机"><rect x="160" y="40" width="270" height="90" rx="10" fill="#e5f3ee" stroke="#087f78" stroke-width="3"/><line x1="80" y1="85" x2="725" y2="85" stroke="#263f5a" stroke-width="3" marker-end="url(#arr)"/><circle cx="295" cy="85" r="9" fill="#3c5fa1"/><circle cx="430" cy="85" r="9" fill="#087f78"/><circle cx="690" cy="85" r="9" fill="#cc6437"/><text x="255" y="30" fill="#3c5fa1">原点 t=0</text><text x="385" y="30" fill="#087f78">出口 t=exit_t</text><text x="635" y="30" fill="#cc6437">相机 t=1</text><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10" fill="#263f5a"/></marker></defs></svg>
+      <p class="small">上图表示参数顺序；滑块数值改变时，实际出口可能超出相机或相机落在盒内。此时源码会保留原锚点。AABB 是包住物体的长方体，不能代替真实网格表面。</p>
+    </section>
+
+    <section id="projection">
+      <div class="eyebrow">04 / 投影</div><h2>透视深度为何不是“每米增加固定值”</h2>
+      <p class="lead">标准对称透视投影令观察空间距离为 <code>r</code>、近裁剪为 <code>n</code>、远裁剪为 <code>f</code>。窗口深度 <code>d</code> 的变化包含 <code>1/r</code>；正交深度随距离线性变化。</p>
+      <div class="formula">透视：d(r) = f/(f−n) − fn/((f−n)r)
+正交：d(r) = (r−n)/(f−n)
+像素：x = width/2 × (1 + clip_x/clip_w)
+      y = height/2 × (1 + clip_y/clip_w)</div>
+      <div class="grid">
+        <div class="card controls"><h3>改变裁剪范围与锚点距离</h3>
+          <label for="near">近裁剪 n</label><div class="slider-row"><input id="near" type="range" min="0.1" max="5" step="0.1" value="0.5"><output id="nearVal"></output></div>
+          <label for="far">远裁剪 f</label><div class="slider-row"><input id="far" type="range" min="10" max="100" step="1" value="50"><output id="farVal"></output></div>
+          <label for="distance">锚点距离 r</label><div class="slider-row"><input id="distance" type="range" min="0.1" max="100" step="0.1" value="5"><output id="distanceVal"></output></div>
+          <div class="result" id="depthResult" aria-live="polite"></div>
+        </div>
+        <div class="card"><h3>深度曲线</h3><svg id="depthChart" class="diagram" viewBox="0 0 560 300" role="img" aria-label="透视和正交深度随距离的曲线"><line x1="48" y1="258" x2="536" y2="258" stroke="#829195"/><line x1="48" y1="20" x2="48" y2="258" stroke="#829195"/><path id="perspectivePath" fill="none" stroke="#087f78" stroke-width="4"/><path id="orthoPath" fill="none" stroke="#cc6437" stroke-width="3" stroke-dasharray="8 5"/><circle id="depthDot" r="6" fill="#3c5fa1"/><text x="10" y="26" font-size="13" fill="#5b6879">1</text><text x="17" y="265" font-size="13" fill="#5b6879">0</text><text x="500" y="282" font-size="13" fill="#5b6879">距离 r</text></svg><div class="legend"><span><i class="dot"></i>透视</span><span><i class="dot orange"></i>正交</span><span><i class="dot blue"></i>当前锚点</span></div></div>
+      </div>
+      <div class="callout">源码用 <code>mul_m4_v4</code> 取得裁剪坐标，除以 <code>w</code>，把 NDC z 从 [−1,1] 转到 [0,1]。上方公式帮助理解趋势；实际 Blender 视图必须以它传给函数的投影矩阵为准。</div>
+    </section>
+
+    <section id="subpixel">
+      <div class="eyebrow">05 / 遮挡</div><h2>文字在像素内部，深度却取像素中心</h2>
+      <p class="lead">一个像素格子的整数索引为 <code>(4,4)</code>，中心是 <code>(4.5,4.5)</code>。锚点可能落在 <code>(4.9,4.8)</code>。同一个斜面上，这两个位置本来就可能有不同深度。</p>
+      <div class="grid">
+        <div class="card accent controls"><h3>调整锚点和局部斜率</h3>
+          <label for="offsetX">锚点相对中心 dx（像素）</label><div class="slider-row"><input id="offsetX" type="range" min="-0.49" max="0.49" step="0.01" value="0.4"><output id="offsetXVal"></output></div>
+          <label for="offsetY">dy（像素）</label><div class="slider-row"><input id="offsetY" type="range" min="-0.49" max="0.49" step="0.01" value="0.3"><output id="offsetYVal"></output></div>
+          <label for="slopeX">每向右一像素深度变化</label><div class="slider-row"><input id="slopeX" type="range" min="-0.006" max="0.006" step="0.0001" value="0.002"><output id="slopeXVal"></output></div>
+          <label for="slopeY">每向上一像素深度变化</label><div class="slider-row"><input id="slopeY" type="range" min="-0.006" max="0.006" step="0.0001" value="0.001"><output id="slopeYVal"></output></div>
+          <label for="behind">锚点相对真实表面深度差</label><div class="slider-row"><input id="behind" type="range" min="-0.002" max="0.004" step="0.0001" value="0"><output id="behindVal"></output></div>
+          <div class="result" id="surfaceResult" aria-live="polite"></div>
+        </div>
+        <div class="card warm"><h3>源码的两道判断</h3><div class="formula">初判：anchor_depth &gt; center + 0.00002
+补偿：surface_at_anchor = center
+       + slope_x × dx + slope_y × dy
+平面检查：九个样本都接近预测平面</div><p>只在透视、且单像素初判遮挡时尝试补偿。四个象限各最多检查 3×3 样本；背景或不平面样本会拒绝候选。此交互图假定所有邻域样本来自一个平面，实际源码还必须验证这一点。</p></div>
+      </div>
+      <div class="quiz"><strong>自己预测：</strong>把 <code>dx=0.4</code>、<code>slope_x=0.002</code>、其他斜率和真实遮挡差设为 0。中心是 0.5000，锚点深度会变为 0.5008。单像素会剔除；若邻域确实是一个平面，补偿会显示。</div>
+    </section>
+
+    <section id="source">
+      <div class="eyebrow">06 / 源码</div><h2>把教材连接回当前分支</h2>
+      <div class="grid"><div class="card"><h3>继续读 Markdown</h3><p><a href="../逐行导读/09-矩阵从零到源码.md">09 矩阵从零到源码</a>：所有变换都手算一次。<br><a href="../逐行导读/10-投影矩阵与深度推导.md">10 投影矩阵与深度推导</a>：推导公式和数值边界。<br><a href="../逐行导读/11-逆矩阵射线与AABB逐步推演.md">11 逆矩阵射线与 AABB</a>：解释 <code>exit_t</code>。<br><a href="../逐行导读/06-源码差异索引.md">九文件逐行差异索引</a>：核对当前代码。</p></div><div class="card"><h3>关键源码路径</h3><p><code>overlay_attribute_text.hh</code>：对象矩阵、点云半径、实例射线。<br><code>overlay_instance.cc</code>：帧内深度回读。<br><code>draw_manager_text.cc</code>：投影、深度比较和透视补偿。<br><code>draw_pointcloud_lib.glsl</code>：点云半径缩放规则。</p></div></div>
+      <details><summary>三个必须保持的实现事实</summary><p>对象本地 AABB 求交前要把射线方向转到本地；深度内容每帧刷新；透视补偿只在单像素初判遮挡且邻域通过平面检查时放行。</p></details>
+    </section>
+    <footer>这份教材使用简化的对称投影和一维实例射线来解释原理。真实视口应以 Blender 当前矩阵、几何与深度缓冲为准。相关概念与代码核对见同目录 Markdown。</footer>
+  </main>
+</div>
+<script>
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const inputs = ["localX","scaleX","translateX","cameraX","boxHalf","near","far","distance","offsetX","offsetY","slopeX","slopeY","behind"];
+  const value = id => Number($(id).value);
+  const fmt = (x,n=3) => Number.isFinite(x) ? x.toFixed(n) : "—";
+  function render(){
+    for(const id of inputs) $(id+"Val").textContent = value(id).toFixed(id.startsWith("slope")||id==="behind"?4:id.startsWith("offset")?2:1);
+    const lx=value("localX"), sx=value("scaleX"), tx=value("translateX"), wx=sx*lx+tx;
+    $("matrixResult").innerHTML = `<strong>世界 x = ${fmt(sx,1)} × ${fmt(lx,1)} + ${fmt(tx,1)} = ${fmt(wx,2)}</strong><br>逆变换检查：(${fmt(wx,2)} − ${fmt(tx,1)}) / ${fmt(sx,1)} = ${fmt((wx-tx)/sx,2)}`;
+    const cells=[sx,0,0,tx,0,1,0,0,0,0,1,0,0,0,0,1]; $("matrixView").innerHTML=cells.map(v=>`<span>${fmt(v,1)}</span>`).join("");
+    const cx=value("cameraX"), half=value("boxHalf"), dir=(cx-tx)/sx, exit=dir===0?NaN:half/Math.abs(dir), side=dir>=0?half:-half, xWorld=tx+sx*side;
+    const valid=Number.isFinite(exit)&&exit>0&&exit<1;
+    $("rayResult").innerHTML=`本地方向 = (${fmt(cx,1)} − ${fmt(tx,1)}) / ${fmt(sx,1)} = <strong>${fmt(dir,2)}</strong><br>盒出口：local x = <strong>${fmt(side,2)}</strong>，exit_t = <strong>${fmt(exit,3)}</strong>，world x = <strong>${fmt(xWorld,2)}</strong><br>${valid?"<strong>通过透视 t 范围检查：可使用盒出口锚点。</strong>":"未满足 0 &lt; exit_t &lt; 1：这组参数下源码保留原锚点。"}`;
+    const n=value("near"), f=value("far"), r=value("distance"), inRange=r>=n&&r<=f;
+    const persp=z=>f/(f-n)-f*n/((f-n)*z), ortho=z=>(z-n)/(f-n), dp=persp(r), do_=ortho(r);
+    $("depthResult").innerHTML=`距离 r=${fmt(r,1)}；透视深度 <strong>${fmt(dp,5)}</strong>；正交深度 <strong>${fmt(do_,5)}</strong><br>${inRange?"处于近远裁剪范围内。":"超出近远裁剪范围，源码不会把这个教学公式结果当有效锚点采样。"}`;
+    const X=z=>48+488*(z-n)/(f-n),Y=z=>258-238*z;
+    const points=Array.from({length:150},(_,i)=>n+(f-n)*i/149); $("perspectivePath").setAttribute("d",points.map((z,i)=>(i?"L":"M")+X(z).toFixed(2)+" "+Y(persp(z)).toFixed(2)).join(" ")); $("orthoPath").setAttribute("d",`M ${X(n)} ${Y(0)} L ${X(f)} ${Y(1)}`);
+    $("depthDot").setAttribute("cx",String(Math.max(48,Math.min(536,X(r))))); $("depthDot").setAttribute("cy",String(Math.max(20,Math.min(258,Y(dp)))));
+    const dx=value("offsetX"),dy=value("offsetY"),gx=value("slopeX"),gy=value("slopeY"),real=0.5+gx*dx+gy*dy,anchor=real+value("behind"),initial=anchor>0.5+0.00002,corrected=anchor>real+0.00002;
+    $("surfaceResult").innerHTML=`中心深度 = 0.50000；锚点处平面深度 = <strong>${fmt(real,5)}</strong><br>锚点深度 = <strong>${fmt(anchor,5)}</strong><br>单像素初判：<strong>${initial?"剔除":"显示"}</strong>；若九样本符合此平面，补偿后：<strong>${corrected?"剔除":"显示"}</strong>`;
+  }
+  for(const id of inputs) $(id).addEventListener("input",render);
+  render();
+</script>
+</body>
+</html>

@@ -1,10 +1,18 @@
 # 属性文本遮挡剔除 · CODEX 核对版
 
+> **从零理解当前工作树，请先进入 [逐行导读](./逐行导读/00-从零开始与阅读地图.md)。**
+> 该专题按调用顺序拆成十三篇概念与源码讲解，另有九份带行号、修改说明和三行上下文的完整差异表。
+> 下方 01—15 章保留设计过程与历史快照；遇到名称或实现差异，以逐行导读的当前工作树快照为准。
+
+> **可视化入口**：[从设置到绘制 · 源码地图](./互动图解/从设置到绘制-源码地图.html) 与 [矩阵与深度 · 互动教材](./互动图解/矩阵与深度-互动教材.html)。两份 HTML 均可离线打开，包含可点击的执行阶段和可调参数。
+
 > **范围**：Blender `attribute-text-depth-culling` 分支。
 > **基准**：`origin/main` 的 `bba93a5d6df198bcdb31b7b92cdbe514945ba2ad`。
 > **当前提交**：`39009b48098`、`eb97266f783`。
 > **写作快照**：2026-09-27。
 > **状态**：代码已编译，近距离网格点遮挡稳定性仍未解决。
+
+> **后续进展**：以上为早期提交快照。透视局部平面补偿已获得用户正向复测反馈，原理、性能边界及后续整理见 [第 15 章](./15-透视文本稳定性与性能.md)。
 
 ---
 
@@ -19,7 +27,29 @@
 > 本目录与整个 `.markdown` 路径被项目 `.gitignore` 忽略。
 > 它们是本地文档；若想纳入 Git，需要另作明确决定。
 
-## 十三章导航
+## 十五章导航
+
+### 当前工作树逐行专题
+
+| 顺序 | 阅读内容 | 读完能回答 |
+|---|---|---|
+| [00 · 从零开始](./逐行导读/00-从零开始与阅读地图.md) | 总图、九文件职责、提交与工作树区别 | 这项功能到底从哪里到哪里？ |
+| [01 · 设置链](./逐行导读/01-设置如何传到绘制层.md) | DNA、RNA、Python UI、Overlay State | 一个按钮如何到达 C++？ |
+| [02 · 属性与锚点](./逐行导读/02-属性值如何成为文字.md) | 各域、点云、实例、标志传播 | 每条文字的值和位置从哪来？ |
+| [03 · 深度生命周期](./逐行导读/03-深度何时读取.md) | prepass、GPU 回读、缓存所有权 | 深度为什么在这里读取？ |
+| [04 · 逐条判断](./逐行导读/04-每条文字如何判断.md) | 投影、像素索引、透视平面补偿、BLF | 一条文字为何显示或消失？ |
+| [05 · 数学练习](./逐行导读/05-坐标与数学练习.md) | 坐标变换、AABB、齐次坐标、深度算例 | 能否手算关键值？ |
+| [06 · 差异索引](./逐行导读/06-源码差异索引.md) | 九份逐行表与原始上下文 | 某一行代码该去哪查？ |
+| [07 · 类型百科](./逐行导读/07-函数类成员变量百科.md) | 类、成员、参数、容器与生命周期 | 每个名字是谁拥有、谁使用？ |
+| [08 · 调试路线](./逐行导读/08-调试路线与已知边界.md) | 观察、性能与限制 | 下一次异常该从哪查？ |
+| [09 · 矩阵基础](./逐行导读/09-矩阵从零到源码.md) | 齐次坐标、矩阵组合、逆矩阵与源码 | `object_to_world` 等矩阵到底怎么用？ |
+| [10 · 投影深度](./逐行导读/10-投影矩阵与深度推导.md) | 透视/正交投影、窗口深度推导 | 为什么透视深度非线性却能局部平面补偿？ |
+| [11 · AABB 手算](./逐行导读/11-逆矩阵射线与AABB逐步推演.md) | 本地射线、slab 求交、`exit_t` | 实例文字怎样走到盒前表面？ |
+| [12 · 完整算例](./逐行导读/12-完整手算一个文字锚点.md) | 一个锚点从对象本地一直算到屏幕与深度 | 能否独立复算整个实现？ |
+
+### 设计过程与旧版快照
+
+最新补充：[15 · 透视文本稳定性与性能](./15-透视文本稳定性与性能.md)，记录局部平面补偿、循环开销、透视限定及代码整理。
 
 ```mermaid
 flowchart LR
@@ -35,38 +65,17 @@ flowchart LR
   TEST --> EXAMPLES[11 数值例题]
   EXAMPLES --> GLOSSARY[12 术语]
   GLOSSARY --> REVIEW[13 审查问答]
+  REVIEW --> ENGINE[14 Overlay Instance 与属性文字]
   classDef intro fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A,stroke-width:2px;
   classDef core fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
   classDef verify fill:#D1FAE5,stroke:#059669,color:#064E3B,stroke-width:2px;
   classDef refs fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef engine fill:#FCE7F3,stroke:#DB2777,color:#831843,stroke-width:2px;
   class START intro;
   class CORE,ANCHOR,DEBUG,OPTIONS,API,TRACE core;
   class TEST,EXAMPLES verify;
   class MATH,TYPES,GLOSSARY,REVIEW refs;
-```
-
-```mermaid
-flowchart LR
-  START[先读 01 总览] --> CORE[02 深度缓存]
-  START --> ANCHOR[03 锚点与包围盒]
-  CORE --> DEBUG[04 误判诊断]
-  ANCHOR --> OPTIONS[07 方案取舍]
-  DEBUG --> TEST[06 验证矩阵]
-  CORE --> API[05 API 速查]
-  API --> TRACE[08 代码导读]
-  TRACE --> MATH[09 数学专题]
-  TRACE --> TYPES[10 生命周期]
-  TEST --> EXAMPLES[11 数值例题]
-  EXAMPLES --> GLOSSARY[12 术语]
-  GLOSSARY --> REVIEW[13 审查问答]
-  classDef intro fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A,stroke-width:2px;
-  classDef core fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef verify fill:#D1FAE5,stroke:#059669,color:#064E3B,stroke-width:2px;
-  classDef refs fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  class START intro;
-  class CORE,ANCHOR,DEBUG,OPTIONS,API,TRACE core;
-  class TEST,EXAMPLES verify;
-  class MATH,TYPES,GLOSSARY,REVIEW refs;
+  class ENGINE engine;
 ```
 
 | 章节 | 重点 | 建议读者 |
@@ -84,6 +93,7 @@ flowchart LR
 | [11 · 数值例题](./11-实例化推演与数值例题.md) | 用具体数值推演实例和射线 | 验证几何计算的人 |
 | [12 · 术语表](./12-术语表与常见误解.md) | 关键名词及容易混淆的结论 | 需要快速查阅的人 |
 | [13 · 审查问答](./13-代码审查问答.md) | 按审查问题串起设计与风险 | 准备评审的人 |
+| [14 · Overlay Instance 与属性文字](./14-Overlay实例与属性文本流水线.md) | `Instance` 生命周期、prepass、regular/infront、Viewer 与通用文字缓存 | 阅读 Overlay 调度代码的人 |
 
 ### 最短阅读路线
 
