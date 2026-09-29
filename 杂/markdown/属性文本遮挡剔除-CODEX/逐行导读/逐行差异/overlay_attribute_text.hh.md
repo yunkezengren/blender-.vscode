@@ -1,8 +1,9 @@
 # `source/blender/draw/engines/overlay/overlay_attribute_text.hh`：逐行差异与上下文
 
 > 基准 `bba93a5d6df198bcdb31b7b92cdbe514945ba2ad`；当前工作树。`+` 为新行，`−` 为旧行。
-> 每个主代码块以源码顺序保留三行上下文，并在修改行前加入中文注释与行号。
-> 删除的旧行在原位置以注释显示；原始 diff 放在折叠区，方便核对。代码块是阅读材料，不用于直接编译。
+> 每个主代码块以源码顺序保留三行上下文；有语义的修改行旁带中文注释与新行号。
+> 结构性空行、括号及原有英文源码注释保持原貌，便于顺着代码阅读。删除的旧行以注释显示；原始 diff 放在折叠区。
+> 这些代码块是阅读材料，不用于直接编译。
 > 完整的背景、数学、所有权和风险请先读上一层专题。
 
 ## 差异块 1 · `文件局部上下文`
@@ -15,7 +16,6 @@
 
 // 新第 11 行：加入直接依赖 `<algorithm>`，供本文件新用到的声明、容器或算法使用。
 #include <algorithm>
-// 新第 12 行：空行用于隔开两个逻辑步骤，使下一段条件或函数更容易识别。
 
 // 新第 13 行：加入直接依赖 `"BLI_array.hh"`，供本文件新用到的声明、容器或算法使用。
 #include "BLI_array.hh"
@@ -125,19 +125,19 @@
     if (ob_ref.preview_instance_index() >= 0) {
       const bke::Instances *instances = ob_ref.preview_base_geometry()->get_instances();
       if (instances->attributes().contains(".viewer")) {
-        // 旧第 69 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
+        // 旧第 69 行已替换：调用实例域专用入口，读取当前实例值并准备盒出口锚点。
         // 原代码：add_instance_attributes_to_text_cache(
-            // 旧第 70 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
+            // 旧第 70 行已替换：传入 Instances 的属性访问器，之后只切出当前实例的 Viewer 值。
             // 原代码：dt, instances->attributes(), object_to_world, ob_ref.preview_instance_index());
-        // 新第 77 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+        // 新第 77 行：调用实例域专用入口，读取当前实例值并准备盒出口锚点。
         add_instance_attributes_to_text_cache(state,
-                                              // 新第 78 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                                              // 新第 78 行：传入 Instances 的属性访问器，之后只切出当前实例的 Viewer 值。
                                               instances->attributes(),
-                                              // 新第 79 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                                              // 新第 79 行：传入实例对象，后续用它查询本地 AABB。
                                               object,
-                                              // 新第 80 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                                              // 新第 80 行：传入本地到世界矩阵，最终用于实例锚点的世界变换。
                                               object_to_world,
-                                              // 新第 81 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                                              // 新第 81 行：传入当前预览实例下标，避免为所有实例重复生成文字。
                                               ob_ref.preview_instance_index());
 
         return;
@@ -208,37 +208,30 @@
   }
 
  private:
-  // 新第 118 行：保留源码说明：When the Overlay option is enabled, anchor positions are tested against the；相邻代码的中文推导见专题章节。
   /* When the Overlay option is enabled, anchor positions are tested against the scene
-   // 新第 119 行：保留源码说明：depth buffer while drawing, so text hidden behind geometry is skipped. The ；相邻代码的中文推导见专题章节。
    * depth buffer while drawing, so text hidden behind geometry is skipped. The test itself
-   // 新第 120 行：保留源码说明：happens in #DRW_text_cache_draw and works for every geometry type (mesh, po；相邻代码的中文推导见专题章节。
    * happens in #DRW_text_cache_draw and works for every geometry type (mesh, point cloud,
-   // 新第 121 行：保留源码说明：instances, curves...).；相邻代码的中文推导见专题章节。
    * instances, curves...). */
   // 新第 122 行：保存本帧是否要求遮挡测试，供后续锚点准备和文字标志传播使用。
   bool occlusion_test_ = false;
-// 新第 123 行：空行用于隔开两个逻辑步骤，使下一段条件或函数更容易识别。
 
   // 新第 124 行：点云改用专门入口，以便读取每点半径并把文字锚点移到圆盘前方。
   void add_pointcloud_attributes_to_text_cache(const State &state,
-                                               // 新第 125 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                                               // 新第 125 行：输入点云几何，读取位置、Viewer 值与逐点半径。
                                                const PointCloud &pointcloud,
-                                               // 新第 126 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                                               // 新第 126 行：输入本地到世界的变换；点云已转世界时改传单位矩阵。
                                                const float4x4 &object_to_world)
-  // 新第 127 行：控制本段 C++ 作用域或调用闭合；变量生命周期和条件范围由这些括号决定。
   {
-    // 新第 128 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+    // 新第 128 行：取得几何的只读属性访问器，下一步检查 `.viewer` 是否存在。
     const bke::AttributeAccessor attributes = pointcloud.attributes();
-    // 新第 129 行：用条件保护后续步骤，阻止无效数据、越界或不满足要求的绘制路径。
+    // 新第 129 行：没有 Viewer 属性就不生产文字，避免访问缺失数据。
     if (!attributes.contains(".viewer")) {
       // 新第 130 行：提前结束当前分支，避免继续处理不适用的对象或候选。
       return;
-    // 新第 131 行：控制本段 C++ 作用域或调用闭合；变量生命周期和条件范围由这些括号决定。
     }
-    // 新第 132 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+    // 新第 132 行：读取 Viewer 属性，取得类型擦除的值数组。
     const bke::GAttributeReader attribute = attributes.lookup(".viewer");
-    // 新第 133 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+    // 新第 133 行：输入与值逐下标配对的锚点位置数组；Span 本身不拥有内存。
     const Span<float3> positions = pointcloud.positions();
     // 新第 134 行：使用组件级遮挡开关，决定是否调整锚点或给文字附加测试标志。
     if (!occlusion_test_) {
@@ -246,31 +239,26 @@
       add_values_to_text_cache(state.dt, attribute.varray, positions, object_to_world);
       // 新第 136 行：提前结束当前分支，避免继续处理不适用的对象或候选。
       return;
-    // 新第 137 行：控制本段 C++ 作用域或调用闭合；变量生命周期和条件范围由这些括号决定。
     }
-// 新第 138 行：空行用于隔开两个逻辑步骤，使下一段条件或函数更容易识别。
 
-    // 新第 139 行：点云中心在自身有半径的圆盘后方，应为每个点前移锚点。
     /* Match the world-space radius used by point-cloud drawing. A center anchor is behind its
-     // 新第 140 行：点云中心在自身有半径的圆盘后方，应为每个点前移锚点。
      * own camera-facing disk, so move each label to the front of its own point. */
     // 新第 141 行：取得逐点半径；每条点云文字使用它对应点自己的半径。
     const VArray<float> radii = pointcloud.radius();
-    // 新第 142 行：点云中心在自身有半径的圆盘后方，应为每个点前移锚点。
     /* Root-mean-square object scale, matching the point-cloud shader. */
     // 新第 143 行：把对象三个轴的缩放折合为点云 shader 使用的世界半径尺度。
     const float radius_scale = math::length(math::to_scale(object_to_world)) * 0.577350269f;
-    // 新第 144 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+    // 新第 144 行：用当前视图的真实投影类型决定是否运行透视专用补偿。
     const bool is_perspective = state.rv3d != nullptr && state.rv3d->is_persp;
-    // 新第 145 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+    // 新第 145 行：按点数分配临时世界锚点数组，循环中每个点独立填写。
     Array<float3> anchors(positions.size());
     // 新第 146 行：逐个处理集合元素；上方专题说明循环对象与成本。
     for (const int i : positions.index_range()) {
-      // 新第 147 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+      // 新第 147 行：将第 i 个点由对象本地变到世界空间。
       const float3 center = math::transform_point(object_to_world, positions[i]);
       // 新第 148 行：透视从点指向相机位置；正交使用统一观察方向。
       const float3 to_camera = is_perspective ? state.camera_position - center :
-                                                // 新第 149 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                                                // 新第 149 行：正交视图所有视线平行，使用本帧统一观察方向。
                                                 state.camera_forward;
       // 新第 150 行：透视从点指向相机位置；正交使用统一观察方向。
       const float distance = math::length(to_camera);
@@ -278,15 +266,12 @@
       const float3 direction = distance > 1.0e-20f ? to_camera / distance : state.camera_forward;
       // 新第 152 行：把对象三个轴的缩放折合为点云 shader 使用的世界半径尺度。
       anchors[i] = center + direction * (std::max(radii[i], 0.0f) * radius_scale);
-    // 新第 153 行：控制本段 C++ 作用域或调用闭合；变量生命周期和条件范围由这些括号决定。
     }
     // 新第 154 行：复用统一的属性格式化入口；额外传入是否做遮挡测试或已调整的锚点数组。
     add_values_to_text_cache(
         // 新第 155 行：锚点已在世界空间，传单位矩阵避免公共函数重复应用对象变换。
         state.dt, attribute.varray, anchors.as_span(), float4x4::identity(), true);
-  // 新第 156 行：控制本段 C++ 作用域或调用闭合；变量生命周期和条件范围由这些括号决定。
   }
-// 新第 157 行：空行用于隔开两个逻辑步骤，使下一段条件或函数更容易识别。
 
   void add_attributes_to_text_cache(DRWTextStore *dt,
                                     bke::AttributeAccessor attribute_accessor,
@@ -392,15 +377,15 @@
       });
       // 旧第 171 行已替换：复用统一的属性格式化入口；额外传入是否做遮挡测试或已调整的锚点数组。
       // 原代码：add_values_to_text_cache(
-          // 旧第 172 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
+          // 旧第 172 行已替换：网格角域已经计算好的位置数组，以不拥有内存的只读 Span 传入。
           // 原代码：state.dt, attribute.varray, corner_positions.as_span(), object_to_world);
       // 新第 222 行：复用统一的属性格式化入口；额外传入是否做遮挡测试或已调整的锚点数组。
       add_values_to_text_cache(state.dt,
-                               // 新第 223 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                               // 新第 223 行：Viewer 的虚拟值数组，与下方位置逐下标配对。
                                attribute.varray,
-                               // 新第 224 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                               // 新第 224 行：网格角域已经计算好的位置数组，以不拥有内存的只读 Span 传入。
                                corner_positions.as_span(),
-                               // 新第 225 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                               // 新第 225 行：传入本地到世界矩阵，最终用于实例锚点的世界变换。
                                object_to_world,
                                // 新第 226 行：使用组件级遮挡开关，决定是否调整锚点或给文字附加测试标志。
                                occlusion_test_);
@@ -415,12 +400,12 @@
     }
   }
 
-  // 旧第 179 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
+  // 旧第 179 行已替换：调用实例域专用入口，读取当前实例值并准备盒出口锚点。
   // 原代码：void add_instance_attributes_to_text_cache(DRWTextStore *dt,
-  // 新第 234 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+  // 新第 234 行：调用实例域专用入口，读取当前实例值并准备盒出口锚点。
   void add_instance_attributes_to_text_cache(const State &state,
                                              bke::AttributeAccessor attribute_accessor,
-                                             // 新第 236 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                                             // 新第 236 行：输入正在预览的实例对象，以查询它自己的本地包围盒。
                                              const Object &object,
                                              const float4x4 &object_to_world,
                                              int instance_index)
@@ -473,13 +458,11 @@
     // 原代码：add_values_to_text_cache(dt, attribute, {float3(0, 0, 0)}, object_to_world);
     // 新第 245 行：实例文字本地锚点；初始在原点，条件满足时移向包围盒朝相机的出口。
     float3 local_anchor(0.0f);
-    // 新第 246 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+    // 新第 246 行：用当前视图的真实投影类型决定是否运行透视专用补偿。
     const bool is_perspective = state.rv3d != nullptr && state.rv3d->is_persp;
     // 新第 247 行：使用组件级遮挡开关，决定是否调整锚点或给文字附加测试标志。
     if (occlusion_test_) {
-      // 新第 248 行：实例原点可能位于自身内部，盒出口是轻量的前表面近似。
       /* The instance origin is often behind its own geometry. Move the depth-test anchor along
-       // 新第 249 行：实例原点可能位于自身内部，盒出口是轻量的前表面近似。
        * the view ray to the front of its local bounds; its screen position stays the same. */
       // 新第 250 行：查询实例对象的本地 AABB；结果可能不存在，需先检查 optional。
       const std::optional<Bounds<float3>> bounds = BKE_object_boundbox_get(&object);
@@ -487,21 +470,18 @@
       if (bounds && bounds->contains(local_anchor) &&
           // 新第 252 行：排除不可可靠求逆的退化对象矩阵。
           math::abs(math::determinant(object_to_world)) > 1.0e-20f)
-      // 新第 253 行：控制本段 C++ 作用域或调用闭合；变量生命周期和条件范围由这些括号决定。
       {
         // 新第 254 行：对象矩阵求逆，把朝相机的射线方向转换回包围盒所在的本地空间。
         const float4x4 world_to_object = math::invert(object_to_world);
-        // 新第 255 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+        // 新第 255 行：提取实例本地原点的世界位置，作为朝相机方向的起点。
         const float3 world_center = object_to_world.location();
         // 新第 256 行：透视从点指向相机位置；正交使用统一观察方向。
         const float3 toward_camera = is_perspective ? state.camera_position - world_center :
-                                                      // 新第 257 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                                                      // 新第 257 行：正交视图所有视线平行，使用本帧统一观察方向。
                                                       state.camera_forward;
         // 新第 258 行：透视从点指向相机位置；正交使用统一观察方向。
         const float3 local_direction = math::transform_direction(world_to_object, toward_camera);
-        // 新第 259 行：保留源码说明：Start inside the bounds and use the exit toward the camera. In perspective,；相邻代码的中文推导见专题章节。
         /* Start inside the bounds and use the exit toward the camera. In perspective,
-         // 新第 260 行：透视射线保留原点到相机的完整向量，因此参数 1 对应相机。
          * the unnormalized direction places the camera at t = 1. */
         // 新第 261 行：射线出口参数；透视方向未归一化，t=1 对应相机位置。
         float exit_t;
@@ -513,15 +493,11 @@
                 local_anchor, local_direction, bounds->min, bounds->max, nullptr, &exit_t) &&
             // 新第 265 行：射线出口参数；透视方向未归一化，t=1 对应相机位置。
             exit_t > 0.0f && (!is_perspective || exit_t < 1.0f))
-        // 新第 266 行：控制本段 C++ 作用域或调用闭合；变量生命周期和条件范围由这些括号决定。
         {
           // 新第 267 行：射线出口参数；透视方向未归一化，t=1 对应相机位置。
           local_anchor += local_direction * exit_t;
-        // 新第 268 行：控制本段 C++ 作用域或调用闭合；变量生命周期和条件范围由这些括号决定。
         }
-      // 新第 269 行：控制本段 C++ 作用域或调用闭合；变量生命周期和条件范围由这些括号决定。
       }
-    // 新第 270 行：控制本段 C++ 作用域或调用闭合；变量生命周期和条件范围由这些括号决定。
     }
     // 新第 271 行：复用统一的属性格式化入口；额外传入是否做遮挡测试或已调整的锚点数组。
     add_values_to_text_cache(
@@ -532,16 +508,16 @@
   static void add_text_to_cache(DRWTextStore *dt,
                                 const float3 &position,
                                 const StringRef text,
-                                // 旧第 195 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
+                                // 旧第 195 行已替换：传入主题颜色，不改变锚点或深度判断。
                                 // 原代码：const uchar4 &color)
-                                // 新第 278 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                                // 新第 278 行：传入主题颜色，不改变锚点或深度判断。
                                 const uchar4 &color,
                                 // 新第 279 行：将每条文字的坐标空间与遮挡要求保存在位标志里。
                                 const short flag)
   {
     // 旧第 197 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
     // 原代码：DRW_text_cache_add(dt,
-                       // 旧第 198 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
+                       // 旧第 198 行已替换：多行值共用同一个三维锚点，二维布局偏移在下一层单独计算。
                        // 原代码：position,
                        // 旧第 199 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
                        // 原代码：text.data(),
@@ -559,16 +535,16 @@
                        // 原代码：true,
                        // 旧第 206 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
                        // 原代码：true);
-    // 新第 281 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+    // 新第 281 行：把锚点、字符串、标志、颜色与布局参数登记到通用文字缓存。
     DRW_text_cache_add(dt, position, text.data(), text.size(), 0, 0, flag, color, true, true);
   }
 
   static void add_lines_to_cache(DRWTextStore *dt,
                                  const float3 &position,
                                  const Span<StringRef> lines,
-                                 // 旧第 212 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
+                                 // 旧第 212 行已替换：传入主题颜色，不改变锚点或深度判断。
                                  // 原代码：const uchar4 &color)
-                                 // 新第 287 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                                 // 新第 287 行：传入主题颜色，不改变锚点或深度判断。
                                  const uchar4 &color,
                                  // 新第 288 行：将每条文字的坐标空间与遮挡要求保存在位标志里。
                                  const short flag)
@@ -659,7 +635,7 @@
                          (center_offset - i) * line_height,
                          // 旧第 225 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
                          // 原代码：DRW_TEXT_CACHE_GLOBALSPACE,
-                         // 新第 301 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                         // 新第 301 行：继续传入文字位标志，保留是否进行深度测试的选择。
                          flag,
                          color,
                          true,
@@ -691,25 +667,22 @@
   void add_values_to_text_cache(DRWTextStore *dt,
                                 const GVArray &values,
                                 const Span<float3> positions,
-                                // 旧第 235 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
+                                // 旧第 235 行已替换：输入本地到世界的变换；点云已转世界时改传单位矩阵。
                                 // 原代码：const float4x4 &object_to_world)
-                                // 新第 311 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                                // 新第 311 行：输入本地到世界的变换；点云已转世界时改传单位矩阵。
                                 const float4x4 &object_to_world,
-                                // 新第 312 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                                // 新第 312 行：调用者指定是否给生成的文字附加遮挡测试位。
                                 const bool occlusion_test = false)
   {
     uchar col[4];
     ui::theme::get_color_4ubv(TH_TEXT_HI, col);
 
-    // 新第 317 行：保留源码说明：The flag is picked up by #DRW_text_cache_draw, which skips anchors that the；相邻代码的中文推导见专题章节。
     /* The flag is picked up by #DRW_text_cache_draw, which skips anchors that the scene
-     // 新第 318 行：保留源码说明：depth buffer reports as occluded.；相邻代码的中文推导见专题章节。
      * depth buffer reports as occluded. */
     // 新第 319 行：将世界坐标位与可选的遮挡位合成，传给所有类型的属性文字。
     const short text_flags = DRW_TEXT_CACHE_GLOBALSPACE |
                              // 新第 320 行：在文字标志中增加或检查遮挡测试位；只有带此位的缓存条目需要深度比较。
                              (occlusion_test ? DRW_TEXT_CACHE_OCCLUSION_TEST : 0);
-// 新第 321 行：空行用于隔开两个逻辑步骤，使下一段条件或函数更容易识别。
 
     bke::attribute_math::to_static_type(values.type(), [&]<typename T>() {
       const VArray<T> &values_typed = values.typed<T>();
@@ -782,11 +755,11 @@
               // 原代码：dt, position, {StringRef(x_str, x_str_len), StringRef(y_str, y_str_len)}, col);
           // 新第 347 行：把这一类型的属性值登记成一行或多行文字，并把共同的标志传到底层缓存。
           add_lines_to_cache(dt,
-                             // 新第 348 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                             // 新第 348 行：多行值共用同一个三维锚点，二维布局偏移在下一层单独计算。
                              position,
-                             // 新第 349 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                             // 新第 349 行：把已格式化的各分量组合成多行字符串视图。
                              {StringRef(x_str, x_str_len), StringRef(y_str, y_str_len)},
-                             // 新第 350 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                             // 新第 350 行：继续传入当前主题文字颜色；它不参与遮挡比较。
                              col,
                              // 新第 351 行：将世界坐标位与可选的遮挡位合成，传给所有类型的属性文字。
                              text_flags);
@@ -809,11 +782,11 @@
               // 原代码：dt, position, {StringRef(x_str, x_str_len), StringRef(y_str, y_str_len)}, col);
           // 新第 362 行：把这一类型的属性值登记成一行或多行文字，并把共同的标志传到底层缓存。
           add_lines_to_cache(dt,
-                             // 新第 363 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                             // 新第 363 行：多行值共用同一个三维锚点，二维布局偏移在下一层单独计算。
                              position,
-                             // 新第 364 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                             // 新第 364 行：把已格式化的各分量组合成多行字符串视图。
                              {StringRef(x_str, x_str_len), StringRef(y_str, y_str_len)},
-                             // 新第 365 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                             // 新第 365 行：继续传入当前主题文字颜色；它不参与遮挡比较。
                              col,
                              // 新第 366 行：将世界坐标位与可选的遮挡位合成，传给所有类型的属性文字。
                              text_flags);
@@ -891,7 +864,7 @@
                               StringRef(z_str, z_str_len)},
                              // 旧第 290 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
                              // 原代码：col);
-                             // 新第 378 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                             // 新第 378 行：继续传入当前主题文字颜色；它不参与遮挡比较。
                              col,
                              // 新第 379 行：将世界坐标位与可选的遮挡位合成，传给所有类型的属性文字。
                              text_flags);
@@ -928,7 +901,7 @@
                               StringRef(a_str, a_str_len)},
                              // 旧第 305 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
                              // 原代码：col);
-                             // 新第 394 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                             // 新第 394 行：继续传入当前主题文字颜色；它不参与遮挡比较。
                              col,
                              // 新第 395 行：将世界坐标位与可选的遮挡位合成，传给所有类型的属性文字。
                              text_flags);
@@ -965,7 +938,7 @@
                               StringRef(a_str, a_str_len)},
                              // 旧第 319 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
                              // 原代码：col);
-                             // 新第 409 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                             // 新第 409 行：继续传入当前主题文字颜色；它不参与遮挡比较。
                              col,
                              // 新第 410 行：将世界坐标位与可选的遮挡位合成，传给所有类型的属性文字。
                              text_flags);
@@ -1002,7 +975,7 @@
                               StringRef(z_str, z_str_len)},
                              // 旧第 333 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
                              // 原代码：col);
-                             // 新第 424 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                             // 新第 424 行：继续传入当前主题文字颜色；它不参与遮挡比较。
                              col,
                              // 新第 425 行：将世界坐标位与可选的遮挡位合成，传给所有类型的属性文字。
                              text_flags);
@@ -1039,7 +1012,7 @@
                               StringRef(scale_str, scale_str_len)},
                              // 旧第 358 行已替换：旧实现中的这一行被新的参数传播、命名或分支逻辑替换；对照同块新增行和专题解释。
                              // 原代码：col);
-                             // 新第 450 行：属于紧邻函数的参数、数据准备或语句续行；结合展开的上下文与专题章节阅读。
+                             // 新第 450 行：继续传入当前主题文字颜色；它不参与遮挡比较。
                              col,
                              // 新第 451 行：将世界坐标位与可选的遮挡位合成，传给所有类型的属性文字。
                              text_flags);

@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>perspmat 到底是什么 · view3d_project.cc:120~151 深度数学解析</title>
+<style>
+  /* ===================== 设计令牌 ===================== */
+  :root {
+    --bg:           #f7f8fa;
+    --bg-elev:      #ffffff;
+    --fg:           #14181f;
+    --fg-soft:      #3d4756;
+    --muted:        #7a8494;
+    --line:         #e4e8ef;
+    --line-strong:  #cfd6e2;
+
+    --brand:        #4f6ef7;
+    --brand-2:      #7c4ff7;
+    --brand-soft:   #eef1fe;
+    --brand-ring:   rgba(79,110,247,.18);
+
+    --ok:           #10a35a;
+    --ok-soft:      #e8f8ef;
+    --warn:         #d68910;
+    --warn-soft:    #fdf6e3;
+    --danger:       #dc3545;
+    --danger-soft:  #fdeced;
+
+    --code-bg:      #1a1f2b;
+    --code-fg:      #d9e0ee;
+    --code-line:    #2b3345;
+    --code-comment: #7d8aa3;
+    --code-key:     #c792ea;
+    --code-str:     #a5e075;
+
+    --radius:       14px;
+    --shadow-sm:    0 1px 2px rgba(16,24,40,.05);
+    --shadow:       0 4px 16px -4px rgba(16,24,40,.10), 0 1px 3px rgba(16,24,40,.05);
+
+    --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+            "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas,
+            "Liberation Mono", monospace;
+    --serif: "Iowan Old Style", "Source Serif 4", Georgia, "Songti SC", "SimSun", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:          #0e1117;
+      --bg-elev:     #161b24;
+      --fg:          #e8ecf4;
+      --fg-soft:     #c2cad8;
+      --muted:       #8b95a7;
+      --line:        #232b38;
+      --line-strong: #333d4e;
+
+      --brand:       #7d93ff;
+      --brand-2:     #a37dff;
+      --brand-soft:  #171e33;
+      --brand-ring:  rgba(125,147,255,.22);
+
+      --ok:          #3ddc84;
+      --ok-soft:     #10241a;
+      --warn:        #f0b429;
+      --warn-soft:   #241f10;
+      --danger:      #ff6b7a;
+      --danger-soft: #2a1519;
+
+      --code-bg:     #11161f;
+      --code-line:   #222b3a;
+      --shadow-sm:   0 1px 2px rgba(0,0,0,.4);
+      --shadow:      0 4px 16px -4px rgba(0,0,0,.5);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 17.5px;
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ===================== 阅读进度条 ===================== */
+  #progress {
+    position: fixed; inset: 0 auto auto 0;
+    height: 3px; width: 0;
+    background: linear-gradient(90deg, var(--brand), var(--brand-2));
+    z-index: 100;
+    transition: width .1s linear;
+    box-shadow: 0 0 12px var(--brand-ring);
+  }
+
+  /* ===================== 封面 ===================== */
+  .hero {
+    position: relative; overflow: hidden;
+    background:
+      radial-gradient(1000px 420px at 12% -20%, var(--brand-ring), transparent 62%),
+      radial-gradient(760px 380px at 92% 0%, rgba(124,79,247,.14), transparent 60%),
+      var(--bg-elev);
+    border-bottom: 1px solid var(--line);
+    padding: 76px 0 58px;
+  }
+  .hero::after {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 34px 34px;
+    -webkit-mask-image: radial-gradient(620px 300px at 20% 0%, #000 0%, transparent 78%);
+    mask-image: radial-gradient(620px 300px at 20% 0%, #000 0%, transparent 78%);
+    opacity: .5; pointer-events: none;
+  }
+  .hero-inner { position: relative; width: 90%; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em;
+    text-transform: uppercase; font-weight: 600;
+    color: var(--brand); background: var(--brand-soft);
+    border: 1px solid var(--brand-ring);
+    padding: 5px 12px; border-radius: 999px; margin-bottom: 22px;
+  }
+  .eyebrow .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring);
+  }
+  .hero h1 {
+    font-size: clamp(30px, 4.4vw, 46px);
+    line-height: 1.16; letter-spacing: -.028em; font-weight: 800;
+    margin: 0 0 16px;
+    background: linear-gradient(120deg, var(--fg) 22%, var(--brand) 76%, var(--brand-2));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+  .hero h1 code {
+    font-family: var(--mono); font-weight: 700;
+    font-size: .94em; background: none; border: 0; padding: 0;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+  .hero .lede {
+    font-size: 19px; color: var(--fg-soft);
+    max-width: 70ch; margin: 0 0 28px;
+  }
+  .hero .lede b { color: var(--fg); font-weight: 650; }
+  .hero .lede .m { font-family: var(--serif); font-style: italic; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 12px; color: var(--fg-soft);
+    background: var(--bg-elev); border: 1px solid var(--line);
+    padding: 6px 11px; border-radius: 8px; box-shadow: var(--shadow-sm);
+  }
+  .chip .k { color: var(--muted); }
+  .chip.hl { border-color: var(--brand-ring); background: var(--brand-soft); color: var(--brand); }
+
+  /* ===================== 布局 ===================== */
+  /* 内容区宽 90%，两侧各留 5%；可读性由段落的 ch 上限约束 */
+  .wrap {
+    display: grid;
+    grid-template-columns: 268px minmax(0, 1fr);
+    gap: clamp(40px, 4vw, 72px);
+    width: 90%; margin: 0 auto;
+  }
+
+  /* ===================== 侧栏目录 ===================== */
+  nav.toc {
+    position: sticky; top: 0; align-self: start;
+    max-height: 100vh; overflow-y: auto;
+    padding: 40px 0 60px; scrollbar-width: thin;
+  }
+  nav.toc::-webkit-scrollbar { width: 5px; }
+  nav.toc::-webkit-scrollbar-track { background: transparent; }
+  nav.toc::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+  nav.toc:hover::-webkit-scrollbar-thumb { background: var(--line-strong); }
+  nav.toc .toc-title {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted);
+    font-weight: 700; margin: 0 0 14px; padding-left: 12px;
+  }
+  nav.toc a {
+    display: block; font-size: 13.5px; line-height: 1.5;
+    color: var(--muted); text-decoration: none;
+    padding: 6px 10px 6px 14px;
+    border-left: 2px solid transparent; border-radius: 0 7px 7px 0;
+    transition: color .14s, background .14s, border-color .14s;
+  }
+  nav.toc a:hover { color: var(--fg); background: var(--brand-soft); }
+  nav.toc a.lv1 { color: var(--fg-soft); font-weight: 600; margin-top: 6px; }
+  nav.toc a.lv2 { padding-left: 26px; font-size: 12.5px; }
+  nav.toc a.active {
+    color: var(--brand); border-left-color: var(--brand);
+    background: var(--brand-soft); font-weight: 650;
+  }
+
+  /* ===================== 正文 ===================== */
+  /* 段落自身有 68ch 上限，容器不再设宽度上限，避免宽屏出现右侧空白带 */
+  main { min-width: 0; padding: 44px 0 100px; }
+
+  h2 {
+    font-size: 29px; font-weight: 750; letter-spacing: -.02em; line-height: 1.3;
+    margin: 68px 0 20px; padding-top: 28px;
+    border-top: 1px solid var(--line);
+    display: flex; align-items: baseline; gap: 13px;
+    scroll-margin-top: 20px;
+  }
+  h2:first-of-type { margin-top: 8px; border-top: 0; padding-top: 0; }
+  h2 .n {
+    font-family: var(--mono); font-size: 14px; font-weight: 700;
+    color: var(--brand); background: var(--brand-soft);
+    border: 1px solid var(--brand-ring); border-radius: 7px;
+    padding: 3px 10px; flex: none; letter-spacing: 0;
+  }
+  h3 {
+    font-size: 20px; font-weight: 680; letter-spacing: -.012em;
+    margin: 40px 0 14px; color: var(--fg); scroll-margin-top: 20px;
+  }
+  h3::before {
+    content: ""; display: inline-block;
+    width: 3px; height: 17px; border-radius: 2px;
+    background: linear-gradient(var(--brand), var(--brand-2));
+    margin-right: 11px; vertical-align: -2px;
+  }
+  p { margin: 0 0 17px; color: var(--fg-soft); max-width: 80ch; }
+  p strong, li strong { color: var(--fg); font-weight: 650; }
+  a { color: var(--brand); text-underline-offset: 3px; }
+  sub { font-size: .74em; }
+
+  ul, ol { margin: 0 0 18px; padding-left: 24px; max-width: 80ch; }
+  li { margin: 0 0 8px; color: var(--fg-soft); }
+  li::marker { color: var(--muted); }
+
+  code {
+    font-family: var(--mono); font-size: .86em;
+    background: var(--brand-soft); color: var(--brand);
+    padding: .14em .42em; border-radius: 5px;
+    border: 1px solid var(--brand-ring); word-break: break-word;
+  }
+
+  /* ===================== 代码块 ===================== */
+  .code {
+    margin: 0 0 20px; border-radius: var(--radius); overflow: hidden;
+    border: 1px solid var(--code-line); background: var(--code-bg);
+    box-shadow: var(--shadow);
+  }
+  .code .bar {
+    display: flex; align-items: center; gap: 8px; padding: 9px 14px;
+    background: rgba(255,255,255,.035);
+    border-bottom: 1px solid var(--code-line);
+  }
+  .code .bar .lights { display: flex; gap: 6px; margin-right: 4px; flex: none; }
+  .code .bar .lights i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+  .code .bar .lights i:nth-child(1) { background: #ff5f57; }
+  .code .bar .lights i:nth-child(2) { background: #febc2e; }
+  .code .bar .lights i:nth-child(3) { background: #28c840; }
+  .code .bar .path {
+    font-family: var(--mono); font-size: 12.5px; color: #8b98b0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .code .bar .path b { color: #c9d4e8; font-weight: 600; }
+  .code pre {
+    margin: 0; padding: 18px 20px; overflow-x: auto;
+    font-family: var(--mono); font-size: 14.5px; line-height: 1.7;
+    color: var(--code-fg); tab-size: 4;
+  }
+  .code pre::-webkit-scrollbar { height: 9px; }
+  .code pre::-webkit-scrollbar-thumb { background: #39445c; border-radius: 5px; }
+  .code code { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
+  .c { color: var(--code-comment); font-style: italic; }
+  .k { color: var(--code-key); }
+  .s { color: var(--code-str); }
+
+  /* ===================== 提示卡 ===================== */
+  .note {
+    position: relative; margin: 0 0 20px;
+    padding: 15px 18px 15px 50px;
+    border-radius: var(--radius);
+    background: var(--brand-soft);
+    border: 1px solid var(--brand-ring);
+    border-left: 3px solid var(--brand);
+  }
+  .note .ico {
+    position: absolute; left: 16px; top: 15px;
+    width: 22px; height: 22px; border-radius: 7px;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 800;
+    background: var(--brand); color: #fff;
+  }
+  .note .t { font-weight: 700; color: var(--fg); margin: 0 0 6px; font-size: 16.5px; }
+  .note p { margin: 0; font-size: 16px; }
+  .note p + p { margin-top: 9px; }
+  .note.warn { background: var(--warn-soft); border-color: rgba(214,137,16,.3); border-left-color: var(--warn); }
+  .note.warn .ico { background: var(--warn); }
+  .note.ok { background: var(--ok-soft); border-color: rgba(16,163,90,.28); border-left-color: var(--ok); }
+  .note.ok .ico { background: var(--ok); }
+  .note.bad { background: var(--danger-soft); border-color: rgba(220,53,69,.28); border-left-color: var(--danger); }
+  .note.bad .ico { background: var(--danger); }
+
+  /* ===================== 表格 ===================== */
+  .tbl {
+    margin: 0 0 20px; border: 1px solid var(--line);
+    border-radius: var(--radius); overflow: hidden;
+    background: var(--bg-elev); box-shadow: var(--shadow-sm);
+  }
+  .tbl .scroll { overflow-x: auto; }
+  .tbl table { border-collapse: collapse; width: 100%; font-size: 16px; }
+  .tbl th, .tbl td {
+    padding: 12px 16px; text-align: left; vertical-align: top;
+    border-bottom: 1px solid var(--line);
+  }
+  .tbl thead th {
+    background: var(--bg);
+    font-family: var(--mono); font-size: 12px; letter-spacing: .07em;
+    text-transform: uppercase; font-weight: 700; color: var(--muted);
+    white-space: nowrap;
+  }
+  .tbl tbody tr:last-child td { border-bottom: 0; }
+  .tbl tbody tr:hover { background: var(--brand-soft); }
+  .tbl td.num, .tbl th.num {
+    text-align: right; font-family: var(--mono); font-size: 15px;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .tbl tr.hl td { background: var(--warn-soft); font-weight: 650; color: var(--fg); }
+
+  .pill {
+    display: inline-block; font-family: var(--mono);
+    font-size: 12.5px; font-weight: 600;
+    padding: 2px 10px; border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: var(--bg); color: var(--muted); white-space: nowrap;
+  }
+  .pill.ok  { color: var(--ok);     border-color: rgba(16,163,90,.35);  background: var(--ok-soft); }
+  .pill.bad { color: var(--danger); border-color: rgba(220,53,69,.32);  background: var(--danger-soft); }
+
+  /* ===================== 数学排版 ===================== */
+  .m { font-family: var(--serif); font-style: italic; }
+  .m .rm, .m .up { font-style: normal; }
+  .frac {
+    display: inline-block; vertical-align: middle; text-align: center;
+    margin: 0 .18em; line-height: 1.25; font-size: .93em;
+  }
+  .frac > span { display: block; padding: 0 .3em; }
+  .frac > span:first-child { border-bottom: 1px solid currentColor; }
+
+  .eq {
+    margin: 24px 0; padding: 20px 18px; text-align: center;
+    font-size: 19.5px; background: var(--bg-elev);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    overflow-x: auto; box-shadow: var(--shadow-sm);
+  }
+
+  /* 矩阵：flex 包裹 + 两侧括号（合法嵌套：div > span/table） */
+  .matrix { display: inline-flex; align-items: stretch; vertical-align: middle; margin: 0 .2em; }
+  .matrix .br { width: 9px; border: 2px solid currentColor; }
+  .matrix .br.l { border-right: 0; border-radius: 5px 0 0 5px; }
+  .matrix .br.r { border-left: 0; border-radius: 0 5px 5px 0; }
+  .matrix table { border-collapse: collapse; width: auto; }
+  .matrix td {
+    border: 0; padding: 6px 15px; text-align: center;
+    font-size: 17.5px; font-style: italic; color: var(--fg);
+  }
+
+  /* ===================== 图 ===================== */
+  figure {
+    margin: 0 0 22px; border: 1px solid var(--line);
+    border-radius: var(--radius); background: var(--bg-elev);
+    overflow: hidden; box-shadow: var(--shadow-sm);
+  }
+  figure .fig-head {
+    padding: 11px 18px; border-bottom: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--muted); font-weight: 600;
+  }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption { padding: 13px 18px 15px; font-size: 15px; color: var(--muted); }
+  figcaption b { color: var(--fg-soft); }
+
+  .g-grid  { stroke: var(--line); stroke-width: 1; }
+  .g-zero  { stroke: var(--line-strong); stroke-width: 1.4; }
+  .g-axis  { stroke: var(--muted); stroke-width: 1.3; }
+  .g-line  { fill: none; stroke: var(--brand); stroke-width: 2.6;
+             stroke-linejoin: round; stroke-linecap: round; }
+  .g-area  { fill: url(#grad); }
+  .g-guide { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 4; opacity: .7; }
+  .g-lbl   { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+  .g-anno  { font-family: var(--mono); font-size: 11px;
+             fill: var(--fg-soft); font-weight: 600; }
+  .g-pt    { fill: var(--bg-elev); stroke: var(--brand); stroke-width: 2.4; }
+
+  /* ===================== 变换链 ===================== */
+  .chain {
+    margin: 0 0 20px; padding: 22px 24px;
+    border-radius: var(--radius); background: var(--bg-elev);
+    border: 1px solid var(--line); box-shadow: var(--shadow-sm);
+    font-family: var(--mono); font-size: 14.5px; line-height: 1.9; overflow-x: auto;
+  }
+  .chain .row { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+  .chain .box {
+    padding: 3px 11px; border-radius: 7px;
+    background: var(--brand-soft); color: var(--brand);
+    border: 1px solid var(--brand-ring); font-weight: 600;
+  }
+  .chain .arrow { color: var(--muted); }
+  .chain .lbl { color: var(--muted); font-size: 12px; }
+  .chain .gap { height: 9px; }
+
+  footer {
+    margin-top: 68px; padding-top: 22px;
+    border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 13.5px;
+  }
+  footer code { font-size: .9em; }
+  footer p { color: var(--muted); }
+
+  /* ===================== 响应式 ===================== */
+  @media (max-width: 980px) {
+    .wrap { grid-template-columns: 1fr; gap: 0; }
+    nav.toc { display: none; }
+    main { padding-top: 34px; }
+    .hero { padding: 52px 20px 42px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <span class="eyebrow"><span class="dot"></span>Blender · View3D · 投影数学</span>
+    <h1><code>perspmat</code> 到底是什么</h1>
+    <p class="lede">
+      <b>它不是 GL 状态机里那个单独的 <code>GL_PROJECTION</code> 矩阵</b>，而是
+      <span class="m">P</span> · <span class="m">V</span> ——
+      一次乘法从世界空间直达裁剪空间的预合成 VP 矩阵。本文逐行拆解
+      <code>view3d_project.cc:120~151</code>，并补齐它背后的射影几何与针孔相机模型。
+    </p>
+    <div class="chips">
+      <span class="chip"><span class="k">file</span> view3d_project.cc</span>
+      <span class="chip"><span class="k">lines</span> 120 – 151</span>
+      <span class="chip hl"><span class="k">核心</span> 齐次坐标 · 透视除法 · 交叉相乘裁剪</span>
+      <span class="chip"><span class="k">依赖</span> gpu_matrix.cc · math_matrix_c.cc</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<nav class="toc">
+  <p class="toc-title">目录</p>
+  <a class="lv1" href="#s0">0 · 一句话回答</a>
+  <a class="lv1" href="#s1">1 · 证据链</a>
+  <a class="lv2" href="#s11">1.1 合成点</a>
+  <a class="lv2" href="#s12">1.2 DNA 注释</a>
+  <a class="lv2" href="#s13">1.3 完整变换链</a>
+  <a class="lv1" href="#s2">2 · 为什么"合成"免费</a>
+  <a class="lv2" href="#s21">2.1 结合律</a>
+  <a class="lv2" href="#s22">2.2 列主序存储</a>
+  <a class="lv2" href="#s23">2.3 乘法约定</a>
+  <a class="lv2" href="#s24">2.4 别名安全</a>
+  <a class="lv1" href="#s3">3 · 齐次坐标</a>
+  <a class="lv2" href="#s31">3.1 齐次嵌入</a>
+  <a class="lv2" href="#s32">3.2 射影等价</a>
+  <a class="lv2" href="#s33">3.3 w=0 无穷远点</a>
+  <a class="lv1" href="#s4">4 · 为什么 w = −z_view</a>
+  <a class="lv2" href="#s41">4.1 相似三角形</a>
+  <a class="lv2" href="#s42">4.2 frustum 展开</a>
+  <a class="lv2" href="#s43">4.3 正交对比</a>
+  <a class="lv1" href="#s5">5 · 数值演示</a>
+  <a class="lv1" href="#s6">6 · fabsf 改了什么</a>
+  <a class="lv1" href="#s7">7 · 交叉相乘比较</a>
+  <a class="lv2" href="#s74">7.4 先判后除</a>
+  <a class="lv2" href="#s75">7.5 数值表</a>
+  <a class="lv2" href="#s76">7.6 深度精度</a>
+  <a class="lv1" href="#s8">8 · 正交退化</a>
+  <a class="lv1" href="#s9">9 · CLIP_CONTENT 坑</a>
+  <a class="lv1" href="#s10">10 · 总结</a>
+  <a class="lv1" href="#s11t">附 · 源码索引</a>
+</nav>
+
+<main>
+
+<h2 id="s0"><span class="n">00</span>一句话回答</h2>
+
+<p><code>perspmat</code> <strong>不是</strong> GL 状态机里那个单独的 <code>GL_PROJECTION</code> 矩阵，而是</p>
+
+<div class="eq m">persmat = winmat · viewmat = P · V</div>
+
+<p>也就是图形学里常说的 <strong>VP 矩阵（View-Projection）</strong>：一次矩阵乘法直接把<strong>世界空间</strong>坐标送到<strong>裁剪空间</strong>。</p>
+
+<p>所谓"<strong>已合成</strong>"，是指本该在 GPU 顶点着色器里分两步完成的</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path">顶点着色器 · 等价的传统写法</span></div>
+<pre><code><span class="k">vec4</span> clip = P * (V * <span class="k">vec4</span>(pos, <span class="s">1.0</span>));</code></pre>
+</div>
+
+<p>被提前乘成一步 <code>(P·V) * vec4(pos, 1.0)</code>，并把结果缓存在 <code>rv3d-&gt;persmat</code> 里。</p>
+
+<div class="note">
+  <span class="ico">i</span>
+  <p class="t">代价与收益</p>
+  <p><strong>代价</strong>：每次视口重绘算一次 4×4 矩阵乘法（<code>view3d_draw.cc:135</code>）。</p>
+  <p><strong>收益</strong>：每次投影少一次 4×4 矩阵乘法 —— 而投影处在极热的循环里（选中拾取、边迭代器、gizmo 绘制，每帧对每个顶点调用）。</p>
+</div>
+
+<h2 id="s1"><span class="n">01</span>证据链：<code>persmat</code> 的来源</h2>
+
+<h3 id="s11">1.1 合成点（每次重绘只做一次）</h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>view3d_draw.cc</b> : 135</span></div>
+<pre><code>mul_m4_m4m4(rv3d-&gt;persmat, rv3d-&gt;winmat, rv3d-&gt;viewmat);
+invert_m4_m4(rv3d-&gt;persinv, rv3d-&gt;persmat);
+invert_m4_m4(rv3d-&gt;viewinv, rv3d-&gt;viewmat);</code></pre>
+</div>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>space_view3d.cc</b> : 132 · 再乘物体矩阵，供物体空间投影使用</span></div>
+<pre><code>mul_m4_m4m4(rv3d-&gt;viewmatob, rv3d-&gt;viewmat, ob-&gt;object_to_world().ptr());
+mul_m4_m4m4(rv3d-&gt;persmatob, rv3d-&gt;persmat, ob-&gt;object_to_world().ptr());</code></pre>
+</div>
+
+<h3 id="s12">1.2 DNA 里的权威注释</h3>
+
+<p><code>makesdna/DNA_view3d_types.h:467-482</code> 对这几个字段的注释写得非常明确：</p>
+
+<div class="tbl"><div class="scroll">
+<table>
+  <thead><tr><th>字段</th><th>DNA 注释</th><th>实际含义</th></tr></thead>
+  <tbody>
+    <tr><td><code>rv3d-&gt;winmat</code></td><td><code>GL_PROJECTION matrix.</code></td><td>只负责 <strong>视图空间 → 裁剪空间</strong>。与相机位置无关，只由 FOV / 正交缩放 / 近远裁剪面决定</td></tr>
+    <tr><td><code>rv3d-&gt;viewmat</code></td><td><code>GL_MODELVIEW matrix.</code></td><td>只负责 <strong>世界空间 → 视图空间</strong>。是相机变换的逆，刚体矩阵（正交且行列式 +1）</td></tr>
+    <tr><td><code>rv3d-&gt;persmat</code></td><td><code>Viewmat*winmat.</code></td><td>= winmat · viewmat，直接从世界空间到裁剪空间，等价于 GLSL 里的 <code>P * V</code></td></tr>
+    <tr><td><code>rv3d-&gt;persinv</code></td><td><code>Inverse of persmat.</code></td><td>逆向：裁剪空间 → 世界空间（射线拾取用）</td></tr>
+    <tr><td><code>rv3d-&gt;persmatob</code></td><td><code>viewmat/persmat multiplied with object matrix</code></td><td>= persmat · M<sub>obj</sub>，等价于 <code>P * V * M</code>，直接从物体局部空间到裁剪空间</td></tr>
+  </tbody>
+</table>
+</div></div>
+
+<h3 id="s13">1.3 完整变换链</h3>
+
+<div class="chain">
+  <div class="row"><span class="box">co</span><span class="lbl">世界空间 / 物体空间</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="arrow">│</span><span class="lbl">├─ viewmat（刚体变换，相机变换的逆）</span></div>
+  <div class="row"><span class="arrow">▼</span></div>
+  <div class="row"><span class="box">视图空间</span><span class="lbl">(x<sub>view</sub>, y<sub>view</sub>, z<sub>view</sub>)</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="arrow">│</span><span class="lbl">├─ winmat（GL_PROJECTION：frustum 或 ortho）</span></div>
+  <div class="row"><span class="arrow">▼</span></div>
+  <div class="row"><span class="box">裁剪空间</span><span class="lbl">(x<sub>c</sub>, y<sub>c</sub>, z<sub>c</sub>, w)</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="arrow">│</span><span class="lbl">├─ 除以 w（透视除法 / perspective divide）</span></div>
+  <div class="row"><span class="arrow">▼</span></div>
+  <div class="row"><span class="box">NDC</span><span class="lbl">∈ [−1, 1]³</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="arrow">│</span><span class="lbl">├─ fx = winx/2 · (1 + x<sub>ndc</sub>)</span></div>
+  <div class="row"><span class="arrow">▼</span></div>
+  <div class="row"><span class="box">窗口像素坐标</span><span class="lbl">(fx, fy)</span></div>
+</div>
+
+<p>在代码里，前三步被折叠成 <strong>第 122 行的唯一一次</strong> <code>mul_m4_v4(perspmat, vec4)</code>。</p>
+
+<h2 id="s2"><span class="n">02</span>为什么"合成"在数学上完全免费</h2>
+
+<h3 id="s21">2.1 结合律</h3>
+
+<p>矩阵乘法满足结合律：</p>
+
+<div class="eq m">(P · V) · v &nbsp;=&nbsp; P · (V · v)</div>
+
+<p>先把 <code>viewmat</code> 和 <code>winmat</code> 乘起来存好，跟每次投影时连乘两次，<strong>结果逐位相同</strong>（浮点误差量级也基本一致）。差别只在<strong>计算次数</strong>：前者是每次重绘 1 次矩阵乘法，后者是每次投影 2 次矩阵-向量乘法。所以预合成是纯粹的<strong>性能优化</strong>，不改变任何语义。</p>
+
+<h3 id="s22">2.2 Blender 的存储约定：<code>m[列][行]</code>，列主序</h3>
+
+<p><code>float mat[4][4]</code> 在内存里是 16 个连续 float，<strong><code>mat[i]</code> 是第 <em>i</em> 列</strong>。这样可以直接喂给 <code>glUniformMatrix4fv(..., GL_FALSE, ...)</code> 而不用转置。所以：</p>
+
+<div class="eq m">mat[c][r] = M<sub>r,c</sub> &nbsp;&nbsp;，&nbsp;&nbsp; mat[3][0..2] = 平移分量</div>
+
+<div class="note warn">
+  <span class="ico">!</span>
+  <p class="t">读 Blender 矩阵代码时，下标顺序和数学教科书是反的</p>
+  <p>这是第一个高频踩坑点。<code>m[2][3]</code> 指的是<strong>第 3 列第 2 行</strong>，也就是数学矩阵的第 3 行第 2 列。</p>
+</div>
+
+<h3 id="s23">2.3 乘法约定：<code>mul_m4_m4m4(R, A, B)</code> 计算 R = A · B</h3>
+
+<p><code>math_matrix_c.cc:226</code> 的注释 <code>R[j][k] = B[j][i] . A[i][k]</code> 用的正是 <code>[列][行]</code> 下标。展开验证第 0 项（<code>math_matrix_c.cc:245</code>）：</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>math_matrix_c.cc</b> : 245</span></div>
+<pre><code>R[0][0] = B[0][0]*A[0][0] + B[0][1]*A[1][0] + B[0][2]*A[2][0] + B[0][3]*A[3][0];</code></pre>
+</div>
+
+<p>换成标准数学下标（把 <code>X[c][r]</code> 记作 X<sub>r,c</sub>）：</p>
+
+<div class="eq m">R<sub>0,0</sub> = B<sub>0,0</sub>A<sub>0,0</sub> + B<sub>1,0</sub>A<sub>0,1</sub> + B<sub>2,0</sub>A<sub>0,2</sub> + B<sub>3,0</sub>A<sub>0,3</sub> = Σ<sub>k</sub> A<sub>0,k</sub>B<sub>k,0</sub> = (A · B)<sub>0,0</sub></div>
+
+<p>所以 <strong><code>mul_m4_m4m4(R, A, B)</code> 得到 R = A · B，语义是"先作用 A，再作用 B"</strong>（对列向量左乘而言）。这就对上了：</p>
+
+<ul>
+  <li><code>mul_m4_m4m4(persmat, winmat, viewmat)</code> → persmat = P · V → 先 viewmat 后 winmat，即<strong>世界 → 视图 → 裁剪</strong>，顺序正确。</li>
+  <li><code>mul_m4_m4m4(persmatob, persmat, object_to_world)</code> → P · V · M，物体空间先经过 M。</li>
+</ul>
+
+<h3 id="s24">2.4 原地乘法的别名安全性</h3>
+
+<p><code>mul_m4_v4(mat, r)</code> 内部是 <code>mul_v4_m4v4(r, mat, r)</code>（<code>math_matrix_c.cc:812</code>），<strong>输入输出是同一块内存</strong>。看实现（<code>math_matrix_c.cc:798-808</code>）：</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>math_matrix_c.cc</b> : 798 – 808</span></div>
+<pre><code><span class="k">void</span> mul_v4_m4v4(<span class="k">float</span> r[4], <span class="k">const float</span> mat[4][4], <span class="k">const float</span> v[4])
+{
+  <span class="k">const float</span> x = v[0];   <span class="c">/* 先读进局部变量 */</span>
+  <span class="k">const float</span> y = v[1];
+  <span class="k">const float</span> z = v[2];
+
+  r[0] = x * mat[0][0] + y * mat[1][0] + z * mat[2][0] + mat[3][0] * v[3];
+  r[1] = x * mat[0][1] + y * mat[1][1] + z * mat[2][1] + mat[3][1] * v[3];
+  r[2] = x * mat[0][2] + y * mat[1][2] + z * mat[2][2] + mat[3][2] * v[3];
+  r[3] = x * mat[0][3] + y * mat[1][3] + z * mat[2][3] + mat[3][3] * v[3];
+}</code></pre>
+</div>
+
+<p>先把 <code>v[0..2]</code> 读进局部变量，写 <code>r[0..2]</code> 时不再依赖原值，<strong>最后才读 <code>v[3]</code></strong> —— 所以别名是安全的。第 122 行正依赖这一点。</p>
+
+<h2 id="s3"><span class="n">03</span>齐次坐标与射影几何</h2>
+
+<p>这是理解 120–135 行<strong>全部数学</strong>的地基。</p>
+
+<h3 id="s31">3.1 仿射点的齐次嵌入</h3>
+
+<p>三维仿射空间 𝔸³ 中的点 (x, y, z) 嵌入射影空间 ℙ³ 时写成 (x, y, z, 1)。这就是 120–121 行在干的事：</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>view3d_project.cc</b> : 120 – 121</span></div>
+<pre><code>copy_v3_v3(vec4, co);
+vec4[3] = 1.0;</code></pre>
+</div>
+
+<p>补上那个 1，是为了让 4×4 矩阵能<strong>同时表达线性变换和平移</strong> —— 纯线性变换只能表达过原点的变换；平移在 𝔸³ 里是仿射而非线性映射，但在 ℙ³ 里它就是一个货真价实的线性映射。</p>
+
+<h3 id="s32">3.2 射影等价与透视除法</h3>
+
+<p>ℙ³ 的元素是<strong>等价类</strong>：任何非零 λ 缩放的四个数代表同一个射影点</p>
+
+<div class="eq m">(x, y, z, w) &nbsp;∼&nbsp; (λx, λy, λz, λw) &nbsp;&nbsp;，&nbsp;&nbsp; λ ≠ 0</div>
+
+<p>为了回到唯一的仿射坐标，约定"归一化到 w = 1"，于是<strong>必须除以 w</strong>：</p>
+
+<div class="eq m">
+(x<sub>c</sub>, y<sub>c</sub>, z<sub>c</sub>, w) &nbsp;⟼&nbsp;
+(<span class="frac"><span>x<sub>c</sub></span><span>w</span></span>,
+ <span class="frac"><span>y<sub>c</sub></span><span>w</span></span>,
+ <span class="frac"><span>z<sub>c</sub></span><span>w</span></span>, 1)
+</div>
+
+<p><strong>这就是"透视除法"（perspective divide）的全部来历</strong> —— 它不是图形学发明的技巧，而是射影几何的定义直接推出来的。第 138–139 行的 <code>* scalar</code>（= 1/w）干的就是这件事。</p>
+
+<h3 id="s33">3.3 w = 0 是无穷远点</h3>
+
+<p>w = 0 的射影点是<strong>无穷远点</strong>：无论 λ 怎么缩放，都无法把 w 变成 1，因此无法映射回仿射空间。这解释了：</p>
+
+<ul>
+  <li>第 125 行 <code>CLIP_ZERO</code> 的存在 —— 必须显式拦截这类点；</li>
+  <li>第 137 行那个兜底 <code>(w != 0.0f) ? (1.0f / w) : 0.0f</code> —— 防止产生 <code>inf</code> / <code>NaN</code> 污染后续计算。</li>
+</ul>
+
+<h2 id="s4"><span class="n">04</span>针孔相机模型：为什么 w = −z<sub>view</sub></h2>
+
+<h3 id="s41">4.1 相似三角形</h3>
+
+<p>真实相机成像的基本关系是<strong>相似三角形</strong>：物体离得越远，成像越小，缩放因子恰为 1/深度。</p>
+
+<div class="eq m">
+x<sub>ndc</sub> ∝ <span class="frac"><span>x<sub>view</sub></span><span>−z<sub>view</sub></span></span>
+&nbsp;&nbsp;,&nbsp;&nbsp;
+y<sub>ndc</sub> ∝ <span class="frac"><span>y<sub>view</sub></span><span>−z<sub>view</sub></span></span>
+</div>
+
+<p>负号是因为 Blender / OpenGL 约定相机朝 −z 方向看，所以相机<strong>前方</strong>的点满足 z<sub>view</sub> &lt; 0，于是 −z<sub>view</sub> &gt; 0 才是正的深度。</p>
+
+<p>要让后续的"除以 w"自动实现这个 1/深度，就必须让 w 正比于深度。</p>
+
+<h3 id="s42">4.2 frustum 矩阵展开</h3>
+
+<p>看 <code>gpu/intern/gpu_matrix.cc:309-333</code> 的 <code>mat4_frustum_set</code>：</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>gpu_matrix.cc</b> : 312 – 330</span></div>
+<pre><code>m[0][0] = 2.0f * near / (right - left);
+m[1][1] = 2.0f * near / (top - bottom);
+m[2][2] = -(far + near) / (far - near);
+m[3][2] = -2.0f * far * near / (far - near);
+m[2][3] = -1.0f;   <span class="c">/* 存储下标 [列][行] = 数学上的第 3 行第 2 列 */</span></code></pre>
+</div>
+
+<p>展开成标准数学矩阵（记 n = 近裁剪面，f = 远裁剪面，l, r, b, t 为视锥四边界）：</p>
+
+<div class="eq">
+  <span class="m">P</span> =
+  <div class="matrix">
+    <span class="br l"></span>
+    <table>
+      <tbody>
+        <tr>
+          <td><span class="frac"><span>2n</span><span>r−l</span></span></td>
+          <td>0</td>
+          <td><span class="frac"><span>r+l</span><span>r−l</span></span></td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>0</td>
+          <td><span class="frac"><span>2n</span><span>t−b</span></span></td>
+          <td><span class="frac"><span>t+b</span><span>t−b</span></span></td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>0</td>
+          <td>0</td>
+          <td>−<span class="frac"><span>f+n</span><span>f−n</span></span></td>
+          <td>−<span class="frac"><span>2fn</span><span>f−n</span></span></td>
+        </tr>
+        <tr>
+          <td>0</td>
+          <td>0</td>
+          <td>−1</td>
+          <td>0</td>
+        </tr>
+      </tbody>
+    </table>
+    <span class="br r"></span>
+  </div>
+</div>
+
+<p>用 <code>mul_v4_m4v4</code> 的公式算第 4 个分量：</p>
+
+<div class="eq m">w = x·0 + y·0 + z·(−1) + 1·0 = −z<sub>view</sub></div>
+
+<p><strong>精确成立。</strong> 所以"除以 w"就等价于"除以深度"，透视缩放自动实现。</p>
+
+<div class="note">
+  <span class="ico">★</span>
+  <p class="t">第 4 行 (0, 0, −1, 0) 就是整个透视投影的灵魂</p>
+  <p>它是唯一让 w ≠ 1 的一行。没有它，透视投影就退化成正交投影。</p>
+</div>
+
+<h3 id="s43">4.3 正交矩阵对比</h3>
+
+<p><code>gpu_matrix.cc:283-304</code> 的 <code>mat4_ortho_set</code>，第 4 行是 (0, 0, 0, 1)，所以：</p>
+
+<div class="eq m">w ≡ 1</div>
+
+<p>除法变成恒等操作，没有透视缩放 —— 这正是正交投影的定义。</p>
+
+<h2 id="s5"><span class="n">05</span>120–122 行的逐步数值演示</h2>
+
+<p>取 n = 0.1、f = 1000，视锥上下左右对称（l = −r、b = −t），于是 (r+l)/(r−l) = 0、(t+b)/(t−b) = 0，矩阵简化为对角形式。</p>
+
+<p>取世界空间中相机正前方 10 个单位处、且 x<sub>view</sub> = y<sub>view</sub> = 0 的点，则 z<sub>view</sub> = −10：</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path">手算推演 · n = 0.1, f = 1000</span></div>
+<pre><code>第 1 步  copy_v3_v3(vec4, co);      →  vec4 = [0, 0, -10, ?]
+第 2 步  vec4[3] = 1.0;             →  vec4 = [0, 0, -10, 1]     <span class="c">← 齐次嵌入</span>
+第 3 步  mul_m4_v4(perspmat, vec4);
+
+         x_c = 2n/(r-l) · 0                         = 0
+         y_c = 2n/(t-b) · 0                         = 0
+         z_c = -(f+n)/(f-n) · (-10) + (-2fn/(f-n)) · 1
+             = (1000.1/999.9) · 10 − 200/999.9
+             = 10.0010 − 0.2000                     = 9.8010
+         w   = -1 · (-10)                           = 10      <span class="c">← w = -z_view</span></code></pre>
+</div>
+
+<p>得到裁剪空间坐标 (0, 0, 9.801, 10)，且 z<sub>c</sub>/w = 0.9801，落在 [−1, 1] 内，可见。</p>
+
+<h2 id="s6"><span class="n">06</span>第 123 行：<code>fabsf</code> 到底改了什么</h2>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>view3d_project.cc</b> : 123</span></div>
+<pre><code><span class="k">const float</span> w = fabsf(vec4[3]);</code></pre>
+</div>
+
+<p><strong>w 从此不再是"齐次坐标的第 4 分量"，而变成了"该点到相机平面的距离"（以视图空间单位为量纲）。</strong> 三个后果：</p>
+
+<ol>
+  <li><strong>第 137 行 <code>scalar = 1/w</code> 恒为正</strong>，所以 x<sub>c</sub>/|w| 与真正的射影值 x<sub>c</sub>/vec4[3] 相差一个符号 —— 相机背后的点会被投影到<strong>镜像位置</strong>，而不是被拒绝。</li>
+  <li><strong><code>CLIP_ZERO</code> 的语义被改写</strong>：从"w 为负或为零"变成"<strong>到相机平面的距离 ≤ 0.001</strong>"。否则所有相机背后的点都会被误报成 <code>CLIP_ZERO</code>。</li>
+  <li><strong>真正负责拦截背后点的是 <code>CLIP_NEAR</code></strong>（第 129 行），推导见下一节。</li>
+</ol>
+
+<p>对比文件开头 32–51 行的"<strong>不裁剪版</strong>"：</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>view3d_project.cc</b> : 43 – 49 · 不裁剪版，用原始 vec4[3]</span></div>
+<pre><code><span class="k">if</span> (vec4[3] &gt; FLT_EPSILON) {          <span class="c">/* 只对前方点做除法 */</span>
+  co_region[0] = region-&gt;winx / 2.0f + (region-&gt;winx / 2.0f) * vec4[0] / vec4[3];
+  co_region[1] = region-&gt;winy / 2.0f + (region-&gt;winy / 2.0f) * vec4[1] / vec4[3];
+}
+<span class="k">else</span> {
+  zero_v2(co_region);                 <span class="c">/* 背后点 → (0,0)，没有状态码 */</span>
+}</code></pre>
+</div>
+
+<p>它用的是<strong>原始</strong> <code>vec4[3]</code>（保留符号），代价是<strong>无法区分"背后"和"恰好在相机平面上"</strong>，也没有任何状态码返回。裁剪版（本段）改用 |w| 加独立的状态码，把"背后"这件事显式交给 <code>CLIP_NEAR</code> 处理 —— 这是一次<strong>职责的重新划分</strong>，不是随手取了个绝对值。</p>
+
+<h2 id="s7"><span class="n">07</span>125–135 行：不做除法的"交叉相乘"比较</h2>
+
+<p>这三行是整段代码最精巧的地方。它们的<strong>数学本质</strong>是把有理不等式 z<sub>c</sub>/w ≶ ±1 两边同乘 w，变成有界浮点乘法。</p>
+
+<h3 id="s71">7.1 <code>CLIP_NEAR</code> 推导（第 129 行）</h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>view3d_project.cc</b> : 129 – 131</span></div>
+<pre><code><span class="k">if</span> ((flag &amp; V3D_PROJ_TEST_CLIP_NEAR) &amp;&amp; (vec4[2] &lt;= -w)) {
+  <span class="k">return</span> V3D_PROJ_RET_CLIP_NEAR;
+}</code></pre>
+</div>
+
+<p>GL 的裁剪空间约定是 z<sub>c</sub>/w ∈ [−1, 1]，其中 <strong>−1 对应近平面</strong>。两边同乘 w &gt; 0：</p>
+
+<div class="eq m">
+<span class="frac"><span>z<sub>c</sub></span><span>w</span></span> ≤ −1
+&nbsp;&nbsp;⟺&nbsp;&nbsp; z<sub>c</sub> ≤ −w
+</div>
+
+<h3 id="s72">7.2 近/远平面映射验算</h3>
+
+<p><strong>近平面</strong> z<sub>view</sub> = −n：</p>
+
+<div class="eq m">
+z<sub>c</sub> = −<span class="frac"><span>f+n</span><span>f−n</span></span>·(−n) − <span class="frac"><span>2fn</span><span>f−n</span></span>
+= <span class="frac"><span>n(f+n) − 2fn</span><span>f−n</span></span>
+= <span class="frac"><span>n² − nf</span><span>f−n</span></span> = −n
+</div>
+
+<p>而 w = −z<sub>view</sub> = n，所以 z<sub>c</sub>/w = −n/n = −1 ✓</p>
+
+<p><strong>远平面</strong> z<sub>view</sub> = −f：</p>
+
+<div class="eq m">
+z<sub>c</sub> = −<span class="frac"><span>f+n</span><span>f−n</span></span>·(−f) − <span class="frac"><span>2fn</span><span>f−n</span></span>
+= <span class="frac"><span>f(f+n) − 2fn</span><span>f−n</span></span>
+= <span class="frac"><span>f² − fn</span><span>f−n</span></span> = f
+</div>
+
+<p>而 w = f，所以 z<sub>c</sub>/w = f/f = +1 ✓</p>
+
+<h3 id="s73">7.3 <code>CLIP_FAR</code> 推导（第 133 行）</h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>view3d_project.cc</b> : 133 – 135</span></div>
+<pre><code><span class="k">if</span> ((flag &amp; V3D_PROJ_TEST_CLIP_FAR) &amp;&amp; (vec4[2] &gt;= w)) {
+  <span class="k">return</span> V3D_PROJ_RET_CLIP_FAR;
+}</code></pre>
+</div>
+
+<p>同一套推导，z<sub>c</sub>/w ≥ +1 ⟺ z<sub>c</sub> ≥ w。</p>
+
+<h3 id="s74">7.4 为什么必须"先判后除"</h3>
+
+<ol>
+  <li><strong>省一次除法</strong>：浮点除法延迟通常是乘法的 4–20 倍，在每帧数万次的顶点循环里很可观。</li>
+  <li><strong>数值稳健</strong>：w 极小时 z<sub>c</sub>/w 会溢出成 <code>inf</code>，或产生灾难性抵消（catastrophic cancellation）；而 z<sub>c</sub> 与 w 的比较始终是良态的有界比较。<strong>除法被推迟到所有可能出问题的点都已经被过滤之后</strong> —— 这正是第 137 行排在 125–135 行之后的原因。</li>
+  <li><strong>数学等价</strong>：两个不等式合起来恰好是 |z<sub>c</sub>| &gt; w 的两个半边，与 |z<sub>c</sub>/w| &gt; 1 完全等价。</li>
+</ol>
+
+<h3 id="s75">7.5 数值表（n = 0.1, f = 1000）</h3>
+
+<div class="tbl"><div class="scroll">
+<table>
+  <thead>
+    <tr>
+      <th class="num">z<sub>view</sub></th>
+      <th class="num">w = |vec4[3]|</th>
+      <th class="num">z<sub>c</sub></th>
+      <th class="num">z<sub>c</sub> / w</th>
+      <th>触发</th>
+      <th>返回状态</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class="num">−0.05</td><td class="num">0.05</td><td class="num">−0.15</td><td class="num">−3.00</td><td>NEAR</td><td><span class="pill bad">CLIP_NEAR</span></td></tr>
+    <tr><td class="num">−1</td><td class="num">1</td><td class="num">0.800</td><td class="num">0.800</td><td>—</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="num">−10</td><td class="num">10</td><td class="num">9.801</td><td class="num">0.980</td><td>—</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="num">−1000</td><td class="num">1000</td><td class="num">1000.0</td><td class="num">1.000</td><td>FAR</td><td><span class="pill bad">CLIP_FAR</span></td></tr>
+    <tr><td class="num">−2000</td><td class="num">2000</td><td class="num">2000.2</td><td class="num">1.000</td><td>FAR</td><td><span class="pill bad">CLIP_FAR</span></td></tr>
+    <tr class="hl">
+      <td class="num">+5（相机背后）</td><td class="num">5</td><td class="num">−5.201</td><td class="num">−1.040</td>
+      <td>NEAR</td><td><span class="pill bad">CLIP_NEAR</span></td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+
+<p>注意最后一行：z<sub>view</sub> = +5 时 vec4[3] = −5，取绝对值后 w = 5，NEAR 判据 −5.201 ≤ −5 成立 → 返回 <code>CLIP_NEAR</code>。</p>
+
+<div class="note warn">
+  <span class="ico">!</span>
+  <p class="t">相机背后的点是靠 NEAR 兜住的</p>
+  <p>因为 z<sub>c</sub> 随 z<sub>view</sub> 增大而急剧变负，必然跌破 −w。这也正是 <code>ED_view3d.hh:313-316</code> 要求"透视视图必须把 <code>CLIP_WIN</code> 和 <code>CLIP_NEAR</code> 一起打开"的原因。</p>
+</div>
+
+<h3 id="s76">7.6 深度精度分布</h3>
+
+<p>把 z<sub>view</sub> = −d（d &gt; 0 为深度）代入，得到 NDC 深度关于深度的解析式：</p>
+
+<div class="eq m">
+ndc(d) = <span class="frac"><span>z<sub>c</sub></span><span>w</span></span>
+= <span class="frac"><span>(f+n)·d − 2fn</span><span>(f−n)·d</span></span>
+&nbsp;&nbsp;<span class="rm">→</span><span class="rm" style="font-size:.78em;color:var(--muted)">&nbsp;(n=0.1, f=1000)</span>&nbsp;&nbsp;
+<span class="frac"><span>1000.1·d − 200</span><span>999.9·d</span></span>
+</div>
+
+<figure>
+  <div class="fig-head">图 1 · NDC 深度随 z<sub>view</sub> 的变化（n = 0.1, f = 1000）</div>
+  <svg viewBox="0 0 860 360" role="img" aria-label="NDC 深度随深度变化的曲线图">
+    <defs>
+      <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="var(--brand)" stop-opacity="0.24"/>
+        <stop offset="100%" stop-color="var(--brand)" stop-opacity="0.01"/>
+      </linearGradient>
+    </defs>
+
+    <!-- 水平网格 -->
+    <line class="g-grid" x1="86" y1="28"   x2="812" y2="28"></line>
+    <line class="g-grid" x1="86" y1="93.5" x2="812" y2="93.5"></line>
+    <line class="g-grid" x1="86" y1="224.5" x2="812" y2="224.5"></line>
+    <line class="g-grid" x1="86" y1="290"  x2="812" y2="290"></line>
+    <!-- 零线 -->
+    <line class="g-zero" x1="86" y1="159" x2="812" y2="159"></line>
+    <!-- 坐标轴 -->
+    <line class="g-axis" x1="86" y1="28" x2="86" y2="290"></line>
+
+    <!-- Y 标签 -->
+    <text class="g-lbl" x="76" y="32"    text-anchor="end">+1.0</text>
+    <text class="g-lbl" x="76" y="97.5"  text-anchor="end">+0.5</text>
+    <text class="g-lbl" x="76" y="163"   text-anchor="end">0</text>
+    <text class="g-lbl" x="76" y="228.5" text-anchor="end">−0.5</text>
+    <text class="g-lbl" x="76" y="294"   text-anchor="end">−1.0</text>
+    <text class="g-lbl" x="22" y="159" text-anchor="middle"
+          transform="rotate(-90 22 159)">NDC 深度  z_c / w</text>
+
+    <!-- 面积 + 曲线 -->
+    <polygon class="g-area"
+             points="86,290 141.6,202.7 181,159 236.5,115.3 306.5,80.4 401.5,54.2 496.5,41.1 622,33.2 717,30.6 812,29.3 812,159 86,159"></polygon>
+    <polyline class="g-line"
+             points="86,290 141.6,202.7 181,159 236.5,115.3 306.5,80.4 401.5,54.2 496.5,41.1 622,33.2 717,30.6 812,29.3"></polyline>
+
+    <!-- 关键点辅助线 -->
+    <line class="g-guide" x1="401.5" y1="54.2" x2="401.5" y2="290"></line>
+    <line class="g-guide" x1="717"   y1="30.6" x2="717"   y2="290"></line>
+
+    <!-- X 刻度 -->
+    <line class="g-axis" x1="86"    y1="290" x2="86"    y2="297"></line>
+    <line class="g-axis" x1="181"   y1="290" x2="181"   y2="297"></line>
+    <line class="g-axis" x1="306.5" y1="290" x2="306.5" y2="297"></line>
+    <line class="g-axis" x1="401.5" y1="290" x2="401.5" y2="297"></line>
+    <line class="g-axis" x1="496.5" y1="290" x2="496.5" y2="297"></line>
+    <line class="g-axis" x1="622"   y1="290" x2="622"   y2="297"></line>
+    <line class="g-axis" x1="717"   y1="290" x2="717"   y2="297"></line>
+    <line class="g-axis" x1="812"   y1="290" x2="812"   y2="297"></line>
+
+    <text class="g-lbl" x="86"    y="314" text-anchor="middle">0.1</text>
+    <text class="g-lbl" x="181"   y="314" text-anchor="middle">0.2</text>
+    <text class="g-lbl" x="306.5" y="314" text-anchor="middle">0.5</text>
+    <text class="g-lbl" x="401.5" y="314" text-anchor="middle">1</text>
+    <text class="g-lbl" x="496.5" y="314" text-anchor="middle">2</text>
+    <text class="g-lbl" x="622"   y="314" text-anchor="middle">5</text>
+    <text class="g-lbl" x="717"   y="314" text-anchor="middle">10</text>
+    <text class="g-lbl" x="812"   y="314" text-anchor="middle">20</text>
+    <text class="g-lbl" x="449"   y="338" text-anchor="middle">深度 d = −z_view（对数刻度）</text>
+
+    <!-- 关键点 -->
+    <circle class="g-pt" cx="86"    cy="290"  r="4.5"></circle>
+    <circle class="g-pt" cx="401.5" cy="54.2" r="4.5"></circle>
+    <circle class="g-pt" cx="717"   cy="30.6" r="4.5"></circle>
+
+    <!-- 标注 -->
+    <text class="g-anno" x="100" y="283">d = 0.1 → ndc = −1.0（近平面）</text>
+    <text class="g-anno" x="412" y="49">d = 1 → 0.800</text>
+    <text class="g-anno" x="727" y="26">d = 10 → 0.980</text>
+    <text class="g-anno" x="100" y="62" style="fill:var(--danger)">d → 0⁺ 时曲线冲向 −∞ ⟹ CLIP_ZERO 存在的理由</text>
+  </svg>
+  <figcaption>
+    <b>读图要点</b>：d ∈ [0.1, 1] 这一小段就吃掉了 NDC 的 <b>40%</b>（−1 → 0.80），
+    而 d ∈ [10, 1000] 全挤在最后 <b>2%</b> 里 —— 这就是 z-fighting 的数学根源。
+  </figcaption>
+</figure>
+
+<div class="tbl"><div class="scroll">
+<table>
+  <thead>
+    <tr>
+      <th class="num">深度 d</th>
+      <th class="num">0.1</th><th class="num">0.15</th><th class="num">0.2</th><th class="num">0.3</th><th class="num">0.5</th>
+      <th class="num">1</th><th class="num">2</th><th class="num">5</th><th class="num">10</th><th class="num">20</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="num">ndc</td>
+      <td class="num">−1.000</td><td class="num">−0.333</td><td class="num">0.000</td><td class="num">0.334</td><td class="num">0.600</td>
+      <td class="num">0.800</td><td class="num">0.900</td><td class="num">0.960</td><td class="num">0.980</td><td class="num">0.990</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+
+<p>这张表揭示了一个经典现象：<strong>深度精度严重非均匀</strong>。</p>
+
+<ul>
+  <li>d ∈ [0.1, 1] 这一小段就用掉了 NDC 的 <strong>40%</strong>（−1 → 0.80）</li>
+  <li>d ∈ [1, 10] 用掉约 <strong>18%</strong></li>
+  <li>d ∈ [10, 1000] 全部挤在最后 <strong>2%</strong> 里</li>
+</ul>
+
+<p>d → 0⁺ 时曲线冲向 −∞，这就是 <code>CLIP_ZERO</code> 存在的理由。这也是所有透视深度缓冲（z-fighting）问题的数学根源。</p>
+
+<h2 id="s8"><span class="n">08</span>正交投影下的退化</h2>
+
+<p>正交矩阵 w ≡ 1，于是：</p>
+
+<ul>
+  <li><strong><code>CLIP_NEAR</code></strong>：z<sub>c</sub> ≤ −1；<strong><code>CLIP_FAR</code></strong>：z<sub>c</sub> ≥ 1 —— 判据依旧精确（7.2 节已验算近远平面分别映射到 ∓1）。</li>
+  <li><strong><code>CLIP_ZERO</code> 永远不会触发</strong>（1 &gt; 0.001）：没有除法，也就不存在 w → 0 的奇点。</li>
+  <li><strong>"相机背后"在正交下不再是奇点</strong>：正交投影是仿射映射，z<sub>view</sub> &gt; 0 的点只会因为落在 [−n, −f] 这个<strong>立方体视景体</strong>之外而被 NEAR 裁掉 —— 这与透视下"投影奇点"是完全不同的物理原因。</li>
+</ul>
+
+<h2 id="s9"><span class="n">09</span>一个容易踩的坑：<code>CLIP_CONTENT</code> 不在这里</h2>
+
+<p><code>V3D_PROJ_TEST_ALL</code> 包含 <code>V3D_PROJ_TEST_CLIP_CONTENT</code>（所以第 109 行的断言能通过），但 <strong>120–135 行从不检查这一位</strong>。</p>
+
+<p>它由 <code>view3d_iterators.cc</code> 的边迭代器消费，语义是"把跨越视口边界的边裁剪到边界上"（见 <code>ED_view3d.hh:301-321</code>），与单点投影无关。</p>
+
+<div class="note bad">
+  <span class="ico">×</span>
+  <p class="t">所以读这三行时不要去找 CLIP_CONTENT 的分支</p>
+  <p>它确实不在。</p>
+</div>
+
+<h2 id="s10"><span class="n">10</span>总结</h2>
+
+<div class="tbl"><div class="scroll">
+<table>
+  <thead><tr><th>行号</th><th>做什么</th><th>数学本质</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>120–121</code></td>
+      <td><code>copy_v3_v3</code> + <code>vec4[3] = 1.0</code></td>
+      <td>仿射点的<strong>齐次嵌入</strong> 𝔸³ ↪ ℙ³</td>
+    </tr>
+    <tr>
+      <td><code>122</code></td>
+      <td><code>mul_m4_v4(perspmat, vec4)</code></td>
+      <td>一步完成 P · V · v（<strong>预合成的 VP 矩阵</strong>）</td>
+    </tr>
+    <tr>
+      <td><code>123</code></td>
+      <td><code>w = fabsf(vec4[3])</code></td>
+      <td>把"齐次第 4 分量"改写成"到相机平面的<strong>距离</strong>"，代价是丢失符号</td>
+    </tr>
+    <tr>
+      <td><code>125–127</code></td>
+      <td><code>CLIP_ZERO</code></td>
+      <td>w → 0 即射影<strong>无穷远点</strong>，无法回到仿射空间</td>
+    </tr>
+    <tr>
+      <td><code>129–131</code></td>
+      <td><code>CLIP_NEAR</code></td>
+      <td>z<sub>c</sub>/w ≤ −1 ⟺ z<sub>c</sub> ≤ −w，<strong>交叉相乘免除法</strong>；同时兜住相机背后的点</td>
+    </tr>
+    <tr>
+      <td><code>133–135</code></td>
+      <td><code>CLIP_FAR</code></td>
+      <td>z<sub>c</sub>/w ≥ +1 ⟺ z<sub>c</sub> ≥ w，同一套推导</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+
+<div class="note ok">
+  <span class="ico">✓</span>
+  <p class="t">一句话</p>
+  <p><code>perspmat</code> 是 P · V（世界 → 裁剪的完整线性映射），"已合成"就是把本该在 GPU 顶点着色器里分两步做的 <code>P * (V * pos)</code> 预先乘成一步；而 120–135 行则是<strong>射影几何的直接翻译</strong> —— 补 1 做齐次嵌入 → 一次矩阵乘法进裁剪空间 → 用 z<sub>c</sub> 与 w 交叉相乘代替除以 w 来做深度裁剪 → 最后才真正除以 w 落到 NDC。</p>
+</div>
+
+<h2 id="s11t"><span class="n">附</span>关键源码位置索引</h2>
+
+<div class="tbl"><div class="scroll">
+<table>
+  <thead><tr><th>内容</th><th>文件:行</th></tr></thead>
+  <tbody>
+    <tr><td><code>persmat</code> 合成</td><td><code>source/blender/editors/space_view3d/view3d_draw.cc:135</code></td></tr>
+    <tr><td><code>persmatob</code> 合成</td><td><code>source/blender/editors/space_view3d/space_view3d.cc:132</code></td></tr>
+    <tr><td>DNA 字段注释</td><td><code>source/blender/makesdna/DNA_view3d_types.h:467-482</code></td></tr>
+    <tr><td>frustum 矩阵</td><td><code>source/blender/gpu/intern/gpu_matrix.cc:309-333</code></td></tr>
+    <tr><td>ortho 矩阵</td><td><code>source/blender/gpu/intern/gpu_matrix.cc:283-304</code></td></tr>
+    <tr><td><code>mul_m4_m4m4</code> 实现</td><td><code>source/blender/blenlib/intern/math_matrix_c.cc:217-263</code></td></tr>
+    <tr><td><code>mul_v4_m4v4</code> 实现</td><td><code>source/blender/blenlib/intern/math_matrix_c.cc:798-808</code></td></tr>
+    <tr><td>不裁剪版投影</td><td><code>source/blender/editors/space_view3d/view3d_project.cc:32-74</code></td></tr>
+    <tr><td>裁剪版投影</td><td><code>source/blender/editors/space_view3d/view3d_project.cc:99-151</code></td></tr>
+    <tr><td>状态码 / 测试位定义</td><td><code>source/blender/editors/include/ED_view3d.hh:271-333</code></td></tr>
+    <tr><td>BB 裁剪实现</td><td><code>source/blender/editors/space_view3d/view3d_draw.cc:2252-2265</code></td></tr>
+  </tbody>
+</table>
+</div></div>
+
+<footer>
+  <p>📄 配套 Markdown：<code>perspmat与投影数学深挖.md</code></p>
+  <p>Blender <code>source/blender/editors/space_view3d/view3d_project.cc:120~151</code> 数学解析 · 自包含 HTML，无外部依赖</p>
+</footer>
+
+</main>
+</div>
+
+<script>
+(function () {
+  /* ---------- 阅读进度条 ---------- */
+  var bar = document.getElementById('progress');
+  var main = document.querySelector('main');
+  function onScroll() {
+    var rect = main.getBoundingClientRect();
+    var total = rect.height - window.innerHeight;
+    var done = Math.min(Math.max(-rect.top, 0), Math.max(total, 1));
+    bar.style.width = (total > 0 ? (done / total) * 100 : 0) + '%';
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
+
+  /* ---------- 目录自动高亮 ---------- */
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+  var targets = links.map(function (a) {
+    return document.getElementById(a.getAttribute('href').slice(1));
+  }).filter(Boolean);
+
+  if ('IntersectionObserver' in window && targets.length) {
+    var visible = new Map();
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { visible.set(e.target.id, e.boundingClientRect.top); }
+        else { visible.delete(e.target.id); }
+      });
+      if (!visible.size) { return; }
+      var best = null, bestTop = Infinity;
+      visible.forEach(function (top, id) {
+        if (top < bestTop) { bestTop = top; best = id; }
+      });
+      links.forEach(function (a) {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + best);
+      });
+    }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+
+    targets.forEach(function (t) { io.observe(t); });
+  }
+})();
+</script>
+
+</body>
+</html>

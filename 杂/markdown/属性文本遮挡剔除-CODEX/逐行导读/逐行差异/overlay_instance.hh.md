@@ -1,8 +1,9 @@
 # `source/blender/draw/engines/overlay/overlay_instance.hh`：逐行差异与上下文
 
 > 基准 `bba93a5d6df198bcdb31b7b92cdbe514945ba2ad`；当前工作树。`+` 为新行，`−` 为旧行。
-> 每个主代码块以源码顺序保留三行上下文，并在修改行前加入中文注释与行号。
-> 删除的旧行在原位置以注释显示；原始 diff 放在折叠区，方便核对。代码块是阅读材料，不用于直接编译。
+> 每个主代码块以源码顺序保留三行上下文；有语义的修改行旁带中文注释与新行号。
+> 结构性空行、括号及原有英文源码注释保持原貌，便于顺着代码阅读。删除的旧行以注释显示；原始 diff 放在折叠区。
+> 这些代码块是阅读材料，不用于直接编译。
 > 完整的背景、数学、所有权和风险请先读上一层专题。
 
 ## 差异块 1 · `class Instance : public DrawEngine {`
@@ -13,13 +14,10 @@
   const SelectionType selection_type_;
   bool clipping_enabled_;
 
-  // 新第 61 行：保留源码说明：Scene depth for text occlusion, refreshed after the prepass and before grid；相邻代码的中文推导见专题章节。
   /** Scene depth for text occlusion, refreshed after the prepass and before grid drawing.
-   // 新第 62 行：保留源码说明：Reuse the allocation until the viewport resizes or depth testing is disable；相邻代码的中文推导见专题章节。
    * Reuse the allocation until the viewport resizes or depth testing is disabled. */
   // 新第 63 行：处理 Instance 拥有的 CPU 深度缓存；对象可复用，像素数据必须按本帧刷新。
   ViewDepths *text_depth_cache_ = nullptr;
-// 新第 64 行：空行用于隔开两个逻辑步骤，使下一段条件或函数更容易识别。
 
  public:
   ShapeCache shapes;
@@ -57,7 +55,6 @@
     if (text_depth_cache_ != nullptr) {
       // 新第 124 行：处理 Instance 拥有的 CPU 深度缓存；对象可复用，像素数据必须按本帧刷新。
       ED_view3d_depths_free(text_depth_cache_);
-    // 新第 125 行：控制本段 C++ 作用域或调用闭合；变量生命周期和条件范围由这些括号决定。
     }
   }
 

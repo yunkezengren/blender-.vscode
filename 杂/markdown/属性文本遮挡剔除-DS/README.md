@@ -37,9 +37,12 @@
 | [09-Instance类完全解析.md](./09-Instance类完全解析.md) | Overlay 引擎核心类逐段解析：5 个引擎虚函数、双层设计、draw_v3d 八个阶段 | 想懂 Overlay 引擎架构的人 |
 | [10-Prepass与双层绘制.md](./10-Prepass与双层绘制.md) | Prepass 深度预pass、regular/infront 双层机制、AttributeViewer vs AttributeTexts、DRWTextStore 数据结构 | 想懂深度从哪来的人 |
 | [11-DRW_text_cache_draw逐行解析.md](./11-DRW_text_cache_draw逐行解析.md) | 核心函数 `:224~291` 逐行、逐符号、逐调用链解析：命名缩写、矩阵选择、深度映射数学 | 想看透执行细节的人 |
+| [12-投影矩阵与view3d_project详解.md](./12-投影矩阵与view3d_project详解.md) | 矩阵链完整推导、乘法顺序原理、`view3d_project.cc:99~173` 逐行、**手算数值推演** | 想彻底搞懂投影数学的人 |
 | [配色与图例约定.md](./配色与图例约定.md) | 全套流程图的七色层级语义、状态色、节点形状约定 | 读图前先看 |
 
-⭐ **本目录含 143 张彩色流程图**（Mermaid）。读图前建议先看 [配色与图例约定](./配色与图例约定.md) —— **相同颜色 = 同一职责层**，跨文档保持一致。
+⭐ **本目录含 145 张彩色流程图**（Mermaid）。读图前建议先看 [配色与图例约定](./配色与图例约定.md) —— **相同颜色 = 同一职责层**，跨文档保持一致。
+
+> ⚠️ **版本提示**：本套文档基于提交 `39009b48098`。分支后续新增 `eb97266f783`（实例包围盒）与 `6145e03849b`（透视亚像素闪烁修复），`draw_manager_text.cc` 已新增 `text_depth_is_occluded` / `text_anchor_is_occluded_perspective` 两个函数，属性改名为 `viewer_text_occlusion_culling`。阅读源码时请注意差异。
 
 ---
 
