@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>深度回读代码导读 · overlay_instance.cc:1017~1053</title>
+<style>
+  /* ===================== 设计令牌 ===================== */
+  :root {
+    --bg:           #f7f8fa;
+    --bg-elev:      #ffffff;
+    --fg:           #14181f;
+    --fg-soft:      #3d4756;
+    --muted:        #7a8494;
+    --line:         #e4e8ef;
+    --line-strong:  #cfd6e2;
+
+    --brand:        #4f6ef7;
+    --brand-2:      #7c4ff7;
+    --brand-soft:   #eef1fe;
+    --brand-ring:   rgba(79,110,247,.18);
+
+    --ok:           #10a35a;
+    --ok-soft:      #e8f8ef;
+    --warn:         #d68910;
+    --warn-soft:    #fdf6e3;
+    --danger:       #dc3545;
+    --danger-soft:  #fdeced;
+
+    --code-bg:      #f9fafc;
+    --code-bar:     #f1f3f8;
+    --code-line:    #e2e6ee;
+    --code-fg:      #24292f;
+    --code-comment: #8b95a7;
+    --code-key:     #8250df;
+    --code-str:     #1a7f37;
+    --code-num:     #0550ae;
+    --code-hl:      rgba(79,110,247,.10);
+
+    --radius:       14px;
+    --shadow-sm:    0 1px 2px rgba(16,24,40,.05);
+    --shadow:       0 4px 16px -4px rgba(16,24,40,.10), 0 1px 3px rgba(16,24,40,.05);
+
+    --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+            "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas,
+            "Liberation Mono", monospace;
+    --serif: "Iowan Old Style", "Source Serif 4", Georgia, "Songti SC", "SimSun", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:          #0e1117;
+      --bg-elev:     #161b24;
+      --fg:          #e8ecf4;
+      --fg-soft:     #c2cad8;
+      --muted:       #8b95a7;
+      --line:        #232b38;
+      --line-strong: #333d4e;
+
+      --brand:       #7d93ff;
+      --brand-2:     #a37dff;
+      --brand-soft:  #171e33;
+      --brand-ring:  rgba(125,147,255,.22);
+
+      --ok:          #3ddc84;
+      --ok-soft:     #10241a;
+      --warn:        #f0b429;
+      --warn-soft:   #241f10;
+      --danger:      #ff6b7a;
+      --danger-soft: #2a1519;
+
+      --code-bg:      #eef1f6;
+      --code-bar:     #e4e8f0;
+      --code-line:    #d3d9e4;
+      --code-fg:      #1f242b;
+      --code-comment: #78818f;
+      --code-key:     #7a45d6;
+      --code-str:     #17692f;
+      --code-num:     #054ea3;
+      --code-hl:      rgba(79,110,247,.14);
+
+      --shadow-sm:   0 1px 2px rgba(0,0,0,.4);
+      --shadow:      0 4px 16px -4px rgba(0,0,0,.5);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--font); font-size: 17.5px; line-height: 1.8;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+
+  .hero {
+    position: relative; overflow: hidden;
+    background:
+      radial-gradient(1000px 420px at 12% -20%, var(--brand-ring), transparent 62%),
+      radial-gradient(760px 380px at 92% 0%, rgba(124,79,247,.14), transparent 60%),
+      var(--bg-elev);
+    border-bottom: 1px solid var(--line);
+    padding: 76px 0 58px;
+  }
+  .hero::after {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 34px 34px;
+    -webkit-mask-image: radial-gradient(620px 300px at 20% 0%, #000 0%, transparent 78%);
+    mask-image: radial-gradient(620px 300px at 20% 0%, #000 0%, transparent 78%);
+    opacity: .5; pointer-events: none;
+  }
+  .hero-inner { position: relative; width: 90%; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; font-weight: 600;
+    color: var(--brand); background: var(--brand-soft);
+    border: 1px solid var(--brand-ring);
+    padding: 5px 13px; border-radius: 999px; margin-bottom: 22px;
+  }
+  .eyebrow .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring);
+  }
+  .hero h1 {
+    font-size: clamp(31px, 4.4vw, 47px);
+    line-height: 1.16; letter-spacing: -.028em; font-weight: 800; margin: 0 0 16px;
+    background: linear-gradient(120deg, var(--fg) 22%, var(--brand) 76%, var(--brand-2));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+  .hero h1 code {
+    font-family: var(--mono); font-weight: 700; font-size: .86em;
+    background: none; border: 0; padding: 0;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+  .hero .lede { font-size: 19px; color: var(--fg-soft); margin: 0 0 26px; }
+  .hero .lede b { color: var(--fg); font-weight: 650; }
+  .hero .lede .m { font-family: var(--serif); font-style: italic; }
+
+  .docmap {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px; margin: 0 0 26px; max-width: 980px;
+  }
+  .docmap a {
+    display: block; text-decoration: none;
+    background: var(--bg-elev); border: 1px solid var(--line);
+    border-radius: 12px; padding: 13px 15px;
+    box-shadow: var(--shadow-sm); transition: border-color .15s, transform .15s;
+  }
+  .docmap a:hover { border-color: var(--brand); transform: translateY(-1px); }
+  .docmap .dt {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 5px;
+  }
+  .docmap .dn { font-weight: 680; color: var(--fg); font-size: 15.5px; margin-bottom: 3px; }
+  .docmap .dd { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  .docmap a.cur { border-color: var(--brand-ring); background: var(--brand-soft); }
+  .docmap a.cur .dn { color: var(--brand); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 12.5px; color: var(--fg-soft);
+    background: var(--bg-elev); border: 1px solid var(--line);
+    padding: 6px 12px; border-radius: 8px; box-shadow: var(--shadow-sm);
+  }
+  .chip .k { color: var(--muted); }
+  .chip.hl { border-color: var(--brand-ring); background: var(--brand-soft); color: var(--brand); }
+
+  .wrap {
+    display: grid; grid-template-columns: 272px minmax(0, 1fr);
+    gap: clamp(40px, 4vw, 72px); width: 90%; margin: 0 auto;
+  }
+
+  nav.toc {
+    position: sticky; top: 0; align-self: start;
+    max-height: 100vh; overflow-y: auto;
+    padding: 40px 0 60px; scrollbar-width: thin;
+  }
+  nav.toc::-webkit-scrollbar { width: 5px; }
+  nav.toc::-webkit-scrollbar-track { background: transparent; }
+  nav.toc::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+  nav.toc:hover::-webkit-scrollbar-thumb { background: var(--line-strong); }
+  nav.toc .toc-title {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted);
+    font-weight: 700; margin: 0 0 14px; padding-left: 12px;
+  }
+  nav.toc a {
+    display: block; font-size: 14px; line-height: 1.5;
+    color: var(--muted); text-decoration: none;
+    padding: 6px 10px 6px 14px;
+    border-left: 2px solid transparent; border-radius: 0 7px 7px 0;
+    transition: color .14s, background .14s, border-color .14s;
+  }
+  nav.toc a:hover { color: var(--fg); background: var(--brand-soft); }
+  nav.toc a.lv1 { color: var(--fg-soft); font-weight: 600; margin-top: 6px; }
+  nav.toc a.lv2 { padding-left: 26px; font-size: 13px; }
+  nav.toc a.active {
+    color: var(--brand); border-left-color: var(--brand);
+    background: var(--brand-soft); font-weight: 650;
+  }
+
+  main { min-width: 0; padding: 44px 0 100px; }
+
+  h2 {
+    font-size: 29px; font-weight: 750; letter-spacing: -.02em; line-height: 1.3;
+    margin: 68px 0 20px; padding-top: 28px;
+    border-top: 1px solid var(--line);
+    display: flex; align-items: baseline; gap: 13px; scroll-margin-top: 20px;
+  }
+  h2:first-of-type { margin-top: 8px; border-top: 0; padding-top: 0; }
+  h2 .n {
+    font-family: var(--mono); font-size: 14px; font-weight: 700;
+    color: var(--brand); background: var(--brand-soft);
+    border: 1px solid var(--brand-ring); border-radius: 7px;
+    padding: 3px 10px; flex: none; letter-spacing: 0;
+  }
+  h3 {
+    font-size: 20px; font-weight: 680; letter-spacing: -.012em;
+    margin: 40px 0 14px; color: var(--fg); scroll-margin-top: 20px;
+  }
+  h3::before {
+    content: ""; display: inline-block;
+    width: 3px; height: 17px; border-radius: 2px;
+    background: linear-gradient(var(--brand), var(--brand-2));
+    margin-right: 11px; vertical-align: -2px;
+  }
+  h3 .ln {
+    font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+    color: var(--muted); margin-left: 8px;
+  }
+  h4 { font-size: 17px; font-weight: 650; margin: 28px 0 10px; color: var(--fg); }
+  p { margin: 0 0 17px; color: var(--fg-soft); }
+  p strong, li strong { color: var(--fg); font-weight: 650; }
+  a { color: var(--brand); text-underline-offset: 3px; }
+  sub { font-size: .74em; }
+  sup { font-size: .74em; }
+
+  ul, ol { margin: 0 0 18px; padding-left: 24px; }
+  li { margin: 0 0 8px; color: var(--fg-soft); }
+  li::marker { color: var(--muted); }
+
+  code {
+    font-family: var(--mono); font-size: .86em;
+    background: var(--brand-soft); color: var(--brand);
+    padding: .14em .42em; border-radius: 5px;
+    border: 1px solid var(--brand-ring); word-break: break-word;
+  }
+
+  .code {
+    margin: 0 0 20px; border-radius: var(--radius); overflow: hidden;
+    border: 1px solid var(--code-line); background: var(--code-bg);
+    box-shadow: var(--shadow-sm);
+  }
+  .code .bar {
+    display: flex; align-items: center; gap: 8px; padding: 9px 14px;
+    background: var(--code-bar); border-bottom: 1px solid var(--code-line);
+  }
+  .code .bar .lights { display: flex; gap: 6px; margin-right: 4px; flex: none; }
+  .code .bar .lights i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+  .code .bar .lights i:nth-child(1) { background: #ff5f57; }
+  .code .bar .lights i:nth-child(2) { background: #febc2e; }
+  .code .bar .lights i:nth-child(3) { background: #28c840; }
+  .code .bar .path {
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .code .bar .path b { color: var(--fg-soft); font-weight: 600; }
+  .code pre {
+    margin: 0; padding: 18px 20px; overflow-x: auto;
+    font-family: var(--mono); font-size: 14.5px; line-height: 1.7;
+    color: var(--code-fg); tab-size: 4;
+  }
+  .code pre::-webkit-scrollbar { height: 9px; }
+  .code pre::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 5px; }
+  .code code { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
+  .c { color: var(--code-comment); font-style: italic; }
+  .k { color: var(--code-key); }
+  .s { color: var(--code-str); }
+  .num { color: var(--code-num); }
+  .hl { background: var(--code-hl); display: inline-block; width: 100%; }
+
+  .note {
+    position: relative; margin: 0 0 20px;
+    padding: 15px 18px 15px 50px; border-radius: var(--radius);
+    background: var(--brand-soft); border: 1px solid var(--brand-ring);
+    border-left: 3px solid var(--brand);
+  }
+  .note .ico {
+    position: absolute; left: 16px; top: 15px;
+    width: 22px; height: 22px; border-radius: 7px;
+    display: grid; place-items: center; font-size: 12px; font-weight: 800;
+    background: var(--brand); color: #fff;
+  }
+  .note .t { font-weight: 700; color: var(--fg); margin: 0 0 6px; font-size: 16.5px; }
+  .note p { margin: 0; font-size: 16px; }
+  .note p + p { margin-top: 9px; }
+  .note.warn { background: var(--warn-soft); border-color: rgba(214,137,16,.3); border-left-color: var(--warn); }
+  .note.warn .ico { background: var(--warn); }
+  .note.ok { background: var(--ok-soft); border-color: rgba(16,163,90,.28); border-left-color: var(--ok); }
+  .note.ok .ico { background: var(--ok); }
+  .note.bad { background: var(--danger-soft); border-color: rgba(220,53,69,.28); border-left-color: var(--danger); }
+  .note.bad .ico { background: var(--danger); }
+
+  .xref {
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 0 20px; padding: 12px 16px;
+    border-radius: var(--radius);
+    background: var(--bg-elev); border: 1px dashed var(--line-strong);
+    font-size: 15px; color: var(--fg-soft);
+  }
+  .xref .xi { font-family: var(--mono); font-size: 11px; letter-spacing: .07em;
+              text-transform: uppercase; color: var(--brand); flex: none; }
+  .xref a { font-weight: 600; }
+
+  .tbl {
+    margin: 0 0 20px; border: 1px solid var(--line);
+    border-radius: var(--radius); overflow: hidden;
+    background: var(--bg-elev); box-shadow: var(--shadow-sm);
+  }
+  .tbl .scroll { overflow-x: auto; }
+  .tbl table { border-collapse: collapse; width: 100%; font-size: 16px; }
+  .tbl th, .tbl td {
+    padding: 12px 16px; text-align: left; vertical-align: top;
+    border-bottom: 1px solid var(--line);
+  }
+  .tbl thead th {
+    background: var(--bg);
+    font-family: var(--mono); font-size: 12px; letter-spacing: .07em;
+    text-transform: uppercase; font-weight: 700; color: var(--muted);
+    white-space: nowrap;
+  }
+  .tbl tbody tr:last-child td { border-bottom: 0; }
+  .tbl tbody tr:hover { background: var(--brand-soft); }
+  .tbl td.num, .tbl th.num {
+    text-align: right; font-family: var(--mono); font-size: 15px;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .tbl td.ln, .tbl th.ln {
+    font-family: var(--mono); font-size: 14px; color: var(--brand);
+    font-weight: 600; white-space: nowrap;
+  }
+  .tbl tr.hl2 td { background: var(--warn-soft); font-weight: 650; color: var(--fg); }
+  .tbl.compact th, .tbl.compact td { padding: 8px 12px; font-size: 15px; }
+
+  .pill {
+    display: inline-block; font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+    padding: 2px 10px; border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: var(--bg); color: var(--muted); white-space: nowrap;
+  }
+  .pill.ok  { color: var(--ok);     border-color: rgba(16,163,90,.35);  background: var(--ok-soft); }
+  .pill.bad { color: var(--danger); border-color: rgba(220,53,69,.32);  background: var(--danger-soft); }
+  .pill.warn{ color: var(--warn);   border-color: rgba(214,137,16,.35); background: var(--warn-soft); }
+
+  .m { font-family: var(--serif); font-style: italic; }
+  .m .rm { font-style: normal; }
+
+  .chain {
+    margin: 0 0 20px; padding: 22px 24px;
+    border-radius: var(--radius); background: var(--bg-elev);
+    border: 1px solid var(--line); box-shadow: var(--shadow-sm);
+    font-family: var(--mono); font-size: 14.5px; line-height: 1.9; overflow-x: auto;
+  }
+  .chain .row { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+  .chain .box {
+    border: 1px solid var(--line-strong); border-radius: 8px;
+    padding: 3px 12px; background: var(--bg); color: var(--fg);
+  }
+  .chain .box.key {
+    border-color: var(--brand-ring); background: var(--brand-soft);
+    color: var(--brand); font-weight: 650;
+  }
+  .chain .arrow { color: var(--muted); }
+  .chain .lbl { color: var(--muted); font-size: 13px; }
+  .chain .gap { height: 8px; }
+
+  footer {
+    margin-top: 80px; padding: 26px 0 10px; border-top: 1px solid var(--line);
+    font-size: 14.5px; color: var(--muted); line-height: 2;
+  }
+  footer p { margin: 0; }
+
+  @media (max-width: 1024px) {
+    .wrap { grid-template-columns: 1fr; gap: 0; width: 92%; }
+    nav.toc { position: static; max-height: none; padding: 24px 0 0; }
+    body { font-size: 16.5px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <span class="eyebrow"><span class="dot"></span>Blender 属性文本遮挡剔除 · 第 3 册</span>
+    <h1><code>overlay_instance.cc</code> 深度回读代码导读</h1>
+    <p class="lede">
+      聚焦 <code>Instance::update_text_depth()</code> 的 <b>1017~1053 行</b>：
+      场景深度如何从 GPU 深度纹理回读到 CPU、三条件早退守护什么、缓存如何跨帧复用、
+      所有权如何借用而不转移、调用时点为什么不能移动。
+      本册讲解「深度从哪来」，遮挡比较本身见第 2 册。
+    </p>
+
+    <div class="docmap">
+      <a href="01-投影数学手册.html">
+        <div class="dt">第 1 册</div>
+        <div class="dn">投影数学手册</div>
+        <div class="dd">齐次坐标 · 矩阵推导 · 深度精度 · 数值理由</div>
+      </a>
+      <a href="02-投影代码导读.html">
+        <div class="dt">第 2 册</div>
+        <div class="dn">投影代码导读</div>
+        <div class="dd">调用链 · 位标志 · 逐行拆解 · 状态码 · 修改指南</div>
+      </a>
+      <a class="cur" href="#">
+        <div class="dt">第 3 册 · 本页</div>
+        <div class="dn">深度回读代码导读</div>
+        <div class="dd">帧内时序 · 逐行拆解 · GPU 回读 · 所有权 · 修改指南</div>
+      </a>
+    </div>
+
+    <div class="chips">
+      <span class="chip"><span class="k">file</span> overlay_instance.cc</span>
+      <span class="chip"><span class="k">lines</span> 1017 – 1053</span>
+      <span class="chip hl"><span class="k">函数</span> Instance::update_text_depth()</span>
+      <span class="chip"><span class="k">消费端</span> draw_manager_text.cc</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<nav class="toc">
+  <p class="toc-title">目录</p>
+  <a class="lv1" href="#s0">0 · 本册定位与阅读路径</a>
+  <a class="lv1" href="#s1">1 · 函数在帧渲染中的时序</a>
+  <a class="lv2" href="#s11">1.1 一帧内的调用位置</a>
+  <a class="lv2" href="#s12">1.2 为什么时点不能移动</a>
+  <a class="lv1" href="#s2">2 · 逐行拆解</a>
+  <a class="lv2" href="#s21">2.1 三条件早退 1019–1026</a>
+  <a class="lv2" href="#s22">2.2 取视口与深度纹理 1029–1032</a>
+  <a class="lv2" href="#s23">2.3 尺寸变化检测 1033–1038</a>
+  <a class="lv2" href="#s24">2.4 分配新缓存 1039–1047</a>
+  <a class="lv2" href="#s25">2.5 原地刷新 1048–1051</a>
+  <a class="lv2" href="#s26">2.6 移交借用指针 1052</a>
+  <a class="lv1" href="#s3">3 · 类型与 API 手册</a>
+  <a class="lv2" href="#s31">3.1 ViewDepths 结构体</a>
+  <a class="lv2" href="#s32">3.2 DRWTextStore 与消费端</a>
+  <a class="lv2" href="#s33">3.3 视口与深度纹理获取</a>
+  <a class="lv2" href="#s34">3.4 GPU_texture_read 两个重载</a>
+  <a class="lv2" href="#s35">3.5 内存分配与释放契约</a>
+  <a class="lv1" href="#s4">4 · 关键设计决策</a>
+  <a class="lv2" href="#s41">4.1 惰性回读：为什么先探测</a>
+  <a class="lv2" href="#s42">4.2 跨帧缓存复用</a>
+  <a class="lv2" href="#s43">4.3 所有权模型：拥有 vs 借用</a>
+  <a class="lv2" href="#s44">4.4 const_cast 为什么安全</a>
+  <a class="lv1" href="#s5">5 · 端到端数据流</a>
+  <a class="lv1" href="#s6">6 · 修改指南与常见错误</a>
+  <a class="lv1" href="#s7">7 · 相关代码索引</a>
+  <a class="lv1" href="#s8">8 · 尺寸与开销验算</a>
+</nav>
+
+<main>
+
+<h2 id="s0"><span class="n">00</span>本册定位与阅读路径</h2>
+
+<p>
+遮挡剔除的完整链路是「<strong>锚点前移 → 深度回读 → 投影比较 → 剔除判定</strong>」。
+第 2 册讲了投影与深度比较（绘制时发生），本册讲解更早的一步：
+<strong>场景深度缓冲如何在正确的时机、以最低的开销从 GPU 搬到 CPU</strong>。
+这一步由 <code>Instance::update_text_depth()</code> 独立承担，代码只有 37 行，
+却牵涉四个子系统：窗口管理器（视口）、GPU 封装层（纹理回读）、编辑器（ViewDepths）、绘制层（文本缓存）。
+</p>
+
+<p><strong>阅读路径</strong>：</p>
+
+<ul>
+  <li><strong>只想看懂函数</strong> → 按 §1 → §2 顺序读即可。</li>
+  <li><strong>想知道每个类型 / API 的来龙去脉</strong> → 跳到 <a href="#s3">§3 类型与 API 手册</a>。</li>
+  <li><strong>好奇「为什么不每帧都无脑回读」</strong> → <a href="#s4">§4 关键设计决策</a>。</li>
+  <li><strong>要改这段代码</strong> → 直接读 <a href="#s6">§6 修改指南</a>。</li>
+</ul>
+
+<div class="xref">
+  <span class="xi">前情</span>
+  <span>
+    锚点为什么要沿视线前移（点云 §213–225、实例 §240–265）见本系列对
+    <code>overlay_attribute_text.hh</code> 的讲解；
+    锚点深度与场景深度如何比较见第 2 册。
+  </span>
+</div>
+
+<h2 id="s1"><span class="n">01</span>函数在帧渲染中的时序</h2>
+
+<h3 id="s11">1.1 一帧内的调用位置</h3>
+
+<p>
+<code>update_text_depth()</code> 在覆盖层引擎的 <code>draw_viewport()</code> 中被调用一次
+（<code>overlay_instance.cc:939</code>），位于<strong>深度预通道完成之后</strong>、
+<strong>网格与坐标轴绘制之前</strong>：
+</p>
+
+<div class="chain">
+  <div class="row"><span class="box">draw_viewport()</span><span class="lbl">overlay_instance.cc · 每帧执行一次</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="arrow">▼</span><span class="lbl">① prepass：场景几何写入深度缓冲（GPU）</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="box key">update_text_depth() · 939 行</span><span class="lbl">← 本册：此刻回读，深度仍是「纯场景」</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="arrow">▼</span><span class="lbl">② grid / axes 等覆盖层绘制，往深度缓冲写入自己的单像素深度</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="arrow">▼</span><span class="lbl">③ draw_text() · 1009 行 → DRW_text_cache_draw()</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="box">投影 + 逐文本深度比较</span><span class="lbl">消费刚回读的 CPU 深度数组</span></div>
+</div>
+
+<p>
+函数开头的注释正是对这一时点的声明：
+</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>overlay_instance.cc</b> : 1027 – 1028 · 时点声明</span></div>
+<pre><code><span class="c">/* Refresh from this frame after the depth prepass, before grid and axes can alter depth.
+ * The read-back is deliberately skipped when no text requested occlusion testing. */</span></code></pre>
+</div>
+
+<h3 id="s12">1.2 为什么时点不能移动</h3>
+
+<p>
+深度比较的对象是<strong>「场景几何」</strong>——物体表面。视口深度缓冲在整帧内被多次写入：</p>
+
+<ul>
+  <li><strong>prepass 之后</strong>：只有场景几何，深度值就是「遮挡表面」——<span class="pill ok">正确时点</span></li>
+  <li><strong>grid / axes 之后</strong>：网格线、坐标轴也写入了各自的深度（虽然是单像素），
+      若文本锚点恰好落在网格线上方，会被自己的辅助线「遮挡」——<span class="pill bad">污染</span></li>
+  <li><strong>prepass 之前</strong>：深度缓冲可能还是上一帧的残留或清空值——<span class="pill bad">错误数据</span></li>
+</ul>
+
+<div class="note warn">
+  <span class="ico">!</span>
+  <p class="t">调用点的注释同样强调了这一点</p>
+  <p>调用处（938 行）写着 <code>/* Read scene depth before the grid and axes write their own one-pixel depth. */</code>。
+  两个注释一脉相承：函数体注释声明「回读发生在 prepass 后」，调用点注释声明「必须在网格/坐标轴污染前」。</p>
+</div>
+
+<h2 id="s2"><span class="n">02</span>逐行拆解</h2>
+
+<p>先看完整函数，然后逐段拆解：</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>overlay_instance.cc</b> : 1017 – 1053 · 完整函数</span></div>
+<pre><code><span class="k">void</span> Instance::update_text_depth()
+{
+  <span class="hl">if (!state.show_text || !state.is_space_v3d() || !DRW_text_cache_needs_depth_test(state.dt)) {</span>
+    DRW_text_cache_depth_set(state.dt, <span class="k">nullptr</span>);
+    <span class="k">if</span> (text_depth_cache_ != <span class="k">nullptr</span>) {
+      ED_view3d_depths_free(text_depth_cache_);
+      text_depth_cache_ = <span class="k">nullptr</span>;
+    }
+    <span class="k">return</span>;
+  }
+  <span class="c">/* Refresh from this frame after the depth prepass, before grid and axes can alter depth.
+   * The read-back is deliberately skipped when no text requested occlusion testing. */</span>
+  GPUViewport *viewport = WM_draw_region_get_viewport(<span class="k">const_cast</span>&lt;ARegion *&gt;(state.region));
+  gpu::Texture *depth_tx = GPU_viewport_depth_texture(viewport);
+  <span class="k">const int</span> width = GPU_texture_width(depth_tx);
+  <span class="k">const int</span> height = GPU_texture_height(depth_tx);
+  <span class="hl">if (text_depth_cache_ != <span class="k">nullptr</span> &amp;&amp;</span>
+      <span class="hl">(text_depth_cache_-&gt;w != width || text_depth_cache_-&gt;h != height))</span>
+  {
+    ED_view3d_depths_free(text_depth_cache_);
+    text_depth_cache_ = <span class="k">nullptr</span>;
+  }
+  <span class="k">if</span> (text_depth_cache_ == <span class="k">nullptr</span>) {
+    text_depth_cache_ = MEM_new_zeroed&lt;ViewDepths&gt;(<span class="s">"ViewDepths"</span>);
+    text_depth_cache_-&gt;w = width;
+    text_depth_cache_-&gt;h = height;
+    text_depth_cache_-&gt;depths = <span class="k">static_cast</span>&lt;<span class="k">float</span> *&gt;(
+        GPU_texture_read(depth_tx, GPU_DATA_FLOAT, <span class="num">0</span>));
+    text_depth_cache_-&gt;depth_range[<span class="num">0</span>] = <span class="num">0.0</span>;
+    text_depth_cache_-&gt;depth_range[<span class="num">1</span>] = <span class="num">1.0</span>;
+  }
+  <span class="k">else</span> {
+    <span class="c">/* Refresh the contents with this frame's depth. */</span>
+    GPU_texture_read(depth_tx, GPU_DATA_FLOAT, <span class="num">0</span>, text_depth_cache_-&gt;depths);
+  }
+  <span class="hl">DRW_text_cache_depth_set(state.dt, text_depth_cache_);</span>
+}</code></pre>
+</div>
+
+<h3 id="s21">2.1 三条件早退 <span class="ln">1019–1026</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>overlay_instance.cc</b> : 1019 – 1026</span></div>
+<pre><code><span class="k">if</span> (!state.show_text || !state.is_space_v3d() || !DRW_text_cache_needs_depth_test(state.dt)) {
+  DRW_text_cache_depth_set(state.dt, <span class="k">nullptr</span>);
+  <span class="k">if</span> (text_depth_cache_ != <span class="k">nullptr</span>) {
+    ED_view3d_depths_free(text_depth_cache_);
+    text_depth_cache_ = <span class="k">nullptr</span>;
+  }
+  <span class="k">return</span>;
+}</code></pre>
+</div>
+
+<p>三个条件任一为真就整段跳过，且<strong>必须顺手清理</strong>：</p>
+
+<div class="tbl"><div class="scroll">
+<table>
+  <thead><tr><th>条件</th><th>含义</th><th>为什么要早退</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>!state.show_text</code></td>
+      <td>用户关闭了「显示叠加文本」（覆盖层设置里的 Text 开关）</td>
+      <td>根本不会绘制文本，深度无人消费</td>
+    </tr>
+    <tr>
+      <td><code>!state.is_space_v3d()</code></td>
+      <td>当前空间不是 3D 视口（覆盖层引擎理论上只在 V3D 运行，这是防御）</td>
+      <td>没有 <code>RegionView3D</code>，投影与深度比较无意义</td>
+    </tr>
+    <tr class="hl2">
+      <td><code>!DRW_text_cache_needs_depth_test()</code></td>
+      <td>本帧<strong>没有任何一条</strong>缓存文本带 <code>DRW_TEXT_CACHE_OCCLUSION_CULLING</code> 标志</td>
+      <td><strong>性能核心</strong>：回读昂贵（见 <a href="#s41">§4.1</a>），无人申请就不做</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+
+<p>
+早退分支做两件事：<strong>把借用指针置空</strong>（<code>depth_set(dt, nullptr)</code>，
+防止消费端拿到即将释放的悬垂指针）和<strong>释放自有缓存</strong>（避免尺寸/场景变化期间白白持有数 MB 内存）。
+注意顺序：先置空借用、再释放、最后才置空自有指针——释放后 <code>text_depth_cache_ = nullptr</code>
+保证下一帧从「分配」分支重新开始。
+</p>
+
+<div class="note">
+  <span class="ico">i</span>
+  <p class="t">flags 是在哪个阶段写入的？</p>
+  <p><code>DRW_TEXT_CACHE_OCCLUSION_CULLING</code> 在覆盖层引擎收集文本时打上
+  （<code>overlay_attribute_text.hh</code> 的 <code>text_flag_</code>，经 <code>add_text_to_cache()</code>
+  传入 <code>DRW_text_cache_add</code>）。所以当 <code>update_text_depth()</code> 在 939 行执行时，
+  本帧的文本缓存<strong>已经填充完毕</strong>，探测结果是准确的。</p>
+</div>
+
+<h3 id="s22">2.2 取视口与深度纹理 <span class="ln">1029–1032</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>overlay_instance.cc</b> : 1029 – 1032</span></div>
+<pre><code>GPUViewport *viewport = WM_draw_region_get_viewport(<span class="k">const_cast</span>&lt;ARegion *&gt;(state.region));
+gpu::Texture *depth_tx = GPU_viewport_depth_texture(viewport);
+<span class="k">const int</span> width = GPU_texture_width(depth_tx);
+<span class="k">const int</span> height = GPU_texture_height(depth_tx);</code></pre>
+</div>
+
+<p>
+两级获取链：<strong>区域 → 视口 → 深度纹理</strong>。
+Blender 的每个 <code>ARegion</code>（窗口内的一个区域）在绘制时持有一个 <code>GPUViewport</code>——
+GPU 侧的「画布」，内含颜色纹理、叠加纹理和一张<strong>深度纹理</strong> <code>depth_tx</code>。
+这张深度纹理正是 prepass 写入的目标，也是本函数要回读的数据源。
+宽高从纹理本身读取而非 <code>region-&gt;winx/winy</code>，保证与回读出的数组尺寸严格一致
+（视口分辨率可能与区域像素尺寸有缩放差异）。
+</p>
+
+<p>这两个函数都是纯 getter，实现只有一行：</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>wm_draw.cc</b> : 954 – 962 · 区域 → 视口</span></div>
+<pre><code>GPUViewport *WM_draw_region_get_viewport(ARegion *region)
+{
+  <span class="k">if</span> (!region-&gt;runtime-&gt;draw_buffer) {
+    <span class="k">return</span> <span class="k">nullptr</span>;          <span class="c">/* 区域尚未建立绘制缓冲（如离屏/特殊通道） */</span>
+  }
+  <span class="k">return</span> region-&gt;runtime-&gt;draw_buffer-&gt;viewport;
+}</code></pre>
+</div>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>gpu_viewport.cc</b> : 605 – 608 · 视口 → 深度纹理</span></div>
+<pre><code>gpu::Texture *GPU_viewport_depth_texture(GPUViewport *viewport)
+{
+  <span class="k">return</span> viewport-&gt;depth_tx;
+}</code></pre>
+</div>
+
+<h3 id="s23">2.3 尺寸变化检测 <span class="ln">1033–1038</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>overlay_instance.cc</b> : 1033 – 1038</span></div>
+<pre><code><span class="k">if</span> (text_depth_cache_ != <span class="k">nullptr</span> &amp;&amp;
+    (text_depth_cache_-&gt;w != width || text_depth_cache_-&gt;h != height))
+{
+  ED_view3d_depths_free(text_depth_cache_);
+  text_depth_cache_ = <span class="k">nullptr</span>;
+}</code></pre>
+</div>
+
+<p>
+跨帧复用的缓存只在<strong>一种情况</strong>下报废：视口尺寸变了（用户拉伸了窗口、
+改变了区域布局、缩放系数变化）。此时旧数组 <code>w × h</code> 与新帧不匹配，
+继续写入会越界，必须释放重建。
+尺寸没变则走 <a href="#s25">§2.5</a> 的原地刷新路径——不释放、不重新分配。
+</p>
+
+<h3 id="s24">2.4 分配新缓存 <span class="ln">1039–1047</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>overlay_instance.cc</b> : 1039 – 1047 · 首帧或尺寸变化后</span></div>
+<pre><code><span class="k">if</span> (text_depth_cache_ == <span class="k">nullptr</span>) {
+  text_depth_cache_ = MEM_new_zeroed&lt;ViewDepths&gt;(<span class="s">"ViewDepths"</span>);
+  text_depth_cache_-&gt;w = width;
+  text_depth_cache_-&gt;h = height;
+  text_depth_cache_-&gt;depths = <span class="k">static_cast</span>&lt;<span class="k">float</span> *&gt;(
+      GPU_texture_read(depth_tx, GPU_DATA_FLOAT, <span class="num">0</span>));
+  text_depth_cache_-&gt;depth_range[<span class="num">0</span>] = <span class="num">0.0</span>;
+  text_depth_cache_-&gt;depth_range[<span class="num">1</span>] = <span class="num">1.0</span>;
+}</code></pre>
+</div>
+
+<p>五行各司其职：</p>
+
+<ul>
+  <li><strong><code>MEM_new_zeroed&lt;ViewDepths&gt;</code></strong> — 类型安全的「<code>calloc</code> 一个结构体」。
+      零初始化很重要：<code>ViewDepths</code> 的 <code>x</code>、<code>y</code> 字段（子矩形偏移）
+      在这里不使用，靠零值表示「无偏移」；同时避免了手动逐字段初始化的遗漏风险。</li>
+  <li><strong><code>w</code> / <code>h</code></strong> — 记录数组尺寸，供消费端按下标寻址
+      <code>depths[y * w + x]</code>，也供 <a href="#s23">§2.3</a> 的下一帧尺寸比对。</li>
+  <li><strong><code>GPU_texture_read(...)</code></strong>（分配版重载）— 执行真正的 GPU→CPU 回读，
+      返回 <code>w × h</code> 个 <code>float</code> 的堆数组。这是整条链路中<strong>唯一昂贵的一步</strong>。</li>
+  <li><strong><code>depth_range[2]</code></strong> — 声明本数组的深度值域为 NDC 标准区间
+      <span class="m">[0, 1]</span>。消费端的比较逻辑以此为尺度依据。</li>
+</ul>
+
+<h3 id="s25">2.5 原地刷新 <span class="ln">1048–1051</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>overlay_instance.cc</b> : 1048 – 1051</span></div>
+<pre><code><span class="k">else</span> {
+  <span class="c">/* Refresh the contents with this frame's depth. */</span>
+  GPU_texture_read(depth_tx, GPU_DATA_FLOAT, <span class="num">0</span>, text_depth_cache_-&gt;depths);
+}</code></pre>
+</div>
+
+<p>
+缓存已存在且尺寸匹配 → 调用 <code>GPU_texture_read</code> 的<strong>写入版重载</strong>，
+把本帧深度直接写进已有缓冲。与 §2.4 相比省掉了「分配新数组 + 拷贝 + 释放旧数组」，
+每帧只付一次回读本身的开销。这两个重载的差别见 <a href="#s34">§3.4</a>。
+</p>
+
+<h3 id="s26">2.6 移交借用指针 <span class="ln">1052</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>overlay_instance.cc</b> : 1052 · 唯一的交接点</span></div>
+<pre><code>DRW_text_cache_depth_set(state.dt, text_depth_cache_);</code></pre>
+</div>
+
+<p>
+把 <code>ViewDepths</code> 指针交给文本仓库。头文件注释明确了契约：
+</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>draw_manager_text.hh</b> : 41 – 46 · 借用契约</span></div>
+<pre><code><span class="c">/**
+ * Provide the scene depth read-back used by strings flagged with
+ * #DRW_TEXT_CACHE_OCCLUSION_CULLING. The store does not take ownership; the caller keeps the
+ * #ViewDepths alive until the next #DRW_text_cache_draw. Pass null to disable the tests.
+ */</span>
+<span class="k">void</span> DRW_text_cache_depth_set(DRWTextStore *dt, <span class="k">const</span> ViewDepths *depths);</code></pre>
+</div>
+
+<p>
+关键词是 <strong>"does not take ownership"</strong>——仓库只存指针（<code>dt-&gt;depths = depths;</code>），
+生命期仍由 <code>Instance::text_depth_cache_</code> 持有。
+这就是为什么每个早退分支都要先 <code>depth_set(dt, nullptr)</code> 再 <code>free</code>：
+顺序反了，消费端就会在本帧稍后的 <code>DRW_text_cache_draw</code> 里解引用已释放内存。
+</p>
+
+<h2 id="s3"><span class="n">03</span>类型与 API 手册</h2>
+
+<h3 id="s31">3.1 ViewDepths 结构体 <span class="ln">ED_view3d.hh:91</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>ED_view3d.hh</b> : 91 – 97</span></div>
+<pre><code><span class="k">struct</span> ViewDepths {
+  <span class="k">unsigned short</span> w, h;
+  <span class="c">/* only for temp use for sub-rectangles, added to `region-&gt;winx/winy`. */</span>
+  <span class="k">short</span> x, y;
+  <span class="k">float</span> *depths;
+  <span class="k">double</span> depth_range[<span class="num">2</span>];
+};</code></pre>
+</div>
+
+<div class="tbl compact"><div class="scroll">
+<table>
+  <thead><tr><th>字段</th><th>类型</th><th>本函数中的用法</th></tr></thead>
+  <tbody>
+    <tr><td><code>w</code>, <code>h</code></td><td><code>unsigned short</code></td><td>记录纹理宽高；消费端按 <code>depths[y * w + x]</code> 寻址；下一帧尺寸比对</td></tr>
+    <tr><td><code>x</code>, <code>y</code></td><td><code>short</code></td><td>子矩形偏移，仅特定工具临时使用；此处靠零初始化保持 0</td></tr>
+    <tr><td><code>depths</code></td><td><code>float *</code></td><td>CPU 侧深度数组，行主序、每像素一个 <code>float</code> NDC 深度</td></tr>
+    <tr><td><code>depth_range</code></td><td><code>double[2]</code></td><td>值域声明，置为 <span class="m">[0, 1]</span></td></tr>
+  </tbody>
+</table>
+</div></div>
+
+<p>
+注意 <code>w</code>/<code>h</code> 是 <code>unsigned short</code>（最大 65535）。
+这不是限制——视口单边超过 64k 像素本就不现实——但消费端寻址
+<code>y * w + x</code> 时应使用更宽的整型避免中间溢出（实际消费端用的就是 <code>int</code>）。
+</p>
+
+<h3 id="s32">3.2 DRWTextStore 与消费端 <span class="ln">draw_manager_text.cc:53</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>draw_manager_text.cc</b> : 53 – 77 · 文本仓库与单条缓存</span></div>
+<pre><code><span class="k">struct</span> ViewCachedString {
+  <span class="k">float</span> vec[<span class="num">3</span>];          <span class="c">/* 3D 锚点（世界空间），投影发生在绘制时 */</span>
+  <span class="k">union</span> { <span class="k">uchar</span> ub[<span class="num">4</span>]; <span class="k">int</span> pack; } col;
+  <span class="k">short</span> sco[<span class="num">2</span>];          <span class="c">/* 投影后的屏幕坐标（绘制时填充） */</span>
+  <span class="k">short</span> xoffs, yoffs;
+  <span class="k">short</span> flag;            <span class="c">/* 含 DRW_TEXT_CACHE_OCCLUSION_CULLING */</span>
+  <span class="k">bool</span> shadow;
+  <span class="k">bool</span> align_center;
+  StringRef str;
+};
+
+<span class="k">struct</span> DRWTextStore {
+  Vector&lt;ViewCachedString&gt; cache_strings;
+  LinearAllocator&lt;&gt; string_allocator;
+  <span class="c">/**
+   * Scene depth read back by the caller before drawing overlays that write depth.
+   * Borrowed through #DRW_text_cache_depth_set and refreshed for every frame that needs it.
+   */</span>
+  <span class="k">const</span> ViewDepths *depths = <span class="k">nullptr</span>;   <span class="c">/* ← 本函数的产出最终落在这里 */</span>
+};</code></pre>
+</div>
+
+<p>两个查询函数是本函数的「探测」与「发布」端：</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>draw_manager_text.cc</b> : 337 – 350</span></div>
+<pre><code><span class="k">void</span> DRW_text_cache_depth_set(DRWTextStore *dt, <span class="k">const</span> ViewDepths *depths)
+{
+  dt-&gt;depths = depths;                    <span class="c">/* 纯指针赋值 = 借用 */</span>
+}
+
+<span class="k">bool</span> DRW_text_cache_needs_depth_test(<span class="k">const</span> DRWTextStore *dt)
+{
+  <span class="k">for</span> (<span class="k">const</span> ViewCachedString &amp;vos : dt-&gt;cache_strings) {
+    <span class="k">if</span> (vos.flag &amp; DRW_TEXT_CACHE_OCCLUSION_CULLING) {
+      <span class="k">return</span> <span class="k">true</span>;                      <span class="c">/* 任一条申请 → 需要深度 */</span>
+    }
+  }
+  <span class="k">return</span> <span class="k">false</span>;
+}</code></pre>
+</div>
+
+<h3 id="s33">3.3 视口与深度纹理获取 <span class="ln">wm_draw.cc:954 · gpu_viewport.cc:605</span></h3>
+
+<p>
+深度纹理在视口初始化时创建（<code>gpu_viewport.cc:174–186</code>），
+有两个对本册重要的细节：
+</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>gpu_viewport.cc</b> : 174 – 186 · 深度纹理的创建</span></div>
+<pre><code><span class="k">if</span> (viewport-&gt;depth_tx == <span class="k">nullptr</span>) {
+  <span class="c">/* Depth texture can be read back by gizmos #view3d_depths_create. */</span>
+  viewport-&gt;depth_tx = GPU_texture_create_2d(<span class="s">"dtxl_depth"</span>,
+                                             UNPACK2(size),
+                                             <span class="num">1</span>,
+                                             gpu::TextureFormat::SFLOAT_32_DEPTH_UINT_8,
+                                             usage | <span class="hl">GPU_TEXTURE_USAGE_HOST_READ</span> |
+                                                 GPU_TEXTURE_USAGE_FORMAT_VIEW,
+                                             <span class="k">nullptr</span>);
+  <span class="k">const float</span> depth_clear = <span class="num">0.0f</span>;
+  GPU_texture_clear(viewport-&gt;depth_tx, GPU_DATA_FLOAT, &amp;depth_clear);
+}</code></pre>
+</div>
+
+<ul>
+  <li><strong>格式 <code>SFLOAT_32_DEPTH_UINT_8</code></strong> — 32 位浮点深度 + 8 位模板（D32S8）。
+      GPU 侧每纹素 5 字节，但用 <code>GPU_DATA_FLOAT</code> 回读时只取深度面，每像素 4 字节。</li>
+  <li><strong><code>GPU_TEXTURE_USAGE_HOST_READ</code></strong> — 声明「这张纹理允许 CPU 回读」。
+      后端据此选择可回读的内存布局。没有这个标志的纹理调用 <code>GPU_texture_read</code>
+      会触发断言失败（见 <a href="#s34">§3.4</a>）。视口的深度纹理因为 gizmo、深度探测等多个
+      子系统都要回读，所以创建时就带上了这个标志。</li>
+</ul>
+
+<h3 id="s34">3.4 GPU_texture_read 两个重载 <span class="ln">gpu_texture.cc:538 · 554</span></h3>
+
+<div class="tbl"><div class="scroll">
+<table>
+  <thead><tr><th>重载</th><th>签名</th><th>内存行为</th><th>本函数的使用</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>分配版</strong></td>
+      <td><code>void *GPU_texture_read(tex, fmt, mip)</code></td>
+      <td>内部 <code>MEM_new_uninitialized</code> 分配 <code>w×h×4</code> 字节并返回</td>
+      <td>§2.4 首次分配：<code>depths = static_cast&lt;float *&gt;(GPU_texture_read(...))</code></td>
+    </tr>
+    <tr>
+      <td><strong>写入版</strong></td>
+      <td><code>void GPU_texture_read(tex, fmt, mip, void *dst)</code></td>
+      <td>直接写入调用方缓冲，零分配</td>
+      <td>§2.5 原地刷新：<code>GPU_texture_read(..., text_depth_cache_-&gt;depths)</code></td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>gpu_texture.cc</b> : 554 – 562 · 写入版与 HOST_READ 断言</span></div>
+<pre><code><span class="k">void</span> GPU_texture_read(Texture *texture, eGPUDataFormat data_format, <span class="k">int</span> mip_level, <span class="k">void</span> *dst)
+{
+  BLI_assert(texture);
+  BLI_assert_msg(
+      GPU_texture_usage(texture) &amp; GPU_TEXTURE_USAGE_HOST_READ,
+      <span class="s">"The host-read usage flag must be specified up-front. ..."</span>);
+  texture-&gt;read(mip_level, data_format, dst);   <span class="c">/* GPU 管线同步点 */</span>
+}</code></pre>
+</div>
+
+<div class="note warn">
+  <span class="ico">!</span>
+  <p class="t">回读是同步操作</p>
+  <p><code>texture-&gt;read()</code> 需要 CPU 等待 GPU 上所有写入该纹理的工作完成
+  （隐式管线 flush / fence），是典型的<strong> GPU 停顿源</strong>。
+  这正是「先探测再回读」（<a href="#s41">§4.1</a>）值得做的原因：
+  大多数帧（没有属性文本、没有开启遮挡剔除）完全不需要付出这个代价。</p>
+</div>
+
+<h3 id="s35">3.5 内存分配与释放契约 <span class="ln">MEM_guardedalloc.h:550 · view3d_draw.cc:2551</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>intern/guardedalloc/MEM_guardedalloc.h</b> : 550 – 559 · 类型安全 calloc</span></div>
+<pre><code><span class="k">template</span>&lt;<span class="k">typename</span> T&gt; <span class="k">inline</span> T *MEM_new_zeroed(<span class="k">const char</span> *allocation_name)
+{
+  <span class="k">static_assert</span>(std::is_trivial_v&lt;T&gt;, <span class="s">"For non-trivial types, MEM_new must be used."</span>);
+  <span class="k">return</span> <span class="k">static_cast</span>&lt;T *&gt;(
+      MEM_new_array_zeroed_aligned(<span class="num">1</span>, <span class="k">sizeof</span>(T), <span class="k">alignof</span>(T), allocation_name));
+}</code></pre>
+</div>
+
+<ul>
+  <li><strong>只能用于 trivial 类型</strong> —— <code>static_assert</code> 强制约束。
+      <code>ViewDepths</code> 全是 POD 字段，满足条件。带构造/析构的类型必须用 <code>MEM_new&lt;T&gt;</code>。</li>
+  <li><strong>零初始化</strong> —— 等价 <code>calloc(1, sizeof(T))</code>，
+      保证 <code>x</code>/<code>y</code>/<code>depths</code> 从确定值出发。</li>
+  <li><strong>分配名</strong> —— <code>"ViewDepths"</code> 会出现在内存分析工具中，便于追查泄漏。</li>
+</ul>
+
+<p>释放端同样是一个封装：</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>view3d_draw.cc</b> : 2551 – 2557</span></div>
+<pre><code><span class="k">void</span> ED_view3d_depths_free(ViewDepths *depths)
+{
+  <span class="k">if</span> (depths-&gt;depths) {
+    MEM_delete(depths-&gt;depths);     <span class="c">/* 先释放数组 */</span>
+  }
+  MEM_delete(depths);               <span class="c">/* 再释放结构体本身 */</span>
+}</code></pre>
+</div>
+
+<div class="note ok">
+  <span class="ico">✓</span>
+  <p class="t">配对关系一览</p>
+  <p><code>MEM_new_zeroed&lt;ViewDepths&gt;</code> 创建的结构体由 <code>ED_view3d_depths_free</code> 整体回收；
+  其中的 <code>depths</code> 数组由分配版 <code>GPU_texture_read</code> 创建（内部 <code>MEM_new_uninitialized</code>），
+  与 <code>MEM_delete</code> 配对。本函数的三处 <code>free + nullptr</code> 调用全部遵循这一配对。</p>
+</div>
+
+<h2 id="s4"><span class="n">04</span>关键设计决策</h2>
+
+<h3 id="s41">4.1 惰性回读：为什么先探测 <span class="ln">1019</span></h3>
+
+<p>
+<code>GPU_texture_read</code> 的成本由两部分构成：
+<strong>传输</strong>（1080p 约 8 MB，见 <a href="#s8">§8</a>）和<strong>同步停顿</strong>
+（CPU 等待 GPU 排空管线）。前者与分辨率线性相关，后者在驱动层可能触发隐式刷新，
+代价远大于传输本身。因此设计成三道闸门，<strong>全部通过才回读</strong>：
+</p>
+
+<div class="chain">
+  <div class="row"><span class="box">show_text</span><span class="arrow">→</span><span class="box">is_space_v3d</span><span class="arrow">→</span><span class="box key">needs_depth_test</span><span class="arrow">→</span><span class="box">回读</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="lbl">全局开关</span><span class="lbl" style="width:130px"></span><span class="lbl">防御检查</span><span class="lbl" style="width:96px"></span><span class="lbl">逐条扫描缓存</span><span class="lbl" style="width:104px"></span><span class="lbl">唯一昂贵步骤</span></div>
+</div>
+
+<p>
+第三道闸门是精确的：<code>needs_depth_test</code> 逐条扫描本帧文本缓存，
+只有存在 <code>DRW_TEXT_CACHE_OCCLUSION_CULLING</code> 标志才返回真。
+这意味着回读开销<strong>只由真正需要遮挡剔除的帧承担</strong>——
+比如只有当用户在几何节点编辑器里 pick 了一个 viewer 属性、
+且文本标志被置位时，这条路径才会激活。
+</p>
+
+<h3 id="s42">4.2 跨帧缓存复用 <span class="ln">1033–1051</span></h3>
+
+<p>
+三态逻辑 <strong>「尺寸变了 → 重建」「没有 → 新建」「有 → 原地刷新」</strong> 保证：
+</p>
+
+<ul>
+  <li><strong>每帧最多一次回读</strong> —— 无论走哪个分支，<code>GPU_texture_read</code> 每帧至多调用一次。</li>
+  <li><strong>每帧最多一次分配</strong> —— 只有首帧或窗口尺寸变化才 <code>malloc</code>，
+      常规帧零分配、零释放（原地刷新复用同一块 <code>w×h×4</code> 字节）。</li>
+  <li><strong>指针稳定性</strong> —— 原地刷新不改变 <code>text_depth_cache_-&gt;depths</code> 的值，
+      即使 <code>dt-&gt;depths</code> 里已经借出去的指针依然有效（虽然本函数每帧都会重新 set 一次，
+      双保险）。</li>
+</ul>
+
+<div class="note">
+  <span class="ico">i</span>
+  <p class="t">为什么不干脆每帧 new + free？</p>
+  <p>那样每帧多一对 <code>malloc/free</code>（约 8 MB 的大块分配，可能触发向操作系统申请新页），
+  且新旧指针地址不同，任何持有旧指针的路径（哪怕只是断言期间的）都有悬垂风险。
+  复用 + 原地刷新在性能与安全两方面都更优。</p>
+</div>
+
+<h3 id="s43">4.3 所有权模型：拥有 vs 借用 <span class="ln">1052</span></h3>
+
+<div class="tbl"><div class="scroll">
+<table>
+  <thead><tr><th>角色</th><th>指针</th><th>权责</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>拥有者</strong></td>
+      <td><code>Instance::text_depth_cache_</code></td>
+      <td>负责 <code>MEM_new_zeroed</code> 创建与 <code>ED_view3d_depths_free</code> 释放；生命期覆盖整帧</td>
+    </tr>
+    <tr>
+      <td><strong>借用者</strong></td>
+      <td><code>DRWTextStore::depths</code></td>
+      <td>只读使用；不释放；依赖拥有者在释放前先 <code>depth_set(nullptr)</code> 摘除指针</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+
+<p>
+这个设计是 Blender 大量使用的「<strong>borrowed pointer</strong>」模式：
+数据生产方（覆盖层引擎）与消费方（文本绘制）解耦，
+文本仓库不需要知道 <code>ViewDepths</code> 怎么来的、何时失效。
+代价是<strong>时序契约</strong>：借用窗口必须覆盖消费端的使用窗口
+（<code>update_text_depth()</code> → <code>draw_text()</code> → <code>DRW_text_cache_draw()</code>），
+本函数把 set 放在最后一行、把摘除放在每个早退分支的第一行，正是为了维护这个窗口。
+</p>
+
+<h3 id="s44">4.4 const_cast 为什么安全 <span class="ln">1029</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path">为什么需要 const_cast</span></div>
+<pre><code>GPUViewport *viewport = WM_draw_region_get_viewport(<span class="hl">const_cast&lt;ARegion *&gt;</span>(state.region));
+<span class="c">/* state.region 是 const ARegion *，而 API 签名是 ARegion *（非 const） */</span></code></pre>
+</div>
+
+<p>
+<code>WM_draw_region_get_viewport</code> 是旧式 C 风格 API，签名没有 const 化，
+但其实现（见 <a href="#s22">§2.2</a>）只读取 <code>region-&gt;runtime-&gt;draw_buffer-&gt;viewport</code>，
+不写入任何字段。覆盖层引擎的 <code>state.region</code> 是 const 的，
+于是这里用 <code>const_cast</code> 桥接。<strong>安全性依据</strong>：
+被转换的对象本身不是 const 定义的（上游以非 const 持有），去掉 const 不会触发未定义行为；
+真正的保障是「实现只读」这一事实，而不是类型系统。
+</p>
+
+<h2 id="s5"><span class="n">05</span>端到端数据流</h2>
+
+<p>把本函数放回整条遮挡剔除链路，数据流分四段：</p>
+
+<div class="chain">
+  <div class="row"><span class="box">GPU 显存</span><span class="box key">viewport-&gt;depth_tx</span><span class="lbl">D32S8 · prepass 写入 · HOST_READ 标志</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="arrow">▼</span><span class="lbl">GPU_texture_read —— 本函数，每帧至多一次，管线同步</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="box">CPU 拥有</span><span class="box key">text_depth_cache_ (ViewDepths)</span><span class="lbl">w × h × 4 字节 · 跨帧复用 · Instance 负责 free</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="arrow">▼</span><span class="lbl">DRW_text_cache_depth_set —— 借用，不转移所有权</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="box">CPU 借用</span><span class="box">dt-&gt;depths</span><span class="lbl">绘制前就位 · 释放前摘除</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="arrow">▼</span><span class="lbl">DRW_text_cache_draw —— 绘制时逐条消费（第 2 册）</span></div>
+  <div class="gap"></div>
+  <div class="row"><span class="box">深度比较</span><span class="box">anchor_depth vs depths[y*w+x]</span><span class="lbl">被遮挡 → IS_CLIPPED；透视附加亚像素校正</span></div>
+</div>
+
+<p>消费端的关键几行（完整分析见第 2 册）：</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>draw_manager_text.cc</b> : 284 – 292 · 深度数组的最终消费</span></div>
+<pre><code><span class="k">const float</span> scene_depth = dt-&gt;depths-&gt;depths[y * dt-&gt;depths-&gt;w + x];
+<span class="k">bool</span> occluded = text_depth_is_occluded(anchor_depth, scene_depth);
+<span class="k">if</span> (occluded &amp;&amp; rv3d-&gt;is_persp) {
+  occluded = text_anchor_is_occluded_perspective(*dt-&gt;depths, x, y, xy, anchor_depth);
+}
+<span class="k">if</span> (occluded) {
+  vos.sco[<span class="num">0</span>] = IS_CLIPPED;   <span class="c">/* 被遮挡 → 本条文本不绘制 */</span>
+  <span class="k">continue</span>;
+}</code></pre>
+</div>
+
+<h2 id="s6"><span class="n">06</span>修改指南与常见错误</h2>
+
+<div class="tbl"><div class="scroll">
+<table>
+  <thead><tr><th>风险点</th><th>错误做法</th><th>正确做法</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>移动调用点</strong></td>
+      <td>把 <code>update_text_depth()</code> 挪到网格绘制之后（想「省一次同步」）</td>
+      <td>保持 939 行位置。挪后会回读到网格/坐标轴的单像素深度，锚点在辅助线上方的文本被错误剔除</td>
+    </tr>
+    <tr>
+      <td><strong>释放顺序</strong></td>
+      <td>先 <code>free</code> 再 <code>depth_set(nullptr)</code></td>
+      <td>先摘借用指针、再释放。反序会让消费端在 <code>DRW_text_cache_draw</code> 中解引用悬垂指针</td>
+    </tr>
+    <tr>
+      <td><strong>复用逻辑</strong></td>
+      <td>只比较 <code>w</code> 不比较 <code>h</code></td>
+      <td>宽高必须同时匹配；写入版回读按 <code>w×h</code> 填充，任一不匹配都会越界</td>
+    </tr>
+    <tr>
+      <td><strong>新增字段</strong></td>
+      <td>给 <code>ViewDepths</code> 添加非平凡成员</td>
+      <td>不行——<code>MEM_new_zeroed</code> 的 <code>static_assert(is_trivial_v)</code> 会拒绝编译</td>
+    </tr>
+    <tr>
+      <td><strong>纹理来源</strong></td>
+      <td>对其他纹理直接调 <code>GPU_texture_read</code></td>
+      <td>目标纹理创建时必须带 <code>GPU_TEXTURE_USAGE_HOST_READ</code>，否则断言失败</td>
+    </tr>
+    <tr>
+      <td><strong>多视口/多区域</strong></td>
+      <td>假设缓存跨区域有效</td>
+      <td>缓存尺寸绑定单一区域的视口；区域切换或尺寸变化必须走重建分支（现有逻辑已覆盖）</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+
+<div class="note bad">
+  <span class="ico">✕</span>
+  <p class="t">最隐蔽的错误：跳过早退直接回读</p>
+  <p>把 1019 行的 <code>needs_depth_test</code> 探测删掉、「简化」为每帧回读，功能上依然正确——
+  但每一帧、每个 3D 视口都要付一次 GPU 管线同步的代价，无论有没有文本需要遮挡剔除。
+  这是典型的「功能不变、性能回退」改动，评测时表现为视口帧率整体下降而非局部卡顿。</p>
+</div>
+
+<h2 id="s7"><span class="n">07</span>相关代码索引</h2>
+
+<div class="tbl"><div class="scroll">
+<table>
+  <thead><tr><th>内容</th><th>位置</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>本函数</td><td><code>overlay_instance.cc:1017-1053</code></td><td>本册讲解对象</td></tr>
+    <tr><td>调用点</td><td><code>overlay_instance.cc:938-939</code></td><td>prepass 后、grid/axes 前的时点注释</td></tr>
+    <tr><td>文本缓存结构</td><td><code>draw_manager_text.cc:53-77</code></td><td><code>ViewCachedString</code> / <code>DRWTextStore</code></td></tr>
+    <tr><td>探测函数</td><td><code>draw_manager_text.cc:342-350</code></td><td><code>DRW_text_cache_needs_depth_test</code></td></tr>
+    <tr><td>借用函数</td><td><code>draw_manager_text.cc:337-340</code></td><td><code>DRW_text_cache_depth_set</code></td></tr>
+    <tr><td>遮挡标志定义</td><td><code>draw_manager_text.hh:66-70</code></td><td><code>DRW_TEXT_CACHE_OCCLUSION_CULLING</code></td></tr>
+    <tr><td>借用契约注释</td><td><code>draw_manager_text.hh:41-46</code></td><td>"does not take ownership"</td></tr>
+    <tr><td>消费端绘制</td><td><code>draw_manager_text.cc:244-293</code></td><td>投影 + 深度比较（第 2 册）</td></tr>
+    <tr><td>区域 → 视口</td><td><code>wm_draw.cc:954-962</code></td><td><code>WM_draw_region_get_viewport</code></td></tr>
+    <tr><td>视口 → 深度纹理</td><td><code>gpu_viewport.cc:605-608</code></td><td><code>GPU_viewport_depth_texture</code></td></tr>
+    <tr><td>深度纹理创建</td><td><code>gpu_viewport.cc:174-186</code></td><td>D32S8 格式 + HOST_READ 标志</td></tr>
+    <tr><td>回读双重载</td><td><code>gpu_texture.cc:538-562</code></td><td>分配版 / 写入版 <code>GPU_texture_read</code></td></tr>
+    <tr><td>ViewDepths 定义</td><td><code>ED_view3d.hh:91-97</code></td><td>结构体字段</td></tr>
+    <tr><td>释放函数</td><td><code>view3d_draw.cc:2551-2557</code></td><td><code>ED_view3d_depths_free</code></td></tr>
+    <tr><td>类型安全 calloc</td><td><code>intern/guardedalloc/MEM_guardedalloc.h:550-559</code></td><td><code>MEM_new_zeroed&lt;T&gt;</code></td></tr>
+    <tr><td>锚点前移（上文书）</td><td><code>overlay_attribute_text.hh:213-265</code></td><td>决定 anchor_depth 的源头</td></tr>
+  </tbody>
+</table>
+</div></div>
+
+<h2 id="s8"><span class="n">08</span>尺寸与开销验算</h2>
+
+<p>用 1920×1080 视口走一遍数字，感受各环节的实际量级：</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path">成本核算 · 1920 × 1080 视口</span></div>
+<pre><code>像素数        = 1920 × 1080                      = 2,073,600 px
+GPU 侧纹理    = 2,073,600 × 5 B (D32S8)          ≈ 9.88 MiB   <span class="c">← 显存常驻，与本函数无关</span>
+CPU 回读数组  = 2,073,600 × 4 B (float)          ≈ 7.91 MiB   <span class="c">← 分配版唯一一次分配</span>
+原地刷新      = 每帧覆盖写 7.91 MiB，零分配                    <span class="c">← §2.5 路径</span>
+needs_depth_test 扫描 = O(缓存文本条数)，通常 &lt; 几百条，纳秒级  <span class="c">← §2.1 探测</span>
+回读同步      = 一次隐式管线 flush，量级取决于驱动与在途工作     <span class="c">← 真正的代价</span></code></pre>
+</div>
+
+<div class="note">
+  <span class="ico">i</span>
+  <p class="t">数字背后的设计结论</p>
+  <p>扫描缓存（纳秒级）与回读（毫秒级，含同步）相差五个数量级以上——
+  所以「先花纳秒探测、再决定是否花毫秒回读」的惰性策略几乎总是划算的。
+  而 7.91 MiB 的缓冲若每帧重新分配，不仅多两次大块 <code>malloc/free</code>，
+  还会把「跨帧指针稳定性」这一隐含福利丢掉——这就是三态缓存逻辑存在的意义。</p>
+</div>
+
+<footer>
+  <p>📗 <strong>第 3 册 · 深度回读代码导读</strong> — 帧内时序 · 逐行拆解 · GPU 回读 · 所有权 · 修改指南</p>
+  <p>📘 第 1 册：<a href="01-投影数学手册.html">投影数学手册</a> — 齐次坐标 · 矩阵推导 · 深度精度 · 数值理由</p>
+  <p>📙 第 2 册：<a href="02-投影代码导读.html">投影代码导读</a> — 调用链 · 位标志 · 逐行拆解 · 状态码 · 修改指南</p>
+  <p>自包含 HTML，无外部依赖 · 代码块为亮色主题</p>
+</footer>
+
+</main>
+</div>
+
+<script>
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+  var targets = links.map(function (a) {
+    return document.getElementById(a.getAttribute('href').slice(1));
+  }).filter(Boolean);
+
+  if ('IntersectionObserver' in window && targets.length) {
+    var visible = new Map();
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { visible.set(e.target.id, e.boundingClientRect.top); }
+        else { visible.delete(e.target.id); }
+      });
+      if (!visible.size) { return; }
+      var best = null, bestTop = Infinity;
+      visible.forEach(function (top, id) {
+        if (top < bestTop) { bestTop = top; best = id; }
+      });
+      links.forEach(function (a) {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + best);
+      });
+    }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+
+    targets.forEach(function (t) { io.observe(t); });
+  }
+})();
+</script>
+
+</body>
+</html>

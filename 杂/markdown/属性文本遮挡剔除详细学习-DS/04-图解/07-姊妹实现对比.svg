@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">
+  <defs>
+    <filter id="sh7" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#14181f" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+  <rect width="960" height="520" fill="#f7f8fa"/>
+  <text x="32" y="42" font-size="21" font-weight="700" fill="#14181f">⑦ 姊妹实现对比 —— gizmo 一次性 vs 文本跨帧复用</text>
+  <text x="32" y="66" font-size="13" fill="#7a8494">同一个 ViewDepths 结构体、同一套回读调用，两种截然不同的生命周期策略</text>
+
+  <g filter="url(#sh7)">
+    <rect x="48" y="104" width="420" height="330" rx="12" fill="#ffffff" stroke="#e4e8ef"/>
+    <rect x="492" y="104" width="420" height="330" rx="12" fill="#ffffff" stroke="#4f6ef7" stroke-width="1.6"/>
+  </g>
+
+  <path d="M48 116 a12 12 0 0 1 12 -12 h396 a12 12 0 0 1 12 12 v26 h-420 z" fill="#f1f3f8"/>
+  <text x="68" y="141" font-size="13.5" font-weight="700" fill="#3d4756">view3d_depths_create() · view3d_draw.cc:2405</text>
+  <text x="258" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#7a8494">gizmo 深度拾取 · 一次性</text>
+  <g font-family="Consolas,monospace" font-size="11" fill="#24292f">
+    <text x="68" y="212">static ViewDepths *view3d_depths_create(...)</text>
+    <text x="68" y="236">{</text>
+    <text x="68" y="254">  d = MEM_new_zeroed&lt;ViewDepths&gt;(...);</text>
+    <text x="68" y="272">  depth_tx = GPU_viewport_depth_texture(...);</text>
+    <text x="68" y="290">  d-&gt;depths = GPU_texture_read(tx, FLOAT, 0);</text>
+    <text x="68" y="308">  d-&gt;depth_range = {0.0, 1.0};</text>
+    <text x="68" y="326">  return d;   // 每次调用全新分配</text>
+    <text x="68" y="344">}</text>
+  </g>
+  <text x="68" y="382" font-size="11.5" fill="#3d4756">· 每次需要都完整走一遍分配+回读</text>
+  <text x="68" y="402" font-size="11.5" fill="#3d4756">· 用完即弃，无跨帧状态</text>
+  <text x="68" y="422" font-size="11.5" fill="#3d4756">· 调用频率低（gizmo 交互时）</text>
+
+  <path d="M492 116 a12 12 0 0 1 12 -12 h396 a12 12 0 0 1 12 12 v26 h-420 z" fill="#eef1fe"/>
+  <text x="512" y="141" font-size="13.5" font-weight="700" fill="#4f6ef7">update_text_depth() · overlay_instance.cc:1017</text>
+  <text x="702" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#4f6ef7">文本遮挡剔除 · 跨帧复用</text>
+  <g font-family="Consolas,monospace" font-size="11" fill="#24292f">
+    <text x="512" y="212">if (!needs_depth_test()) → early-out</text>
+    <text x="512" y="236">if (size mismatch)      → free+rebuild</text>
+    <text x="512" y="254">if (!cache)  → new + alloc read</text>
+    <text x="512" y="272">else         → in-place read into depths</text>
+    <text x="512" y="296">DRW_text_cache_depth_set(dt, cache);</text>
+  </g>
+  <text x="512" y="330" font-size="11.5" fill="#3d4756">· 惰性：三道闸门全过才回读</text>
+  <text x="512" y="350" font-size="11.5" fill="#3d4756">· 复用：常规帧零分配、指针稳定</text>
+  <text x="512" y="370" font-size="11.5" fill="#3d4756">· 每帧最多一次回读 + 一次分配</text>
+  <text x="512" y="390" font-size="11.5" fill="#3d4756">· 所有权契约：先摘借用指针再 free</text>
+  <text x="512" y="414" font-family="Consolas,monospace" font-size="10.5" fill="#4f6ef7">// 姊妹模式的工程化升级版</text>
+
+  <rect x="48" y="454" width="864" height="40" rx="10" fill="#eef1fe" stroke="#4f6ef7" stroke-opacity=".25"/>
+  <text x="64" y="479" font-size="12.5" fill="#3d4756">对照结论：回读 API 相同（GPU_texture_read）、结构体相同（ViewDepths），差异全部来自「生命周期策略」——一次性工具 vs 每帧热路径</text>
+</svg>

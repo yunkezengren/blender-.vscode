@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 680" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">
+  <defs>
+    <linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f6ef7"/><stop offset="1" stop-color="#7c4ff7"/>
+    </linearGradient>
+    <filter id="sh1" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#14181f" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+  <rect width="960" height="680" fill="#f7f8fa"/>
+  <text x="32" y="42" font-size="21" font-weight="700" fill="#14181f">① DrawEngine 虚函数继承体系</text>
+  <text x="32" y="66" font-size="13" fill="#7a8494">整段代码里唯一真正的 OO：引擎层用虚函数，数据层（State / ViewDepths / GPUViewport）全是 POD</text>
+
+  <!-- 基类 -->
+  <g filter="url(#sh1)">
+    <rect x="64" y="92" width="486" height="238" rx="12" fill="#ffffff" stroke="#e4e8ef"/>
+  </g>
+  <path d="M64 104 a12 12 0 0 1 12 -12 h462 a12 12 0 0 1 12 12 v30 h-486 z" fill="#eef1fe"/>
+  <text x="82" y="118" font-family="Consolas,monospace" font-size="14" font-weight="700" fill="#4f6ef7">struct DrawEngine</text>
+  <text x="532" y="118" font-size="11.5" text-anchor="end" fill="#7a8494">DRW_render.hh:71 · 抽象基类</text>
+  <g font-family="Consolas,monospace" font-size="12.5" fill="#24292f">
+    <text x="84" y="156">virtual ~DrawEngine() = default;</text>
+    <text x="84" y="177">virtual StringRefNull name_get() = 0;</text>
+    <text x="84" y="198">virtual void init()  = 0;</text>
+    <text x="84" y="219">virtual void begin_sync() = 0;</text>
+    <text x="84" y="240">virtual void object_sync(ObjectRef&amp;, Manager&amp;) = 0;</text>
+    <text x="84" y="261">virtual void end_sync()  = 0;</text>
+    <text x="84" y="282">virtual void draw(Manager&amp;) = 0;</text>
+  </g>
+  <text x="84" y="312" font-size="12" fill="#7a8494">全部纯虚（= 0），虚析构保证 delete 基类指针安全</text>
+
+  <!-- 工厂 -->
+  <g filter="url(#sh1)">
+    <rect x="596" y="92" width="300" height="128" rx="12" fill="#ffffff" stroke="#e4e8ef"/>
+  </g>
+  <path d="M596 104 a12 12 0 0 1 12 -12 h276 a12 12 0 0 1 12 12 v28 h-300 z" fill="#eef1fe"/>
+  <text x="614" y="118" font-family="Consolas,monospace" font-size="13.5" font-weight="700" fill="#4f6ef7">DrawEngine::Pointer</text>
+  <g font-family="Consolas,monospace" font-size="11.5" fill="#24292f">
+    <text x="614" y="150">virtual DrawEngine*</text>
+    <text x="614" y="168">  create_instance() = 0;</text>
+  </g>
+  <text x="614" y="196" font-size="11.5" fill="#7a8494">foreach_engine → set_used(true)</text>
+  <text x="614" y="212" font-size="11.5" fill="#7a8494">→ 首次使用时惰性 new 具体引擎</text>
+
+  <!-- 继承箭头 -->
+  <line x1="307" y1="330" x2="307" y2="414" stroke="#3d4756" stroke-width="2"/>
+  <path d="M307 398 L298 416 L316 416 Z" fill="#ffffff" stroke="#3d4756" stroke-width="2"/>
+  <text x="322" y="380" font-size="12.5" fill="#7a8494">继承 is-a</text>
+  <line x1="746" y1="220" x2="746" y2="414" stroke="#7c4ff7" stroke-width="1.6" stroke-dasharray="5 4"/>
+  <path d="M746 414 L740 402 L752 402 Z" fill="#7c4ff7"/>
+  <text x="758" y="330" font-size="12.5" fill="#7c4ff7">工厂 new</text>
+
+  <!-- 实例类 -->
+  <g filter="url(#sh1)">
+    <rect x="64" y="420" width="832" height="186" rx="12" fill="#ffffff" stroke="#4f6ef7" stroke-opacity=".35"/>
+  </g>
+  <path d="M64 432 a12 12 0 0 1 12 -12 h808 a12 12 0 0 1 12 12 v30 h-832 z" fill="#eef1fe"/>
+  <text x="82" y="458" font-family="Consolas,monospace" font-size="14" font-weight="700" fill="#4f6ef7">class overlay::Instance : public DrawEngine</text>
+  <text x="878" y="458" font-size="11.5" text-anchor="end" fill="#7a8494">overlay_instance.hh:57</text>
+  <g font-family="Consolas,monospace" font-size="12" fill="#24292f">
+    <text x="84" y="490">init()/begin_sync()/object_sync()/</text>
+    <text x="84" y="509">end_sync()/draw()  → 全部 final</text>
+    <text x="84" y="528">name_get() final → "Overlay"</text>
+    <text x="84" y="553">~Instance() override {</text>
+    <text x="84" y="571">  DRW_text_cache_destroy(state.dt);</text>
+    <text x="84" y="589">  ED_view3d_depths_free(text_depth_cache_); }</text>
+  </g>
+  <g font-family="Consolas,monospace" font-size="12" fill="#24292f">
+    <text x="480" y="490">State state;   Resources resources;</text>
+    <text x="480" y="509">OverlayLayer regular, infront;</text>
+  </g>
+  <rect x="470" y="526" width="406" height="66" rx="8" fill="#eef1fe" stroke="#4f6ef7" stroke-opacity=".3"/>
+  <text x="484" y="552" font-family="Consolas,monospace" font-size="12.5" font-weight="700" fill="#4f6ef7">★ ViewDepths *text_depth_cache_ = nullptr;</text>
+  <text x="484" y="576" font-size="11.5" fill="#3d4756">本册主角：61–63 行声明，唯一被本函数拥有的对象</text>
+
+  <rect x="64" y="626" width="832" height="36" rx="10" fill="#eef1fe" stroke="#4f6ef7" stroke-opacity=".25"/>
+  <text x="80" y="649" font-size="12.5" fill="#3d4756">vtable 分发贯穿始终：delete 基类指针 → 虚析构正确释放 → text_depth_cache_ 在析构中兜底回收</text>
+</svg>

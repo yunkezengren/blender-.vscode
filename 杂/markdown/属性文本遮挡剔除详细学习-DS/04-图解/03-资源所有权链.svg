@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">
+  <defs>
+    <filter id="sh3" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#14181f" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+  <rect width="960" height="600" fill="#f7f8fa"/>
+  <text x="32" y="42" font-size="21" font-weight="700" fill="#14181f">③ 资源所有权链 —— 谁创建、谁持有、谁释放</text>
+  <text x="32" y="66" font-size="13" fill="#7a8494">上层是三层「只借不碰」的接力；本函数真正拥有并释放的只有一个 ViewDepths</text>
+
+  <!-- 借用链 -->
+  <g filter="url(#sh3)">
+    <rect x="48" y="104" width="196" height="122" rx="12" fill="#ffffff" stroke="#e4e8ef"/>
+    <rect x="274" y="104" width="196" height="122" rx="12" fill="#ffffff" stroke="#e4e8ef"/>
+    <rect x="500" y="104" width="196" height="122" rx="12" fill="#ffffff" stroke="#e4e8ef"/>
+    <rect x="726" y="104" width="196" height="122" rx="12" fill="#ffffff" stroke="#e4e8ef"/>
+  </g>
+  <text x="146" y="132" text-anchor="middle" font-family="Consolas,monospace" font-size="13.5" font-weight="700" fill="#14181f">ARegion</text>
+  <text x="146" y="152" text-anchor="middle" font-size="11" fill="#7a8494">state.region（const）</text>
+  <text x="146" y="172" text-anchor="middle" font-size="11" fill="#7a8494">窗口布局系统创建</text>
+  <rect x="113" y="188" width="66" height="20" rx="10" fill="#f1f3f8"/><text x="146" y="202" text-anchor="middle" font-size="10.5" font-weight="600" fill="#7a8494">只借</text>
+
+  <text x="372" y="132" text-anchor="middle" font-family="Consolas,monospace" font-size="13.5" font-weight="700" fill="#14181f">wmDrawBuffer</text>
+  <text x="372" y="152" text-anchor="middle" font-size="11" fill="#7a8494">region→runtime→draw_buffer</text>
+  <text x="372" y="172" text-anchor="middle" font-family="Consolas,monospace" font-size="10.5" fill="#7a8494">创建 wm_draw.cc:751</text>
+  <rect x="339" y="188" width="66" height="20" rx="10" fill="#f1f3f8"/><text x="372" y="202" text-anchor="middle" font-size="10.5" font-weight="600" fill="#7a8494">只借</text>
+
+  <text x="598" y="132" text-anchor="middle" font-family="Consolas,monospace" font-size="13.5" font-weight="700" fill="#14181f">GPUViewport</text>
+  <text x="598" y="152" text-anchor="middle" font-size="11" fill="#7a8494">区域级 GPU 画布</text>
+  <text x="598" y="172" text-anchor="middle" font-family="Consolas,monospace" font-size="10.5" fill="#7a8494">创建 wm_draw.cc:752</text>
+  <rect x="565" y="188" width="66" height="20" rx="10" fill="#f1f3f8"/><text x="598" y="202" text-anchor="middle" font-size="10.5" font-weight="600" fill="#7a8494">只借</text>
+
+  <text x="824" y="132" text-anchor="middle" font-family="Consolas,monospace" font-size="13.5" font-weight="700" fill="#14181f">depth_tx</text>
+  <text x="824" y="152" text-anchor="middle" font-size="11" fill="#7a8494">D32S8 + HOST_READ</text>
+  <text x="824" y="172" text-anchor="middle" font-family="Consolas,monospace" font-size="10.5" fill="#7a8494">创建 gpu_viewport.cc:174</text>
+  <rect x="791" y="188" width="66" height="20" rx="10" fill="#f1f3f8"/><text x="824" y="202" text-anchor="middle" font-size="10.5" font-weight="600" fill="#7a8494">只借</text>
+
+  <g stroke="#cfd6e2" stroke-width="2" fill="none">
+    <path d="M244 165 h30 m-5 -5 l5 5 l-5 5"/>
+    <path d="M470 165 h30 m-5 -5 l5 5 l-5 5"/>
+    <path d="M696 165 h30 m-5 -5 l5 5 l-5 5"/>
+  </g>
+  <text x="259" y="152" text-anchor="middle" font-family="Consolas,monospace" font-size="10" fill="#7a8494">draw_buffer</text>
+  <text x="485" y="152" text-anchor="middle" font-family="Consolas,monospace" font-size="10" fill="#7a8494">→viewport</text>
+  <text x="711" y="140" text-anchor="middle" font-family="Consolas,monospace" font-size="10" fill="#7a8494">depth_texture()</text>
+
+  <!-- 拥有层 -->
+  <g filter="url(#sh3)">
+    <rect x="48" y="288" width="216" height="168" rx="12" fill="#ffffff" stroke="#e4e8ef"/>
+    <rect x="344" y="288" width="290" height="168" rx="12" fill="#eef1fe" stroke="#4f6ef7" stroke-width="1.6"/>
+    <rect x="714" y="288" width="208" height="168" rx="12" fill="#ffffff" stroke="#7a8494" stroke-dasharray="6 4"/>
+  </g>
+  <text x="156" y="322" text-anchor="middle" font-family="Consolas,monospace" font-size="13.5" font-weight="700" fill="#14181f">overlay::Instance</text>
+  <text x="156" y="344" text-anchor="middle" font-size="11.5" fill="#3d4756">引擎实例（每视口一份）</text>
+  <rect x="108" y="360" width="96" height="22" rx="11" fill="#e8f8ef"/>
+  <text x="156" y="375" text-anchor="middle" font-size="11" font-weight="700" fill="#10a35a">拥有者 Owner</text>
+  <text x="156" y="410" text-anchor="middle" font-size="10.5" fill="#7a8494">析构（124 行）兜底释放</text>
+
+  <text x="489" y="322" text-anchor="middle" font-family="Consolas,monospace" font-size="13.5" font-weight="700" fill="#4f6ef7">ViewDepths *text_depth_cache_</text>
+  <text x="489" y="344" text-anchor="middle" font-size="11.5" fill="#3d4756">创建：1040 行 MEM_new_zeroed</text>
+  <text x="489" y="362" text-anchor="middle" font-size="11.5" fill="#3d4756">释放：1022 / 1036 / 析构 124 行</text>
+  <rect x="425" y="380" width="128" height="22" rx="11" fill="#ffffff"/>
+  <text x="489" y="395" text-anchor="middle" font-size="11" font-weight="700" fill="#4f6ef7">拥有 Owned</text>
+  <text x="489" y="428" text-anchor="middle" font-size="10.5" fill="#7a8494">唯一 new 出来、唯一 free 的对象</text>
+
+  <text x="818" y="322" text-anchor="middle" font-family="Consolas,monospace" font-size="13.5" font-weight="700" fill="#3d4756">DRWTextStore::depths</text>
+  <text x="818" y="344" text-anchor="middle" font-size="11.5" fill="#3d4756">纯指针赋值（339 行）</text>
+  <text x="818" y="362" text-anchor="middle" font-size="11.5" fill="#3d4756">绝不释放</text>
+  <rect x="772" y="380" width="92" height="22" rx="11" fill="#f1f3f8"/>
+  <text x="818" y="395" text-anchor="middle" font-size="11" font-weight="700" fill="#7a8494">借用 Borrowed</text>
+  <text x="818" y="428" text-anchor="middle" font-size="10.5" fill="#7a8494">释放前必须先摘除</text>
+
+  <line x1="264" y1="372" x2="338" y2="372" stroke="#4f6ef7" stroke-width="2.4"/>
+  <path d="M338 372 L326 366 L326 378 Z" fill="#4f6ef7"/>
+  <text x="301" y="358" text-anchor="middle" font-size="11" font-weight="700" fill="#4f6ef7">拥有</text>
+  <line x1="634" y1="372" x2="708" y2="372" stroke="#7a8494" stroke-width="2" stroke-dasharray="6 4"/>
+  <path d="M708 372 L696 366 L696 378 Z" fill="#7a8494"/>
+  <text x="671" y="352" text-anchor="middle" font-size="11" fill="#7a8494">depth_set (1052)</text>
+  <text x="671" y="392" text-anchor="middle" font-size="10.5" fill="#7a8494">借用，不转移所有权</text>
+
+  <rect x="48" y="492" width="874" height="72" rx="12" fill="#eef1fe" stroke="#4f6ef7" stroke-opacity=".25"/>
+  <text x="68" y="522" font-size="13" font-weight="700" fill="#14181f">为什么纹理尺寸会变？</text>
+  <text x="68" y="546" font-size="12.5" fill="#3d4756">GPU_viewport_bind（gpu_viewport.cc:216–220）检测到区域尺寸变化就整套重建纹理——这正是本函数必须做宽高比对的根源</text>
+</svg>

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">
+  <defs>
+    <filter id="sh8" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#14181f" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+  <rect width="960" height="560" fill="#f7f8fa"/>
+  <text x="32" y="42" font-size="21" font-weight="700" fill="#14181f">⑧ 成本核算 —— 为什么惰性回读几乎总是划算</text>
+  <text x="32" y="66" font-size="13" fill="#7a8494">1920 × 1080 视口的实际数字；探测与回读相差五个数量级</text>
+
+  <g filter="url(#sh7)">
+    <rect x="48" y="100" width="272" height="120" rx="12" fill="#ffffff" stroke="#e4e8ef"/>
+    <rect x="344" y="100" width="272" height="120" rx="12" fill="#ffffff" stroke="#e4e8ef"/>
+    <rect x="640" y="100" width="272" height="120" rx="12" fill="#ffffff" stroke="#e4e8ef"/>
+    <rect x="48" y="236" width="272" height="120" rx="12" fill="#ffffff" stroke="#e4e8ef"/>
+    <rect x="344" y="236" width="272" height="120" rx="12" fill="#eef1fe" stroke="#4f6ef7" stroke-width="1.5"/>
+    <rect x="640" y="236" width="272" height="120" rx="12" fill="#ffffff" stroke="#e4e8ef"/>
+  </g>
+
+  <text x="184" y="132" text-anchor="middle" font-size="11.5" fill="#7a8494">像素数</text>
+  <text x="184" y="168" text-anchor="middle" font-family="Consolas,monospace" font-size="20" font-weight="700" fill="#14181f">2,073,600</text>
+  <text x="184" y="196" text-anchor="middle" font-size="11" fill="#7a8494">1920 × 1080</text>
+
+  <text x="480" y="132" text-anchor="middle" font-size="11.5" fill="#7a8494">GPU 侧纹理（D32S8）</text>
+  <text x="480" y="168" text-anchor="middle" font-family="Consolas,monospace" font-size="20" font-weight="700" fill="#7c4ff7">9.88 MiB</text>
+  <text x="480" y="196" text-anchor="middle" font-size="11" fill="#7a8494">5 B/px · 显存常驻 · 与本函数无关</text>
+
+  <text x="776" y="132" text-anchor="middle" font-size="11.5" fill="#7a8494">CPU 回读数组</text>
+  <text x="776" y="168" text-anchor="middle" font-family="Consolas,monospace" font-size="20" font-weight="700" fill="#4f6ef7">7.91 MiB</text>
+  <text x="776" y="196" text-anchor="middle" font-size="11" fill="#7a8494">4 B/px · 唯一一次大块分配</text>
+
+  <text x="184" y="268" text-anchor="middle" font-size="11.5" fill="#7a8494">探测扫描</text>
+  <text x="184" y="304" text-anchor="middle" font-family="Consolas,monospace" font-size="20" font-weight="700" fill="#10a35a">纳秒级</text>
+  <text x="184" y="332" text-anchor="middle" font-size="11" fill="#7a8494">O(文本条数) · 通常几百条以内</text>
+
+  <text x="480" y="268" text-anchor="middle" font-size="11.5" fill="#7a8494">回读同步停顿</text>
+  <text x="480" y="304" text-anchor="middle" font-family="Consolas,monospace" font-size="20" font-weight="700" fill="#dc3545">毫秒级</text>
+  <text x="480" y="332" text-anchor="middle" font-size="11" fill="#7a8494">管线 flush · 量级取决于驱动与在途工作</text>
+
+  <text x="776" y="268" text-anchor="middle" font-size="11.5" fill="#7a8494">常规帧分配次数</text>
+  <text x="776" y="304" text-anchor="middle" font-family="Consolas,monospace" font-size="20" font-weight="700" fill="#10a35a">0</text>
+  <text x="776" y="332" text-anchor="middle" font-size="11" fill="#7a8494">原地刷新复用同一块缓冲</text>
+
+  <text x="480" y="404" text-anchor="middle" font-size="34" font-weight="800" fill="#7a8494">≈ 10⁵ ×</text>
+  <text x="480" y="430" text-anchor="middle" font-size="12.5" fill="#7a8494">探测与回读的成本差距（五个数量级）</text>
+
+  <rect x="48" y="454" width="864" height="72" rx="12" fill="#e8f8ef" stroke="#10a35a" stroke-opacity=".3"/>
+  <text x="68" y="484" font-size="13" font-weight="700" fill="#10a35a">设计结论</text>
+  <text x="68" y="508" font-size="12.5" fill="#3d4756">先花纳秒探测、再决定是否花毫秒回读；7.91 MiB 每帧重新分配还会丢掉跨帧指针稳定性——三态逻辑在性能与安全两头都占</text>
+</svg>

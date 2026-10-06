@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>update_text_depth 全景解剖 · overlay_instance.cc:1017~1053</title>
+<style>
+  /* ===================== 设计令牌（与前两册一致） ===================== */
+  :root {
+    --bg: #f7f8fa; --bg-elev: #ffffff; --fg: #14181f; --fg-soft: #3d4756; --muted: #7a8494;
+    --line: #e4e8ef; --line-strong: #cfd6e2;
+    --brand: #4f6ef7; --brand-2: #7c4ff7; --brand-soft: #eef1fe; --brand-ring: rgba(79,110,247,.18);
+    --ok: #10a35a; --ok-soft: #e8f8ef; --warn: #d68910; --warn-soft: #fdf6e3;
+    --danger: #dc3545; --danger-soft: #fdeced;
+    --code-bg: #f9fafc; --code-bar: #f1f3f8; --code-line: #e2e6ee; --code-fg: #24292f;
+    --code-comment: #8b95a7; --code-key: #8250df; --code-str: #1a7f37; --code-num: #0550ae;
+    --code-hl: rgba(79,110,247,.10);
+    --radius: 14px;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.05);
+    --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+            "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas,
+            "Liberation Mono", monospace;
+    --serif: "Iowan Old Style", "Source Serif 4", Georgia, "Songti SC", "SimSun", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1117; --bg-elev: #161b24; --fg: #e8ecf4; --fg-soft: #c2cad8; --muted: #8b95a7;
+      --line: #232b38; --line-strong: #333d4e;
+      --brand: #7d93ff; --brand-2: #a37dff; --brand-soft: #171e33; --brand-ring: rgba(125,147,255,.22);
+      --ok: #3ddc84; --ok-soft: #10241a; --warn: #f0b429; --warn-soft: #241f10;
+      --danger: #ff6b7a; --danger-soft: #2a1519;
+      --code-bg: #eef1f6; --code-bar: #e4e8f0; --code-line: #d3d9e4; --code-fg: #1f242b;
+      --code-comment: #78818f; --code-key: #7a45d6; --code-str: #17692f; --code-num: #054ea3;
+      --code-hl: rgba(79,110,247,.14);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--font); font-size: 17.5px; line-height: 1.8;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  .hero { position: relative; overflow: hidden;
+    background:
+      radial-gradient(1000px 420px at 12% -20%, var(--brand-ring), transparent 62%),
+      radial-gradient(760px 380px at 92% 0%, rgba(124,79,247,.14), transparent 60%),
+      var(--bg-elev);
+    border-bottom: 1px solid var(--line); padding: 76px 0 58px; }
+  .hero::after { content: ""; position: absolute; inset: 0;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 34px 34px;
+    -webkit-mask-image: radial-gradient(620px 300px at 20% 0%, #000 0%, transparent 78%);
+    mask-image: radial-gradient(620px 300px at 20% 0%, #000 0%, transparent 78%);
+    opacity: .5; pointer-events: none; }
+  .hero-inner { position: relative; width: 90%; margin: 0 auto; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; font-weight: 600;
+    color: var(--brand); background: var(--brand-soft);
+    border: 1px solid var(--brand-ring); padding: 5px 13px; border-radius: 999px; margin-bottom: 22px; }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%;
+    background: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring); }
+  .hero h1 { font-size: clamp(31px, 4.4vw, 47px); line-height: 1.16; letter-spacing: -.028em;
+    font-weight: 800; margin: 0 0 16px;
+    background: linear-gradient(120deg, var(--fg) 22%, var(--brand) 76%, var(--brand-2));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent; }
+  .hero h1 code { font-family: var(--mono); font-weight: 700; font-size: .86em;
+    background: none; border: 0; padding: 0;
+    -webkit-text-fill-color: transparent; color: transparent; }
+  .hero .lede { font-size: 19px; color: var(--fg-soft); margin: 0 0 26px; }
+  .hero .lede b { color: var(--fg); font-weight: 650; }
+  .docmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px; margin: 0 0 26px; max-width: 1240px; }
+  .docmap a { display: block; text-decoration: none; background: var(--bg-elev);
+    border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px;
+    box-shadow: var(--shadow-sm); transition: border-color .15s, transform .15s; }
+  .docmap a:hover { border-color: var(--brand); transform: translateY(-1px); }
+  .docmap .dt { font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+  .docmap .dn { font-weight: 680; color: var(--fg); font-size: 15.5px; margin-bottom: 3px; }
+  .docmap .dd { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  .docmap a.cur { border-color: var(--brand-ring); background: var(--brand-soft); }
+  .docmap a.cur .dn { color: var(--brand); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 12.5px; color: var(--fg-soft);
+    background: var(--bg-elev); border: 1px solid var(--line);
+    padding: 6px 12px; border-radius: 8px; box-shadow: var(--shadow-sm); }
+  .chip .k { color: var(--muted); }
+  .chip.hl { border-color: var(--brand-ring); background: var(--brand-soft); color: var(--brand); }
+  .wrap { display: grid; grid-template-columns: 272px minmax(0, 1fr);
+    gap: clamp(40px, 4vw, 72px); width: 90%; margin: 0 auto; }
+  nav.toc { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto;
+    padding: 40px 0 60px; scrollbar-width: thin; }
+  nav.toc::-webkit-scrollbar { width: 5px; }
+  nav.toc::-webkit-scrollbar-track { background: transparent; }
+  nav.toc::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+  nav.toc:hover::-webkit-scrollbar-thumb { background: var(--line-strong); }
+  nav.toc .toc-title { font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 0 0 14px; padding-left: 12px; }
+  nav.toc a { display: block; font-size: 14px; line-height: 1.5; color: var(--muted);
+    text-decoration: none; padding: 6px 10px 6px 14px;
+    border-left: 2px solid transparent; border-radius: 0 7px 7px 0;
+    transition: color .14s, background .14s, border-color .14s; }
+  nav.toc a:hover { color: var(--fg); background: var(--brand-soft); }
+  nav.toc a.lv1 { color: var(--fg-soft); font-weight: 600; margin-top: 6px; }
+  nav.toc a.lv2 { padding-left: 26px; font-size: 13px; }
+  nav.toc a.active { color: var(--brand); border-left-color: var(--brand);
+    background: var(--brand-soft); font-weight: 650; }
+  main { min-width: 0; padding: 44px 0 100px; }
+  h2 { font-size: 29px; font-weight: 750; letter-spacing: -.02em; line-height: 1.3;
+    margin: 68px 0 20px; padding-top: 28px; border-top: 1px solid var(--line);
+    display: flex; align-items: baseline; gap: 13px; scroll-margin-top: 20px; }
+  h2:first-of-type { margin-top: 8px; border-top: 0; padding-top: 0; }
+  h2 .n { font-family: var(--mono); font-size: 14px; font-weight: 700;
+    color: var(--brand); background: var(--brand-soft);
+    border: 1px solid var(--brand-ring); border-radius: 7px;
+    padding: 3px 10px; flex: none; letter-spacing: 0; }
+  h3 { font-size: 20px; font-weight: 680; letter-spacing: -.012em;
+    margin: 40px 0 14px; color: var(--fg); scroll-margin-top: 20px; }
+  h3::before { content: ""; display: inline-block; width: 3px; height: 17px; border-radius: 2px;
+    background: linear-gradient(var(--brand), var(--brand-2)); margin-right: 11px; vertical-align: -2px; }
+  h3 .ln { font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--muted); margin-left: 8px; }
+  p { margin: 0 0 17px; color: var(--fg-soft); }
+  p strong, li strong { color: var(--fg); font-weight: 650; }
+  a { color: var(--brand); text-underline-offset: 3px; }
+  ul, ol { margin: 0 0 18px; padding-left: 24px; }
+  li { margin: 0 0 8px; color: var(--fg-soft); }
+  li::marker { color: var(--muted); }
+  code { font-family: var(--mono); font-size: .86em; background: var(--brand-soft); color: var(--brand);
+    padding: .14em .42em; border-radius: 5px; border: 1px solid var(--brand-ring); word-break: break-word; }
+  .code { margin: 0 0 20px; border-radius: var(--radius); overflow: hidden;
+    border: 1px solid var(--code-line); background: var(--code-bg); box-shadow: var(--shadow-sm); }
+  .code .bar { display: flex; align-items: center; gap: 8px; padding: 9px 14px;
+    background: var(--code-bar); border-bottom: 1px solid var(--code-line); }
+  .code .bar .lights { display: flex; gap: 6px; margin-right: 4px; flex: none; }
+  .code .bar .lights i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+  .code .bar .lights i:nth-child(1) { background: #ff5f57; }
+  .code .bar .lights i:nth-child(2) { background: #febc2e; }
+  .code .bar .lights i:nth-child(3) { background: #28c840; }
+  .code .bar .path { font-family: var(--mono); font-size: 12.5px; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .code .bar .path b { color: var(--fg-soft); font-weight: 600; }
+  .code pre { margin: 0; padding: 18px 20px; overflow-x: auto;
+    font-family: var(--mono); font-size: 14.5px; line-height: 1.7; color: var(--code-fg); tab-size: 4; }
+  .code code { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
+  .c { color: var(--code-comment); font-style: italic; }
+  .k { color: var(--code-key); }
+  .s { color: var(--code-str); }
+  .num { color: var(--code-num); }
+  .hl { background: var(--code-hl); display: inline-block; width: 100%; }
+  .note { position: relative; margin: 0 0 20px; padding: 15px 18px 15px 50px;
+    border-radius: var(--radius); background: var(--brand-soft);
+    border: 1px solid var(--brand-ring); border-left: 3px solid var(--brand); }
+  .note .ico { position: absolute; left: 16px; top: 15px; width: 22px; height: 22px;
+    border-radius: 7px; display: grid; place-items: center; font-size: 12px; font-weight: 800;
+    background: var(--brand); color: #fff; }
+  .note .t { font-weight: 700; color: var(--fg); margin: 0 0 6px; font-size: 16.5px; }
+  .note p { margin: 0; font-size: 16px; }
+  .note p + p { margin-top: 9px; }
+  .note.warn { background: var(--warn-soft); border-color: rgba(214,137,16,.3); border-left-color: var(--warn); }
+  .note.warn .ico { background: var(--warn); }
+  .note.ok { background: var(--ok-soft); border-color: rgba(16,163,90,.28); border-left-color: var(--ok); }
+  .note.ok .ico { background: var(--ok); }
+  .note.bad { background: var(--danger-soft); border-color: rgba(220,53,69,.28); border-left-color: var(--danger); }
+  .note.bad .ico { background: var(--danger); }
+  .xref { display: flex; align-items: center; gap: 10px; margin: 0 0 20px; padding: 12px 16px;
+    border-radius: var(--radius); background: var(--bg-elev); border: 1px dashed var(--line-strong);
+    font-size: 15px; color: var(--fg-soft); }
+  .xref .xi { font-family: var(--mono); font-size: 11px; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--brand); flex: none; }
+  .xref a { font-weight: 600; }
+  .tbl { margin: 0 0 20px; border: 1px solid var(--line); border-radius: var(--radius);
+    overflow: hidden; background: var(--bg-elev); box-shadow: var(--shadow-sm); }
+  .tbl .scroll { overflow-x: auto; }
+  .tbl table { border-collapse: collapse; width: 100%; font-size: 16px; }
+  .tbl th, .tbl td { padding: 12px 16px; text-align: left; vertical-align: top;
+    border-bottom: 1px solid var(--line); }
+  .tbl thead th { background: var(--bg); font-family: var(--mono); font-size: 12px;
+    letter-spacing: .07em; text-transform: uppercase; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .tbl tbody tr:last-child td { border-bottom: 0; }
+  .tbl tbody tr:hover { background: var(--brand-soft); }
+  .tbl td.ln, .tbl th.ln { font-family: var(--mono); font-size: 14px; color: var(--brand);
+    font-weight: 600; white-space: nowrap; }
+  .tbl tr.hl2 td { background: var(--warn-soft); font-weight: 650; color: var(--fg); }
+  .tbl.compact th, .tbl.compact td { padding: 8px 12px; font-size: 15px; }
+  .pill { display: inline-block; font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+    padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line-strong);
+    background: var(--bg); color: var(--muted); white-space: nowrap; }
+  .pill.ok { color: var(--ok); border-color: rgba(16,163,90,.35); background: var(--ok-soft); }
+  .pill.bad { color: var(--danger); border-color: rgba(220,53,69,.32); background: var(--danger-soft); }
+  .m { font-family: var(--serif); font-style: italic; }
+  .fig { margin: 0 0 26px; border-radius: var(--radius); overflow: hidden;
+    border: 1px solid var(--line); background: #f7f8fa; box-shadow: var(--shadow-sm); }
+  .fig svg { display: block; width: 100%; height: auto; }
+  .fig figcaption { padding: 10px 16px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted); background: var(--bg-elev); border-top: 1px solid var(--line); }
+  .fig figcaption b { color: var(--brand); }
+  footer { margin-top: 80px; padding: 26px 0 10px; border-top: 1px solid var(--line);
+    font-size: 14.5px; color: var(--muted); line-height: 2; }
+  footer p { margin: 0; }
+  @media (max-width: 1024px) {
+    .wrap { grid-template-columns: 1fr; gap: 0; width: 92%; }
+    nav.toc { position: static; max-height: none; padding: 24px 0 0; }
+    body { font-size: 16.5px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <span class="eyebrow"><span class="dot"></span>Blender 属性文本遮挡剔除 · 第 4 册</span>
+    <h1><code>update_text_depth()</code> 全景解剖</h1>
+    <p class="lede">
+      从一行调用钻到 GPU 显存：<b>DrawEngine 虚函数体系</b>、资源所有权接力、
+      <code>gpu::Texture</code> 的<b>后端多态分发</b>、GL / Vulkan 回读的底层实现、
+      惰性回读的成本核算。微观到每一行，宏观到整个渲染架构，附 8 幅图解。
+    </p>
+
+    <div class="docmap">
+      <a href="01-投影数学手册.html"><div class="dt">第 1 册</div><div class="dn">投影数学手册</div><div class="dd">齐次坐标 · 矩阵推导 · 深度精度</div></a>
+      <a href="02-投影代码导读.html"><div class="dt">第 2 册</div><div class="dn">投影代码导读</div><div class="dd">调用链 · 位标志 · 逐行拆解 · 状态码</div></a>
+      <a href="03-深度回读代码导读.html"><div class="dt">第 3 册</div><div class="dn">深度回读代码导读</div><div class="dd">帧内时序 · 类型手册 · 所有权 · 修改指南</div></a>
+      <a class="cur" href="#"><div class="dt">第 4 册 · 本页</div><div class="dn">update_text_depth 全景解剖</div><div class="dd">继承体系 · 多态分发 · GPU 回读 · 成本核算</div></a>
+    </div>
+
+    <div class="chips">
+      <span class="chip"><span class="k">file</span> overlay_instance.cc</span>
+      <span class="chip"><span class="k">lines</span> 1017 – 1053</span>
+      <span class="chip hl"><span class="k">函数</span> Instance::update_text_depth()</span>
+      <span class="chip"><span class="k">图解</span> 8 幅 SVG</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<nav class="toc">
+  <p class="toc-title">目录</p>
+  <a class="lv1" href="#s1">1 · 宏观：DrawEngine 继承体系</a>
+  <a class="lv2" href="#s11">1.1 虚函数与工厂</a>
+  <a class="lv2" href="#s12">1.2 text_depth_cache_ 的归属</a>
+  <a class="lv1" href="#s2">2 · state 三个字段的溯源</a>
+  <a class="lv2" href="#s21">2.1 show_text 在哪赋值</a>
+  <a class="lv2" href="#s22">2.2 is_space_v3d() 与防御</a>
+  <a class="lv2" href="#s23">2.3 dt：每帧销毁重建</a>
+  <a class="lv1" href="#s3">3 · 三条件早退逐行</a>
+  <a class="lv1" href="#s4">4 · ViewDepths 与姊妹实现</a>
+  <a class="lv1" href="#s5">5 · 资源所有权链全景</a>
+  <a class="lv2" href="#s51">5.1 创建链三层借用</a>
+  <a class="lv2" href="#s52">5.2 深度纹理的诞生</a>
+  <a class="lv1" href="#s6">6 · gpu::Texture 多态分发</a>
+  <a class="lv2" href="#s61">6.1 GL 后端 read()</a>
+  <a class="lv2" href="#s62">6.2 Vulkan 后端 read()</a>
+  <a class="lv2" href="#s63">6.3 双重载与 HOST_READ</a>
+  <a class="lv1" href="#s7">7 · 消费端闭环</a>
+  <a class="lv1" href="#s8">8 · GPU / CPU 基础知识</a>
+  <a class="lv1" href="#s9">9 · 一帧全景时序</a>
+  <a class="lv1" href="#s10">10 · 图解索引</a>
+</nav>
+
+<main>
+
+<h2 id="s1"><span class="n">01</span>宏观：谁在调用它 —— DrawEngine 继承体系</h2>
+
+<p>
+这个函数是成员函数，宿主类是 <code>blender::draw::overlay::Instance</code>。
+它不是孤立的类，而是插件式渲染引擎架构中的一个节点。
+<strong>整段代码里唯一真正的面向对象在引擎层</strong>——
+数据层（<code>State</code>、<code>ViewDepths</code>、<code>GPUViewport</code>、<code>wmDrawBuffer</code>）
+全部是无虚函数的 POD 结构体。
+</p>
+
+<figure class="fig">
+  <img src="04-图解/01-DrawEngine继承体系.svg" alt="DrawEngine 继承体系图解">
+  <figcaption><b>图 1</b> · DrawEngine 抽象基类 → overlay::Instance 唯一继承层 → 工厂惰性创建</figcaption>
+</figure>
+
+<h3 id="s11">1.1 虚函数与工厂 <span class="ln">DRW_render.hh:71–133</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>DRW_render.hh</b> : 71 – 97 · 抽象基类</span></div>
+<pre><code><span class="k">struct</span> DrawEngine {
+  <span class="k">virtual</span> ~DrawEngine() = <span class="k">default</span>;          <span class="c">/* 虚析构！ */</span>
+  <span class="k">virtual</span> StringRefNull name_get() = <span class="num">0</span>;     <span class="c">/* 纯虚 */</span>
+  <span class="k">virtual</span> <span class="k">void</span> init() = <span class="num">0</span>;                  <span class="c">/* 每帧最先跑 */</span>
+  <span class="k">virtual</span> <span class="k">void</span> begin_sync() = <span class="num">0</span>;            <span class="c">/* 场景同步 */</span>
+  <span class="k">virtual</span> <span class="k">void</span> object_sync(draw::ObjectRef &amp;, draw::Manager &amp;) = <span class="num">0</span>;
+  <span class="k">virtual</span> <span class="k">void</span> end_sync() = <span class="num">0</span>;
+  <span class="k">virtual</span> <span class="k">void</span> draw(draw::Manager &amp;) = <span class="num">0</span>;   <span class="c">/* 提交命令 */</span>
+};</code></pre>
+</div>
+
+<p>
+七个纯虚函数构成引擎生命周期模板。<code>Pointer</code> 嵌套结构（104–132 行）是工厂：
+持有基类指针 <code>DrawEngine *instance</code>，<code>set_used(true)</code> 时若为空就调
+第二个纯虚函数 <code>create_instance()</code> 创建具体引擎——
+<code>draw_view_data.cc</code> 的 <code>foreach_engine</code> 遍历所有注册引擎完成这个分发。
+</p>
+
+<div class="note ok">
+  <span class="ico">✓</span>
+  <p class="t">虚析构是整个资源契约的基石</p>
+  <p><code>Pointer::free_instance()</code> 执行 <code>delete instance</code>——基类指针删除派生类对象。
+  正因为 <code>DrawEngine</code> 声明了虚析构（78 行），这次 delete 才能正确调到
+  <code>overlay::Instance::~Instance()</code>（overlay_instance.hh:120–126），
+  后者释放 <code>text_depth_cache_</code>——本函数管理的内存的最终兜底。</p>
+</div>
+
+<h3 id="s12">1.2 text_depth_cache_ 的归属 <span class="ln">overlay_instance.hh:61–63</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>overlay_instance.hh</b> : 61 – 63 · 成员声明与注释</span></div>
+<pre><code><span class="c">/** Scene depth for text occlusion, refreshed after the prepass and before grid drawing.
+ * Reuse the allocation until the viewport resizes or depth testing is disabled. */</span>
+ViewDepths *text_depth_cache_ = <span class="k">nullptr</span>;</code></pre>
+</div>
+
+<p>
+注释直接概括了第 3 册的全部设计：<strong>prepass 后刷新、grid 前完成、复用分配直到视口缩放或关闭剔除</strong>。
+它在 <code>private</code> 段——只有本函数和析构函数有资格碰它。
+</p>
+
+<h2 id="s2"><span class="n">02</span>state 三个字段的溯源</h2>
+
+<p>
+<code>State</code>（overlay_private.hh:128–237）是 POD 聚合体，每帧由 <code>Instance::init()</code> 填充。
+三个早退条件涉及的字段各有明确来源：
+</p>
+
+<h3 id="s21">2.1 show_text 在哪赋值 <span class="ln">overlay_instance.cc:49 · 93–94 · 119</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path">init() 中的三处赋值</span></div>
+<pre><code>state.show_text = <span class="k">false</span>;                <span class="c">/* 49 行：先重置 */</span>
+<span class="c">/* 93–94 行：V3D 分支，三条件取与 */</span>
+state.show_text = !resources.is_selection() &amp;&amp; !state.is_depth_only_drawing &amp;&amp;
+                  (ctx-&gt;v3d-&gt;overlay.flag &amp; V3D_OVERLAY_HIDE_TEXT) == <span class="num">0</span>;
+<span class="c">/* 119 行：图像编辑器分支 */</span>
+state.show_text = !state.hide_overlays;</code></pre>
+</div>
+
+<p>
+三个来源：选择模式不显示、深度拾取绘制不显示、用户勾选「隐藏文本」不显示。
+它是<strong>「本帧画不画文本」的权威值</strong>。
+</p>
+
+<h3 id="s22">2.2 is_space_v3d() 与防御 <span class="ln">overlay_private.hh:218–221</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path">非虚内联，一次枚举比较</span></div>
+<pre><code><span class="k">bool</span> is_space_v3d() <span class="k">const</span> { <span class="k">return</span> <span class="k">this</span>-&gt;space_type == SPACE_VIEW3D; }
+
+<span class="c">/* space_type 的赋值（overlay_instance.cc:56） */</span>
+state.space_type = state.v3d != <span class="k">nullptr</span> ? SPACE_VIEW3D
+                                        : eSpace_Type(ctx-&gt;space_data-&gt;spacetype);</code></pre>
+</div>
+
+<p>
+为什么覆盖层引擎还可能在非 V3D 空间运行？因为<strong>图像编辑器也复用这个引擎</strong>
+（111–129 行有完整的 <code>is_space_image</code> 分支）。图像空间没有
+<code>RegionView3D</code>，深度语义完全不同，所以这一条是必要防御而非多余。
+</p>
+
+<h3 id="s23">2.3 dt：每帧销毁重建 <span class="ln">overlay_instance.cc:462–463</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path">begin_sync() 里，早于所有 object_sync</span></div>
+<pre><code>DRW_text_cache_destroy(state.dt);
+state.dt = DRW_text_cache_create();     <span class="c">/* MEM_new&lt;DRWTextStore&gt; */</span></code></pre>
+</div>
+
+<p>
+<code>DRWTextStore</code>（draw_manager_text.cc:68–77）三个字段：
+<code>Vector&lt;ViewCachedString&gt; cache_strings</code>（本帧全部文本）、
+<code>LinearAllocator&lt;&gt; string_allocator</code>（字符串后备存储）、
+<code>const ViewDepths *depths</code>（<strong>借用指针，1052 行的交接目标</strong>）。
+</p>
+
+<div class="note">
+  <span class="ico">i</span>
+  <p class="t">时序保证探测准确</p>
+  <p>begin_sync 在前、object_sync 填充 cache_strings 在中、本函数在 draw() 里最后跑——
+  所以 <code>DRW_text_cache_needs_depth_test()</code> 扫描时看到的是<strong>完整的本帧文本列表</strong>。</p>
+</div>
+
+<h2 id="s3"><span class="n">03</span>三条件早退逐行 <span class="ln">1019–1026</span></h2>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>overlay_instance.cc</b> : 1019 – 1026</span></div>
+<pre><code><span class="k">if</span> (!state.show_text || !state.is_space_v3d() || !DRW_text_cache_needs_depth_test(state.dt)) {
+  DRW_text_cache_depth_set(state.dt, <span class="k">nullptr</span>);   <span class="c">/* ① 先摘借用指针 */</span>
+  <span class="k">if</span> (text_depth_cache_ != <span class="k">nullptr</span>) {
+    ED_view3d_depths_free(text_depth_cache_);    <span class="c">/* ② 再释放自有对象 */</span>
+    text_depth_cache_ = <span class="k">nullptr</span>;                 <span class="c">/* ③ 置空自有指针 */</span>
+  }
+  <span class="k">return</span>;
+}</code></pre>
+</div>
+
+<ul>
+  <li><strong><code>||</code> 短路求值</strong>：两个 bool 最便宜放前面，O(n) 缓存扫描放最后——前两关不过就不付扫描成本。</li>
+  <li><strong>探测函数</strong>（draw_manager_text.cc:342–350）：遍历 <code>cache_strings</code>，
+      任一条 <code>flag &amp; DRW_TEXT_CACHE_OCCLUSION_CULLING</code>（<code>1 &lt;&lt; 4</code>）即真。
+      这个标志只被 <code>overlay_attribute_text.hh</code> 的 <code>text_flag_</code> 打上——
+      <strong>只有 .viewer 属性文本申请遮挡剔除</strong>，普通物体名标签不申请。</li>
+  <li><strong>早退顺序是安全契约</strong>：先置空 <code>dt-&gt;depths</code> 再 <code>free</code>。
+      反序且本帧仍有带标志文本时，消费端 <code>dt-&gt;depths-&gt;depths[...]</code> 就是 use-after-free。</li>
+</ul>
+
+<h2 id="s4"><span class="n">04</span>ViewDepths 与姊妹实现</h2>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>ED_view3d.hh</b> : 91 – 97 · 普通 struct，零虚函数</span></div>
+<pre><code><span class="k">struct</span> ViewDepths {
+  <span class="k">unsigned short</span> w, h;        <span class="c">/* 数组尺寸 */</span>
+  <span class="k">short</span> x, y;                 <span class="c">/* 子矩形偏移，本场景恒 0 */</span>
+  <span class="k">float</span> *depths;              <span class="c">/* CPU 深度数组，行主序 */</span>
+  <span class="k">double</span> depth_range[<span class="num">2</span>];      <span class="c">/* 值域声明 [0,1] */</span>
+};</code></pre>
+</div>
+
+<p>
+它不是为本功能发明的。<strong>同一个结构体早已服务 gizmo 深度拾取</strong>——
+view3d_draw.cc:2405 有几乎一模一样的 <code>view3d_depths_create()</code>：
+同样的 <code>MEM_new_zeroed&lt;ViewDepths&gt;</code>、同样的取纹理、同样的
+<code>GPU_texture_read(depth_tx, GPU_DATA_FLOAT, 0)</code>。
+本函数是它的<strong>跨帧复用改造版</strong>：增加尺寸检测与原地刷新，其余一致。
+</p>
+
+<figure class="fig">
+  <img src="04-图解/07-姊妹实现对比.svg" alt="姊妹实现对比图解">
+  <figcaption><b>图 7</b> · gizmo 一次性分配 vs 文本遮挡剔除三态复用——同一 API，两种生命周期策略</figcaption>
+</figure>
+
+<p>
+<code>MEM_new_zeroed&lt;T&gt;</code>（MEM_guardedalloc.h:550–559）能用于 <code>ViewDepths</code>
+是因为它全 POD；模板内的 <code>static_assert(std::is_trivial_v&lt;T&gt;)</code> 会拒绝任何带
+构造/析构的类型。释放端 <code>ED_view3d_depths_free</code>（view3d_draw.cc:2551–2557）两步走：
+先 <code>MEM_delete(depths-&gt;depths)</code> 再 <code>MEM_delete(depths)</code>，与本函数的分配严格配对。
+</p>
+
+<h2 id="s5"><span class="n">05</span>资源所有权链全景</h2>
+
+<p>
+1029 行 <code>WM_draw_region_get_viewport(const_cast&lt;ARegion *&gt;(state.region))</code>
+背后是三层嵌套的<strong>借用接力</strong>——本函数对前三层只读不碰，唯一拥有的是最后一层。
+</p>
+
+<figure class="fig">
+  <img src="04-图解/03-资源所有权链.svg" alt="资源所有权链图解">
+  <figcaption><b>图 3</b> · ARegion → wmDrawBuffer → GPUViewport → depth_tx 全是借用；只有 ViewDepths 被拥有与释放</figcaption>
+</figure>
+
+<h3 id="s51">5.1 创建链三层借用</h3>
+
+<div class="tbl"><div class="scroll">
+<table>
+  <thead><tr><th>对象</th><th>类型</th><th>创建于</th><th>本函数的角色</th></tr></thead>
+  <tbody>
+    <tr><td><code>region-&gt;runtime-&gt;draw_buffer</code></td><td><code>wmDrawBuffer *</code></td><td class="ln">wm_draw.cc:751</td><td>只借。区域首次绘制时 <code>MEM_new_zeroed</code> 创建，752–753 行同时 <code>GPU_viewport_create()</code></td></tr>
+    <tr><td><code>viewport</code></td><td><code>GPUViewport *</code></td><td class="ln">gpu_viewport.cc:111</td><td>只借。区域级 GPU 画布，持全部颜色/深度纹理与帧缓冲</td></tr>
+    <tr><td><code>depth_tx</code></td><td><code>gpu::Texture *</code></td><td class="ln">gpu_viewport.cc:174</td><td>只借其内容。D32S8 格式，<code>GPU_viewport_bind</code> 检测尺寸变化就整套重建（216–220 行）</td></tr>
+    <tr class="hl2"><td><code>text_depth_cache_</code></td><td><code>ViewDepths *</code></td><td class="ln">本函数 1040</td><td><strong>唯一拥有</strong>：三处 free + 析构兜底</td></tr>
+    <tr><td><code>dt-&gt;depths</code></td><td><code>const ViewDepths *</code></td><td class="ln">纯指针赋值</td><td>借用：不释放，依赖拥有者先摘除</td></tr>
+  </tbody>
+</table>
+</div></div>
+
+<div class="note warn">
+  <span class="ico">!</span>
+  <p class="t">尺寸比对（1033–1038 行）的根源在下游</p>
+  <p><code>GPU_viewport_bind</code> 每次绑定都比较 <code>rect_size</code> 与 <code>viewport-&gt;size</code>，
+  不同则 <code>gpu_viewport_textures_free + create</code> 重建整套纹理（gpu_viewport.cc:216–220）。
+  用户拉伸窗口就会走到这里——若 CPU 缓存还是旧尺寸继续写入就<strong>越界</strong>。</p>
+</div>
+
+<h3 id="s52">5.2 深度纹理的诞生 <span class="ln">gpu_viewport.cc:174–186</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path">首次 bind 时创建</span></div>
+<pre><code>viewport-&gt;depth_tx = GPU_texture_create_2d(<span class="s">"dtxl_depth"</span>,
+                                           UNPACK2(size), <span class="num">1</span>,
+                                           gpu::TextureFormat::SFLOAT_32_DEPTH_UINT_8,
+                                           usage | <span class="hl">GPU_TEXTURE_USAGE_HOST_READ</span> |
+                                               GPU_TEXTURE_USAGE_FORMAT_VIEW,
+                                           <span class="k">nullptr</span>);</code></pre>
+</div>
+
+<ul>
+  <li><strong><code>SFLOAT_32_DEPTH_UINT_8</code></strong> = D32S8：32 位浮点深度 + 8 位模板。
+      浮点深度是 Blender 近平面极高精度的关键（第 1 册 §6）。</li>
+  <li><strong><code>GPU_TEXTURE_USAGE_HOST_READ</code></strong>（GPU_texture.hh:770，第 4 位）：
+      显式声明「CPU 要回读」。Vulkan/Metal 的 usage 必须创建时声明，后端据此选择可回读内存布局。
+      <strong>缺了这个标志调 <code>GPU_texture_read</code> 直接断言失败</strong>（gpu_texture.cc:557–560）。</li>
+  <li><strong><code>FORMAT_VIEW</code></strong>：允许格式视图——Workbench 体积渲染要读 stencil 视面。</li>
+</ul>
+
+<h2 id="s6"><span class="n">06</span>gpu::Texture 多态分发 —— 本函数触发的唯一真 OO</h2>
+
+<p>
+<code>GPU_texture_read</code> 最深处藏着整段代码<strong>唯一的运行期多态</strong>：
+</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path"><b>gpu_texture_private.hh</b> : 105 – 175 · 抽象基类（protected 字段 + 纯虚）</span></div>
+<pre><code><span class="k">class</span> Texture {
+<span class="k"> protected</span>:
+  <span class="k">int</span> w_, h_, d_;                        <span class="c">/* 尺寸 */</span>
+  TextureFormat format_;                 <span class="c">/* 内部格式 */</span>
+  eGPUTextureUsage gpu_image_usage_flags_;  <span class="c">/* HOST_READ 存这里 */</span>
+  Texture *source_texture_ = <span class="k">nullptr</span>;    <span class="c">/* 纹理视图源 */</span>
+<span class="k"> public</span>:
+  <span class="k">virtual</span> ~Texture();                    <span class="c">/* 虚析构 */</span>
+  <span class="k">virtual</span> <span class="k">void</span> read(<span class="k">int</span> mip, eGPUDataFormat format, <span class="k">void</span> *dst) = <span class="num">0</span>;  <span class="c">/* ← 纯虚 */</span>
+  <span class="k">int</span> width_get() <span class="k">const</span> { <span class="k">return</span> w_; }   <span class="c">/* 非虚内联 */</span>
+};</code></pre>
+</div>
+
+<h3 id="s61">6.1 GL 后端 read() <span class="ln">gl_texture.cc:483–526</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path">Windows 上 Blender 默认走这条</span></div>
+<pre><code><span class="k">void</span> GLTexture::read(<span class="k">int</span> mip, eGPUDataFormat type, <span class="k">void</span> *data)
+{
+  <span class="c">/* 深度+模板纹理读回时剥离 stencil */</span>
+  GLenum gl_format = to_gl_data_format(
+      format_ == TextureFormat::SFLOAT_32_DEPTH_UINT_8
+          ? TextureFormat::SFLOAT_32_DEPTH : format_);
+  <span class="k">const int3</span> extent = mip_size_get(mip);
+  <span class="k">if</span> (is_texture_view() &amp;&amp; format_get() == source_texture_-&gt;format_get()) {
+    glGetTextureSubImage(<span class="k">static_cast</span>&lt;GLTexture *&gt;(source_texture_)-&gt;tex_id_, ...);
+  } <span class="k">else</span> {
+    glGetTextureSubImage(tex_id_, mip, <span class="num">0</span>,<span class="num">0</span>,<span class="num">0</span>, extent.x, extent.y, extent.z,
+                         gl_format, gl_type, texture_size, data);
+  }
+}</code></pre>
+</div>
+
+<p>
+<code>glGetTextureSubImage</code> 是<strong>隐式同步点</strong>：CPU 阻塞直到 GPU 完成所有影响该纹理的命令
+（管线排空 / fence）。这就是「回读是管线停顿源」的底层机制。
+纹理视图分支规避了 OpenGL 驱动对视图尺寸处理不佳的问题。
+</p>
+
+<h3 id="s62">6.2 Vulkan 后端 read() <span class="ln">vk_texture.cc:336–361 → read_sub:204</span></h3>
+
+<p>
+Vulkan 没有直接「读纹理」，要四步：
+分配 staging 传输缓冲 → <code>vkCmdCopyImageToBuffer</code> → 带内存屏障等传输完成 → CPU 侧格式转换。
+<code>read_sub</code> 还处理超大纹理分块（#144887：NVIDIA 传输缓冲上限 2GB），
+超过就按层 / 按深度 / 按行拆分多个 transfer region 逐段搬。
+</p>
+
+<h3 id="s63">6.3 双重载与 HOST_READ <span class="ln">gpu_texture.cc:538–562</span></h3>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path">分配版（1043 行用）与写入版（1050 行用）</span></div>
+<pre><code><span class="k">void</span> *GPU_texture_read(Texture *texture, eGPUDataFormat fmt, <span class="k">int</span> mip)
+{
+  <span class="k">size_t</span> size = texture-&gt;read_size_get(mip, fmt);   <span class="c">/* w*h*4 字节 */</span>
+  <span class="k">if</span> (texture-&gt;type_get() == GPU_TEXTURE_CUBE_ARRAY) size += <span class="num">8</span>;  <span class="c">/* AMD bug #66573 */</span>
+  <span class="k">void</span> *data = MEM_new_uninitialized(size, __func__);
+  GPU_texture_read(texture, fmt, mip, data);        <span class="c">/* 转调写入版 */</span>
+  <span class="k">return</span> data;
+}
+
+<span class="k">void</span> GPU_texture_read(Texture *texture, eGPUDataFormat fmt, <span class="k">int</span> mip, <span class="k">void</span> *dst)
+{
+  BLI_assert_msg(GPU_texture_usage(texture) &amp; GPU_TEXTURE_USAGE_HOST_READ, <span class="s">"..."</span>);
+  texture-&gt;read(mip, fmt, dst);                     <span class="c">/* ← 虚函数分发 */</span>
+}</code></pre>
+</div>
+
+<p>
+两个重载的真正差别只在<strong>内存归谁管</strong>。本函数的妙处：
+首帧用分配版让 <code>depths</code> 拿到堆内存，之后每帧用写入版原地覆盖——
+<code>depths</code> 指针值<strong>永不改变</strong>。数据布局结论：
+w×h 个 IEEE-754 float，行主序，每个是 NDC 深度 ∈ [0,1]。
+</p>
+
+<figure class="fig">
+  <img src="04-图解/04-GPU回读数据流.svg" alt="GPU 回读数据流图解">
+  <figcaption><b>图 4</b> · 显存 D32S8 深度面 → 隐式管线同步 → CPU float 数组；三重保证贴在底部</figcaption>
+</figure>
+
+<h2 id="s7"><span class="n">07</span>消费端闭环 —— 缓存怎么被「用掉」</h2>
+
+<p>
+1052 行交出指针后，同帧稍后 <code>draw_text()</code>（1009 行）→
+<code>DRW_text_cache_draw()</code>（draw_manager_text.cc:244）。三步消费：
+</p>
+
+<div class="code">
+  <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="path">投影取深度 → 采样 → 比较（draw_manager_text.cc:260 · 284 · 187–191）</span></div>
+<pre><code><span class="c">/* ① 投影时顺带取锚点深度（第 2 册的函数，最后出参） */</span>
+ED_view3d_project_float_ex(region, rv3d-&gt;persmat, ..., &amp;anchor_depth)
+
+<span class="c">/* ② 采样场景深度：行主序寻址 */</span>
+<span class="k">const float</span> scene_depth = dt-&gt;depths-&gt;depths[y * dt-&gt;depths-&gt;w + x];
+
+<span class="c">/* ③ bias 比较，bias = 2.0e-5f */</span>
+<span class="k">static bool</span> text_depth_is_occluded(<span class="k">float</span> anchor_depth, <span class="k">float</span> scene_depth)
+{
+  <span class="k">return</span> scene_depth != <span class="num">1.0f</span> &amp;&amp; anchor_depth &gt; scene_depth + text_depth_bias;
+}</code></pre>
+</div>
+
+<p>
+<code>scene_depth == 1.0f</code> 是远平面/天空特判——<strong>背景永不遮挡文本</strong>。
+透视视图还有第二阶段 <code>text_anchor_is_occluded_perspective</code>（194–242 行）：
+用 3×3 邻域深度样本<strong>重建锚点亚像素位置的局部表面平面</strong>（平面性容差 2e-6），
+消除逐像素深度采样导致的标签闪烁——正是本系列对话里「透视闪烁修复」提交的内容。
+</p>
+
+<figure class="fig">
+  <img src="04-图解/06-消费端闭环.svg" alt="消费端闭环图解">
+  <figcaption><b>图 6</b> · 投影取深度 → 行主序采样 → bias 比较 + 透视平面重建 → IS_CLIPPED</figcaption>
+</figure>
+
+<h2 id="s8"><span class="n">08</span>GPU / CPU 基础知识</h2>
+
+<div class="tbl"><div class="scroll">
+<table>
+  <thead><tr><th>概念</th><th>在本函数中的体现</th></tr></thead>
+  <tbody>
+    <tr><td><strong>深度缓冲 Depth Buffer</strong></td><td>每像素一个深度值的离屏纹理；prepass 由场景几何写入；<code>depth_tx</code> 就是它</td></tr>
+    <tr><td><strong>NDC 深度 [0,1]</strong></td><td>透视除法后的深度；0 = 近平面，1 = 远平面；回读数组里存的就是它</td></tr>
+    <tr><td><strong>D32S8 复合格式</strong></td><td>32 位浮点深度 + 8 位模板打包 5 字节/纹素；读回只取深度面 → 4 字节/像素</td></tr>
+    <tr><td><strong>CPU–GPU 异步</strong></td><td>CPU 提交命令、GPU 异步执行，平时互不等待 → 吞吐高</td></tr>
+    <tr><td><strong>回读同步代价</strong></td><td><code>glGetTextureSubImage</code> / <code>vkCmdCopyImageToBuffer</code> 必须等 GPU 排空 → 管线停顿，惰性回读的动机</td></tr>
+    <tr><td><strong>Usage 标志</strong></td><td>Vulkan/Metal 要求创建时声明用途；HOST_READ 启用 CPU 可读内存布局，并禁用某些压缩</td></tr>
+    <tr><td><strong>行主序 Row-major</strong></td><td><code>depths[y * w + x]</code> 的寻址公式；一行连续，行间跳 w 个 float</td></tr>
+    <tr><td><strong>POD / Trivial</strong></td><td>只有平凡类型能用 <code>MEM_new_zeroed</code>；ViewDepths / State / GPUViewport 全满足</td></tr>
+  </tbody>
+</table>
+</div></div>
+
+<h2 id="s9"><span class="n">09</span>一帧全景时序</h2>
+
+<p>把宏观与微观串成一条生命线：</p>
+
+<figure class="fig">
+  <img src="04-图解/02-帧内时序.svg" alt="帧内时序图解">
+  <figcaption><b>图 2</b> · begin_sync → object_sync → prepass → ★回读 → grid 污染 → draw_text 消费</figcaption>
+</figure>
+
+<figure class="fig">
+  <img src="04-图解/05-流程图.svg" alt="流程图图解">
+  <figcaption><b>图 5</b> · 三道闸门 + 三态缓存 + 早退分支的完整控制流（绿色常规路径 / 橙色重建路径）</figcaption>
+</figure>
+
+<figure class="fig">
+  <img src="04-图解/08-成本核算.svg" alt="成本核算图解">
+  <figcaption><b>图 8</b> · 1080p 的数字：探测纳秒级 vs 回读毫秒级，相差五个数量级</figcaption>
+</figure>
+
+<div class="note ok">
+  <span class="ico">✓</span>
+  <p class="t">一句话总结</p>
+  <p><strong>微观</strong>：37 行函数 = 三道惰性闸门 + 三态缓存复用 + 一次借用交接，
+  每个分支都在维护「拥有者先摘指针、再释放」的所有权契约。
+  <strong>宏观</strong>：它站在 <code>DrawEngine</code> 虚函数工厂之上、
+  <code>gpu::Texture</code> 虚函数分发之下，中间穿过的每一层
+  （wmDrawBuffer → GPUViewport → depth_tx → ViewDepths → DRWTextStore::depths）
+  全是「借用不拥有」的指针接力——真正 new 出来被本函数拥有和释放的，
+  自始至终只有一个 POD 的 <code>ViewDepths</code> 和它背后 7.91 MiB 的 float 数组。</p>
+</div>
+
+<h2 id="s10"><span class="n">10</span>图解索引</h2>
+
+<div class="tbl compact"><div class="scroll">
+<table>
+  <thead><tr><th>图</th><th>文件</th><th>内容</th></tr></thead>
+  <tbody>
+    <tr><td>图 1</td><td class="ln">04-图解/01-DrawEngine继承体系.svg</td><td>抽象基类七个纯虚、虚析构、工厂惰性创建、overlay::Instance 的 final 方法与成员</td></tr>
+    <tr><td>图 2</td><td class="ln">04-图解/02-帧内时序.svg</td><td>一帧六阶段，回读时点为何不能移动，挪动的两种后果</td></tr>
+    <tr><td>图 3</td><td class="ln">04-图解/03-资源所有权链.svg</td><td>三层借用接力 + 拥有/借用分界 + 尺寸重建根源</td></tr>
+    <tr><td>图 4</td><td class="ln">04-图解/04-GPU回读数据流.svg</td><td>显存 D32S8 → 管线同步 → CPU float 数组，布局与三重保证</td></tr>
+    <tr><td>图 5</td><td class="ln">04-图解/05-流程图.svg</td><td>三闸门 + 三态 + 早退完整控制流</td></tr>
+    <tr><td>图 6</td><td class="ln">04-图解/06-消费端闭环.svg</td><td>投影取深度 → 采样 → bias 比较 → 平面重建 → 剔除</td></tr>
+    <tr><td>图 7</td><td class="ln">04-图解/07-姊妹实现对比.svg</td><td>gizmo 一次性 vs 文本跨帧复用，同一 API 两种策略</td></tr>
+    <tr><td>图 8</td><td class="ln">04-图解/08-成本核算.svg</td><td>像素数 / 显存 / CPU 数组 / 探测 / 停顿 / 分配六个数字</td></tr>
+  </tbody>
+</table>
+</div></div>
+
+<footer>
+  <p>📕 <strong>第 4 册 · update_text_depth 全景解剖</strong> — 继承体系 · 所有权链 · 多态分发 · GPU 回读 · 成本核算</p>
+  <p>📘 第 1 册：<a href="01-投影数学手册.html">投影数学手册</a> · 📙 第 2 册：<a href="02-投影代码导读.html">投影代码导读</a> · 📗 第 3 册：<a href="03-深度回读代码导读.html">深度回读代码导读</a></p>
+  <p>自包含 HTML + 独立 SVG 图解 · 无外部依赖</p>
+</footer>
+
+</main>
+</div>
+
+<script>
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+  var targets = links.map(function (a) {
+    return document.getElementById(a.getAttribute('href').slice(1));
+  }).filter(Boolean);
+  if ('IntersectionObserver' in window && targets.length) {
+    var visible = new Map();
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { visible.set(e.target.id, e.boundingClientRect.top); }
+        else { visible.delete(e.target.id); }
+      });
+      if (!visible.size) { return; }
+      var best = null, bestTop = Infinity;
+      visible.forEach(function (top, id) {
+        if (top < bestTop) { bestTop = top; best = id; }
+      });
+      links.forEach(function (a) {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + best);
+      });
+    }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+    targets.forEach(function (t) { io.observe(t); });
+  }
+})();
+</script>
+
+</body>
+</html>
