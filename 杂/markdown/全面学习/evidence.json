@@ -1,0 +1,1554 @@
+{
+  "generated_date": "2026-10-11",
+  "head": "a3eb4589cc891566d1b3c978fbe86b3954b4c11f",
+  "source_basis": "current working tree; no C/C++ files modified",
+  "sources": {
+    "source/blender/blenlib/BLI_span.hh": {
+      "sha256": "28120d187d6d21b50bd0d0c22141102d194b400fee9882d817fc78b97786a1d1",
+      "lines": 763
+    },
+    "source/blender/blenlib/tests/BLI_span_test.cc": {
+      "sha256": "c7950ce508cc15165a496edc3f153f39073d9bf7c0b040a4299c86db793eb27e",
+      "lines": 455
+    },
+    "source/blender/blenlib/BLI_vector.hh": {
+      "sha256": "6867b6ba34200e7e0a14495d93a9bef1645c5ef599e1f29ccdddc7c21e500485",
+      "lines": 1167
+    },
+    "source/blender/blenlib/BLI_memory_utils.hh": {
+      "sha256": "042c4aefc749efe05b7e82142a29aff4443ee10cab696ced315e8f0ae124cb23",
+      "lines": 372
+    },
+    "source/blender/blenlib/tests/BLI_vector_test.cc": {
+      "sha256": "c916b3d4ee1ae52cd67f47f2efb5cb372a5043f6a5b7bea337636dc8ab18c52b",
+      "lines": 1025
+    },
+    "source/blender/blenlib/BLI_hash.hh": {
+      "sha256": "0cc2c7e426dfbed9483fe86d818f23fbb7c92c97dcd675864d67d05326e529bf",
+      "lines": 295
+    },
+    "source/blender/blenlib/BLI_map.hh": {
+      "sha256": "236ceadf1c36a6e452538529f550bb9a61c4d2efc16cbb8419861fdd638bd5c7",
+      "lines": 1383
+    },
+    "source/blender/blenlib/BLI_map_slots.hh": {
+      "sha256": "81247eedacf200481742a3e5041996e5f50abcb4f19d080e44a022424e9bec58",
+      "lines": 362
+    },
+    "source/blender/blenlib/tests/BLI_map_test.cc": {
+      "sha256": "eafd63b44d76e4982735c3e1b53c83909fc0a1809dcb2b8b3fb47e55d5de1360",
+      "lines": 994
+    },
+    "source/blender/blenlib/BLI_linear_allocator.hh": {
+      "sha256": "95fe936dfa9e937a15dcd1a39d5467118afb35e1de62f96ca6812008eab0264e",
+      "lines": 316
+    },
+    "source/blender/blenlib/tests/BLI_linear_allocator_test.cc": {
+      "sha256": "efcb4df3c5eb5ccf5a1cf2ee4a5f8e1c578cec996c8675406fc860aa12236e67",
+      "lines": 175
+    },
+    "source/blender/blenlib/BLI_resource_scope.hh": {
+      "sha256": "89ba4492cc38877a07ced9a1d70aebbebee0feb5ecbbaaf3275a9c17c2192d87",
+      "lines": 243
+    },
+    "source/blender/blenlib/intern/resource_scope.cc": {
+      "sha256": "a2ce280754596a280ecc9ccaddc9a111918687b58a1ef39a08f14e1891bfc86c",
+      "lines": 92
+    },
+    "source/blender/functions/FN_field_evaluation.hh": {
+      "sha256": "04d5d49917e657e97c39a8dfbb279d8ce194c277916e618f98df836ac5288015",
+      "lines": 221
+    },
+    "source/blender/blenlib/BLI_cpp_type_make.hh": {
+      "sha256": "c5cd942939c54785b2209e81e4454cd8d6fdb1920b9f09c4421b97568d125dc4",
+      "lines": 507
+    },
+    "source/blender/blenlib/BLI_cpp_type.hh": {
+      "sha256": "c60368fa9ddd6891cb2063b203dc846355fc17d86f16005763354999d5beb1e2",
+      "lines": 808
+    },
+    "source/blender/blenlib/BLI_virtual_array.hh": {
+      "sha256": "0dad9ae245918d5aff4c98aac3248f277cd8060ca11a9acf2e59943aa18a18fe",
+      "lines": 1219
+    },
+    "source/blender/blenlib/BLI_index_mask.hh": {
+      "sha256": "d86b6207c23b750c5e987e8f15485786460091055cb38ddd282aab938f2f54df",
+      "lines": 1315
+    },
+    "source/blender/functions/FN_multi_function_builder.hh": {
+      "sha256": "49d48048b137b84b3eac63599db98749750b5ff2ab8c1e0b89888687184cec97",
+      "lines": 922
+    },
+    "source/blender/blenlib/BLI_offset_indices.hh": {
+      "sha256": "12eed50b3acf97556a786873863b6581fba659b33f2ddb99eef51d373cb6b801",
+      "lines": 284
+    },
+    "source/blender/blenlib/tests/BLI_offset_indices_test.cc": {
+      "sha256": "e010529f92d1dd4352c973d4529e36bc6aebbc5e046d729948383df2d05782a4",
+      "lines": 240
+    },
+    "source/blender/blenkernel/intern/mesh_mapping.cc": {
+      "sha256": "c2432ed6324052eed3ef1e1f9927fa6be2500e5844275498d41919121357aaee",
+      "lines": 962
+    },
+    "source/blender/blenkernel/BKE_mesh_mapping.hh": {
+      "sha256": "e9b9a61c6e370614b7bc60e9a920bfc6cc711101a02b2096aa6763604a973b3e",
+      "lines": 314
+    },
+    "source/blender/blenlib/BLI_shared_cache.hh": {
+      "sha256": "e4ed38df2ea784bbf20af9f0b4ed9e5c99ba9fb8bfbbaf44a7a667ca56c83985",
+      "lines": 112
+    },
+    "source/blender/blenlib/BLI_implicit_sharing.hh": {
+      "sha256": "ca734bf707495866db9b73fd8b9a8f4b59db22c419e1e3082023512106c61792",
+      "lines": 337
+    },
+    "source/blender/blenkernel/BKE_geometry_set.hh": {
+      "sha256": "fefa21b34aecb5c286a34e6229728077d2590eda2641ec2957c0824994a4aa34",
+      "lines": 852
+    },
+    "source/blender/blenlib/intern/cache_mutex.cc": {
+      "sha256": "dceb7c7f95d478ca6ee13ecb9597790a58417ab309da85eb5eadb4141afcd005",
+      "lines": 31
+    },
+    "source/blender/blenkernel/intern/mesh_runtime.cc": {
+      "sha256": "2992b325daab717c1a7e99c367d807f8ccfff874f9a01e21b402b77f0321d0e8",
+      "lines": 481
+    },
+    "source/blender/blenkernel/BKE_mesh_types.hh": {
+      "sha256": "00a7b4beb90bfd45b0706a38fa7dc69ae4c492fda27b2ae52addf98609c7a8a5",
+      "lines": 300
+    },
+    "source/blender/functions/FN_multi_function.hh": {
+      "sha256": "def04d749803a04e0aca05d0324d08b383d5eae900ddb36ea626b0e970c9bf3b",
+      "lines": 152
+    },
+    "source/blender/functions/FN_multi_function_params.hh": {
+      "sha256": "321225ecebcc713595728fe68a8d020a8f0481185d5571b89ec113adc9b681f5",
+      "lines": 456
+    },
+    "source/blender/functions/intern/multi_function.cc": {
+      "sha256": "723ca4138043d17768a375dd10b40b8eeae931c262c07a95673026db99fe4399",
+      "lines": 182
+    },
+    "source/blender/functions/FN_multi_function_procedure.hh": {
+      "sha256": "19df168c04c5694f14f84c0c067288a7d6d7b292945b7b23e6a1cfdd25f35ebc",
+      "lines": 536
+    },
+    "source/blender/functions/intern/multi_function_procedure.cc": {
+      "sha256": "a042934783f3bd874022a8918f574bd7600a3af04cc2fd83c315b80f75e37704",
+      "lines": 882
+    },
+    "source/blender/functions/FN_multi_function_procedure_executor.hh": {
+      "sha256": "4091ed9ea707b60ee46f45ff393ca379be47e5919894f084b0c48a8fd8265425",
+      "lines": 30
+    },
+    "source/blender/functions/intern/field.cc": {
+      "sha256": "b7e5a1f7396dc171501ce4ace49a569bce95dee9377adeabd565929b45e825b7",
+      "lines": 571
+    },
+    "source/blender/functions/intern/field_evaluation.cc": {
+      "sha256": "e20be0a19eb6f025c5123b8ed1493b0549c35aecbbb0ff090d65f3595ad3d0af",
+      "lines": 643
+    },
+    "source/blender/functions/FN_field.hh": {
+      "sha256": "4ce5d9b67e7b82f22293a3250ae787716e34c6a6b5f1afe561a000eeb6dfa112",
+      "lines": 715
+    },
+    "source/blender/nodes/geometry/nodes/node_geo_set_position.cc": {
+      "sha256": "a57eb7e24da02013adfa5ebbd68ed5907679fd4e996f6fe62d6a370c16bb5d0b",
+      "lines": 181
+    },
+    "source/blender/functions/FN_lazy_function.hh": {
+      "sha256": "e9d3118bf1a4e17ce7ba95bb38f545c7288277b9b378378ed80291a2011dae5e",
+      "lines": 479
+    },
+    "source/blender/functions/intern/lazy_function_graph_executor.cc": {
+      "sha256": "0f02dca335f5e00a40999760991e7494c997a09541285e2b49c12eeb14cc93a0",
+      "lines": 145
+    },
+    "source/blender/functions/FN_lazy_function_graph_executor.hh": {
+      "sha256": "0518b91c27b666082d0038876b44015c1e53f804060bf838ebae028c4ab826b1",
+      "lines": 155
+    },
+    "source/blender/nodes/intern/geometry_nodes_lazy_function.cc": {
+      "sha256": "28f744e665608be8d326853f759fed4c20816eaf2f8e64b605bc8a2a6594c746",
+      "lines": 4411
+    },
+    "source/blender/nodes/geometry/nodes/node_geo_menu_switch.cc": {
+      "sha256": "cc510c2c90074abc1a711349a87fd6effbdaeec2e6fe978e560362886ec11734",
+      "lines": 712
+    },
+    "source/blender/blenkernel/BKE_geometry_nodes_reference_set.hh": {
+      "sha256": "583192d4b5d317155cac8040a28b5fb0a8eda01a32153d4404dc475c3304d7d0",
+      "lines": 31
+    },
+    "source/blender/blenkernel/BKE_node_tree_reference_lifetimes.hh": {
+      "sha256": "510f2fe73ef8e7401b14dfe1c51f09d4dd3345d231cf48b52506c5f39a8d5e10",
+      "lines": 115
+    },
+    "source/blender/nodes/NOD_geometry_nodes_closure.hh": {
+      "sha256": "bec3e1ada4dd473db51966f8a5566611f0212234ec0238f6445ea0d89d387bf0",
+      "lines": 147
+    },
+    "source/blender/nodes/intern/geometry_nodes_closure.cc": {
+      "sha256": "c34b7c787d05945e13b353abb4070dfe45a34995bd0d4c38d6e663b45596f7e4",
+      "lines": 185
+    },
+    "source/blender/nodes/NOD_geometry_nodes_lazy_function.hh": {
+      "sha256": "2050af971ef9ab9be4546d423ee73f3ed7ff54c8175bddc9c89330b24561b6c1",
+      "lines": 691
+    },
+    "source/blender/depsgraph/intern/eval/deg_eval.cc": {
+      "sha256": "af73ab6297c059b4601ecb1b2a88c2613cc124d772182f183f82992fd3173154",
+      "lines": 518
+    },
+    "source/blender/depsgraph/intern/node/deg_node_operation.hh": {
+      "sha256": "be806beb10f17d65e67bc3af5633a06af61422c3f847a80e3dce560875ec7950",
+      "lines": 310
+    },
+    "source/blender/depsgraph/intern/builder/deg_builder_relations.h": {
+      "sha256": "760ea163a9ca288d967d8eb5df1adffd734cea346b70792cb6dbe39873986b3c",
+      "lines": 376
+    },
+    "source/blender/depsgraph/intern/eval/deg_eval_flush.cc": {
+      "sha256": "b5ba4420788422d665b015d0b8874acb06f19a723db0e3d3ee600b661e65949c",
+      "lines": 362
+    },
+    "source/blender/blenlib/BLI_task.hh": {
+      "sha256": "acc7e83bc7c92bd9a02d82c1d3ab2f7c8f92e303245110b02a2381de3e4f459c",
+      "lines": 267
+    },
+    "source/blender/blenlib/BLI_kdtree_new.hh": {
+      "sha256": "b94b92497ea97b794042524c44573cd3d88d01c1fc9aa86c60a8940f6be04159",
+      "lines": 686
+    },
+    "source/blender/blenlib/intern/kdtree.cc": {
+      "sha256": "039dbc5c16d992dd0c468586cb3de58c161d4f327ecdd0909ea377342d038a90",
+      "lines": 907
+    },
+    "source/blender/blenlib/tests/BLI_kdtree_test.cc": {
+      "sha256": "8da6af416bd1b401043e6fbae2c0eead19df7482a460dd60836fb31349f2ef99",
+      "lines": 656
+    },
+    "source/blender/blenlib/tests/performance/BLI_kdtree_performance_test.cc": {
+      "sha256": "0133cfbf1bab433b9cf1b40c2be05f5a2c099d77825c3cd5261f95592ba32941",
+      "lines": 731
+    }
+  },
+  "commits": {
+    "369d5e8ad2b": {
+      "hash": "369d5e8ad2bb7c249c6b941779066b6aa99f9ea0",
+      "author": "Jacques Lucke",
+      "date": "2019-09-12",
+      "subject": "BLI: new C++ ArrayRef, Vector, Stack, ... data structures",
+      "body": "Many generic C++ data structures have been developed in the\nfunctions branch. This commit merges a first chunk of them into\nmaster. The following new data structures are included:\n\nArray: Owns a memory buffer with a fixed size. It is different\n  from std::array in that the size is not part of the type.\n\nArrayRef: References an array owned by someone else. All elements\n  in the referenced array are considered to be const. This should\n  be the preferred parameter type for functions that take arrays\n  as input.\n\nMutableArrayRef: References an array owned by someone else. The\n  elements in the referenced array can be changed.\n\nIndexRange: Specifies a continuous range of integers with a start\n  and end index.\n\nIntrusiveListBaseWrapper: A utility class that allows iterating\n  over ListBase instances where the prev and next pointer are\n  stored in the objects directly.\n\nStack: A stack implemented on top of a vector.\n\nVector: An array that can grow dynamically.\n\nAllocators: Three allocator types are included that can be used\n  by the container types to support different use cases.\n\nThe Stack and Vector support small object optimization. So when\nthe amount of elements in them is below a certain threshold, no\nmemory allocation is performed.\n\nAdditionally, most methods have unit tests.\n\nI'm merging this without normal code review, after I checked the\ncode roughly with Sergey, and after we talked about it with Brecht.",
+      "stat": "source/blender/blenlib/BLI_allocator.h             | 127 +++++\n source/blender/blenlib/BLI_array_cxx.h             | 195 +++++++\n source/blender/blenlib/BLI_array_ref.h             | 423 +++++++++++++++\n source/blender/blenlib/BLI_index_range.h           | 193 +++++++\n source/blender/blenlib/BLI_listbase_wrapper.h      |  97 ++++\n source/blender/blenlib/BLI_memory_utils_cxx.h      |  81 +++\n source/blender/blenlib/BLI_stack_cxx.h             | 142 +++++\n source/blender/blenlib/BLI_temporary_allocator.h   |  64 +++\n .../blender/blenlib/BLI_temporary_allocator_cxx.h  |  35 ++\n source/blender/blenlib/BLI_vector.h                | 601 +++++++++++++++++++++\n source/blender/blenlib/CMakeLists.txt              |  14 +\n source/blender/blenlib/intern/BLI_index_range.cc   |  59 ++\n .../blenlib/intern/BLI_temporary_allocator.cc      | 115 ++++\n tests/gtests/blenlib/BLI_array_ref_test.cc         | 266 +++++++++\n tests/gtests/blenlib/BLI_array_test.cc             | 103 ++++\n tests/gtests/blenlib/BLI_index_range_test.cc       | 131 +++++\n tests/gtests/blenlib/BLI_stack_cxx_test.cc         |  52 ++\n tests/gtests/blenlib/BLI_vector_test.cc            | 400 ++++++++++++++\n tests/gtests/blenlib/CMakeLists.txt                |   7 +-\n 19 files changed, 3104 insertions(+), 1 deletion(-)"
+    },
+    "2aff45146f1": {
+      "hash": "2aff45146f1464ba8899368ad004522cb6a1a98c",
+      "author": "Jacques Lucke",
+      "date": "2020-08-19",
+      "subject": "BLI: improve exception safety of Vector, Array and Stack",
+      "body": "Using C++ exceptions in Blender is difficult, due to the large\nnumber of C functions in the call stack. However, C++ data\nstructures in blenlib should at least try to be exception safe,\nso that they can be used if someone wants to use exceptions\nin some isolated area.\n\nThis patch improves the exception safety of the Vector, Array\nand Stack data structure. This is mainly achieved by reordering\nsome lines and doing some explicit exception handling.\nI don't expect performance of common operations to be affected\nby this change.\n\nThe three containers are supposed to provide at least the\nbasic exception guarantee for most methods (except for e.g.\n`*_unchecked` methods). So, resources should not leak when\nthe contained type throws an exception.\n\nI also added new unit tests that test the exception handling\nin various cases.",
+      "stat": "source/blender/blenlib/BLI_array.hh                |  68 +++++++------\n source/blender/blenlib/BLI_memory_utils.hh         |  56 ++++++++++-\n source/blender/blenlib/BLI_stack.hh                |  95 ++++++++++++-------\n source/blender/blenlib/BLI_vector.hh               | 105 +++++++++++----------\n source/blender/blenlib/CMakeLists.txt              |   2 +\n source/blender/blenlib/tests/BLI_array_test.cc     |  39 ++++++++\n .../tests/BLI_exception_safety_test_utils.hh       |  60 ++++++++++++\n .../blender/blenlib/tests/BLI_memory_utils_test.cc |   2 +\n source/blender/blenlib/tests/BLI_stack_cxx_test.cc |  56 +++++++++++\n source/blender/blenlib/tests/BLI_vector_test.cc    |  84 +++++++++++++++++\n 10 files changed, 445 insertions(+), 122 deletions(-)"
+    },
+    "79ef927ea93": {
+      "hash": "79ef927ea93304a1e270bedbee4c38afc5945f9f",
+      "author": "Jacques Lucke",
+      "date": "2026-06-04",
+      "subject": "Fix: BLI: ensure that +0.0 and -0.0 hash to the same value",
+      "body": "Floating point representation has the special case that `+0.0` and `-0.0` exist.\nThey compare equal but do not have the same bit representation. This implies\nthat a `bit_cast` does not work to get a hash from the number. It breaks the one\nrule for these hashes: if two values compare equal, they have to have the same\nhash.\n\nFloating point values have other special values but they don't need the same\ntreatment:\n* `+inf` and `-inf` have unique representations.\n* `nan` has many different representation, all of which never compare equal to\n  each other, even if the bit pattern is the same.\n\nThe fix is to add this special case in the core hashing functions and to make\nsure that hashing functions of vectors, matrices, etc. derive from that.\n\nUnique hashing is updated to properly handle this too.\n\nThis also fixes #158701.\n\nPull Request: https://projects.blender.org/blender/blender/pulls/159547",
+      "stat": "source/blender/blenlib/BLI_color_types.hh          | 17 +++++---\n source/blender/blenlib/BLI_hash.hh                 | 12 +++++-\n source/blender/blenlib/BLI_math_matrix_types.hh    | 10 ++++-\n .../blender/blenlib/BLI_math_quaternion_types.hh   |  7 +++-\n source/blender/blenlib/BLI_math_vector_types.hh    | 45 ++++++++++++----------\n source/blender/blenlib/BLI_unique_hash.hh          | 21 +++++++++-\n source/blender/blenlib/BLI_unroll.hh               |  5 ++-\n source/blender/blenlib/tests/BLI_map_test.cc       |  3 ++\n .../blender/blenlib/tests/BLI_math_vector_test.cc  |  3 ++\n source/blender/nodes/NOD_menu_value.hh             |  6 +++\n 10 files changed, 95 insertions(+), 34 deletions(-)"
+    },
+    "b242c618450": {
+      "hash": "b242c618450e3c0011914112c3ffe31ae2e96028",
+      "author": "Jacques Lucke",
+      "date": "2025-12-12",
+      "subject": "Fix: BLI: bad performance edge case in hash table implementations",
+      "body": "The issue happened when the hash table (e.g. Map) has close to a power of two\nnumber of elements and repeatedly deletes and adds values. In this case the map\nis rebuild more often than is necessary, and in the worst case a rebuild happens\neach time something is removed and added again.\n\nThe fix here is to make sure that each call to `realloc_and_reinsert` is\nactually worth it by making it grow the map in some cases where it previously\nwouldn't. A similar optimization already exists in\n`Vector::realloc_to_at_least`.\n\nAn alternative would be to support overriding removed-slots in `Map::add`, but\nthat has negative performance implications for the most common case when no\nelements are ever removed.\n\nThis brings back performance to the same level before #150009:\n`60k_cubes_same_mesh.blend: old: 11.3s, main: 70s, this patch: 11.3s`\n\nPull Request: https://projects.blender.org/blender/blender/pulls/151502",
+      "stat": "source/blender/blenlib/BLI_map.hh        | 8 ++++++++\n source/blender/blenlib/BLI_set.hh        | 6 +++++-\n source/blender/blenlib/BLI_vector_set.hh | 6 +++++-\n 3 files changed, 18 insertions(+), 2 deletions(-)"
+    },
+    "c5f4d5e448e": {
+      "hash": "c5f4d5e448e4508586087e7ec8edfb0a2b6c38ec",
+      "author": "Jacques Lucke",
+      "date": "2020-04-24",
+      "subject": "BLI: add LinearAllocator",
+      "body": "This allocator is useful when it is necessary to allocate many small elements.",
+      "stat": "source/blender/blenlib/BLI_linear_allocator.hh    | 173 ++++++++++++++++++++++\n tests/gtests/blenlib/BLI_linear_allocator_test.cc | 113 ++++++++++++++\n tests/gtests/blenlib/CMakeLists.txt               |   1 +\n 3 files changed, 287 insertions(+)"
+    },
+    "fe24e8e7109": {
+      "hash": "fe24e8e7109e5b37ad3a7c845922f1f601a96eb7",
+      "author": "Jacques Lucke",
+      "date": "2026-03-09",
+      "subject": "BLI: optimize memory usage in ResourceScope",
+      "body": "This implements multiple improvements for the `ResourceScope` utility:\n* Instead of a `Vector` it uses a `ChunkedList` to keep track of resources. This\n  is has less memory overhead and does not require reallocations when growing.\n* One can pass an already existing `LinearAllocator` to a constructor instead of\n  always creating a new one.\n* New constructors that allow providing initial memory for the resource scope\n  (e.g. a large buffer on the stack).\n* If it creates a new allocator, it increases the initial allocation size and\n  uses the extra bytes as buffer in the allocator. This is instead of allocating\n  twice.\n* The size of `ResourceScope` shrinks from 176 bytes to just 16 bytes (although\n  it does use more when it has to create a new allocator).\n\nPull Request: https://projects.blender.org/blender/blender/pulls/155290",
+      "stat": ".../blenlib/BLI_linear_allocator_chunked_list.hh   | 28 +++++---\n source/blender/blenlib/BLI_resource_scope.hh       | 66 +++++++++++++++---\n source/blender/blenlib/intern/resource_scope.cc    | 78 ++++++++++++++++++++--\n .../nodes/geometry/nodes/node_geo_field_to_grid.cc | 12 ++--\n .../blender/nodes/intern/socket_usage_inference.cc |  3 +-\n .../nodes/intern/volume_grid_function_eval.cc      | 12 ++--\n 6 files changed, 158 insertions(+), 41 deletions(-)"
+    },
+    "0a907657d4d": {
+      "hash": "0a907657d4d525d320e0c8518f583b7210736214",
+      "author": "Jacques Lucke",
+      "date": "2020-06-08",
+      "subject": "Functions: Run-time type system and index mask",
+      "body": "This adds a new `CPPType` that encapsulates information about how to handle\ninstances of a specific data type. This is necessary for the function evaluation\nsystem, which will be used to evaluate most of the particle node trees.\n\nFurthermore, this adds an `IndexMask` class which offers a surprisingly useful\nabstraction over an array containing unsigned integers. It makes two assumptions\nabout the underlying integer array:\n* The integers are in ascending order.\n* There are no duplicates.\n\n`IndexMask` will be used to \"select\" certain particles that will be\nprocessed in a data-oriented way. Sometimes, operations don't have to\nbe applied to all particles, but only some, those that are in the indexed by\nthe `IndexMask`. The two limitations imposed by an `IndexMask` allow for\nbetter performance.\n\nReviewers: brecht\n\nDifferential Revision: https://developer.blender.org/D7957",
+      "stat": "source/blender/CMakeLists.txt                |   1 +\n source/blender/blenlib/BLI_index_mask.hh     | 212 ++++++++\n source/blender/blenlib/CMakeLists.txt        |   1 +\n source/blender/functions/CMakeLists.txt      |  40 ++\n source/blender/functions/FN_cpp_type.hh      | 726 +++++++++++++++++++++++++++\n source/blender/functions/FN_cpp_types.hh     |  48 ++\n source/blender/functions/intern/cpp_types.cc |  41 ++\n tests/gtests/CMakeLists.txt                  |   1 +\n tests/gtests/blenlib/BLI_index_mask_test.cc  |  39 ++\n tests/gtests/blenlib/CMakeLists.txt          |   1 +\n tests/gtests/functions/CMakeLists.txt        |  39 ++\n tests/gtests/functions/FN_cpp_type_test.cc   | 299 +++++++++++\n 12 files changed, 1448 insertions(+)"
+    },
+    "d4c868da9f9": {
+      "hash": "d4c868da9f97a06c3457b8eafd344a23ed704874",
+      "author": "Jacques Lucke",
+      "date": "2021-11-16",
+      "subject": "Geometry Nodes: refactor virtual array system",
+      "body": "Goals of this refactor:\n* Simplify creating virtual arrays.\n* Simplify passing virtual arrays around.\n* Simplify converting between typed and generic virtual arrays.\n* Reduce memory allocations.\n\nAs a quick reminder, a virtual arrays is a data structure that behaves like an\narray (i.e. it can be accessed using an index). However, it may not actually\nbe stored as array internally. The two most important implementations\nof virtual arrays are those that correspond to an actual plain array and those\nthat have the same value for every index. However, many more\nimplementations exist for various reasons (interfacing with legacy attributes,\nunified iterator over all points in multiple splines, ...).\n\nWith this refactor the core types (`VArray`, `GVArray`, `VMutableArray` and\n`GVMutableArray`) can be used like \"normal values\". They typically live\non the stack. Before, they were usually inside a `std::unique_ptr`. This makes\npassing them around much easier. Creation of new virtual arrays is also\nmuch simpler now due to some constructors. Memory allocations are\nreduced by making use of small object optimization inside the core types.\n\nPreviously, `VArray` was a class with virtual methods that had to be overridden\nto change the behavior of a the virtual array. Now,`VArray` has a fixed size\nand has no virtual methods. Instead it contains a `VArrayImpl` that is\nsimilar to the old `VArray`. `VArrayImpl` should rarely ever be used directly,\nunless a new virtual array implementation is added.\n\nTo support the small object optimization for many `VArrayImpl` classes,\na new `blender::Any` type is added. It is similar to `std::any` with two\nadditional features. It has an adjustable inline buffer size and alignment.\nThe inline buffer size of `std::any` can't be relied on and is usually too\nsmall for our use case here. Furthermore, `blender::Any` can store\nadditional user-defined type information without increasing the\nstack size.\n\nDifferential Revision: https://developer.blender.org/D12986",
+      "stat": "source/blender/blenkernel/BKE_attribute_access.hh  |   63 +-\n source/blender/blenkernel/BKE_geometry_set.hh      |   92 +-\n source/blender/blenkernel/BKE_spline.hh            |   20 +-\n .../blender/blenkernel/intern/attribute_access.cc  |  136 ++-\n .../blenkernel/intern/attribute_access_intern.hh   |   15 +-\n .../blenkernel/intern/curve_to_mesh_convert.cc     |   14 +-\n .../blenkernel/intern/geometry_component_curve.cc  |  219 ++--\n .../intern/geometry_component_instances.cc         |   26 +-\n .../blenkernel/intern/geometry_component_mesh.cc   |  206 ++--\n .../intern/geometry_component_pointcloud.cc        |    9 +-\n .../blenkernel/intern/geometry_set_instances.cc    |    8 +-\n source/blender/blenkernel/intern/mesh_sample.cc    |    2 +-\n source/blender/blenkernel/intern/spline_base.cc    |   12 +-\n source/blender/blenkernel/intern/spline_bezier.cc  |   13 +-\n source/blender/blenkernel/intern/spline_nurbs.cc   |   16 +-\n source/blender/blenkernel/intern/spline_poly.cc    |    6 +-\n source/blender/blenlib/BLI_any.hh                  |  319 +++++\n source/blender/blenlib/BLI_virtual_array.hh        | 1078 ++++++++++++-----\n source/blender/blenlib/CMakeLists.txt              |    2 +\n source/blender/blenlib/tests/BLI_any_test.cc       |  108 ++\n .../blenlib/tests/BLI_virtual_array_test.cc        |   55 +-\n .../spreadsheet_data_source_geometry.cc            |   22 +-\n source/blender/functions/FN_field.hh               |   66 +-\n .../blender/functions/FN_generic_vector_array.hh   |    3 +-\n .../blender/functions/FN_generic_virtual_array.hh  | 1252 +++++++++-----------\n .../functions/FN_generic_virtual_vector_array.hh   |   14 +-\n .../blender/functions/FN_multi_function_params.hh  |   26 +-\n source/blender/functions/intern/field.cc           |  164 +--\n .../functions/intern/generic_vector_array.cc       |    5 +-\n .../functions/intern/generic_virtual_array.cc      |  642 +++++++---\n .../intern/generic_virtual_vector_array.cc         |   10 +-\n .../functions/intern/multi_function_parallel.cc    |    4 +-\n .../intern/multi_function_procedure_executor.cc    |    3 +-\n source/blender/functions/tests/FN_field_test.cc    |   50 +-\n .../tests/FN_multi_function_procedure_test.cc      |   37 +\n .../geometry/intern/mesh_to_curve_convert.cc       |   16 +-\n source/blender/nodes/NOD_geometry_exec.hh          |   27 +-\n source/blender/nodes/NOD_type_conversions.hh       |    5 +-\n .../legacy/node_geo_align_rotation_to_vector.cc    |    4 +-\n .../nodes/legacy/node_geo_attribute_clamp.cc       |   14 +-\n .../nodes/legacy/node_geo_attribute_color_ramp.cc  |    2 +-\n .../nodes/legacy/node_geo_attribute_combine_xyz.cc |    6 +-\n .../nodes/legacy/node_geo_attribute_compare.cc     |   26 +-\n .../nodes/legacy/node_geo_attribute_convert.cc     |    4 +-\n .../nodes/legacy/node_geo_attribute_curve_map.cc   |   15 +-\n .../nodes/legacy/node_geo_attribute_map_range.cc   |    6 +-\n .../nodes/legacy/node_geo_attribute_math.cc        |    6 +-\n .../nodes/legacy/node_geo_attribute_mix.cc         |   21 +-\n .../nodes/legacy/node_geo_attribute_proximity.cc   |    2 +-\n .../nodes/legacy/node_geo_attribute_randomize.cc   |    8 +-\n .../legacy/node_geo_attribute_sample_texture.cc    |    2 +-\n .../legacy/node_geo_attribute_separate_xyz.cc      |    4 +-\n .../nodes/legacy/node_geo_attribute_transfer.cc    |   10 +-\n .../nodes/legacy/node_geo_attribute_vector_math.cc |   58 +-\n .../legacy/node_geo_attribute_vector_rotate.cc     |   42 +-\n .../nodes/legacy/node_geo_curve_endpoints.cc       |    8 +-\n .../nodes/legacy/node_geo_curve_reverse.cc         |    2 +-\n .../nodes/legacy/node_geo_curve_set_handles.cc     |    2 +-\n .../nodes/legacy/node_geo_curve_spline_type.cc     |    2 +-\n .../nodes/legacy/node_geo_curve_subdivide.cc       |   11 +-\n .../nodes/legacy/node_geo_curve_to_points.cc       |   18 +-\n .../nodes/legacy/node_geo_delete_geometry.cc       |    8 +-\n .../nodes/legacy/node_geo_material_assign.cc       |    2 +-\n .../nodes/legacy/node_geo_mesh_to_curve.cc         |    2 +-\n .../nodes/legacy/node_geo_point_distribute.cc      |   18 +-\n .../nodes/legacy/node_geo_point_instance.cc        |    9 +-\n .../geometry/nodes/legacy/node_geo_point_rotate.cc |    6 +-\n .../geometry/nodes/legacy/node_geo_point_scale.cc  |    6 +-\n .../nodes/legacy/node_geo_point_separate.cc        |    6 +-\n .../nodes/legacy/node_geo_point_translate.cc       |    4 +-\n .../nodes/legacy/node_geo_points_to_volume.cc      |    6 +-\n .../geometry/nodes/legacy/node_geo_raycast.cc      |   10 +-\n .../nodes/geometry/nodes/node_geo_convex_hull.cc   |   20 +-\n .../nodes/node_geo_curve_endpoint_selection.cc     |   10 +-\n .../nodes/geometry/nodes/node_geo_curve_fillet.cc  |   16 +-\n .../nodes/node_geo_curve_handle_type_selection.cc  |   14 +-\n .../geometry/nodes/node_geo_curve_parameter.cc     |   48 +-\n .../geometry/nodes/node_geo_curve_resample.cc      |   12 +-\n .../geometry/nodes/node_geo_curve_subdivide.cc     |    4 -\n .../geometry/nodes/node_geo_curve_to_points.cc     |   10 +-\n .../nodes/geometry/nodes/node_geo_curve_trim.cc    |   24 +-\n .../geometry/nodes/node_geo_delete_geometry.cc     |    8 +-\n .../nodes/node_geo_distribute_points_on_faces.cc   |    2 +-\n .../nodes/geometry/nodes/node_geo_input_normal.cc  |   80 +-\n .../geometry/nodes/node_geo_input_spline_length.cc |   30 +-\n .../nodes/geometry/nodes/node_geo_input_tangent.cc |   25 +-\n .../geometry/nodes/node_geo_instance_on_points.cc  |   31 +-\n .../nodes/geometry/nodes/node_geo_join_geometry.cc |   17 +-\n .../geometry/nodes/node_geo_material_selection.cc  |   19 +-\n .../geometry/nodes/node_geo_mesh_to_points.cc      |    6 +-\n .../geometry/nodes/node_geo_points_to_vertices.cc  |    6 +-\n .../geometry/nodes/node_geo_points_to_volume.cc    |    4 +-\n .../geometry/nodes/node_geo_transfer_attribute.cc  |   19 +-\n source/blender/nodes/intern/node_geometry_exec.cc  |   26 +-\n source/blender/nodes/intern/type_conversions.cc    |   58 +-\n .../nodes/shader/nodes/node_shader_tex_musgrave.cc |   16 +-\n .../nodes/shader/nodes/node_shader_tex_voronoi.cc  |   30 +-\n 97 files changed, 3378 insertions(+), 2272 deletions(-)"
+    },
+    "2cfcb8b0b80": {
+      "hash": "2cfcb8b0b805401a0ffb252fd41750fadb0392ab",
+      "author": "Jacques Lucke",
+      "date": "2023-05-24",
+      "subject": "BLI: refactor IndexMask for better performance and memory usage",
+      "body": "Goals of this refactor:\n* Reduce memory consumption of `IndexMask`. The old `IndexMask` uses an\n  `int64_t` for each index which is more than necessary in pretty much all\n  practical cases currently. Using `int32_t` might still become limiting\n  in the future in case we use this to index e.g. byte buffers larger than\n  a few gigabytes. We also don't want to template `IndexMask`, because\n  that would cause a split in the \"ecosystem\", or everything would have to\n  be implemented twice or templated.\n* Allow for more multi-threading. The old `IndexMask` contains a single\n  array. This is generally good but has the problem that it is hard to fill\n  from multiple-threads when the final size is not known from the beginning.\n  This is commonly the case when e.g. converting an array of bool to an\n  index mask. Currently, this kind of code only runs on a single thread.\n* Allow for efficient set operations like join, intersect and difference.\n  It should be possible to multi-thread those operations.\n* It should be possible to iterate over an `IndexMask` very efficiently.\n  The most important part of that is to avoid all memory access when iterating\n  over continuous ranges. For some core nodes (e.g. math nodes), we generate\n  optimized code for the cases of irregular index masks and simple index ranges.\n\nTo achieve these goals, a few compromises had to made:\n* Slicing of the mask (at specific indices) and random element access is\n  `O(log #indices)` now, but with a low constant factor. It should be possible\n  to split a mask into n approximately equally sized parts in `O(n)` though,\n  making the time per split `O(1)`.\n* Using range-based for loops does not work well when iterating over a nested\n  data structure like the new `IndexMask`. Therefor, `foreach_*` functions with\n  callbacks have to be used. To avoid extra code complexity at the call site,\n  the `foreach_*` methods support multi-threading out of the box.\n\nThe new data structure splits an `IndexMask` into an arbitrary number of ordered\n`IndexMaskSegment`. Each segment can contain at most `2^14 = 16384` indices. The\nindices within a segment are stored as `int16_t`. Each segment has an additional\n`int64_t` offset which allows storing arbitrary `int64_t` indices. This approach\nhas the main benefits that segments can be processed/constructed individually on\nmultiple threads without a serial bottleneck. Also it reduces the memory\nrequirements significantly.\n\nFor more details see comments in `BLI_index_mask.hh`.\n\nI did a few tests to verify that the data structure generally improves\nperformance and does not cause regressions:\n* Our field evaluation benchmarks take about as much as before. This is to be\n  expected because we already made sure that e.g. add node evaluation is\n  vectorized. The important thing here is to check that changes to the way we\n  iterate over the indices still allows for auto-vectorization.\n* Memory usage by a mask is about 1/4 of what it was before in the average case.\n  That's mainly caused by the switch from `int64_t` to `int16_t` for indices.\n  In the worst case, the memory requirements can be larger when there are many\n  indices that are very far away. However, when they are far away from each other,\n  that indicates that there aren't many indices in total. In common cases, memory\n  usage can be way lower than 1/4 of before, because sub-ranges use static memory.\n* For some more specific numbers I benchmarked `IndexMask::from_bools` in\n  `index_mask_from_selection` on 10.000.000 elements at various probabilities for\n  `true` at every index:\n  ```\n  Probability      Old        New\n  0              4.6 ms     0.8 ms\n  0.001          5.1 ms     1.3 ms\n  0.2            8.4 ms     1.8 ms\n  0.5           15.3 ms     3.0 ms\n  0.8           20.1 ms     3.0 ms\n  0.999         25.1 ms     1.7 ms\n  1             13.5 ms     1.1 ms\n  ```\n\nPull Request: https://projects.blender.org/blender/blender/pulls/104629",
+      "stat": "source/blender/blenkernel/BKE_attribute_math.hh    |   20 +-\n source/blender/blenkernel/BKE_curves.hh            |   14 +-\n source/blender/blenkernel/BKE_curves_utils.hh      |   18 +-\n source/blender/blenkernel/BKE_geometry_fields.hh   |   34 +-\n source/blender/blenkernel/BKE_instances.hh         |    2 +-\n source/blender/blenkernel/BKE_mesh_sample.hh       |   14 +-\n source/blender/blenkernel/intern/attribute_math.cc |    8 +-\n .../blenkernel/intern/curve_legacy_convert.cc      |   96 +-\n .../blender/blenkernel/intern/curves_geometry.cc   |  183 ++--\n source/blender/blenkernel/intern/curves_utils.cc   |   50 +-\n .../blenkernel/intern/geometry_component_curves.cc |    2 +-\n .../blenkernel/intern/geometry_component_mesh.cc   |   24 +-\n .../blender/blenkernel/intern/geometry_fields.cc   |   18 +-\n source/blender/blenkernel/intern/instances.cc      |   11 +-\n source/blender/blenkernel/intern/mesh_sample.cc    |   58 +-\n .../blender/blenkernel/intern/type_conversions.cc  |   12 +-\n source/blender/blenlib/BLI_array_utils.hh          |   36 +-\n source/blender/blenlib/BLI_binary_search.hh        |   36 +\n source/blender/blenlib/BLI_cpp_type.hh             |   54 +-\n source/blender/blenlib/BLI_cpp_type_make.hh        |   74 +-\n .../blender/blenlib/BLI_devirtualize_parameters.hh |    2 +-\n source/blender/blenlib/BLI_generic_vector_array.hh |    6 +-\n .../blender/blenlib/BLI_generic_virtual_array.hh   |   64 +-\n source/blender/blenlib/BLI_index_mask.hh           | 1059 +++++++++++++++-----\n source/blender/blenlib/BLI_index_mask_ops.hh       |   79 --\n source/blender/blenlib/BLI_length_parameterize.hh  |   14 +-\n source/blender/blenlib/BLI_offset_span.hh          |  108 ++\n source/blender/blenlib/BLI_task.hh                 |   13 +\n .../blender/blenlib/BLI_unique_sorted_indices.hh   |  151 +++\n source/blender/blenlib/BLI_virtual_array.hh        |  111 +-\n source/blender/blenlib/CMakeLists.txt              |    6 +-\n source/blender/blenlib/intern/array_utils.cc       |    6 +-\n .../blender/blenlib/intern/generic_vector_array.cc |   14 +-\n .../blenlib/intern/generic_virtual_array.cc        |   77 +-\n source/blender/blenlib/intern/index_mask.cc        |  698 +++++++++----\n .../blenlib/tests/BLI_binary_search_test.cc        |   59 ++\n source/blender/blenlib/tests/BLI_cpp_type_test.cc  |   40 +-\n .../blender/blenlib/tests/BLI_index_mask_test.cc   |  354 +++----\n .../tests/BLI_unique_sorted_indices_test.cc        |   64 ++\n .../blenlib/tests/BLI_virtual_array_test.cc        |   19 +-\n .../blender/editors/curves/intern/curves_data.cc   |   16 +-\n .../blender/editors/curves/intern/curves_edit.cc   |    7 +-\n source/blender/editors/curves/intern/curves_ops.cc |    1 -\n .../editors/curves/intern/curves_selection.cc      |   26 +-\n source/blender/editors/include/ED_curves.h         |    6 +-\n source/blender/editors/mesh/mesh_data.cc           |    6 +-\n .../editors/sculpt_paint/curves_sculpt_brush.cc    |    4 +-\n .../editors/sculpt_paint/curves_sculpt_comb.cc     |   23 +-\n .../editors/sculpt_paint/curves_sculpt_delete.cc   |   23 +-\n .../editors/sculpt_paint/curves_sculpt_density.cc  |  129 +--\n .../sculpt_paint/curves_sculpt_grow_shrink.cc      |    4 +-\n .../editors/sculpt_paint/curves_sculpt_intern.hh   |    4 +-\n .../editors/sculpt_paint/curves_sculpt_ops.cc      |   58 +-\n .../editors/sculpt_paint/curves_sculpt_pinch.cc    |   18 +-\n .../editors/sculpt_paint/curves_sculpt_puff.cc     |   11 +-\n .../sculpt_paint/curves_sculpt_selection.cc        |    2 -\n .../editors/sculpt_paint/curves_sculpt_slide.cc    |   62 +-\n .../editors/sculpt_paint/curves_sculpt_smooth.cc   |   87 +-\n .../sculpt_paint/curves_sculpt_snake_hook.cc       |    5 +-\n .../editors/sculpt_paint/paint_vertex_color_ops.cc |   22 +-\n .../spreadsheet_data_source_geometry.cc            |   13 +-\n .../spreadsheet_data_source_geometry.hh            |    2 +-\n .../space_spreadsheet/spreadsheet_row_filter.cc    |  142 ++-\n .../editors/transform/transform_convert_curves.cc  |    6 +-\n .../editors/transform/transform_gizmo_3d.cc        |    8 +-\n source/blender/functions/FN_field.hh               |   15 +-\n source/blender/functions/FN_multi_function.hh      |    9 +-\n .../blender/functions/FN_multi_function_builder.hh |   88 +-\n .../blender/functions/FN_multi_function_params.hh  |    5 +-\n .../FN_multi_function_procedure_executor.hh        |    2 +-\n source/blender/functions/intern/field.cc           |   29 +-\n source/blender/functions/intern/multi_function.cc  |   11 +-\n .../functions/intern/multi_function_builder.cc     |   16 +-\n .../intern/multi_function_procedure_executor.cc    |   71 +-\n source/blender/functions/tests/FN_field_test.cc    |   22 +-\n .../tests/FN_multi_function_procedure_test.cc      |   45 +-\n .../functions/tests/FN_multi_function_test.cc      |   57 +-\n .../tests/FN_multi_function_test_common.hh         |   41 +-\n source/blender/geometry/GEO_curve_constraints.hh   |    6 +-\n source/blender/geometry/GEO_fillet_curves.hh       |    4 +-\n .../blender/geometry/GEO_mesh_merge_by_distance.hh |    2 +-\n source/blender/geometry/GEO_mesh_split_edges.hh    |    2 +-\n source/blender/geometry/GEO_mesh_to_curve.hh       |    2 +-\n .../geometry/GEO_point_merge_by_distance.hh        |    2 +-\n source/blender/geometry/GEO_set_curve_type.hh      |    4 +-\n source/blender/geometry/GEO_subdivide_curves.hh    |    2 +-\n source/blender/geometry/GEO_trim_curves.hh         |    2 +-\n .../blender/geometry/intern/curve_constraints.cc   |   18 +-\n source/blender/geometry/intern/fillet_curves.cc    |   90 +-\n source/blender/geometry/intern/mesh_flip_faces.cc  |   22 +-\n .../geometry/intern/mesh_merge_by_distance.cc      |    6 +-\n source/blender/geometry/intern/mesh_split_edges.cc |   32 +-\n .../geometry/intern/mesh_to_curve_convert.cc       |    2 +-\n .../geometry/intern/point_merge_by_distance.cc     |    8 +-\n source/blender/geometry/intern/resample_curves.cc  |   40 +-\n source/blender/geometry/intern/set_curve_type.cc   |  211 ++--\n source/blender/geometry/intern/subdivide_curves.cc |  154 ++-\n source/blender/geometry/intern/trim_curves.cc      |  361 ++++---\n source/blender/modifiers/intern/MOD_weld.cc        |   25 +-\n .../nodes/node_fn_align_euler_to_vector.cc         |    6 +-\n .../nodes/node_fn_input_special_characters.cc      |    6 +-\n .../nodes/function/nodes/node_fn_separate_color.cc |   26 +-\n .../blender/nodes/geometry/node_geometry_util.hh   |    6 +-\n .../geometry/nodes/node_geo_accumulate_field.cc    |    4 +-\n .../geometry/nodes/node_geo_blur_attribute.cc      |    2 +-\n .../nodes/node_geo_curve_endpoint_selection.cc     |    2 +-\n .../nodes/node_geo_curve_handle_type_selection.cc  |    2 +-\n .../nodes/geometry/nodes/node_geo_curve_sample.cc  |  122 ++-\n .../nodes/node_geo_curve_set_handle_type.cc        |    6 +-\n .../nodes/node_geo_curve_spline_parameter.cc       |    6 +-\n .../node_geo_curve_topology_curve_of_point.cc      |    4 +-\n .../node_geo_curve_topology_points_of_curve.cc     |   10 +-\n .../geometry/nodes/node_geo_delete_geometry.cc     |   45 +-\n .../geometry/nodes/node_geo_duplicate_elements.cc  |   22 +-\n .../nodes/node_geo_edge_paths_to_curves.cc         |   10 +-\n .../nodes/node_geo_edge_paths_to_selection.cc      |   15 +-\n .../nodes/node_geo_edges_to_face_groups.cc         |    7 +-\n .../geometry/nodes/node_geo_evaluate_at_index.cc   |    2 +-\n .../geometry/nodes/node_geo_evaluate_on_domain.cc  |    2 +-\n .../nodes/geometry/nodes/node_geo_extrude_mesh.cc  |   40 +-\n .../nodes/geometry/nodes/node_geo_image_texture.cc |   26 +-\n .../geometry/nodes/node_geo_index_of_nearest.cc    |   77 +-\n .../geometry/nodes/node_geo_input_curve_handles.cc |    2 +-\n .../nodes/node_geo_input_instance_rotation.cc      |    3 +-\n .../nodes/node_geo_input_instance_scale.cc         |    3 +-\n .../nodes/node_geo_input_mesh_edge_angle.cc        |    4 +-\n .../nodes/node_geo_input_mesh_edge_neighbors.cc    |    2 +-\n .../nodes/node_geo_input_mesh_edge_vertices.cc     |    4 +-\n .../nodes/node_geo_input_mesh_face_area.cc         |    2 +-\n .../nodes/node_geo_input_mesh_face_is_planar.cc    |    2 +-\n .../nodes/node_geo_input_mesh_face_neighbors.cc    |    4 +-\n .../geometry/nodes/node_geo_input_mesh_island.cc   |    4 +-\n .../nodes/node_geo_input_mesh_vertex_neighbors.cc  |    4 +-\n .../nodes/node_geo_input_named_attribute.cc        |    2 +-\n .../nodes/node_geo_input_shortest_edge_paths.cc    |    8 +-\n .../geometry/nodes/node_geo_input_spline_length.cc |    2 +-\n .../nodes/node_geo_input_spline_resolution.cc      |    2 +-\n .../nodes/geometry/nodes/node_geo_input_tangent.cc |    2 +-\n .../geometry/nodes/node_geo_material_selection.cc  |    4 +-\n .../nodes/node_geo_mesh_face_group_boundaries.cc   |    2 +-\n .../node_geo_mesh_topology_corners_of_face.cc      |    8 +-\n .../node_geo_mesh_topology_corners_of_vertex.cc    |   25 +-\n .../node_geo_mesh_topology_edges_of_corner.cc      |    4 +-\n .../node_geo_mesh_topology_edges_of_vertex.cc      |   25 +-\n .../nodes/node_geo_mesh_topology_face_of_corner.cc |    4 +-\n ...node_geo_mesh_topology_offset_corner_in_face.cc |    2 +-\n .../node_geo_mesh_topology_vertex_of_corner.cc     |    2 +-\n .../nodes/node_geo_offset_point_in_curve.cc        |   18 +-\n .../nodes/geometry/nodes/node_geo_points.cc        |    2 +-\n .../nodes/geometry/nodes/node_geo_proximity.cc     |   12 +-\n .../nodes/geometry/nodes/node_geo_raycast.cc       |   10 +-\n .../nodes/geometry/nodes/node_geo_sample_index.cc  |   32 +-\n .../geometry/nodes/node_geo_sample_nearest.cc      |   34 +-\n .../nodes/node_geo_sample_nearest_surface.cc       |    4 +-\n .../geometry/nodes/node_geo_sample_uv_surface.cc   |    6 +-\n .../nodes/geometry/nodes/node_geo_sample_volume.cc |    4 +-\n .../geometry/nodes/node_geo_scale_elements.cc      |   22 +-\n .../geometry/nodes/node_geo_set_curve_handles.cc   |    9 +-\n .../geometry/nodes/node_geo_set_curve_normal.cc    |    2 +-\n .../nodes/geometry/nodes/node_geo_set_material.cc  |    4 +-\n .../nodes/geometry/nodes/node_geo_set_position.cc  |   38 +-\n .../nodes/geometry/nodes/node_geo_triangulate.cc   |    6 +-\n .../geometry/nodes/node_geo_uv_pack_islands.cc     |    6 +-\n .../nodes/geometry/nodes/node_geo_uv_unwrap.cc     |   12 +-\n .../nodes/geometry/nodes/node_geo_volume_cube.cc   |    2 +-\n .../nodes/intern/geometry_nodes_lazy_function.cc   |    5 +-\n .../nodes/shader/nodes/node_shader_color_ramp.cc   |    6 +-\n .../nodes/shader/nodes/node_shader_curves.cc       |   18 +-\n .../blender/nodes/shader/nodes/node_shader_math.cc |    6 +-\n .../blender/nodes/shader/nodes/node_shader_mix.cc  |   15 +-\n .../nodes/shader/nodes/node_shader_mix_rgb.cc      |   10 +-\n .../nodes/shader/nodes/node_shader_sepcomb_rgb.cc  |    6 +-\n .../nodes/shader/nodes/node_shader_sepcomb_xyz.cc  |    6 +-\n .../nodes/shader/nodes/node_shader_tex_brick.cc    |    6 +-\n .../nodes/shader/nodes/node_shader_tex_checker.cc  |   11 +-\n .../nodes/shader/nodes/node_shader_tex_gradient.cc |   35 +-\n .../nodes/shader/nodes/node_shader_tex_magic.cc    |   10 +-\n .../nodes/shader/nodes/node_shader_tex_musgrave.cc |   82 +-\n .../nodes/shader/nodes/node_shader_tex_noise.cc    |   34 +-\n .../nodes/shader/nodes/node_shader_tex_voronoi.cc  |  122 +--\n .../nodes/shader/nodes/node_shader_tex_wave.cc     |   11 +-\n .../shader/nodes/node_shader_tex_white_noise.cc    |   36 +-\n 182 files changed, 4061 insertions(+), 2954 deletions(-)"
+    },
+    "ae94e36cfb2": {
+      "hash": "ae94e36cfb2f3bc9a99b638782092d9c71d4b3c7",
+      "author": "Jacques Lucke",
+      "date": "2022-04-26",
+      "subject": "Geometry Nodes: refactor array devirtualization",
+      "body": "Goals:\n* Better high level control over where devirtualization occurs. There is always\n  a trade-off between performance and compile-time/binary-size.\n* Simplify using array devirtualization.\n* Better performance for cases where devirtualization wasn't used before.\n\nMany geometry nodes accept fields as inputs. Internally, that means that the\nexecution functions have to accept so called \"virtual arrays\" as inputs. Those\n can be e.g. actual arrays, just single values, or lazily computed arrays.\nDue to these different possible virtual arrays implementations, access to\nindividual elements is slower than it would be if everything was just a normal\narray (access does through a virtual function call). For more complex execution\nfunctions, this overhead does not matter, but for small functions (like a simple\naddition) it very much does. The virtual function call also prevents the compiler\nfrom doing some optimizations (e.g. loop unrolling and inserting simd instructions).\n\nThe solution is to \"devirtualize\" the virtual arrays for small functions where the\noverhead is measurable. Essentially, the function is generated many times with\ndifferent array types as input. Then there is a run-time dispatch that calls the\nbest implementation. We have been doing devirtualization in e.g. math nodes\nfor a long time already. This patch just generalizes the concept and makes it\neasier to control. It also makes it easier to investigate the different trade-offs\nwhen it comes to devirtualization.\n\nNodes that we've optimized using devirtualization before didn't get a speedup.\nHowever, a couple of nodes are using devirtualization now, that didn't before.\nThose got a 2-4x speedup in common cases.\n* Map Range\n* Random Value\n* Switch\n* Combine XYZ\n\nDifferential Revision: https://developer.blender.org/D14628",
+      "stat": ".../blenkernel/intern/curve_to_mesh_convert.cc     |   1 +\n .../blender/blenkernel/intern/type_conversions.cc  |   3 +-\n .../blender/blenlib/BLI_devirtualize_parameters.hh | 309 +++++++++\n source/blender/blenlib/BLI_parameter_pack_utils.hh | 122 ++++\n source/blender/blenlib/BLI_virtual_array.hh        |  71 +--\n source/blender/blenlib/CMakeLists.txt              |   2 +\n .../blender/functions/FN_multi_function_builder.hh | 700 +++++++++++++--------\n .../functions/FN_multi_function_param_type.hh      |  44 +-\n .../blender/functions/FN_multi_function_params.hh  |  28 +-\n .../functions/FN_multi_function_signature.hh       |  26 +\n source/blender/functions/intern/multi_function.cc  |  12 +-\n .../functions/intern/multi_function_procedure.cc   |   2 +-\n .../intern/multi_function_procedure_executor.cc    |  12 +-\n .../geometry/intern/mesh_to_curve_convert.cc       |   1 +\n source/blender/nodes/NOD_math_functions.hh         | 251 ++++----\n .../nodes/function/nodes/node_fn_boolean_math.cc   |  35 +-\n .../nodes/function/nodes/node_fn_compare.cc        | 186 ++++--\n .../nodes/function/nodes/node_fn_float_to_int.cc   |  15 +-\n .../nodes/function/nodes/node_fn_random_value.cc   | 206 ++----\n .../geometry/nodes/node_geo_curve_resample.cc      |  18 +-\n .../nodes/geometry/nodes/node_geo_curve_sample.cc  |  12 +-\n .../nodes/geometry/nodes/node_geo_extrude_mesh.cc  |   4 +-\n .../geometry/nodes/node_geo_mesh_to_points.cc      |   4 +-\n .../nodes/geometry/nodes/node_geo_switch.cc        |  35 +-\n .../nodes/shader/nodes/node_shader_map_range.cc    | 527 ++++++----------\n .../blender/nodes/shader/nodes/node_shader_math.cc |  26 +-\n .../nodes/shader/nodes/node_shader_sepcomb_xyz.cc  |   4 +-\n .../nodes/shader/nodes/node_shader_vector_math.cc  |  54 +-\n 28 files changed, 1552 insertions(+), 1158 deletions(-)"
+    },
+    "7966cd16d6d": {
+      "hash": "7966cd16d6dc4e66d01f7bd68a090107c1a7978c",
+      "author": "Hans Goudey",
+      "date": "2023-04-04",
+      "subject": "Mesh: Replace MPoly struct with offset indices",
+      "body": "Implements #95967.\n\nCurrently the `MPoly` struct is 12 bytes, and stores the index of a\nface's first corner and the number of corners/verts/edges. Polygons\nand corners are always created in order by Blender, meaning each\nface's corners will be after the previous face's corners. We can take\nadvantage of this fact and eliminate the redundancy in mesh face\nstorage by only storing a single integer corner offset for each face.\nThe size of the face is then encoded by the offset of the next face.\nThe size of a single integer is 4 bytes, so this reduces memory\nusage by 3 times.\n\nThe same method is used for `CurvesGeometry`, so Blender already has\nan abstraction to simplify using these offsets called `OffsetIndices`.\nThis class is used to easily retrieve a range of corner indices for\neach face. This also gives the opportunity for sharing some logic with\ncurves.\n\nAnother benefit of the change is that the offsets and sizes stored in\n`MPoly` can no longer disagree with each other. Storing faces in the\norder of their corners can simplify some code too.\n\nFace/polygon variables now use the `IndexRange` type, which comes with\nquite a few utilities that can simplify code.\n\nSome:\n- The offset integer array has to be one longer than the face count to\n  avoid a branch for every face, which means the data is no longer part\n  of the mesh's `CustomData`.\n- We lose the ability to \"reference\" an original mesh's offset array\n  until more reusable CoW from #104478 is committed. That will be added\n  in a separate commit.\n- Since they aren't part of `CustomData`, poly offsets often have to be\n  copied manually.\n- To simplify using `OffsetIndices` in many places, some functions and\n  structs in headers were moved to only compile in C++.\n- All meshes created by Blender use the same order for faces and face\n  corners, but just in case, meshes with mismatched order are fixed by\n  versioning code.\n- `MeshPolygon.totloop` is no longer editable in RNA. This API break is\n  necessary here unfortunately. It should be worth it in 3.6, since\n  that's the best way to allow loading meshes from 4.0, which is\n  important for an LTS version.\n\nPull Request: https://projects.blender.org/blender/blender/pulls/105938",
+      "stat": "intern/cycles/blender/mesh.cpp                     |  42 +--\n source/blender/blenkernel/BKE_DerivedMesh.h        |  10 +-\n source/blender/blenkernel/BKE_deform.h             |  13 +-\n source/blender/blenkernel/BKE_mesh.h               |  27 +-\n source/blender/blenkernel/BKE_mesh.hh              |  50 ++--\n .../blender/blenkernel/BKE_mesh_legacy_convert.h   |  31 ++-\n source/blender/blenkernel/BKE_mesh_mapping.h       |  62 ++---\n source/blender/blenkernel/BKE_mesh_remap.h         |  18 +-\n source/blender/blenkernel/BKE_mesh_tangent.h       |  27 +-\n source/blender/blenkernel/BKE_multires.h           |   4 +-\n source/blender/blenkernel/BKE_paint.h              |   2 +-\n source/blender/blenkernel/BKE_particle.h           |   2 +-\n source/blender/blenkernel/BKE_pbvh.h               |  14 +-\n source/blender/blenkernel/BKE_shrinkwrap.h         |   3 +-\n source/blender/blenkernel/BKE_subdiv_ccg.h         |  23 +-\n source/blender/blenkernel/BKE_volume_to_mesh.hh    |   2 +-\n source/blender/blenkernel/intern/CCGSubSurf.c      |   1 +\n source/blender/blenkernel/intern/DerivedMesh.cc    |  40 ++-\n source/blender/blenkernel/intern/bvhutils.cc       |   4 +-\n source/blender/blenkernel/intern/cdderivedmesh.cc  |   9 +-\n source/blender/blenkernel/intern/cloth.cc          |  37 ++-\n source/blender/blenkernel/intern/crazyspace.cc     |  12 +-\n .../blenkernel/intern/curve_to_mesh_convert.cc     |  18 +-\n source/blender/blenkernel/intern/customdata.cc     |  12 +-\n source/blender/blenkernel/intern/data_transfer.cc  |  15 +-\n source/blender/blenkernel/intern/deform.cc         |  15 +-\n source/blender/blenkernel/intern/dynamicpaint.cc   |  14 +-\n source/blender/blenkernel/intern/fluid.cc          |  31 +--\n .../blenkernel/intern/geometry_component_mesh.cc   |  85 +++----\n .../blenkernel/intern/gpencil_geom_legacy.cc       |  14 +-\n source/blender/blenkernel/intern/key.cc            |   2 +-\n .../blender/blenkernel/intern/mball_tessellate.cc  |   8 +-\n source/blender/blenkernel/intern/mesh.cc           |  71 ++++--\n .../blenkernel/intern/mesh_boolean_convert.cc      | 119 ++++-----\n .../blender/blenkernel/intern/mesh_calc_edges.cc   |  16 +-\n source/blender/blenkernel/intern/mesh_convert.cc   |  46 ++--\n source/blender/blenkernel/intern/mesh_evaluate.cc  |  92 ++++---\n source/blender/blenkernel/intern/mesh_fair.cc      |  16 +-\n source/blender/blenkernel/intern/mesh_iterators.cc |  18 +-\n .../blenkernel/intern/mesh_legacy_convert.cc       | 150 ++++++++---\n source/blender/blenkernel/intern/mesh_mapping.cc   | 194 ++++++--------\n .../blenkernel/intern/mesh_merge_customdata.cc     |   9 +-\n source/blender/blenkernel/intern/mesh_mirror.cc    |  21 +-\n source/blender/blenkernel/intern/mesh_normals.cc   |  95 +++----\n source/blender/blenkernel/intern/mesh_remap.cc     | 212 +++++++---------\n .../blender/blenkernel/intern/mesh_remesh_voxel.cc |  39 ++-\n source/blender/blenkernel/intern/mesh_runtime.cc   |   8 +-\n source/blender/blenkernel/intern/mesh_tangent.cc   |  70 +++--\n .../blender/blenkernel/intern/mesh_tessellate.cc   |  52 ++--\n source/blender/blenkernel/intern/mesh_validate.cc  |  99 ++++----\n source/blender/blenkernel/intern/mesh_wrapper.cc   |   2 +-\n source/blender/blenkernel/intern/multires.cc       |  43 ++--\n .../blender/blenkernel/intern/multires_reshape.hh  |   4 +-\n .../intern/multires_reshape_apply_base.cc          |  22 +-\n .../blenkernel/intern/multires_reshape_smooth.cc   |   8 +-\n .../intern/multires_reshape_subdivide.cc           |  15 +-\n .../blenkernel/intern/multires_reshape_util.cc     |  13 +-\n .../blenkernel/intern/multires_reshape_vertcos.cc  |   3 +-\n .../blenkernel/intern/multires_unsubdivide.cc      |  32 ++-\n source/blender/blenkernel/intern/object_dupli.cc   |  31 +--\n source/blender/blenkernel/intern/paint.cc          |  23 +-\n source/blender/blenkernel/intern/pbvh.cc           |  34 +--\n source/blender/blenkernel/intern/pbvh_colors.cc    |  18 +-\n source/blender/blenkernel/intern/pbvh_intern.hh    |   3 +-\n source/blender/blenkernel/intern/shrinkwrap.cc     |   2 +-\n source/blender/blenkernel/intern/softbody.c        |  29 ++-\n source/blender/blenkernel/intern/subdiv_ccg.cc     |  23 +-\n .../blender/blenkernel/intern/subdiv_ccg_mask.cc   |  27 +-\n .../blenkernel/intern/subdiv_converter_mesh.cc     |  31 +--\n .../intern/subdiv_displacement_multires.cc         |  55 ++--\n source/blender/blenkernel/intern/subdiv_eval.cc    |  14 +-\n source/blender/blenkernel/intern/subdiv_foreach.cc | 281 ++++++++++-----------\n source/blender/blenkernel/intern/subdiv_mesh.cc    | 143 +++++------\n source/blender/blenkernel/intern/subsurf_ccg.cc    |  50 ++--\n source/blender/blenkernel/intern/volume_to_mesh.cc |  10 +-\n source/blender/blenlib/BLI_offset_indices.hh       |  11 +-\n source/blender/blenloader/intern/versioning_290.cc |   9 +-\n source/blender/blenloader/intern/versioning_400.cc |   1 +\n source/blender/bmesh/intern/bmesh_mesh_convert.cc  |  23 +-\n source/blender/draw/DRW_pbvh.hh                    |   4 +-\n .../blender/draw/intern/draw_cache_extract_mesh.cc |   6 +-\n .../intern/draw_cache_extract_mesh_render_data.cc  |   6 +-\n .../draw/intern/draw_cache_impl_subdivision.cc     |  12 +-\n source/blender/draw/intern/draw_pbvh.cc            |   3 +-\n .../draw/intern/mesh_extractors/extract_mesh.hh    |   9 +-\n .../mesh_extractors/extract_mesh_ibo_edituv.cc     |  28 +-\n .../mesh_extractors/extract_mesh_ibo_fdots.cc      |   4 +-\n .../mesh_extractors/extract_mesh_ibo_lines.cc      |  14 +-\n .../extract_mesh_ibo_lines_adjacency.cc            |   2 +-\n .../extract_mesh_ibo_lines_paint_mask.cc           |  15 +-\n .../mesh_extractors/extract_mesh_ibo_points.cc     |   8 +-\n .../mesh_extractors/extract_mesh_ibo_tris.cc       |   7 +-\n .../mesh_extractors/extract_mesh_vbo_attributes.cc |   4 +-\n .../mesh_extractors/extract_mesh_vbo_edge_fac.cc   |   5 +-\n .../mesh_extractors/extract_mesh_vbo_edit_data.cc  |   7 +-\n .../extract_mesh_vbo_edituv_data.cc                |  13 +-\n .../extract_mesh_vbo_edituv_stretch_angle.cc       |  14 +-\n .../extract_mesh_vbo_edituv_stretch_area.cc        |  17 +-\n .../extract_mesh_vbo_fdots_edituv_data.cc          |   1 -\n .../mesh_extractors/extract_mesh_vbo_fdots_pos.cc  |   6 +-\n .../mesh_extractors/extract_mesh_vbo_fdots_uv.cc   |   6 +-\n .../mesh_extractors/extract_mesh_vbo_lnor.cc       |  12 +-\n .../extract_mesh_vbo_mesh_analysis.cc              |  46 ++--\n .../mesh_extractors/extract_mesh_vbo_orco.cc       |   8 +-\n .../mesh_extractors/extract_mesh_vbo_pos_nor.cc    |  13 +-\n .../extract_mesh_vbo_sculpt_data.cc                |  16 +-\n .../mesh_extractors/extract_mesh_vbo_select_idx.cc |  17 +-\n .../intern/mesh_extractors/extract_mesh_vbo_tan.cc |   3 +-\n .../mesh_extractors/extract_mesh_vbo_weights.cc    |  11 +-\n source/blender/editors/armature/meshlaplacian.cc   |  30 +--\n source/blender/editors/mesh/editface.cc            |  60 ++---\n source/blender/editors/mesh/editmesh_undo.cc       |  36 +++\n source/blender/editors/mesh/mesh_data.cc           |  33 ++-\n source/blender/editors/mesh/meshtools.cc           |  29 ++-\n source/blender/editors/object/object_bake_api.cc   |  16 +-\n source/blender/editors/sculpt_paint/paint_hide.cc  |   2 +-\n .../editors/sculpt_paint/paint_image_proj.cc       |  13 +-\n source/blender/editors/sculpt_paint/paint_mask.cc  |  14 +-\n .../blender/editors/sculpt_paint/paint_vertex.cc   |  91 +++----\n .../sculpt_paint/paint_vertex_weight_ops.cc        |  16 +-\n source/blender/editors/sculpt_paint/sculpt.cc      |  34 +--\n .../blender/editors/sculpt_paint/sculpt_dyntopo.cc |   4 +-\n .../blender/editors/sculpt_paint/sculpt_expand.cc  |  42 ++-\n .../editors/sculpt_paint/sculpt_face_set.cc        |  30 +--\n .../editors/sculpt_paint/sculpt_geodesic.cc        |  15 +-\n .../blender/editors/sculpt_paint/sculpt_intern.hh  |   1 +\n source/blender/editors/sculpt_paint/sculpt_undo.cc |   4 +\n .../spreadsheet_data_source_geometry.cc            |   8 +-\n source/blender/editors/space_view3d/drawobject.cc  |   7 +-\n .../editors/transform/transform_snap_object.cc     |  12 +-\n source/blender/editors/uvedit/uvedit_unwrap_ops.cc |   9 +-\n .../intern/blender_interface/BlenderFileLoader.cpp |   2 +-\n .../blender_interface/BlenderStrokeRenderer.cpp    |  11 +-\n source/blender/geometry/intern/mesh_flip_faces.cc  |   7 +-\n .../geometry/intern/mesh_merge_by_distance.cc      |  36 ++-\n .../geometry/intern/mesh_primitive_cuboid.cc       |  24 +-\n source/blender/geometry/intern/mesh_split_edges.cc |   9 +-\n .../blender/geometry/intern/realize_instances.cc   |  17 +-\n .../blender/io/alembic/exporter/abc_writer_mesh.cc |  20 +-\n source/blender/io/alembic/intern/abc_customdata.cc |  55 ++--\n source/blender/io/alembic/intern/abc_customdata.h  |   5 +-\n .../blender/io/alembic/intern/abc_reader_mesh.cc   |  18 +-\n source/blender/io/collada/GeometryExporter.cpp     |  43 ++--\n source/blender/io/collada/MeshImporter.cpp         |  24 +-\n source/blender/io/collada/MeshImporter.h           |   6 +-\n .../io/ply/exporter/ply_export_load_plydata.cc     |  16 +-\n source/blender/io/ply/importer/ply_import_mesh.cc  |   7 +-\n source/blender/io/stl/importer/stl_import_mesh.cc  |  14 +-\n source/blender/io/usd/intern/usd_reader_mesh.cc    |  45 ++--\n source/blender/io/usd/intern/usd_reader_shape.cc   |  21 +-\n source/blender/io/usd/intern/usd_writer_mesh.cc    |  17 +-\n .../io/wavefront_obj/exporter/obj_export_mesh.cc   |  40 ++-\n .../io/wavefront_obj/exporter/obj_export_mesh.hh   |   2 +-\n .../io/wavefront_obj/importer/obj_import_mesh.cc   |   6 +-\n source/blender/makesdna/DNA_customdata_types.h     |   1 -\n source/blender/makesdna/DNA_mesh_types.h           |  23 +-\n source/blender/makesdna/DNA_meshdata_types.h       |  79 +++---\n source/blender/makesrna/intern/rna_mesh.c          |  76 ++++--\n source/blender/makesrna/intern/rna_mesh_api.c      |   4 +-\n source/blender/makesrna/intern/rna_particle.c      |   4 +-\n source/blender/modifiers/intern/MOD_array.cc       |  15 +-\n source/blender/modifiers/intern/MOD_build.cc       |  38 +--\n .../modifiers/intern/MOD_correctivesmooth.cc       |  16 +-\n source/blender/modifiers/intern/MOD_explode.cc     |   4 +-\n .../modifiers/intern/MOD_laplaciansmooth.cc        |  22 +-\n source/blender/modifiers/intern/MOD_mask.cc        |  72 +++---\n source/blender/modifiers/intern/MOD_meshcache.c    |   2 +-\n .../modifiers/intern/MOD_meshsequencecache.cc      |   4 +-\n source/blender/modifiers/intern/MOD_normal_edit.cc |  16 +-\n source/blender/modifiers/intern/MOD_ocean.cc       |  18 +-\n .../modifiers/intern/MOD_particleinstance.cc       |  20 +-\n source/blender/modifiers/intern/MOD_remesh.cc      |  10 +-\n source/blender/modifiers/intern/MOD_screw.cc       |  31 +--\n .../modifiers/intern/MOD_solidify_extrude.cc       |  89 +++----\n .../modifiers/intern/MOD_solidify_nonmanifold.cc   | 106 ++++----\n .../blender/modifiers/intern/MOD_surfacedeform.cc  |  51 ++--\n source/blender/modifiers/intern/MOD_util.cc        |   8 +-\n source/blender/modifiers/intern/MOD_uvproject.cc   |  22 +-\n source/blender/modifiers/intern/MOD_uvwarp.cc      |  14 +-\n .../modifiers/intern/MOD_weighted_normal.cc        |  49 ++--\n .../geometry/nodes/node_geo_blur_attribute.cc      |  12 +-\n .../nodes/geometry/nodes/node_geo_convex_hull.cc   |   6 +-\n .../nodes/geometry/nodes/node_geo_curve_fill.cc    |   5 +-\n .../geometry/nodes/node_geo_delete_geometry.cc     | 120 +++++----\n .../nodes/geometry/nodes/node_geo_dual_mesh.cc     |  62 +++--\n .../geometry/nodes/node_geo_duplicate_elements.cc  |  25 +-\n .../nodes/node_geo_edges_to_face_groups.cc         |   2 +-\n .../nodes/geometry/nodes/node_geo_extrude_mesh.cc  | 149 +++++------\n .../nodes/node_geo_input_mesh_edge_angle.cc        |  35 ++-\n .../nodes/node_geo_input_mesh_face_area.cc         |   5 +-\n .../nodes/node_geo_input_mesh_face_is_planar.cc    |   8 +-\n .../nodes/node_geo_input_mesh_face_neighbors.cc    |   9 +-\n .../nodes/node_geo_mesh_face_group_boundaries.cc   |   5 +-\n .../nodes/node_geo_mesh_primitive_circle.cc        |  14 +-\n .../geometry/nodes/node_geo_mesh_primitive_cone.cc |  37 +--\n .../geometry/nodes/node_geo_mesh_primitive_grid.cc |  11 +-\n .../nodes/node_geo_mesh_primitive_uv_sphere.cc     |  31 +--\n .../node_geo_mesh_topology_corners_of_face.cc      |  14 +-\n .../node_geo_mesh_topology_edges_of_corner.cc      |   8 +-\n .../nodes/node_geo_mesh_topology_face_of_corner.cc |   9 +-\n ...node_geo_mesh_topology_offset_corner_in_face.cc |   9 +-\n .../geometry/nodes/node_geo_sample_nearest.cc      |   5 +-\n .../geometry/nodes/node_geo_scale_elements.cc      |  23 +-\n .../geometry/nodes/node_geo_uv_pack_islands.cc     |  20 +-\n .../nodes/geometry/nodes/node_geo_uv_unwrap.cc     |  20 +-\n .../geometry/nodes/node_geo_volume_to_mesh.cc      |   4 +-\n source/blender/render/intern/bake.cc               |   6 +-\n source/blender/render/intern/multires_bake.cc      |  81 +++---\n source/blender/render/intern/texture_margin.cc     |  29 +--\n 209 files changed, 2773 insertions(+), 2987 deletions(-)"
+    },
+    "4d841e1b355": {
+      "hash": "4d841e1b355959aba4b55e9f7bfa83af0ed2d162",
+      "author": "Hans Goudey",
+      "date": "2023-05-24",
+      "subject": "Mesh: Reimplement and unify topology maps",
+      "body": "Combine the newer less efficient C++ implementations and the older\nless convenient C functions. The maps now contain one large array of\nindices, split into groups by a separate array of offset indices.\nThough performance of creating the maps is relatively unchanged, the\nnew implementation uses 4 bytes less per source element than the C\nmaps, and 20 bytes less than the newer C++ functions (which also\nhad more overhead with larger N-gons). The usage syntax is simpler\nthan the C functions as well.\n\nThe reduced memory usage is helpful for when these maps are cached\nin the near future. It will also allow sharing the offsets between\nmaps for different domains like vertex to corner and vertex to face.\n\nA simple `GroupedSpan` class is introduced to make accessing the\ntopology maps much simpler. It combines offset indices and a separate\nspan, splitting it into chunks in an efficient way.\n\nPull Request: https://projects.blender.org/blender/blender/pulls/107861",
+      "stat": "source/blender/blenkernel/BKE_mesh_mapping.h       |  99 ++---\n source/blender/blenkernel/BKE_paint.h              |  35 +-\n source/blender/blenkernel/BKE_pbvh.h               |   4 +-\n source/blender/blenkernel/BKE_subdiv_mesh.hh       |   4 +-\n source/blender/blenkernel/intern/mesh_fair.cc      |  57 ++-\n source/blender/blenkernel/intern/mesh_mapping.cc   | 458 ++++++---------------\n .../blenkernel/intern/mesh_merge_customdata.cc     |  15 +-\n source/blender/blenkernel/intern/mesh_normals.cc   |  11 +-\n source/blender/blenkernel/intern/mesh_remap.cc     | 135 +++---\n .../blender/blenkernel/intern/mesh_remesh_voxel.cc |  55 ++-\n source/blender/blenkernel/intern/multires.cc       |   6 +-\n .../intern/multires_reshape_apply_base.cc          |  27 +-\n .../blenkernel/intern/multires_unsubdivide.cc      |   2 +-\n source/blender/blenkernel/intern/paint.cc          |  39 +-\n source/blender/blenkernel/intern/pbvh.cc           |   6 +-\n source/blender/blenkernel/intern/pbvh_colors.cc    |   8 +-\n source/blender/blenkernel/intern/pbvh_intern.hh    |   3 +-\n source/blender/blenkernel/intern/subdiv_mesh.cc    |  29 +-\n source/blender/blenlib/BLI_offset_indices.hh       |  50 ++-\n source/blender/blenlib/intern/offset_indices.cc    |  12 +-\n .../draw/intern/draw_cache_impl_subdivision.cc     |  14 +-\n source/blender/editors/mesh/editface.cc            |  28 +-\n source/blender/editors/object/object_modifier.cc   |  20 +-\n source/blender/editors/object/object_vgroup.cc     |  28 +-\n .../blender/editors/sculpt_paint/paint_vertex.cc   |  62 ++-\n source/blender/editors/sculpt_paint/sculpt.cc      |  50 +--\n .../editors/sculpt_paint/sculpt_automasking.cc     |  15 -\n .../blender/editors/sculpt_paint/sculpt_dyntopo.cc |   4 -\n .../blender/editors/sculpt_paint/sculpt_expand.cc  |  11 +-\n .../editors/sculpt_paint/sculpt_face_set.cc        |  26 +-\n .../editors/sculpt_paint/sculpt_filter_color.cc    |   4 -\n .../editors/sculpt_paint/sculpt_filter_mask.cc     |   4 -\n .../editors/sculpt_paint/sculpt_geodesic.cc        |  24 +-\n source/blender/editors/sculpt_paint/sculpt_ops.cc  |   4 -\n .../blender/editors/sculpt_paint/sculpt_smooth.cc  |   6 -\n source/blender/geometry/intern/mesh_split_edges.cc |  26 +-\n source/blender/modifiers/intern/MOD_skin.cc        |  77 ++--\n .../modifiers/intern/MOD_weighted_normal.cc        |   2 +-\n .../geometry/nodes/node_geo_blur_attribute.cc      | 182 ++++----\n .../nodes/geometry/nodes/node_geo_dual_mesh.cc     |  21 +-\n .../nodes/node_geo_edges_to_face_groups.cc         |   6 +-\n .../nodes/geometry/nodes/node_geo_extrude_mesh.cc  |  14 +-\n .../node_geo_mesh_topology_corners_of_vertex.cc    |   9 +-\n .../node_geo_mesh_topology_edges_of_corner.cc      |   2 +-\n .../node_geo_mesh_topology_edges_of_vertex.cc      |   6 +-\n .../nodes/node_geo_mesh_topology_face_of_corner.cc |   4 +-\n ...node_geo_mesh_topology_offset_corner_in_face.cc |   2 +-\n source/blender/render/intern/texture_margin.cc     |   2 +-\n 48 files changed, 704 insertions(+), 1004 deletions(-)"
+    },
+    "fbcddfcd68a": {
+      "hash": "fbcddfcd68adc72f4dde6c1b769659ba8e9f086b",
+      "author": "Jacques Lucke",
+      "date": "2023-03-28",
+      "subject": "BLI: add core types for supporting implicit-sharing",
+      "body": "The overall goal is to use implicit-sharing in many places in Blender\nthat currently do unnecessary copies. See #95845 for more details.\n\nThis commit only adds the base data structures in blenlib and uses those\nin `GeometrySet` and `AnonymousAttributeID`, which used a more ad-hoc\nversion of implicit sharing already. #105994 lists some more places where\nsupport for implicit sharing can be added (most notably: custom data layers).\n\nPull Request: https://projects.blender.org/blender/blender/pulls/105994",
+      "stat": ".../blenkernel/BKE_anonymous_attribute_id.hh       |  22 ++---\n source/blender/blenkernel/BKE_geometry_set.hh      |  24 ++---\n source/blender/blenkernel/intern/customdata.cc     |   6 +-\n source/blender/blenkernel/intern/geometry_set.cc   |  27 ++---\n source/blender/blenlib/BLI_implicit_sharing.hh     | 109 +++++++++++++++++++++\n ...user_counter.hh => BLI_implicit_sharing_ptr.hh} |  51 +++++-----\n source/blender/blenlib/CMakeLists.txt              |   4 +-\n .../blenlib/tests/BLI_implicit_sharing_test.cc     |  85 ++++++++++++++++\n source/blender/geometry/intern/mesh_split_edges.cc |   7 +-\n .../blender/geometry/intern/realize_instances.cc   |   8 +-\n 10 files changed, 250 insertions(+), 93 deletions(-)"
+    },
+    "383a145a190": {
+      "hash": "383a145a190c620e8c0278db65cf183181fdadc7",
+      "author": "Hans Goudey",
+      "date": "2023-08-25",
+      "subject": "Mesh: Share normals caches by splitting vertex and face calculation",
+      "body": "Since vertex and face normals can be calculated separately, it simplifies\nthings to further separate the two caches. This makes it easier to use\n`SharedCache` to avoid recalculating normals when copying meshes.\n\nSharing vertex normal caches with meshes with the same positions and\ntopology allows completely skipping recomputation as meshes are\ncopied. The effects are similar to e8f4010611e7, but normals are much\nmore expensive, so the benefit is larger.\n\nIn a simple test changing a large grid's generic attribute with geometry\nnodes, I observed a performance improvement from 12 to 17 FPS.\nMost real world situations will have smaller changes though.\n\nCompletely splitting face and vertex calculation is slightly slower\nwhen face normals aren't already calculated, so I kept the option\nto recalculate them together as well.\n\nThis simplifies investigating the changes in #105920 which resolve\nnon-determinism in the vertex normal calculation. If we can make the\ntopology map creation fast enough, that might allow simplifying this\ncode more in the future.\n\nPull Request: https://projects.blender.org/blender/blender/pulls/110479",
+      "stat": "source/blender/blenkernel/BKE_mesh.hh            |  15 +-\n source/blender/blenkernel/BKE_mesh_types.hh      |  16 +-\n source/blender/blenkernel/intern/key.cc          |   4 +-\n source/blender/blenkernel/intern/mesh.cc         |   2 +\n source/blender/blenkernel/intern/mesh_normals.cc | 240 +++++++++++------------\n source/blender/blenkernel/intern/mesh_runtime.cc |  25 +--\n source/blender/blenkernel/intern/pbvh.cc         |  32 +--\n source/blender/makesrna/intern/rna_mesh_api.cc   |   4 +-\n 8 files changed, 156 insertions(+), 182 deletions(-)"
+    },
+    "024d7d12e24": {
+      "hash": "024d7d12e24a5468d3e9878adf29b0b0443b5dc8",
+      "author": "Hans Goudey",
+      "date": "2024-12-04",
+      "subject": "Mesh: Move BVH storage to shared cache system",
+      "body": "Avoid rebuilding BVH trees when meshes are copied.\nSimilar to the other uses of the shared cache system,\nthis can arbitrarily improve performance when meshes\nare copied but not deformed and BVH building is the\nmain bottleneck. In a simple test file I got a 6x speedup.\n\nThe amount of code is also reduced and the system is\nmuch simpler overall-- built out of common threading\npatterns like `SharedCache` with its double-checked lock.\nRAII is used in a few places to simplify memory management\ntoo.\n\nThe downside is storing more `SharedCache` items in the\nmesh runtime struct. That has a slight cost when copying\na small mesh many times, but we have ideas to improve that\nin the future anyway (#104327).\n\nPull Request: https://projects.blender.org/blender/blender/pulls/130865",
+      "stat": "source/blender/blenkernel/BKE_bvhutils.hh          |  42 +-\n source/blender/blenkernel/BKE_mesh_types.hh        |  21 +-\n source/blender/blenkernel/BKE_shrinkwrap.hh        |   3 +-\n .../blender/blenkernel/intern/attribute_access.cc  |  25 +-\n .../blenkernel/intern/attribute_access_intern.hh   |   4 +\n source/blender/blenkernel/intern/bvhutils.cc       | 516 +++++++++------------\n source/blender/blenkernel/intern/cloth.cc          |   5 +-\n source/blender/blenkernel/intern/constraint.cc     |   5 +-\n source/blender/blenkernel/intern/dynamicpaint.cc   |   6 +-\n source/blender/blenkernel/intern/fluid.cc          |  13 +-\n source/blender/blenkernel/intern/mesh.cc           |  12 +\n .../blender/blenkernel/intern/mesh_attributes.cc   |  20 +-\n source/blender/blenkernel/intern/mesh_remap.cc     |  43 +-\n .../blender/blenkernel/intern/mesh_remesh_voxel.cc |   5 +-\n source/blender/blenkernel/intern/mesh_runtime.cc   |  37 +-\n source/blender/blenkernel/intern/shrinkwrap.cc     |  17 +-\n .../extract_mesh_vbo_mesh_analysis.cc              |  10 +-\n source/blender/editors/armature/meshlaplacian.cc   |   7 +-\n source/blender/editors/curves/intern/curves_ops.cc |   8 +-\n source/blender/editors/physics/particle_edit.cc    |  20 +-\n source/blender/editors/physics/particle_object.cc  |   5 +-\n .../editors/sculpt_paint/curves_sculpt_add.cc      |   3 +-\n .../editors/sculpt_paint/curves_sculpt_brush.cc    |   6 +-\n .../editors/sculpt_paint/curves_sculpt_density.cc  |  10 +-\n .../editors/sculpt_paint/curves_sculpt_ops.cc      |   5 +-\n .../editors/sculpt_paint/curves_sculpt_puff.cc     |   3 +-\n .../editors/sculpt_paint/curves_sculpt_slide.cc    |   3 +-\n source/blender/editors/sculpt_paint/paint_utils.cc |   4 +-\n .../editors/transform/transform_snap_object.cc     |   4 +-\n .../editors/transform/transform_snap_object.hh     |   2 +-\n .../transform/transform_snap_object_mesh.cc        |  29 +-\n .../blender/geometry/intern/curve_constraints.cc   |   6 +-\n source/blender/makesdna/DNA_mesh_types.h           |  13 +\n source/blender/makesrna/intern/rna_object_api.cc   |  13 +-\n source/blender/modifiers/intern/MOD_surface.cc     |  16 +-\n .../blender/modifiers/intern/MOD_surfacedeform.cc  |   5 +-\n .../modifiers/intern/MOD_weightvgproximity.cc      |  22 +-\n .../nodes/geometry/nodes/node_geo_proximity.cc     |   3 -\n .../nodes/geometry/nodes/node_geo_raycast.cc       |   7 +-\n .../geometry/nodes/node_geo_sample_nearest.cc      |  12 +-\n .../nodes/node_geo_sample_nearest_surface.cc       |   7 +-\n source/blender/render/intern/bake.cc               |   6 +-\n 42 files changed, 432 insertions(+), 571 deletions(-)"
+    },
+    "b339e3937d8": {
+      "hash": "b339e3937d8dc580b655efe599c3b0f97f412fb1",
+      "author": "Hans Goudey",
+      "date": "2023-08-29",
+      "subject": "Fix: Crash in sculpt mode with shared normals caches",
+      "body": "Since the normals are stored in a shared cache, tagging them dirty\nrecreated the cache from scratch when it was shared. Instead,\nadd a function that updates the cache in the same call as tagging\nit dirty. This keeps the old state of the cache around even if it was\nshared, and reflects the way that it's really the PBVH and sculpt\nmode managing the dirty status of normals while sculpt mode\nis active.\n\nOne consequence is that the BVH cache and the triangulation\ncache need to be tagged dirty manually. I'd like to avoid abstracting\nthis more than necessary, because I'm hoping in the long term\ndifferent caching abstractions like a more global cache that takes\nimplicit sharing versions into account will make this complexity\nunnecessary.\n\nFixes #111628, #111563\n\nPull Request: https://projects.blender.org/blender/blender/pulls/111641",
+      "stat": "source/blender/blenkernel/BKE_mesh.h             |  6 ++++++\n source/blender/blenkernel/intern/mesh_runtime.cc |  5 +++++\n source/blender/blenkernel/intern/pbvh.cc         |  4 ++--\n source/blender/blenlib/BLI_shared_cache.hh       | 19 +++++++++++++++++++\n source/blender/editors/sculpt_paint/sculpt.cc    | 11 ++++++++---\n 5 files changed, 40 insertions(+), 5 deletions(-)"
+    },
+    "4365de38700": {
+      "hash": "4365de38700ccc05f98f601efdde0963de4645c1",
+      "author": "Jacques Lucke",
+      "date": "2020-06-16",
+      "subject": "Functions: Multi Function",
+      "body": "This adds the `MultiFunction` type and some smallish utility types that it uses.\nA `MultiFunction` encapsulates a function that is optimized for throughput by\nalways processing many elements at once.\n\nThis is an important part of the new particle system, because it allows us to\nexecute user generated node trees for many particles efficiently.\n\nReviewers: brecht\n\nDifferential Revision: https://developer.blender.org/D8030",
+      "stat": "source/blender/functions/CMakeLists.txt            |   8 +\n source/blender/functions/FN_array_spans.hh         | 220 ++++++++++++\n source/blender/functions/FN_cpp_type.hh            |  64 ++--\n source/blender/functions/FN_cpp_types.hh           |   4 +-\n .../blender/functions/FN_generic_vector_array.hh   | 181 ++++++++++\n source/blender/functions/FN_multi_function.hh      | 106 ++++++\n .../blender/functions/FN_multi_function_context.hh |  49 +++\n .../functions/FN_multi_function_data_type.hh       | 125 +++++++\n .../functions/FN_multi_function_param_type.hh      | 155 ++++++++\n .../blender/functions/FN_multi_function_params.hh  | 236 +++++++++++++\n .../functions/FN_multi_function_signature.hh       | 161 +++++++++\n source/blender/functions/FN_spans.hh               | 391 +++++++++++++++++++++\n source/blender/functions/intern/cpp_types.cc       |   4 +-\n tests/gtests/functions/CMakeLists.txt              |   4 +\n tests/gtests/functions/FN_array_spans_test.cc      |  92 +++++\n tests/gtests/functions/FN_cpp_type_test.cc         |   5 +-\n .../functions/FN_generic_vector_array_test.cc      | 101 ++++++\n tests/gtests/functions/FN_multi_function_test.cc   | 222 ++++++++++++\n tests/gtests/functions/FN_spans_test.cc            | 159 +++++++++\n 19 files changed, 2246 insertions(+), 41 deletions(-)"
+    },
+    "bf47fb40fd6": {
+      "hash": "bf47fb40fd6f0ee9386e9936cf213a1049c55b61",
+      "author": "Jacques Lucke",
+      "date": "2021-09-09",
+      "subject": "Geometry Nodes: fields and anonymous attributes",
+      "body": "This implements the initial core framework for fields and anonymous\nattributes (also see T91274).\n\nThe new functionality is hidden behind the \"Geometry Nodes Fields\"\nfeature flag. When enabled in the user preferences, the following\nnew nodes become available: `Position`, `Index`, `Normal`,\n`Set Position` and `Attribute Capture`.\n\nSocket inspection has not been updated to work with fields yet.\n\nBesides these changes at the user level, this patch contains the\nground work for:\n* building and evaluating fields at run-time (`FN_fields.hh`) and\n* creating and accessing anonymous attributes on geometry\n  (`BKE_anonymous_attribute.h`).\n\nFor evaluating fields we use a new so called multi-function procedure\n(`FN_multi_function_procedure.hh`). It allows composing multi-functions\nin arbitrary ways and supports efficient evaluation as is required by\nfields. See `FN_multi_function_procedure.hh` for more details on how\nthis evaluation mechanism can be used.\n\nA new `AttributeIDRef` has been added which allows handling named\nand anonymous attributes in the same way in many places.\n\nHans and I worked on this patch together.\n\nDifferential Revision: https://developer.blender.org/D12414",
+      "stat": "release/scripts/startup/bl_ui/space_userpref.py    |    1 +\n release/scripts/startup/nodeitems_builtins.py      |    9 +\n .../blender/blenkernel/BKE_anonymous_attribute.h   |   43 +\n .../blender/blenkernel/BKE_anonymous_attribute.hh  |  169 +++\n source/blender/blenkernel/BKE_attribute_access.hh  |   98 +-\n source/blender/blenkernel/BKE_customdata.h         |   12 +\n source/blender/blenkernel/BKE_geometry_set.hh      |  114 +-\n .../blenkernel/BKE_geometry_set_instances.hh       |    9 +-\n source/blender/blenkernel/BKE_node.h               |    5 +\n source/blender/blenkernel/CMakeLists.txt           |    3 +\n .../blenkernel/intern/anonymous_attribute.cc       |  118 ++\n .../blender/blenkernel/intern/attribute_access.cc  |  422 ++++---\n .../blenkernel/intern/attribute_access_intern.hh   |   23 +-\n source/blender/blenkernel/intern/curve_eval.cc     |    8 +-\n source/blender/blenkernel/intern/customdata.c      |   53 +-\n .../blenkernel/intern/geometry_component_curve.cc  |   24 +-\n .../blenkernel/intern/geometry_component_mesh.cc   |   24 +-\n .../blenkernel/intern/geometry_set_instances.cc    |   53 +-\n source/blender/blenkernel/intern/node.cc           |    5 +\n .../spreadsheet_data_source_geometry.cc            |   23 +-\n source/blender/functions/CMakeLists.txt            |   11 +\n source/blender/functions/FN_field.hh               |  456 ++++++++\n source/blender/functions/FN_field_cpp_type.hh      |   72 ++\n .../blender/functions/FN_multi_function_builder.hh |    9 +\n .../blender/functions/FN_multi_function_params.hh  |    2 +-\n .../functions/FN_multi_function_procedure.hh       |  452 ++++++++\n .../FN_multi_function_procedure_builder.hh         |  260 +++++\n .../FN_multi_function_procedure_executor.hh        |   39 +\n source/blender/functions/intern/cpp_types.cc       |    9 +\n source/blender/functions/intern/field.cc           |  569 +++++++++\n .../functions/intern/multi_function_builder.cc     |   28 +\n .../functions/intern/multi_function_procedure.cc   |  794 +++++++++++++\n .../intern/multi_function_procedure_builder.cc     |  175 +++\n .../intern/multi_function_procedure_executor.cc    | 1212 ++++++++++++++++++++\n source/blender/functions/tests/FN_field_test.cc    |  278 +++++\n .../tests/FN_multi_function_procedure_test.cc      |  344 ++++++\n source/blender/makesdna/DNA_customdata_types.h     |    9 +\n source/blender/makesdna/DNA_node_types.h           |    7 +\n source/blender/makesdna/DNA_userdef_types.h        |    3 +-\n source/blender/makesrna/intern/rna_nodetree.c      |   20 +\n source/blender/makesrna/intern/rna_userdef.c       |    4 +\n source/blender/modifiers/intern/MOD_nodes.cc       |   21 +-\n .../modifiers/intern/MOD_nodes_evaluator.cc        |   63 +-\n source/blender/nodes/CMakeLists.txt                |    5 +\n source/blender/nodes/NOD_geometry.h                |    5 +\n source/blender/nodes/NOD_geometry_exec.hh          |   72 +-\n source/blender/nodes/NOD_static_types.h            |    7 +-\n .../blender/nodes/geometry/node_geometry_util.hh   |    2 +-\n .../geometry/nodes/node_geo_attribute_capture.cc   |  210 ++++\n .../geometry/nodes/node_geo_curve_endpoints.cc     |   51 +-\n .../geometry/nodes/node_geo_curve_resample.cc      |   16 +-\n .../nodes/geometry/nodes/node_geo_curve_reverse.cc |    4 +-\n .../geometry/nodes/node_geo_curve_spline_type.cc   |    8 +-\n .../geometry/nodes/node_geo_curve_subdivide.cc     |    8 +-\n .../geometry/nodes/node_geo_curve_to_points.cc     |   82 +-\n .../nodes/geometry/nodes/node_geo_curve_trim.cc    |   16 +-\n .../geometry/nodes/node_geo_delete_geometry.cc     |    8 +-\n .../nodes/geometry/nodes/node_geo_input_index.cc   |   60 +\n .../nodes/geometry/nodes/node_geo_input_normal.cc  |  211 ++++\n .../geometry/nodes/node_geo_input_position.cc      |   43 +\n .../nodes/geometry/nodes/node_geo_join_geometry.cc |   90 +-\n .../nodes/geometry/nodes/node_geo_mesh_to_curve.cc |   21 +-\n .../geometry/nodes/node_geo_point_distribute.cc    |   16 +-\n .../geometry/nodes/node_geo_point_separate.cc      |    6 +-\n .../nodes/geometry/nodes/node_geo_set_position.cc  |   79 ++\n .../nodes/intern/geometry_nodes_eval_log.cc        |    6 +-\n source/blender/nodes/intern/node_socket.cc         |   63 +-\n 67 files changed, 6674 insertions(+), 468 deletions(-)"
+    },
+    "66bee9561ba": {
+      "hash": "66bee9561ba6b7ce89f0f95f4ed0420360c69924",
+      "author": "Jacques Lucke",
+      "date": "2026-04-02",
+      "subject": "Refactor: Functions: update field storage and API",
+      "body": "This reimplements the entire field API. Large parts of the API surface is the\nsame, but how a field is stored has change significantly.\n\nThe main motivating goals for this refactor were:\n* Support storing single value fields without doing an allocation.\n* Support referencing common fields without doing reference counting (e.g. the\n  position field).\n\nOn top of these goals, a few other improvements were done:\n* Field types are not nullable anymore. So one needs to use `std::optional` in\n  such cases. This also implies that `GField` can't be default-constructed\n  anymore because then it wouldn't have a type.\n* Field comparisons are shallow now. Previously one could easily do a deep\n  comparison of nested field inputs.\n* `GField` now stores a `std::variant` to support different internal storage\n  types, making it more easily extensible.\n\nIn my test file that is adapted from #156308 I get a speedup from 60ms to 54ms\nof the modifier evaluation time.\n\nPull Request: https://projects.blender.org/blender/blender/pulls/156723",
+      "stat": "source/blender/blenkernel/BKE_bake_items_socket.hh |    5 +-\n source/blender/blenkernel/BKE_geometry_fields.hh   |   23 +-\n source/blender/blenkernel/BKE_node_socket_value.hh |    2 +-\n source/blender/blenkernel/BKE_type_conversions.hh  |   11 +-\n .../blender/blenkernel/intern/bake_items_socket.cc |   12 +-\n source/blender/blenkernel/intern/curves.cc         |    2 +-\n .../blenkernel/intern/geometry_component_curves.cc |    2 +-\n .../blender/blenkernel/intern/geometry_fields.cc   |   36 +-\n .../blender/blenkernel/intern/node_socket_value.cc |   21 +-\n .../blender/blenkernel/intern/type_conversions.cc  |    7 +-\n source/blender/blenlib/BLI_implicit_sharing_ptr.hh |   18 +\n source/blender/functions/CMakeLists.txt            |    2 +\n source/blender/functions/FN_field.hh               |  912 +++++++++--------\n source/blender/functions/FN_field_evaluation.hh    |  217 +++++\n source/blender/functions/intern/field.cc           | 1025 ++++++--------------\n .../blender/functions/intern/field_evaluation.cc   |  631 ++++++++++++\n source/blender/functions/tests/FN_field_test.cc    |   34 +-\n source/blender/geometry/intern/resample_curves.cc  |    6 +-\n .../geometry/nodes/node_geo_accumulate_field.cc    |   26 +-\n .../blender/nodes/geometry/nodes/node_geo_bake.cc  |   13 +-\n .../geometry/nodes/node_geo_blur_attribute.cc      |   14 +-\n .../nodes/node_geo_curve_endpoint_selection.cc     |   10 +-\n .../nodes/node_geo_curve_handle_type_selection.cc  |    4 +-\n .../nodes/geometry/nodes/node_geo_curve_sample.cc  |    2 +-\n .../nodes/node_geo_curve_spline_parameter.cc       |   15 +-\n .../geometry/nodes/node_geo_curve_to_points.cc     |   12 +-\n .../node_geo_curve_topology_curve_of_point.cc      |   17 +-\n .../node_geo_curve_topology_points_of_curve.cc     |   29 +-\n .../geometry/nodes/node_geo_duplicate_elements.cc  |    6 +-\n .../nodes/node_geo_edge_paths_to_selection.cc      |   14 +-\n .../nodes/node_geo_edges_to_face_groups.cc         |    4 +-\n .../geometry/nodes/node_geo_evaluate_at_index.cc   |    8 +-\n .../geometry/nodes/node_geo_evaluate_on_domain.cc  |    4 +-\n .../nodes/geometry/nodes/node_geo_field_average.cc |   19 +-\n .../geometry/nodes/node_geo_field_min_and_max.cc   |   16 +-\n .../nodes/geometry/nodes/node_geo_field_to_grid.cc |    5 +-\n .../nodes/geometry/nodes/node_geo_field_to_list.cc |    5 +-\n .../geometry/nodes/node_geo_field_variance.cc      |   16 +-\n .../geometry/nodes/node_geo_index_of_nearest.cc    |   25 +-\n .../geometry/nodes/node_geo_input_curve_handles.cc |   10 +-\n .../nodes/geometry/nodes/node_geo_input_id.cc      |    3 +-\n .../nodes/geometry/nodes/node_geo_input_index.cc   |    3 +-\n .../nodes/node_geo_input_instance_bounds.cc        |    8 +-\n .../nodes/node_geo_input_instance_rotation.cc      |    6 +-\n .../nodes/node_geo_input_instance_scale.cc         |    5 +-\n .../nodes/node_geo_input_mesh_edge_angle.cc        |   10 +-\n .../nodes/node_geo_input_mesh_edge_neighbors.cc    |    5 +-\n .../nodes/node_geo_input_mesh_edge_vertices.cc     |   19 +-\n .../nodes/node_geo_input_mesh_face_area.cc         |    4 +-\n .../nodes/node_geo_input_mesh_face_is_planar.cc    |    9 +-\n .../nodes/node_geo_input_mesh_face_neighbors.cc    |   10 +-\n .../geometry/nodes/node_geo_input_mesh_island.cc   |   10 +-\n .../nodes/node_geo_input_mesh_vertex_neighbors.cc  |   11 +-\n .../nodes/node_geo_input_named_layer_selection.cc  |    6 +-\n .../nodes/geometry/nodes/node_geo_input_normal.cc  |    4 +-\n .../geometry/nodes/node_geo_input_position.cc      |    3 +-\n .../nodes/node_geo_input_shortest_edge_paths.cc    |   27 +-\n .../geometry/nodes/node_geo_input_spline_length.cc |    9 +-\n .../nodes/node_geo_input_spline_resolution.cc      |    4 +-\n .../nodes/geometry/nodes/node_geo_input_tangent.cc |    5 +-\n .../geometry/nodes/node_geo_input_voxel_index.cc   |   14 +-\n .../geometry/nodes/node_geo_material_selection.cc  |    6 +-\n .../nodes/geometry/nodes/node_geo_menu_switch.cc   |   11 +-\n .../nodes/node_geo_mesh_face_group_boundaries.cc   |    8 +-\n .../geometry/nodes/node_geo_mesh_to_points.cc      |    2 +-\n .../node_geo_mesh_topology_corners_of_edge.cc      |   23 +-\n .../node_geo_mesh_topology_corners_of_face.cc      |   25 +-\n .../node_geo_mesh_topology_corners_of_vertex.cc    |   25 +-\n .../node_geo_mesh_topology_edges_of_corner.cc      |   19 +-\n .../node_geo_mesh_topology_edges_of_vertex.cc      |   25 +-\n .../nodes/node_geo_mesh_topology_face_of_corner.cc |   22 +-\n ...node_geo_mesh_topology_offset_corner_in_face.cc |   12 +-\n .../node_geo_mesh_topology_vertex_of_corner.cc     |    8 +-\n .../nodes/node_geo_offset_point_in_curve.cc        |   20 +-\n .../nodes/geometry/nodes/node_geo_points.cc        |    2 +-\n .../geometry/nodes/node_geo_sample_uv_surface.cc   |    4 +-\n .../geometry/nodes/node_geo_set_curve_normal.cc    |   14 +-\n .../nodes/geometry/nodes/node_geo_set_material.cc  |    6 +-\n .../geometry/nodes/node_geo_set_mesh_normal.cc     |    2 +-\n .../geometry/nodes/node_geo_set_nurbs_order.cc     |    2 +-\n .../nodes/geometry/nodes/node_geo_set_position.cc  |    2 +-\n .../geometry/nodes/node_geo_set_shade_smooth.cc    |    2 +-\n .../nodes/geometry/nodes/node_geo_simulation.cc    |    6 +-\n .../nodes/node_geo_store_named_attribute.cc        |    2 +-\n .../geometry/nodes/node_geo_tool_selection.cc      |   16 +-\n .../geometry/nodes/node_geo_tool_set_face_set.cc   |    2 +-\n .../geometry/nodes/node_geo_tool_set_selection.cc  |   11 +-\n .../geometry/nodes/node_geo_uv_pack_islands.cc     |   10 +-\n .../nodes/geometry/nodes/node_geo_uv_tangent.cc    |    8 +-\n .../nodes/geometry/nodes/node_geo_uv_unwrap.cc     |   10 +-\n .../blender/nodes/intern/geometry_nodes_execute.cc |    6 +-\n ...geometry_nodes_foreach_geometry_element_zone.cc |    8 +-\n .../nodes/intern/geometry_nodes_lazy_function.cc   |   41 +-\n source/blender/nodes/intern/geometry_nodes_log.cc  |    7 +-\n source/blender/nodes/intern/node_declaration.cc    |   14 +-\n 95 files changed, 2109 insertions(+), 1687 deletions(-)"
+    },
+    "32f550c35ab": {
+      "hash": "32f550c35ab3ffd89a8e8a602e4045e4091e044c",
+      "author": "Jacques Lucke",
+      "date": "2026-06-01",
+      "subject": "Fix #157485: avoid deep recursion when freeing field trees",
+      "body": "Destructing large fields could result in deep call stacks because of\nlong ownership chains. This could result in stack overflows leading\nto crashes. The fix is to customize the destruction code a bit so that\nit becomes more iterative instead of recursive.\n\nPull Request: https://projects.blender.org/blender/blender/pulls/159375",
+      "stat": "source/blender/functions/FN_field.hh     | 10 +++++++++\n source/blender/functions/intern/field.cc | 35 ++++++++++++++++++++++++++++++++\n 2 files changed, 45 insertions(+)"
+    },
+    "4130f1e674f": {
+      "hash": "4130f1e674f83fc3d53979d3061469af34e1f873",
+      "author": "Jacques Lucke",
+      "date": "2022-09-13",
+      "subject": "Geometry Nodes: new evaluation system",
+      "body": "This refactors the geometry nodes evaluation system. No changes for the\nuser are expected. At a high level the goals are:\n* Support using geometry nodes outside of the geometry nodes modifier.\n* Support using the evaluator infrastructure for other purposes like field evaluation.\n* Support more nodes, especially when many of them are disabled behind switch nodes.\n* Support doing preprocessing on node groups.\n\nFor more details see T98492.\n\nThere are fairly detailed comments in the code, but here is a high level overview\nfor how it works now:\n* There is a new \"lazy-function\" system. It is similar in spirit to the multi-function\n  system but with different goals. Instead of optimizing throughput for highly\n  parallelizable work, this system is designed to compute only the data that is actually\n  necessary. What data is necessary can be determined dynamically during evaluation.\n  Many lazy-functions can be composed in a graph to form a new lazy-function, which can\n  again be used in a graph etc.\n* Each geometry node group is converted into a lazy-function graph prior to evaluation.\n  To evaluate geometry nodes, one then just has to evaluate that graph. Node groups are\n  no longer inlined into their parents.\n\nNext steps for the evaluation system is to reduce the use of threads in some situations\nto avoid overhead. Many small node groups don't benefit from multi-threading at all.\nThis is much easier to do now because not everything has to be inlined in one huge\nnode tree anymore.\n\nDifferential Revision: https://developer.blender.org/D15914",
+      "stat": "source/blender/blenkernel/BKE_compute_contexts.hh  |   46 +\n source/blender/blenkernel/BKE_node_runtime.hh      |   30 +-\n source/blender/blenkernel/CMakeLists.txt           |    2 +\n .../blender/blenkernel/intern/compute_contexts.cc  |   38 +\n source/blender/blenkernel/intern/node.cc           |    1 +\n source/blender/blenkernel/intern/node_runtime.cc   |   18 +\n source/blender/blenlib/BLI_compute_context.hh      |  173 ++\n source/blender/blenlib/BLI_multi_value_map.hh      |    8 +\n source/blender/blenlib/CMakeLists.txt              |    2 +\n source/blender/blenlib/intern/compute_context.cc   |   48 +\n source/blender/blenlib/intern/cpp_type.cc          |    1 +\n .../depsgraph/intern/builder/deg_builder_nodes.cc  |    9 +-\n source/blender/editors/include/UI_interface.hh     |   13 +-\n .../interface_template_attribute_search.cc         |    6 +-\n source/blender/editors/space_node/node_draw.cc     |  451 ++---\n .../space_node/node_geometry_attribute_search.cc   |   65 +-\n .../spreadsheet_data_source_geometry.cc            |   49 +-\n source/blender/functions/CMakeLists.txt            |    9 +\n source/blender/functions/FN_field.hh               |   11 +\n source/blender/functions/FN_field_cpp_type.hh      |    2 +-\n source/blender/functions/FN_lazy_function.hh       |  384 ++++\n .../blender/functions/FN_lazy_function_execute.hh  |  122 ++\n source/blender/functions/FN_lazy_function_graph.hh |  421 +++++\n .../functions/FN_lazy_function_graph_executor.hh   |   98 +\n source/blender/functions/FN_multi_function.hh      |    1 +\n source/blender/functions/intern/cpp_types.cc       |    3 +\n source/blender/functions/intern/lazy_function.cc   |   66 +\n .../functions/intern/lazy_function_execute.cc      |   65 +\n .../functions/intern/lazy_function_graph.cc        |  181 ++\n .../intern/lazy_function_graph_executor.cc         | 1163 ++++++++++++\n .../functions/tests/FN_lazy_function_test.cc       |  115 ++\n source/blender/makesdna/DNA_node_types.h           |    3 +\n source/blender/modifiers/CMakeLists.txt            |    2 -\n source/blender/modifiers/intern/MOD_nodes.cc       |  428 +++--\n .../modifiers/intern/MOD_nodes_evaluator.cc        | 1929 --------------------\n .../modifiers/intern/MOD_nodes_evaluator.hh        |   44 -\n source/blender/nodes/CMakeLists.txt                |    5 +-\n source/blender/nodes/NOD_geometry_exec.hh          |  205 +--\n .../blender/nodes/NOD_geometry_nodes_eval_log.hh   |  411 -----\n .../nodes/NOD_geometry_nodes_lazy_function.hh      |  178 ++\n source/blender/nodes/NOD_geometry_nodes_log.hh     |  340 ++++\n source/blender/nodes/NOD_multi_function.hh         |   10 +-\n .../blender/nodes/geometry/node_geometry_exec.cc   |    1 +\n .../nodes/geometry/nodes/node_geo_boolean.cc       |    2 +-\n .../nodes/node_geo_geometry_to_instance.cc         |    2 +-\n .../nodes/node_geo_input_named_attribute.cc        |    2 +-\n .../nodes/geometry/nodes/node_geo_join_geometry.cc |    2 +-\n .../geometry/nodes/node_geo_remove_attribute.cc    |    2 +-\n .../nodes/node_geo_store_named_attribute.cc        |    2 +-\n .../nodes/geometry/nodes/node_geo_string_join.cc   |    5 +-\n .../nodes/intern/geometry_nodes_eval_log.cc        |  520 ------\n .../nodes/intern/geometry_nodes_lazy_function.cc   | 1327 ++++++++++++++\n source/blender/nodes/intern/geometry_nodes_log.cc  |  607 ++++++\n source/blender/nodes/intern/node_geometry_exec.cc  |   45 +-\n source/blender/nodes/intern/node_multi_function.cc |   22 +-\n 55 files changed, 6141 insertions(+), 3554 deletions(-)"
+    },
+    "258678916ff": {
+      "hash": "258678916ff90379b998ddf150f9f8a3fb360eaf",
+      "author": "Jacques Lucke",
+      "date": "2023-03-14",
+      "subject": "Geometry Nodes: use lazy-function directly for switch node",
+      "body": "This changes the Switch node so that it is implemented directly as a lazy-function,\ninstead of as a normal geometry node which uses `GeoNodeExecParams`. This improves\nthe design of the layered execution api, where different nodes can be implemented\nat a proper different abstraction level. The simplest kinds of nodes are implemented\nas multi-function, then there is `GeoNodeExecParams` and more specialized nodes are\nimplemented as lazy-function. The switch node is special in the sense that it currently\nneeds extra behavior in the lazy-function graph generation anyway.\n\n`GeoNodeExecParams` can be simplified as well, because the Switch node was the only\none that used the `lazy_` methods.\n\nWe could consider adding back lazy-input functionality to normal geometry nodes\nas it becomes necessary. Ideally, that could be integrated with the node declaration.\n\nPull Request: https://projects.blender.org/blender/blender/pulls/105696",
+      "stat": "source/blender/blenkernel/BKE_node.h               |   5 -\n source/blender/nodes/NOD_geometry_exec.hh          |  25 ---\n .../nodes/NOD_geometry_nodes_lazy_function.hh      |   2 +\n .../nodes/geometry/nodes/node_geo_switch.cc        | 230 +++++++++------------\n .../nodes/intern/geometry_nodes_lazy_function.cc   |  34 ++-\n 5 files changed, 133 insertions(+), 163 deletions(-)"
+    },
+    "0f87eef0ea9": {
+      "hash": "0f87eef0ea914687fe31e6813df21aebd1dae8ac",
+      "author": "Jacques Lucke",
+      "date": "2026-06-02",
+      "subject": "Fix: Geometry Nodes: unnecessary evaluation with specific usage of Menu Switch node",
+      "body": "This fixes an issue where some nodes are evaluated even though their output is\nnot needed.\n\nThe issue is caused by a cyclic dependency when determining of which sockets the\nreferenced anonymous attributes should be gathered. Breaking the cyclic\ndependency in `fix_link_cycles` has the fallback of assuming that the value is\nused.\n\nThe fix is to split the Menu Switch node evaluation into two lazy-functions. One\nthat only computes the output value, and one that outputs all the booleans for\nthe individual cases. This works because the output booleans only depend on the\nfirst input and not all the value inputs.\n\nA regression test has been added that fails (by crash or timeout) when this\nchange is broken somehow.\n\nPull Request: https://projects.blender.org/blender/blender/pulls/159482",
+      "stat": ".../nodes/NOD_geometry_nodes_lazy_function.hh      |   2 +\n .../nodes/geometry/nodes/node_geo_menu_switch.cc   | 180 ++++++++++++++++-----\n .../nodes/intern/geometry_nodes_lazy_function.cc   |  38 +++--\n .../menu_switch_no_unnecessary_evaluation.blend    |   3 +\n .../utilities/menu_switch_variations.blend         |   3 +\n 5 files changed, 167 insertions(+), 59 deletions(-)"
+    },
+    "67c7485bfd9": {
+      "hash": "67c7485bfd95a60caa8d0c12edaaadb55d3519c0",
+      "author": "Jacques Lucke",
+      "date": "2024-10-07",
+      "subject": "Refactor: Geometry Nodes: improve lifetime analysis for anonymous attributes",
+      "body": "This refactors the lifetime analysis of anonymous attributes in geometry nodes.\nThe refactor has a couple of goals:\n* Use a better and simpler abstraction that can be used when building the\n  lazy-function graph. We currently have a bunch of duplicate code to handle\n  \"field source\" and \"caller propagation\" attributes. This is now unified so\n  that one only has to worry about one kind of \"reference sets\".\n* Make the abstraction compatible with handling bundles and closures in case we\n  want to support them in the future. Both types can contain geometries and\n  fields so they need to be taken into account when determining lifetimes.\n* Make more parts independent of the concept of \"anonymous attributes\". In\n  theory, there could be more kinds of referenced data whose lifetimes need to\n  be managed. I don't have any concrete plans for adding any though.\n\nAt its core, deterministic anonymous attributes still work the same they have\nbeen since they became deterministic [0]. Even the generated lazy-function graph\nis still pretty much or even exactly the same as before.\n\nThe patch renames `AnonymousAttributeSet` to the more general\n`GeometryNodesReferenceSet` which is more. This also makes more places\nindependent of the concept of anonymous attributes. Functionally, this still the\nsame though. It's only used in the internals of geometry nodes nowadays. Most\ncode just gets an `AttributeFilter` that is based on it.\n\n[0]: https://archive.blender.org/developer/D16858\n\nPull Request: https://projects.blender.org/blender/blender/pulls/128667",
+      "stat": ".../blenkernel/BKE_anonymous_attribute_id.hh       |  15 -\n .../blenkernel/BKE_geometry_nodes_reference_set.hh |  28 +\n source/blender/blenkernel/BKE_node_runtime.hh      |  10 +-\n .../BKE_node_tree_anonymous_attributes.hh          |  83 --\n .../BKE_node_tree_reference_lifetimes.hh           | 101 +++\n source/blender/blenkernel/CMakeLists.txt           |   5 +-\n source/blender/blenkernel/intern/cpp_types.cc      |   5 +-\n source/blender/blenkernel/intern/node.cc           |  28 +-\n .../intern/node_tree_anonymous_attributes.cc       | 785 -------------------\n .../intern/node_tree_reference_lifetimes.cc        | 833 +++++++++++++++++++++\n .../blender/blenkernel/intern/node_tree_update.cc  |   4 +-\n source/blender/blenlib/BLI_bit_span_ops.hh         |   2 +-\n source/blender/nodes/NOD_geometry_exec.hh          |   9 +-\n .../nodes/NOD_geometry_nodes_lazy_function.hh      |  13 +-\n .../blender/nodes/intern/geometry_nodes_execute.cc |   9 +-\n ...geometry_nodes_foreach_geometry_element_zone.cc |  15 +-\n .../nodes/intern/geometry_nodes_lazy_function.cc   | 632 ++++++----------\n .../nodes/intern/geometry_nodes_repeat_zone.cc     |  18 +-\n source/blender/nodes/intern/node_declaration.cc    |   8 +-\n 19 files changed, 1253 insertions(+), 1350 deletions(-)"
+    },
+    "8ec9c62d3ea": {
+      "hash": "8ec9c62d3ea8d8f00a375c01e7533a080f7476c5",
+      "author": "Jacques Lucke",
+      "date": "2025-04-03",
+      "subject": "Geometry Nodes: add Closures and Bundles behind experimental feature flag",
+      "body": "This implements bundles and closures which are described in more detail in this\nblog post: https://code.blender.org/2024/11/geometry-nodes-workshop-october-2024/\n\ntl;dr:\n* Bundles are containers that allow storing multiple socket values in a single\n  value. Each value in the bundle is identified by a name. Bundles can be\n  nested.\n* Closures are functions that are created with the Closure Zone and can be\n  evaluated with the Evaluate Closure node.\n\nTo use the patch, the `Bundle and Closure Nodes` experimental feature has to be\nenabled. This is necessary, because these features are not fully done yet and\nstill need iterations to improve the workflow before they can be officially\nreleased. These iterations are easier to do in `main` than in a separate branch\nthough. That's because this patch is quite large and somewhat prone to merge\nconflicts. Also other work we want to do, depends on this.\n\nThis adds the following new nodes:\n* Combine Bundle: can pack multiple values into one.\n* Separate Bundle: extracts values from a bundle.\n* Closure Zone: outputs a closure zone for use in the `Evaluate Closure` node.\n* Evaluate Closure: evaluates the passed in closure.\n\nThings that will be added soon after this lands:\n* Fields in bundles and closures. The way this is done changes with #134811, so\n  I rather implement this once both are in `main`.\n* UI features for keeping sockets in sync (right now there are warnings only).\n\nOne bigger issue is the limited support for lazyness. For example, all inputs of\na Combine Bundle node will be evaluated, even if they are not all needed. The\nsame is true for all captured values of a closure. This is a deeper limitation\nthat needs to be resolved at some point. This will likely be done after an\ninitial version of this patch is done.\n\nPull Request: https://projects.blender.org/blender/blender/pulls/128340",
+      "stat": "release/datafiles/userdef/userdef_default_theme.c  |   1 +\n scripts/startup/bl_operators/node.py               |  12 +\n scripts/startup/bl_ui/node_add_menu.py             |   7 +\n scripts/startup/bl_ui/node_add_menu_geometry.py    |   6 +\n scripts/startup/bl_ui/space_userpref.py            |   1 +\n source/blender/blenkernel/BKE_bake_items.hh        |  18 +\n source/blender/blenkernel/BKE_compute_contexts.hh  |  28 +\n source/blender/blenkernel/BKE_node_legacy_types.hh |   5 +\n .../blender/blenkernel/BKE_node_tree_interface.hh  |   4 +\n .../BKE_node_tree_reference_lifetimes.hh           |  14 +-\n .../blenkernel/intern/bake_items_serialize.cc      |  52 ++\n .../blender/blenkernel/intern/bake_items_socket.cc | 123 +++-\n .../blender/blenkernel/intern/compute_contexts.cc  |  30 +\n source/blender/blenkernel/intern/cpp_types.cc      |   7 +\n .../blenkernel/intern/geometry_nodes_bundle.cc     | 146 +++++\n source/blender/blenkernel/intern/node.cc           |  82 ++-\n .../blender/blenkernel/intern/node_socket_value.cc |  26 +\n .../intern/node_tree_reference_lifetimes.cc        | 216 ++++++-\n .../blenloader/intern/versioning_userdef.cc        |   4 +\n source/blender/depsgraph/CMakeLists.txt            |   1 +\n .../editors/geometry/node_group_operator.cc        |   2 +\n source/blender/editors/include/UI_icons.hh         |   2 +\n source/blender/editors/include/UI_resources.hh     |   1 +\n .../blender/editors/interface/interface_icons.cc   |   4 +\n source/blender/editors/interface/resources.cc      |   3 +\n .../templates/interface_template_node_inputs.cc    |   2 +-\n source/blender/editors/object/CMakeLists.txt       |   1 +\n source/blender/editors/space_action/CMakeLists.txt |   1 +\n source/blender/editors/space_node/drawnode.cc      |  31 +-\n source/blender/editors/space_node/node_draw.cc     |  55 +-\n .../editors/space_node/node_relationships.cc       |   2 +\n source/blender/editors/util/ed_viewer_path.cc      |   9 +\n .../functions/FN_lazy_function_graph_executor.hh   |   5 +\n .../intern/lazy_function_graph_executor.cc         |  13 +\n source/blender/makesdna/DNA_node_types.h           | 111 ++++\n source/blender/makesdna/DNA_userdef_types.h        |   5 +-\n source/blender/makesrna/intern/rna_node_socket.cc  |  58 ++\n source/blender/makesrna/intern/rna_nodetree.cc     | 269 ++++++++\n source/blender/makesrna/intern/rna_userdef.cc      |  10 +\n source/blender/modifiers/intern/MOD_nodes.cc       |   9 +-\n source/blender/nodes/CMakeLists.txt                |   8 +\n source/blender/nodes/NOD_geometry_exec.hh          |  14 +-\n source/blender/nodes/NOD_geometry_nodes_bundle.hh  |  66 ++\n .../blender/nodes/NOD_geometry_nodes_bundle_fwd.hh |  14 +\n source/blender/nodes/NOD_geometry_nodes_closure.hh | 119 ++++\n .../nodes/NOD_geometry_nodes_closure_eval.hh       |  38 ++\n .../nodes/NOD_geometry_nodes_closure_fwd.hh        |  14 +\n .../nodes/NOD_geometry_nodes_lazy_function.hh      |  46 ++\n source/blender/nodes/NOD_geometry_nodes_log.hh     |  27 +\n source/blender/nodes/NOD_socket_declarations.hh    |  36 ++\n source/blender/nodes/NOD_socket_interface_key.hh   |  32 +\n source/blender/nodes/NOD_socket_items_ui.hh        |   2 +\n source/blender/nodes/geometry/CMakeLists.txt       |   4 +\n .../nodes/geometry/include/NOD_geo_bundle.hh       | 181 ++++++\n .../nodes/geometry/include/NOD_geo_closure.hh      | 339 ++++++++++\n .../nodes/geometry/include/NOD_geo_repeat.hh       |   4 +-\n .../nodes/geometry/include/NOD_geo_simulation.hh   |   4 +-\n .../blender/nodes/geometry/node_geometry_tree.cc   |  34 +-\n .../blender/nodes/geometry/nodes/node_geo_bake.cc  |   2 +-\n .../nodes/geometry/nodes/node_geo_closure.cc       | 237 +++++++\n .../geometry/nodes/node_geo_combine_bundle.cc      | 157 +++++\n .../geometry/nodes/node_geo_evaluate_closure.cc    | 163 +++++\n .../nodes/geometry/nodes/node_geo_index_switch.cc  |   4 +-\n .../nodes/geometry/nodes/node_geo_menu_switch.cc   |   4 +-\n .../geometry/nodes/node_geo_separate_bundle.cc     | 174 +++++\n .../nodes/geometry/nodes/node_geo_simulation.cc    |   4 +-\n .../nodes/geometry/nodes/node_geo_switch.cc        |   4 +-\n .../blender/nodes/intern/geometry_nodes_bundle.cc  | 149 +++++\n .../blender/nodes/intern/geometry_nodes_closure.cc |  31 +\n .../nodes/intern/geometry_nodes_closure_zone.cc    | 717 +++++++++++++++++++++\n .../blender/nodes/intern/geometry_nodes_execute.cc |   9 +-\n ...geometry_nodes_foreach_geometry_element_zone.cc |   2 +-\n .../nodes/intern/geometry_nodes_lazy_function.cc   | 253 ++++++--\n source/blender/nodes/intern/geometry_nodes_log.cc  |  38 ++\n .../nodes/intern/geometry_nodes_repeat_zone.cc     |   2 +-\n source/blender/nodes/intern/node_common.cc         |   8 +\n source/blender/nodes/intern/node_declaration.cc    |   8 +-\n source/blender/nodes/intern/node_register.cc       |  20 +\n source/blender/nodes/intern/node_socket.cc         |  41 ++\n .../nodes/intern/node_socket_declarations.cc       |  96 +++\n 80 files changed, 4317 insertions(+), 164 deletions(-)"
+    },
+    "bb00826a7ea": {
+      "hash": "bb00826a7eab059423e2885edbd29c9140d7028b",
+      "author": "Jacques Lucke",
+      "date": "2025-12-02",
+      "subject": "Refactor: Geometry Nodes: make evaluation graph independent of original node tree",
+      "body": "Currently, one can easily run into crashes when closures/fields reference node\ndata and the source node tree is freed (by the depsgraph). While this should\nnever happen currently, one can easily run into this when using #145849 with\nfields and closures being stored on bundles in geometries.  This patch makes the\nevaluation data independent of the node tree it is built from. So when the node\ntree is freed, its evaluation data can still be used.\n\nAt its core, this works by making another copy of the node tree that is owned by\nthe evaluation data. The node tree as well as the evaluation data use\n`std::shared_ptr` so that fields and closures can take ownership of them. While\nthis additional copy is not ideal, it seems like the most practical solution.\nOther solutions would require significantly more refactoring because there are\nlots of places that reference node tree data.\n\nFortunately, node-tree copying hasn't really been a bottleneck yet and is still\noptimizable (e.g. with #149545). So overall, that does not seem too bad given\nthe benefit of allowing workflows like in #150852.\n\nUnfortunately, this can only really be tested with #145849, so for now the tests\nare just checking whether we break existing setups. With #145849 we can also add\nnew regression tests that specifically test what this patch implements.\n\nWhile I tested this patch a fair amount, there is still a certain amount of risk\nthat I didn't find all places that need to be updated. It should hopefully be\nfairly straight forward to fix other cases when they come up.\n\nPull Request: https://projects.blender.org/blender/blender/pulls/150915",
+      "stat": "source/blender/blenkernel/BKE_node_runtime.hh      | 14 ++++--\n .../editors/geometry/node_group_operator.cc        |  2 +-\n source/blender/modifiers/intern/MOD_nodes.cc       |  8 +--\n .../nodes/NOD_geometry_nodes_lazy_function.hh      | 31 +++++++++---\n source/blender/nodes/NOD_multi_function.hh         | 29 +++++++++--\n .../nodes/composite/nodes/node_composite_curves.cc |  9 ++--\n .../composite/nodes/node_composite_huecorrect.cc   |  8 +--\n .../nodes/function/nodes/node_fn_format_string.cc  |  8 ++-\n .../nodes/intern/geometry_nodes_closure_zone.cc    | 34 ++++++++++---\n .../nodes/intern/geometry_nodes_lazy_function.cc   | 57 +++++++++++++++-------\n source/blender/nodes/intern/geometry_nodes_log.cc  |  8 +--\n source/blender/nodes/intern/node_multi_function.cc |  5 +-\n .../nodes/shader/nodes/node_shader_color_ramp.cc   |  7 ++-\n .../nodes/shader/nodes/node_shader_curves.cc       | 21 +++++---\n 14 files changed, 174 insertions(+), 67 deletions(-)"
+    },
+    "2280a71f900": {
+      "hash": "2280a71f900eb7907c243f76930a7e9779a90d7d",
+      "author": "Sergey Sharybin",
+      "date": "2022-07-19",
+      "subject": "Depsgraph: Refactor evaluation into smaller reusable functions",
+      "body": "Should be no functional changes.",
+      "stat": "source/blender/depsgraph/intern/eval/deg_eval.cc | 52 +++++++++++++++++-------\n 1 file changed, 37 insertions(+), 15 deletions(-)"
+    },
+    "f12f7800c29": {
+      "hash": "f12f7800c2965c721a4eb4baeb6b1ab129bfa375",
+      "author": "Sergey Sharybin",
+      "date": "2022-08-04",
+      "subject": "Depsgraph: Optimize evaluation of dependencies of disabled modifiers",
+      "body": "Solves long-standing issue when dependencies of disabled modifiers are\nevaluated.\n\nSimple test case: no drivers or animation. Manually enabling modifier\nis expected to bring FPS up, enabling modifier will bring FPS (sine\nevaluation can not be avoided)\n\nF13336690\n\nMore complex test case: modifier visibility is driven by an animated\nproperty. In am ideal world FPS during property being zero is fast\nand when property is 1 the FPS is low.\n\nF13336691.\n\nDifferential Revision: https://developer.blender.org/D15625",
+      "stat": ".../depsgraph/intern/builder/deg_builder.cc        | 19 ++++++++\n .../blender/depsgraph/intern/builder/deg_builder.h |  2 +\n .../depsgraph/intern/builder/deg_builder_nodes.cc  | 24 ++++++++-\n .../intern/builder/deg_builder_relations.cc        | 10 ++++\n .../depsgraph/intern/builder/deg_builder_rna.cc    | 12 ++++-\n .../blender/depsgraph/intern/depsgraph_relation.h  |  2 +\n source/blender/depsgraph/intern/eval/deg_eval.cc   |  2 +-\n .../depsgraph/intern/eval/deg_eval_visibility.cc   | 57 +++++++++++++++++++++-\n .../depsgraph/intern/eval/deg_eval_visibility.h    |  3 ++\n .../depsgraph/intern/node/deg_node_operation.cc    | 10 ++++\n .../depsgraph/intern/node/deg_node_operation.h     |  3 ++\n 11 files changed, 139 insertions(+), 5 deletions(-)"
+    },
+    "d8a3f3595af": {
+      "hash": "d8a3f3595af0fb3ca5937e41c2728fd750d986ef",
+      "author": "Brecht Van Lommel",
+      "date": "2020-04-30",
+      "subject": "Task: Use TBB as Task Scheduler",
+      "body": "This patch enables TBB as the default task scheduler. TBB stands for Threading Building Blocks and is developed by Intel. The library contains several threading patters. This patch maps blenders BLI_task_* function to their counterpart. After this patch we can add more patterns. A promising one is TBB:graph that can be used for depsgraph, draw manager and compositor.\n\nPerformance changes depends on the actual hardware. It was tested on different hardwares from laptops to workstations and we didn't detected any downgrade of the performance.\n* Linux Xeon E5-2699 v4 got FPS boost from 12 to 17 using Spring's 04_010_A.anim.blend.\n* AMD Ryzen Threadripper 2990WX 32-Core Animation playback goes from 9.5-10.5 FPS to 13.0-14.0 FPS on Agent 327 , 10_03_B.anim.blend.\n\nReviewed By: brecht, sergey\n\nDifferential Revision: https://developer.blender.org/D7475",
+      "stat": "build_files/cmake/Modules/GTestTesting.cmake       |    3 +\n source/blender/blenkernel/BKE_pbvh.h               |   23 +-\n source/blender/blenkernel/CMakeLists.txt           |    1 -\n .../blender/blenkernel/intern/editmesh_tangent.c   |    7 +-\n source/blender/blenkernel/intern/mesh_evaluate.c   |    8 +-\n source/blender/blenkernel/intern/mesh_tangent.c    |    8 +-\n source/blender/blenkernel/intern/ocean.c           |   35 +-\n source/blender/blenkernel/intern/particle.c        |    9 +-\n .../blenkernel/intern/particle_distribute.c        |   12 +-\n source/blender/blenkernel/intern/pbvh.c            |   28 +-\n source/blender/blenlib/BLI_task.h                  |   66 +-\n source/blender/blenlib/BLI_threads.h               |    2 -\n source/blender/blenlib/CMakeLists.txt              |   12 +-\n source/blender/blenlib/intern/task_iterator.c      |  341 +-----\n source/blender/blenlib/intern/task_pool.cc         | 1143 ++++++--------------\n .../intern/task_range.cc}                          |  103 +-\n source/blender/blenlib/intern/task_scheduler.cc    |   73 ++\n source/blender/blenlib/intern/threads.c            |   26 -\n source/blender/depsgraph/intern/eval/deg_eval.cc   |   55 +-\n .../blender/draw/intern/draw_cache_extract_mesh.c  |   10 +-\n source/blender/editors/mesh/editmesh_undo.c        |    8 +-\n source/blender/editors/physics/particle_edit.c     |    7 +-\n source/blender/editors/render/render_opengl.c      |   17 +-\n source/blender/editors/sculpt_paint/paint_cursor.c |    7 +-\n .../editors/sculpt_paint/paint_image_proj.c        |   10 +-\n source/blender/editors/sculpt_paint/paint_mask.c   |   12 +-\n source/blender/editors/sculpt_paint/paint_vertex.c |   28 +-\n source/blender/editors/sculpt_paint/sculpt.c       |  206 ++--\n source/blender/editors/sculpt_paint/sculpt_cloth.c |   15 +-\n .../blender/editors/sculpt_paint/sculpt_face_set.c |   15 +-\n .../editors/sculpt_paint/sculpt_filter_mask.c      |   14 +-\n .../editors/sculpt_paint/sculpt_filter_mesh.c      |   10 +-\n .../editors/sculpt_paint/sculpt_mask_expand.c      |    8 +-\n .../sculpt_paint/sculpt_multiplane_scrape.c        |   14 +-\n source/blender/editors/sculpt_paint/sculpt_pose.c  |   12 +-\n .../blender/editors/sculpt_paint/sculpt_smooth.c   |   31 +-\n .../editors/sculpt_paint/sculpt_transform.c        |    4 +-\n source/blender/editors/sculpt_paint/sculpt_undo.c  |    4 +-\n source/blender/editors/space_clip/clip_editor.c    |    7 +-\n source/blender/editors/space_clip/clip_ops.c       |    7 +-\n source/blender/editors/space_file/filelist.c       |    8 +-\n source/blender/imbuf/intern/imageprocess.c         |   12 +-\n source/blender/windowmanager/intern/wm_init_exit.c |    2 +\n source/creator/creator.c                           |    4 +\n tests/gtests/blenlib/BLI_linklist_lockfree_test.cc |    7 +-\n tests/gtests/blenlib/BLI_task_test.cc              |    2 +-\n 46 files changed, 795 insertions(+), 1641 deletions(-)"
+    },
+    "8507336e769": {
+      "hash": "8507336e76902604a2128b23a4d8e52094031ab0",
+      "author": "Sergey Sharybin",
+      "date": "2021-10-27",
+      "subject": "Fix T92423: Blender freeze rendering animation with Mantaflow",
+      "body": "Mantaflow could steal tasks from dependency graph, which under\ncertain conditions causes a recursive lock involving GIL.\n\nIsolate threading done in mantaflow when it is interfaced form\nthe dependency graph.\n\nIsolation done from the modifier, since the deeper calls are\nbranching out quite quickly.\n\nDifferential Revision: https://developer.blender.org/D13011",
+      "stat": "source/blender/modifiers/intern/MOD_fluid.c | 41 ++++++++++++++++++++++++++---\n 1 file changed, 37 insertions(+), 4 deletions(-)"
+    },
+    "d94ff69e386": {
+      "hash": "d94ff69e386aebe06ed536f363a9c7f3c3c36e8e",
+      "author": "Hans Goudey",
+      "date": "2026-09-17",
+      "subject": "BLI: New KDTree implementation with better performance",
+      "body": "This PR adds a new KD-tree implementation that is much faster to build\nand has much faster lookup performance. It's a new implementation\nbecause the API is different, and the heritage of the code is completely\nseparate. The code structure is derived from the nanoflann library [0],\nbut heavily modified to work better with Blender code and to further\nimprove performance, by a large amount in some cases.\n\nThe provided API is a bit opinionated: it forgoes the separate \"insert\"\nand \"balance\" steps with a single \"build\" step, making the caller build\ntheir own coordinate array that can then be referenced by the caller.\nOptionally, a subset of the coordinates can be referenced by an index\nspan or an IndexMask.\n\nA few bounding box calculation functions are also improved to use\npipelining to reduce the cost of dependent writes. For some cases that\ncan be a 3-5x performance improvement as well.\n\nOverall performance is a significant improvement. In a test of 1 million\npoints on a Ryzen 7950X:\n\n|                   | BLI_kdtree | nanoflann |        |\n| ----------------- | ---------- | --------- | ------ |\n| Build (random)    |     204 ms |    5.5 ms |  37.2x |\n| Build (grid-like) |     168 ms |    4.4 ms |  38.2x |\n| Find nearest      |    4.49 us |    479 ns |   9.4x |\n| Find 8 nearest    |    8.27 us |   1.40 us |  5.91x |\n| Memory            |    26.7 MB |    6.5 MB |  0.24x |\n\nFor more performance numbers, see the pull request.\n\nFor this initial commit, I only changed usage in three Geometry Nodes\nfiles. After that, incrementally switching in separate commits should be\na much better process.\n\n[0]: https://github.com/jlblancoc/nanoflann\n\nPull Request: https://projects.blender.org/blender/blender/pulls/163778\n\n---------\n\nCo-authored-by: Brecht Van Lommel <brecht@blender.org>",
+      "stat": "source/blender/blenlib/BLI_bounds.hh               |  88 +-\n source/blender/blenlib/BLI_kdtree_new.hh           | 686 ++++++++++++++++\n source/blender/blenlib/CMakeLists.txt              |   3 +\n source/blender/blenlib/intern/kdtree.cc            | 907 +++++++++++++++++++++\n source/blender/blenlib/tests/BLI_kdtree_test.cc    | 656 +++++++++++++++\n .../performance/BLI_kdtree_performance_test.cc     | 725 ++++++++++++++++\n .../blenlib/tests/performance/CMakeLists.txt       |   6 +\n .../geometry/nodes/node_geo_cluster_by_distance.cc |  41 +-\n .../nodes/node_geo_distribute_points_on_faces.cc   |  34 +-\n .../geometry/nodes/node_geo_index_of_nearest.cc    |  37 +-\n 10 files changed, 3098 insertions(+), 85 deletions(-)"
+    }
+  },
+  "pages": [
+    {
+      "id": "01-01",
+      "module_id": "01",
+      "module": "容器与对象生命周期",
+      "lesson_no": 1,
+      "title": "Span：把连续数据与所有权分开",
+      "lead": "从一个只有地址和长度的视图，理解大型 C++ 工程为什么需要明确的借用接口。",
+      "url": "01-容器与对象生命周期/01-Span与借用边界.html",
+      "characters": 2508,
+      "minutes": 28
+    },
+    {
+      "id": "01-02",
+      "module_id": "01",
+      "module": "容器与对象生命周期",
+      "lesson_no": 2,
+      "title": "Vector：容量、存活对象与迁移顺序",
+      "lead": "逐步追踪一次扩容，弄清内存存在和对象存在之间的区别。",
+      "url": "01-容器与对象生命周期/02-Vector扩容与对象状态.html",
+      "characters": 5834,
+      "minutes": 65
+    },
+    {
+      "id": "01-03",
+      "module_id": "01",
+      "module": "容器与对象生命周期",
+      "lesson_no": 3,
+      "title": "容器失败路径：从异常安全到可验证的不变量",
+      "lead": "利用 Jacques 的修复提交，训练你对“半完成操作”的推演能力。",
+      "url": "01-容器与对象生命周期/03-异常安全与容器实验.html",
+      "characters": 3404,
+      "minutes": 38
+    },
+    {
+      "id": "02-01",
+      "module_id": "02",
+      "module": "哈希表与性能契约",
+      "lesson_no": 1,
+      "title": "哈希的第一条规则：相等必须导向相同哈希",
+      "lead": "从 +0.0 与 -0.0 的修复入手，学习基础接口中的数学契约。",
+      "url": "02-哈希表与性能契约/01-相等关系与哈希契约.html",
+      "characters": 1853,
+      "minutes": 21
+    },
+    {
+      "id": "02-02",
+      "module_id": "02",
+      "module": "哈希表与性能契约",
+      "lesson_no": 2,
+      "title": "Map 的槽位：为什么删除不能简单清空",
+      "lead": "手工推演一条探测链，理解 Empty、Occupied 与 Removed 的不同含义。",
+      "url": "02-哈希表与性能契约/02-开放寻址与删除状态.html",
+      "characters": 2019,
+      "minutes": 22
+    },
+    {
+      "id": "02-03",
+      "module_id": "02",
+      "module": "哈希表与性能契约",
+      "lesson_no": 3,
+      "title": "一次重建要值得：从操作序列理解均摊成本",
+      "lead": "精读哈希表性能修复，练习把理论复杂度落实到具体触发条件。",
+      "url": "02-哈希表与性能契约/03-重建策略与性能实验.html",
+      "characters": 2218,
+      "minutes": 25
+    },
+    {
+      "id": "03-01",
+      "module_id": "03",
+      "module": "内存分配与运行时类型",
+      "lesson_no": 1,
+      "title": "LinearAllocator：利用共同寿命减少分配成本",
+      "lead": "用游标与对齐推导分配器，再研究它为什么适合临时执行数据。",
+      "url": "03-内存分配与运行时类型/01-LinearAllocator与对齐.html",
+      "characters": 2053,
+      "minutes": 23
+    },
+    {
+      "id": "03-02",
+      "module_id": "03",
+      "module": "内存分配与运行时类型",
+      "lesson_no": 2,
+      "title": "ResourceScope：把动态资源组织成一个作用域",
+      "lead": "理解调用者作用域中的临时数据，以及资源之间的销毁顺序。",
+      "url": "03-内存分配与运行时类型/02-ResourceScope与逆序销毁.html",
+      "characters": 2421,
+      "minutes": 27
+    },
+    {
+      "id": "03-03",
+      "module_id": "03",
+      "module": "内存分配与运行时类型",
+      "lesson_no": 3,
+      "title": "CPPType：运行时如何正确构造、复制和销毁值",
+      "lead": "把泛型系统需要的操作从 C++ 类型中提取成运行时描述。",
+      "url": "03-内存分配与运行时类型/03-CPPType与类型擦除.html",
+      "characters": 2494,
+      "minutes": 28
+    },
+    {
+      "id": "04-01",
+      "module_id": "04",
+      "module": "虚拟数组与索引选择",
+      "lesson_no": 1,
+      "title": "VArray：一百万个相同值不必分配一百万次",
+      "lead": "观察接口如何统一不同表示，同时保留识别快速路径的能力。",
+      "url": "04-虚拟数组与索引选择/01-VArray的值语义.html",
+      "characters": 1597,
+      "minutes": 18
+    },
+    {
+      "id": "04-02",
+      "module_id": "04",
+      "module": "虚拟数组与索引选择",
+      "lesson_no": 2,
+      "title": "IndexMask：为稀疏、连续与并行同时设计",
+      "lead": "以一次真实的数据结构重构学习约束、布局与 API 的共同演化。",
+      "url": "04-虚拟数组与索引选择/02-IndexMask的分段设计.html",
+      "characters": 1782,
+      "minutes": 20
+    },
+    {
+      "id": "04-03",
+      "module_id": "04",
+      "module": "虚拟数组与索引选择",
+      "lesson_no": 3,
+      "title": "去虚拟化：把一次分派换成一个更好的循环",
+      "lead": "解释为什么简单数学节点对接口开销格外敏感，并建立可复现的比较方式。",
+      "url": "04-虚拟数组与索引选择/03-去虚拟化与代价模型.html",
+      "characters": 2183,
+      "minutes": 24
+    },
+    {
+      "id": "05-01",
+      "module_id": "05",
+      "module": "几何存储与拓扑映射",
+      "lesson_no": 1,
+      "title": "OffsetIndices：用相邻偏移表达一组变长区间",
+      "lead": "理解一个简单的数据布局选择，如何影响整个网格系统。",
+      "url": "05-几何存储与拓扑映射/01-OffsetIndices与几何表示.html",
+      "characters": 1840,
+      "minutes": 20
+    },
+    {
+      "id": "05-02",
+      "module_id": "05",
+      "module": "几何存储与拓扑映射",
+      "lesson_no": 2,
+      "title": "拓扑映射：计数、前缀和、填充的三阶段构造",
+      "lead": "从面到顶点的已有关系，构造顶点到相邻元素的反向查询。",
+      "url": "05-几何存储与拓扑映射/02-拓扑映射与前缀和.html",
+      "characters": 1860,
+      "minutes": 21
+    },
+    {
+      "id": "05-03",
+      "module_id": "05",
+      "module": "几何存储与拓扑映射",
+      "lesson_no": 3,
+      "title": "一次布局重构怎样安全穿过整个项目",
+      "lead": "把 Hans 的网格迁移当成系统设计案例，理解存储改变如何传导到读写、属性和兼容。",
+      "url": "05-几何存储与拓扑映射/03-数据布局迁移与接口演化.html",
+      "characters": 1693,
+      "minutes": 19
+    },
+    {
+      "id": "06-01",
+      "module_id": "06",
+      "module": "隐式共享与共享缓存",
+      "lesson_no": 1,
+      "title": "隐式共享：复制对象不必立即复制全部数据",
+      "lead": "从强引用、弱引用和可变性约束理解 Blender 的共享模型。",
+      "url": "06-隐式共享与共享缓存/01-ImplicitSharing与写时分离.html",
+      "characters": 2329,
+      "minutes": 26
+    },
+    {
+      "id": "06-02",
+      "module_id": "06",
+      "module": "隐式共享与共享缓存",
+      "lesson_no": 2,
+      "title": "共享缓存：哪些变化会让结果失效",
+      "lead": "用网格法线与 BVH 建立缓存依赖矩阵，再看如何共享昂贵计算。",
+      "url": "06-隐式共享与共享缓存/02-SharedCache与依赖矩阵.html",
+      "characters": 2831,
+      "minutes": 31
+    },
+    {
+      "id": "06-03",
+      "module_id": "06",
+      "module": "隐式共享与共享缓存",
+      "lesson_no": 3,
+      "title": "一个修复暴露的抽象边界：失效不总等于丢弃",
+      "lead": "把 b339e3937d8 与前一个法线缓存提交连读，学习局部更新需要保留什么。",
+      "url": "06-隐式共享与共享缓存/03-共享缓存修复复盘.html",
+      "characters": 2059,
+      "minutes": 23
+    },
+    {
+      "id": "07-01",
+      "module_id": "07",
+      "module": "批量函数与执行过程",
+      "lesson_no": 1,
+      "title": "MultiFunction：为一批元素设计调用约定",
+      "lead": "让函数明确表达输入、输出和可变参数，而不把内存责任藏在调用内部。",
+      "url": "07-批量函数与执行过程/01-MultiFunction签名与参数.html",
+      "characters": 1698,
+      "minutes": 19
+    },
+    {
+      "id": "07-02",
+      "module_id": "07",
+      "module": "批量函数与执行过程",
+      "lesson_no": 2,
+      "title": "批量执行策略：选择、切片与并行开销",
+      "lead": "把选择密度、临时数组大小和任务粒度放进同一个成本模型。",
+      "url": "07-批量函数与执行过程/02-选择切片与执行粒度.html",
+      "characters": 2493,
+      "minutes": 28
+    },
+    {
+      "id": "07-03",
+      "module_id": "07",
+      "module": "批量函数与执行过程",
+      "lesson_no": 3,
+      "title": "Procedure：把多个批量函数组成可执行过程",
+      "lead": "从表达式到执行步骤，理解临时变量、最后一次使用与内存复用。",
+      "url": "07-批量函数与执行过程/03-Procedure与临时值寿命.html",
+      "characters": 1856,
+      "minutes": 21
+    },
+    {
+      "id": "08-01",
+      "module_id": "08",
+      "module": "Field表达式与上下文",
+      "lesson_no": 1,
+      "title": "Field：把表达式与求值位置分开",
+      "lead": "同一个 Position 表达式如何在不同几何数据上得到不同结果。",
+      "url": "08-Field表达式与上下文/01-Field表达式与上下文.html",
+      "characters": 1826,
+      "minutes": 20
+    },
+    {
+      "id": "08-02",
+      "module_id": "08",
+      "module": "Field表达式与上下文",
+      "lesson_no": 2,
+      "title": "从 Set Position 追到 FieldEvaluator",
+      "lead": "沿一个真实节点把表达式、选择、目标数组和求值作用域连接起来。",
+      "url": "08-Field表达式与上下文/02-FieldEvaluator与实际节点.html",
+      "characters": 2503,
+      "minutes": 28
+    },
+    {
+      "id": "08-03",
+      "module_id": "08",
+      "module": "Field表达式与上下文",
+      "lesson_no": 3,
+      "title": "Field 的演化：减少分配之后，还要考虑销毁",
+      "lead": "连读 2026 年重构与栈溢出修复，训练运行期和析构期的双重复杂度分析。",
+      "url": "08-Field表达式与上下文/03-Field重构与深链析构.html",
+      "characters": 2482,
+      "minutes": 28
+    },
+    {
+      "id": "09-01",
+      "module_id": "09",
+      "module": "惰性函数与节点执行器",
+      "lesson_no": 1,
+      "title": "LazyFunction：计算可以暂停，等待真正需要的输入",
+      "lead": "用 Switch 的三次推进理解输入需求在运行时才确定的计算。",
+      "url": "09-惰性函数与节点执行器/01-LazyFunction状态机.html",
+      "characters": 1637,
+      "minutes": 18
+    },
+    {
+      "id": "09-02",
+      "module_id": "09",
+      "module": "惰性函数与节点执行器",
+      "lesson_no": 2,
+      "title": "从节点树到执行图：构建、预处理与执行分层",
+      "lead": "理解 GraphExecutor 为什么本身也是 LazyFunction，以及节点组如何保持可组合。",
+      "url": "09-惰性函数与节点执行器/02-图组合与节点降低.html",
+      "characters": 2716,
+      "minutes": 30
+    },
+    {
+      "id": "09-03",
+      "module_id": "09",
+      "module": "惰性函数与节点执行器",
+      "lesson_no": 3,
+      "title": "拆分计算职责：从 Menu Switch 修复理解精确依赖",
+      "lead": "一个函数拆成两个函数，为什么能够避免原本不需要的求值。",
+      "url": "09-惰性函数与节点执行器/03-MenuSwitch依赖环修复.html",
+      "characters": 1957,
+      "minutes": 22
+    },
+    {
+      "id": "10-01",
+      "module_id": "10",
+      "module": "引用分析与闭包生命周期",
+      "lesson_no": 1,
+      "title": "引用分析：哪些数据仍被下游需要",
+      "lead": "把匿名属性的保留需求转换成可传播的引用信息。",
+      "url": "10-引用分析与闭包生命周期/01-引用集合与匿名属性.html",
+      "characters": 2019,
+      "minutes": 22
+    },
+    {
+      "id": "10-02",
+      "module_id": "10",
+      "module": "引用分析与闭包生命周期",
+      "lesson_no": 2,
+      "title": "Closure：函数作为值时，环境由谁保管",
+      "lead": "从函数参数和捕获变量的区别开始，理解 Bundle 与 Closure 带来的架构需求。",
+      "url": "10-引用分析与闭包生命周期/02-Closure与捕获环境.html",
+      "characters": 1930,
+      "minutes": 21
+    },
+    {
+      "id": "10-03",
+      "module_id": "10",
+      "module": "引用分析与闭包生命周期",
+      "lesson_no": 3,
+      "title": "当源节点树销毁后，计算为什么还要继续存在",
+      "lead": "用一次真实的所有权重构，学习理想架构与可落地方案之间的判断。",
+      "url": "10-引用分析与闭包生命周期/03-执行图与源节点树解耦.html",
+      "characters": 1771,
+      "minutes": 20
+    },
+    {
+      "id": "11-01",
+      "module_id": "11",
+      "module": "依赖图与并行调度",
+      "lesson_no": 1,
+      "title": "Depsgraph：数据块、组件、操作与关系",
+      "lead": "先定义图中的节点代表什么，再讨论如何更新。",
+      "url": "11-依赖图与并行调度/01-Depsgraph的分层模型.html",
+      "characters": 2268,
+      "minutes": 25
+    },
+    {
+      "id": "11-02",
+      "module_id": "11",
+      "module": "依赖图与并行调度",
+      "lesson_no": 2,
+      "title": "需要更新、可以执行、实际执行：三个不同状态",
+      "lead": "借禁用修改器的优化，理解动态条件如何影响依赖图。",
+      "url": "11-依赖图与并行调度/02-失效传播与条件依赖.html",
+      "characters": 1818,
+      "minutes": 20
+    },
+    {
+      "id": "11-03",
+      "module_id": "11",
+      "module": "依赖图与并行调度",
+      "lesson_no": 3,
+      "title": "并行系统：工作窃取、任务粒度与锁边界",
+      "lead": "从 TBB 接入到 Mantaflow 死锁修复，理解并行不只是给循环增加线程。",
+      "url": "11-依赖图与并行调度/03-任务调度与嵌套死锁.html",
+      "characters": 2161,
+      "minutes": 24
+    },
+    {
+      "id": "12-01",
+      "module_id": "12",
+      "module": "KD树与综合设计实验",
+      "lesson_no": 1,
+      "title": "KD-tree 的接口：谁拥有坐标，何时允许修改",
+      "lead": "从新接口的约束理解为什么构建方式与性能不能分开设计。",
+      "url": "12-KD树与综合设计实验/01-KDTree接口与数据布局.html",
+      "characters": 2370,
+      "minutes": 26
+    },
+    {
+      "id": "12-02",
+      "module_id": "12",
+      "module": "KD树与综合设计实验",
+      "lesson_no": 2,
+      "title": "KD-tree 查询：每一次剪枝都需要下界证明",
+      "lead": "从二维例子理解分支遍历，再把正确性条件落实成测试。",
+      "url": "12-KD树与综合设计实验/02-构建查询与剪枝证明.html",
+      "characters": 3108,
+      "minutes": 35
+    },
+    {
+      "id": "12-03",
+      "module_id": "12",
+      "module": "KD树与综合设计实验",
+      "lesson_no": 3,
+      "title": "把优化写成可以复核的工程结论",
+      "lead": "完成一个带独立设计、源码对照、测量和局限说明的综合项目。",
+      "url": "12-KD树与综合设计实验/03-性能实验与毕业项目.html",
+      "characters": 2139,
+      "minutes": 24
+    }
+  ],
+  "deep_readings": [
+    {
+      "lesson": "01-01",
+      "path": "source/blender/blenlib/BLI_span.hh",
+      "start": 141,
+      "end": 147,
+      "explained_lines": 7
+    },
+    {
+      "lesson": "01-01",
+      "path": "source/blender/blenlib/BLI_span.hh",
+      "start": 94,
+      "end": 97,
+      "explained_lines": 4
+    },
+    {
+      "lesson": "01-01",
+      "path": "source/blender/blenlib/BLI_span.hh",
+      "start": 246,
+      "end": 251,
+      "explained_lines": 6
+    },
+    {
+      "lesson": "01-02",
+      "path": "source/blender/blenlib/BLI_vector.hh",
+      "start": 405,
+      "end": 410,
+      "explained_lines": 6
+    },
+    {
+      "lesson": "01-02",
+      "path": "source/blender/blenlib/BLI_vector.hh",
+      "start": 1121,
+      "end": 1151,
+      "explained_lines": 26
+    },
+    {
+      "lesson": "01-02",
+      "path": "source/blender/blenlib/BLI_vector.hh",
+      "start": 140,
+      "end": 146,
+      "explained_lines": 7
+    },
+    {
+      "lesson": "01-02",
+      "path": "source/blender/blenlib/BLI_vector.hh",
+      "start": 507,
+      "end": 511,
+      "explained_lines": 5
+    },
+    {
+      "lesson": "01-02",
+      "path": "source/blender/blenlib/BLI_vector.hh",
+      "start": 1114,
+      "end": 1119,
+      "explained_lines": 6
+    },
+    {
+      "lesson": "01-02",
+      "path": "source/blender/blenlib/BLI_vector.hh",
+      "start": 557,
+      "end": 563,
+      "explained_lines": 7
+    },
+    {
+      "lesson": "01-02",
+      "path": "source/blender/blenlib/BLI_vector.hh",
+      "start": 418,
+      "end": 431,
+      "explained_lines": 14
+    },
+    {
+      "lesson": "01-02",
+      "path": "source/blender/blenlib/BLI_vector.hh",
+      "start": 468,
+      "end": 473,
+      "explained_lines": 6
+    },
+    {
+      "lesson": "01-02",
+      "path": "source/blender/blenlib/BLI_vector.hh",
+      "start": 479,
+      "end": 490,
+      "explained_lines": 11
+    },
+    {
+      "lesson": "01-03",
+      "path": "source/blender/blenlib/BLI_memory_utils.hh",
+      "start": 80,
+      "end": 84,
+      "explained_lines": 5
+    },
+    {
+      "lesson": "01-03",
+      "path": "source/blender/blenlib/BLI_vector.hh",
+      "start": 330,
+      "end": 336,
+      "explained_lines": 7
+    },
+    {
+      "lesson": "01-03",
+      "path": "source/blender/blenlib/BLI_vector.hh",
+      "start": 678,
+      "end": 722,
+      "explained_lines": 42
+    },
+    {
+      "lesson": "01-03",
+      "path": "source/blender/blenlib/BLI_vector.hh",
+      "start": 815,
+      "end": 823,
+      "explained_lines": 9
+    },
+    {
+      "lesson": "02-01",
+      "path": "source/blender/blenlib/BLI_hash.hh",
+      "start": 154,
+      "end": 162,
+      "explained_lines": 9
+    },
+    {
+      "lesson": "02-01",
+      "path": "source/blender/blenlib/BLI_map.hh",
+      "start": 516,
+      "end": 520,
+      "explained_lines": 5
+    },
+    {
+      "lesson": "02-02",
+      "path": "source/blender/blenlib/BLI_map.hh",
+      "start": 1324,
+      "end": 1335,
+      "explained_lines": 12
+    },
+    {
+      "lesson": "02-02",
+      "path": "source/blender/blenlib/BLI_map.hh",
+      "start": 1151,
+      "end": 1162,
+      "explained_lines": 12
+    },
+    {
+      "lesson": "02-03",
+      "path": "source/blender/blenlib/BLI_map.hh",
+      "start": 1359,
+      "end": 1365,
+      "explained_lines": 7
+    },
+    {
+      "lesson": "02-03",
+      "path": "source/blender/blenlib/BLI_map.hh",
+      "start": 1099,
+      "end": 1149,
+      "explained_lines": 46
+    },
+    {
+      "lesson": "03-01",
+      "path": "source/blender/blenlib/BLI_linear_allocator.hh",
+      "start": 99,
+      "end": 102,
+      "explained_lines": 4
+    },
+    {
+      "lesson": "03-01",
+      "path": "source/blender/blenlib/BLI_linear_allocator.hh",
+      "start": 66,
+      "end": 92,
+      "explained_lines": 25
+    },
+    {
+      "lesson": "03-02",
+      "path": "source/blender/blenlib/BLI_resource_scope.hh",
+      "start": 219,
+      "end": 225,
+      "explained_lines": 7
+    },
+    {
+      "lesson": "03-02",
+      "path": "source/blender/blenlib/BLI_resource_scope.hh",
+      "start": 181,
+      "end": 197,
+      "explained_lines": 16
+    },
+    {
+      "lesson": "03-02",
+      "path": "source/blender/blenlib/intern/resource_scope.cc",
+      "start": 78,
+      "end": 90,
+      "explained_lines": 13
+    },
+    {
+      "lesson": "03-03",
+      "path": "source/blender/blenlib/BLI_resource_scope.hh",
+      "start": 227,
+      "end": 234,
+      "explained_lines": 8
+    },
+    {
+      "lesson": "03-03",
+      "path": "source/blender/blenlib/BLI_cpp_type_make.hh",
+      "start": 32,
+      "end": 36,
+      "explained_lines": 5
+    },
+    {
+      "lesson": "03-03",
+      "path": "source/blender/blenlib/BLI_cpp_type_make.hh",
+      "start": 50,
+      "end": 54,
+      "explained_lines": 5
+    },
+    {
+      "lesson": "03-03",
+      "path": "source/blender/blenlib/BLI_cpp_type_make.hh",
+      "start": 65,
+      "end": 69,
+      "explained_lines": 5
+    },
+    {
+      "lesson": "04-01",
+      "path": "source/blender/blenlib/BLI_virtual_array.hh",
+      "start": 325,
+      "end": 328,
+      "explained_lines": 4
+    },
+    {
+      "lesson": "04-01",
+      "path": "source/blender/blenlib/BLI_virtual_array.hh",
+      "start": 335,
+      "end": 348,
+      "explained_lines": 14
+    },
+    {
+      "lesson": "04-02",
+      "path": "source/blender/blenlib/BLI_index_mask.hh",
+      "start": 821,
+      "end": 824,
+      "explained_lines": 4
+    },
+    {
+      "lesson": "04-02",
+      "path": "source/blender/blenlib/BLI_index_mask.hh",
+      "start": 573,
+      "end": 590,
+      "explained_lines": 16
+    },
+    {
+      "lesson": "04-03",
+      "path": "source/blender/blenlib/BLI_virtual_array.hh",
+      "start": 548,
+      "end": 554,
+      "explained_lines": 7
+    },
+    {
+      "lesson": "04-03",
+      "path": "source/blender/blenlib/BLI_virtual_array.hh",
+      "start": 639,
+      "end": 644,
+      "explained_lines": 6
+    },
+    {
+      "lesson": "04-03",
+      "path": "source/blender/blenlib/BLI_virtual_array.hh",
+      "start": 1157,
+      "end": 1172,
+      "explained_lines": 16
+    },
+    {
+      "lesson": "05-01",
+      "path": "source/blender/blenlib/BLI_offset_indices.hh",
+      "start": 82,
+      "end": 89,
+      "explained_lines": 8
+    },
+    {
+      "lesson": "05-01",
+      "path": "source/blender/blenlib/BLI_offset_indices.hh",
+      "start": 45,
+      "end": 48,
+      "explained_lines": 4
+    },
+    {
+      "lesson": "05-01",
+      "path": "source/blender/blenlib/BLI_offset_indices.hh",
+      "start": 58,
+      "end": 61,
+      "explained_lines": 4
+    },
+    {
+      "lesson": "05-02",
+      "path": "source/blender/blenkernel/intern/mesh_mapping.cc",
+      "start": 278,
+      "end": 292,
+      "explained_lines": 14
+    },
+    {
+      "lesson": "05-02",
+      "path": "source/blender/blenlib/BLI_offset_indices.hh",
+      "start": 133,
+      "end": 136,
+      "explained_lines": 4
+    },
+    {
+      "lesson": "05-03",
+      "path": "source/blender/blenlib/BLI_offset_indices.hh",
+      "start": 103,
+      "end": 107,
+      "explained_lines": 5
+    },
+    {
+      "lesson": "05-03",
+      "path": "source/blender/blenkernel/intern/mesh_mapping.cc",
+      "start": 271,
+      "end": 276,
+      "explained_lines": 6
+    },
+    {
+      "lesson": "06-01",
+      "path": "source/blender/blenlib/BLI_shared_cache.hh",
+      "start": 52,
+      "end": 60,
+      "explained_lines": 9
+    },
+    {
+      "lesson": "06-01",
+      "path": "source/blender/blenlib/BLI_implicit_sharing.hh",
+      "start": 142,
+      "end": 165,
+      "explained_lines": 24
+    },
+    {
+      "lesson": "06-02",
+      "path": "source/blender/blenlib/BLI_shared_cache.hh",
+      "start": 66,
+      "end": 69,
+      "explained_lines": 4
+    },
+    {
+      "lesson": "06-02",
+      "path": "source/blender/blenlib/intern/cache_mutex.cc",
+      "start": 14,
+      "end": 29,
+      "explained_lines": 15
+    },
+    {
+      "lesson": "06-02",
+      "path": "source/blender/blenkernel/intern/mesh_runtime.cc",
+      "start": 407,
+      "end": 416,
+      "explained_lines": 10
+    },
+    {
+      "lesson": "06-02",
+      "path": "source/blender/blenkernel/intern/mesh_runtime.cc",
+      "start": 426,
+      "end": 431,
+      "explained_lines": 6
+    },
+    {
+      "lesson": "06-03",
+      "path": "source/blender/blenlib/BLI_shared_cache.hh",
+      "start": 77,
+      "end": 86,
+      "explained_lines": 10
+    },
+    {
+      "lesson": "06-03",
+      "path": "source/blender/blenlib/BLI_shared_cache.hh",
+      "start": 89,
+      "end": 93,
+      "explained_lines": 5
+    },
+    {
+      "lesson": "07-01",
+      "path": "source/blender/functions/FN_multi_function.hh",
+      "start": 133,
+      "end": 138,
+      "explained_lines": 6
+    },
+    {
+      "lesson": "07-01",
+      "path": "source/blender/functions/FN_multi_function_params.hh",
+      "start": 157,
+      "end": 165,
+      "explained_lines": 9
+    },
+    {
+      "lesson": "07-02",
+      "path": "source/blender/functions/intern/multi_function.cc",
+      "start": 130,
+      "end": 175,
+      "explained_lines": 41
+    },
+    {
+      "lesson": "07-02",
+      "path": "source/blender/functions/intern/multi_function.cc",
+      "start": 54,
+      "end": 70,
+      "explained_lines": 17
+    },
+    {
+      "lesson": "07-03",
+      "path": "source/blender/functions/FN_multi_function_procedure.hh",
+      "start": 526,
+      "end": 532,
+      "explained_lines": 7
+    },
+    {
+      "lesson": "07-03",
+      "path": "source/blender/functions/intern/multi_function_procedure.cc",
+      "start": 271,
+      "end": 292,
+      "explained_lines": 22
+    },
+    {
+      "lesson": "08-01",
+      "path": "source/blender/functions/intern/field.cc",
+      "start": 202,
+      "end": 209,
+      "explained_lines": 8
+    },
+    {
+      "lesson": "08-01",
+      "path": "source/blender/functions/intern/field_evaluation.cc",
+      "start": 522,
+      "end": 533,
+      "explained_lines": 12
+    },
+    {
+      "lesson": "08-02",
+      "path": "source/blender/functions/FN_field_evaluation.hh",
+      "start": 68,
+      "end": 71,
+      "explained_lines": 4
+    },
+    {
+      "lesson": "08-02",
+      "path": "source/blender/functions/FN_field_evaluation.hh",
+      "start": 54,
+      "end": 59,
+      "explained_lines": 6
+    },
+    {
+      "lesson": "08-02",
+      "path": "source/blender/functions/intern/field_evaluation.cc",
+      "start": 590,
+      "end": 620,
+      "explained_lines": 29
+    },
+    {
+      "lesson": "08-03",
+      "path": "source/blender/functions/intern/field.cc",
+      "start": 222,
+      "end": 245,
+      "explained_lines": 24
+    },
+    {
+      "lesson": "08-03",
+      "path": "source/blender/functions/intern/field.cc",
+      "start": 321,
+      "end": 333,
+      "explained_lines": 13
+    },
+    {
+      "lesson": "08-03",
+      "path": "source/blender/functions/intern/field.cc",
+      "start": 361,
+      "end": 371,
+      "explained_lines": 11
+    },
+    {
+      "lesson": "09-01",
+      "path": "source/blender/functions/FN_lazy_function.hh",
+      "start": 372,
+      "end": 377,
+      "explained_lines": 6
+    },
+    {
+      "lesson": "09-01",
+      "path": "source/blender/functions/FN_lazy_function.hh",
+      "start": 341,
+      "end": 347,
+      "explained_lines": 7
+    },
+    {
+      "lesson": "09-02",
+      "path": "source/blender/functions/intern/lazy_function_graph_executor.cc",
+      "start": 74,
+      "end": 78,
+      "explained_lines": 5
+    },
+    {
+      "lesson": "09-02",
+      "path": "source/blender/functions/intern/lazy_function_graph_executor.cc",
+      "start": 68,
+      "end": 72,
+      "explained_lines": 5
+    },
+    {
+      "lesson": "09-02",
+      "path": "source/blender/functions/intern/lazy_function_graph_executor.cc",
+      "start": 32,
+      "end": 66,
+      "explained_lines": 32
+    },
+    {
+      "lesson": "09-03",
+      "path": "source/blender/nodes/geometry/nodes/node_geo_menu_switch.cc",
+      "start": 499,
+      "end": 514,
+      "explained_lines": 16
+    },
+    {
+      "lesson": "09-03",
+      "path": "source/blender/nodes/geometry/nodes/node_geo_menu_switch.cc",
+      "start": 356,
+      "end": 383,
+      "explained_lines": 27
+    },
+    {
+      "lesson": "10-01",
+      "path": "source/blender/blenkernel/BKE_geometry_nodes_reference_set.hh",
+      "start": 21,
+      "end": 29,
+      "explained_lines": 9
+    },
+    {
+      "lesson": "10-01",
+      "path": "source/blender/nodes/intern/geometry_nodes_lazy_function.cc",
+      "start": 1486,
+      "end": 1524,
+      "explained_lines": 39
+    },
+    {
+      "lesson": "10-02",
+      "path": "source/blender/nodes/NOD_geometry_nodes_closure.hh",
+      "start": 127,
+      "end": 130,
+      "explained_lines": 4
+    },
+    {
+      "lesson": "10-02",
+      "path": "source/blender/nodes/NOD_geometry_nodes_closure.hh",
+      "start": 73,
+      "end": 90,
+      "explained_lines": 18
+    },
+    {
+      "lesson": "10-03",
+      "path": "source/blender/nodes/NOD_geometry_nodes_lazy_function.hh",
+      "start": 427,
+      "end": 464,
+      "explained_lines": 36
+    },
+    {
+      "lesson": "10-03",
+      "path": "source/blender/nodes/NOD_geometry_nodes_closure.hh",
+      "start": 102,
+      "end": 105,
+      "explained_lines": 4
+    },
+    {
+      "lesson": "11-01",
+      "path": "source/blender/depsgraph/intern/eval/deg_eval.cc",
+      "start": 88,
+      "end": 109,
+      "explained_lines": 20
+    },
+    {
+      "lesson": "11-01",
+      "path": "source/blender/depsgraph/intern/node/deg_node_operation.hh",
+      "start": 257,
+      "end": 305,
+      "explained_lines": 38
+    },
+    {
+      "lesson": "11-02",
+      "path": "source/blender/depsgraph/intern/eval/deg_eval_flush.cc",
+      "start": 98,
+      "end": 108,
+      "explained_lines": 11
+    },
+    {
+      "lesson": "11-02",
+      "path": "source/blender/depsgraph/intern/eval/deg_eval.cc",
+      "start": 144,
+      "end": 174,
+      "explained_lines": 31
+    },
+    {
+      "lesson": "11-03",
+      "path": "source/blender/depsgraph/intern/eval/deg_eval.cc",
+      "start": 111,
+      "end": 124,
+      "explained_lines": 12
+    },
+    {
+      "lesson": "11-03",
+      "path": "source/blender/depsgraph/intern/eval/deg_eval.cc",
+      "start": 276,
+      "end": 322,
+      "explained_lines": 46
+    },
+    {
+      "lesson": "12-01",
+      "path": "source/blender/blenlib/BLI_kdtree_new.hh",
+      "start": 508,
+      "end": 511,
+      "explained_lines": 4
+    },
+    {
+      "lesson": "12-01",
+      "path": "source/blender/blenlib/intern/kdtree.cc",
+      "start": 690,
+      "end": 724,
+      "explained_lines": 32
+    },
+    {
+      "lesson": "12-01",
+      "path": "source/blender/blenlib/intern/kdtree.cc",
+      "start": 747,
+      "end": 755,
+      "explained_lines": 9
+    },
+    {
+      "lesson": "12-02",
+      "path": "source/blender/blenlib/BLI_kdtree_new.hh",
+      "start": 618,
+      "end": 684,
+      "explained_lines": 63
+    },
+    {
+      "lesson": "12-02",
+      "path": "source/blender/blenlib/BLI_kdtree_new.hh",
+      "start": 596,
+      "end": 614,
+      "explained_lines": 19
+    },
+    {
+      "lesson": "12-02",
+      "path": "source/blender/blenlib/BLI_kdtree_new.hh",
+      "start": 514,
+      "end": 525,
+      "explained_lines": 12
+    },
+    {
+      "lesson": "12-03",
+      "path": "source/blender/blenlib/BLI_kdtree_new.hh",
+      "start": 547,
+      "end": 555,
+      "explained_lines": 9
+    },
+    {
+      "lesson": "12-03",
+      "path": "source/blender/blenlib/tests/performance/BLI_kdtree_performance_test.cc",
+      "start": 185,
+      "end": 196,
+      "explained_lines": 12
+    },
+    {
+      "lesson": "12-03",
+      "path": "source/blender/blenlib/tests/performance/BLI_kdtree_performance_test.cc",
+      "start": 205,
+      "end": 218,
+      "explained_lines": 14
+    }
+  ]
+}

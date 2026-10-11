@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="同一个逻辑数组可以是连续存储、重复单值或按需计算。通过 VArray、IndexMask 和去虚拟化，学习表达力与执行成本怎样共同设计。">
+<title>虚拟数组与索引选择 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>REPRESENTATION / THROUGHPUT</div><h1>04 / 虚拟数组与索引选择</h1><p class="lede">同一个逻辑数组可以是连续存储、重复单值或按需计算。通过 VArray、IndexMask 和去虚拟化，学习表达力与执行成本怎样共同设计。</p><div class="chips"><span class="chip">3 篇专题</span><span class="chip">当前源码 + 历史提交</span><span class="chip">可离线阅读</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#start" class="lv1">学习目标</a><a href="#chapters" class="lv1">三篇专题</a><a href="#deliver" class="lv1">完成标准</a></nav><main id="main"><section id="start"><h2><span class="n">01</span>先建立模型，再走进源码</h2>
+<p>Span、模板、多态、连续内存和基本性能测量。</p>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>逻辑数组</strong></div><div class="flow-step"><span>02</span><strong>具体表示</strong></div><div class="flow-step"><span>03</span><strong>选择范围</strong></div><div class="flow-step"><span>04</span><strong>表示分派</strong></div><div class="flow-step"><span>05</span><strong>批量内核</strong></div></div><aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">建议的阅读节奏</div><p>每次完成一篇原理阅读和一个最小实验。读完三个专题后，回到自己的 Blender 改动，寻找同类数据、所有权或依赖问题。</p>
+</aside>
+</section>
+<section id="chapters"><h2><span class="n">02</span>这个方向的三次深入</h2>
+<div class="lesson-grid module-grid"><a class="lesson-card" data-course-id="04-01" href="01-VArray%E7%9A%84%E5%80%BC%E8%AF%AD%E4%B9%89.html"><div class="card-top"><span>04 / 01</span><span class="completion-label">待学习</span></div><h3>VArray：一百万个相同值不必分配一百万次</h3><p>观察接口如何统一不同表示，同时保留识别快速路径的能力。</p><div class="card-bottom"><span>1,597 字符 · 18 分钟研读建议</span><b aria-hidden="true">↗</b></div></a><a class="lesson-card" data-course-id="04-02" href="02-IndexMask%E7%9A%84%E5%88%86%E6%AE%B5%E8%AE%BE%E8%AE%A1.html"><div class="card-top"><span>04 / 02</span><span class="completion-label">待学习</span></div><h3>IndexMask：为稀疏、连续与并行同时设计</h3><p>以一次真实的数据结构重构学习约束、布局与 API 的共同演化。</p><div class="card-bottom"><span>1,782 字符 · 20 分钟研读建议</span><b aria-hidden="true">↗</b></div></a><a class="lesson-card" data-course-id="04-03" href="03-%E5%8E%BB%E8%99%9A%E6%8B%9F%E5%8C%96%E4%B8%8E%E4%BB%A3%E4%BB%B7%E6%A8%A1%E5%9E%8B.html"><div class="card-top"><span>04 / 03</span><span class="completion-label">待学习</span></div><h3>去虚拟化：把一次分派换成一个更好的循环</h3><p>解释为什么简单数学节点对接口开销格外敏感，并建立可复现的比较方式。</p><div class="card-bottom"><span>2,183 字符 · 24 分钟研读建议</span><b aria-hidden="true">↗</b></div></a></div></section>
+<section id="deliver"><h2><span class="n">03</span>用这些成果验收</h2>
+<ul><li>比较一次物化后重复读取，与每次调用计算函数的成本，明确测量次数和规模。</li><li>实现分块构造后有序合并，记录临时内存与合并成本。</li><li>记录构建时间和程序体积，说明增加一种特化是否值得。</li></ul><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">继续前的自检</div><p>选择一个这里研究过的提交，只看提交说明就提出自己的方案，再用 diff 和后续修复校验你的推演。</p>
+</aside>
+</section>
+</main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="用游标与对齐推导分配器，再研究它为什么适合临时执行数据。">
+<title>LinearAllocator：利用共同寿命减少分配成本 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="03-01"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">内存分配与运行时类型</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>MEMORY / TYPE ERASURE / LESSON 03-01</div><h1>LinearAllocator：利用共同寿命减少分配成本</h1><p class="lede">用游标与对齐推导分配器，再研究它为什么适合临时执行数据。</p><div class="chips"><span class="chip">方向 03 · 内存分配与运行时类型</span><span class="chip">专题 1/3</span><span class="chip">正文 2,053 字符</span><span class="chip">建议研读 23 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-LinearAllocator%E4%B8%8E%E5%AF%B9%E9%BD%90.html">01 LinearAllocator：利用共同寿命减少分配成本</a><a href="02-ResourceScope%E4%B8%8E%E9%80%86%E5%BA%8F%E9%94%80%E6%AF%81.html">02 ResourceScope：把动态资源组织成一个作用域</a><a href="03-CPPType%E4%B8%8E%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4.html">03 CPPType：运行时如何正确构造、复制和销毁值</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>节点系统需要管理大量短命对象，也需要在运行时处理类型未知的值。分配策略、析构责任与类型描述共同构成可组合的底层机制。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>对象生命周期、对齐、函数指针、模板实例化。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>取得原始存储</strong></div><div class="flow-step"><span>02</span><strong>构造具体对象</strong></div><div class="flow-step"><span>03</span><strong>注册销毁责任</strong></div><div class="flow-step"><span>04</span><strong>擦除静态类型</strong></div><div class="flow-step"><span>05</span><strong>按类型操作</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>再加入多块增长，验证旧块地址稳定，明确整体释放时机。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>共同寿命带来的简化</h3>
+<p>如果一批节点执行数据都在本次求值结束后销毁，就不一定需要为每个小块分别向通用堆申请与归还。线性分配器在较大缓冲区中推进游标，缓冲区不够时再获得新的块。其速度来自对释放模式的限制：它适合成批释放，不提供任意顺序的细粒度回收。</p>
+<p>把数据寿命画成时间条。如果大量对象的结束时间近似一致，分区分配可能有效；如果少数长期对象不断夹在短命对象中，整块内存就可能长期无法回收。选择分配器应从寿命分布开始。</p>
+<h3>对齐是正确性条件</h3>
+<p>假设游标为 p，对齐要求为正的二次幂 a，常见上取整公式是 (p+a-1)&amp;~(a-1)。必须检查加法溢出、剩余容量和分配器支持的对齐上限。公式只是教学模型；真正实现还需要处理大分配和新块路径。</p>
+<p>对齐填充不是有效载荷，但仍占用缓冲区。记录 requested bytes、padding 和实际获得的块大小，才能解释小对象工作负载的内存利用率。大量不同对齐需求也会改变浪费比例。</p>
+<h3>稳定地址与对象构造分开</h3>
+<p>追加新的缓冲块通常可以保留旧块地址，这适合图节点和临时结构相互引用。但 allocator 的寿命必须覆盖这些引用的使用区间。其 NonMovable 等约束也值得阅读，理解哪些简化来自对象本身不移动。</p>
+<p>返回原始内存与提供 construct&lt;T&gt; 是不同层次。即使有构造辅助函数，也不能推断分配器自动追踪所有对象的析构；这正是下一课 ResourceScope 要补充的问题。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<div class="demo" data-demo="allocator"><div class="demo-heading"><span class="pill">INTERACTIVE LAB</span><strong>改变一个条件，观察模型</strong></div><div class="demo-controls"></div><div class="demo-result" aria-live="polite"></div><p class="demo-caption">教学简化模型，帮助推演状态；不等同于 Blender 完整实现，也不执行性能基准。</p><noscript>开启 JavaScript 可使用交互；正文和源码仍可离线阅读。</noscript></div><aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不能只测分配速度：还要测峰值内存、对齐浪费和整次任务结束后的归还行为。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>类型化分配入口：大小与对齐来自 T</h3><p>先完整解释类型化入口，再进入下面的字节分配实现。分配器交出的是原始存储，不是已经构造好的对象；这条界限贯穿 ResourceScope 和 CPPType。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_linear_allocator.hh · L99–L102。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_linear_allocator.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="99">  <span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">T</span>&gt; <span class="syntax-type">T</span> *<span class="syntax-function">allocate</span>()</span>
+<span class="code-line" data-line="100">  {</span>
+<span class="code-line" data-line="101">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-type">T</span> *&gt;(<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">allocate</span>(<span class="syntax-keyword">sizeof</span>(<span class="syntax-type">T</span>), <span class="syntax-keyword">alignof</span>(<span class="syntax-type">T</span>)));</span>
+<span class="code-line" data-line="102">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L99</span><div><code><span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">T</span>&gt; <span class="syntax-type">T</span> *<span class="syntax-function">allocate</span>()</code><p>模板 T 同时给出返回指针类型、对象大小与对齐。函数没有构造参数，因此不负责 T 的初始化。</p>
+</div></div><div class="line-explanation"><span class="line-number">L100</span><div><code>{</code><p>打开 template&lt;typename T&gt; T *allocate() 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L101</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-type">T</span> *&gt;(<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">allocate</span>(<span class="syntax-keyword">sizeof</span>(<span class="syntax-type">T</span>), <span class="syntax-keyword">alignof</span>(<span class="syntax-type">T</span>)));</code><p>传递 sizeof(T) 与 alignof(T) 给字节分配函数，并把 void* 转成 T*。类型转换不等于对象生命周期已经开始。</p>
+</div></div><div class="line-explanation"><span class="line-number">L102</span><div><code>}</code><p>结束 template&lt;typename T&gt; T *allocate() 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>分配一个 std::string 的空间以后，不能马上调用它的成员函数；还需要构造对象。用 alignas(64) 的类型检查返回地址能否被 64 整除，能发现仅按默认对齐分配的实现错误。</p>
+<h4>调用关系与设计判断</h4><p>下面继续阅读字节分配实现，并把“调整起点、检查剩余空间、推进游标、申请新块、特大块独立分配”画成流程。最终所有块由 allocator 生命周期统一释放，而每个对象的析构责任需要另外安排。</p>
+</article><article class="deep-reading"><h3>对齐与跨块分配的完整慢快路径</h3><p>这段完整实现把对齐消耗、用户请求大小和块剩余空间区分开。请特别看先向上对齐再计算结尾的顺序：先计算大小再对齐可能把空间判断做错。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_linear_allocator.hh · L66–L92。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_linear_allocator.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="66">  <span class="syntax-keyword">void</span> *<span class="syntax-function">allocate</span>(<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> size, <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> alignment)</span>
+<span class="code-line" data-line="67">  {</span>
+<span class="code-line" data-line="68">    <span class="syntax-type">BLI_assert</span>(size &gt;= <span class="syntax-number">0</span>);</span>
+<span class="code-line" data-line="69">    <span class="syntax-type">BLI_assert</span>(alignment &gt;= <span class="syntax-number">1</span>);</span>
+<span class="code-line" data-line="70">    <span class="syntax-type">BLI_assert</span>(<span class="syntax-function">is_power_of_2</span>(alignment));</span>
+<span class="code-line" data-line="71"></span>
+<span class="code-line" data-line="72">    <span class="syntax-keyword">const</span> uintptr_t alignment_mask = alignment - <span class="syntax-number">1</span>;</span>
+<span class="code-line" data-line="73">    <span class="syntax-keyword">const</span> uintptr_t potential_allocation_begin = (current_begin_ + alignment_mask) &amp;</span>
+<span class="code-line" data-line="74">                                                 ~alignment_mask;</span>
+<span class="code-line" data-line="75">    <span class="syntax-keyword">const</span> uintptr_t potential_allocation_end = potential_allocation_begin + size;</span>
+<span class="code-line" data-line="76"></span>
+<span class="code-line" data-line="77">    <span class="syntax-keyword">if</span> (potential_allocation_end &lt;= current_end_) {</span>
+<span class="code-line" data-line="78"><span class="syntax-preprocessor">#ifdef BLI_DEBUG_LINEAR_ALLOCATOR_SIZE</span></span>
+<span class="code-line" data-line="79">      user_requested_size_ += size;</span>
+<span class="code-line" data-line="80"><span class="syntax-preprocessor">#endif</span></span>
+<span class="code-line" data-line="81">      current_begin_ = potential_allocation_end;</span>
+<span class="code-line" data-line="82">      <span class="syntax-keyword">return</span> reinterpret_cast&lt;<span class="syntax-keyword">void</span> *&gt;(potential_allocation_begin);</span>
+<span class="code-line" data-line="83">    }</span>
+<span class="code-line" data-line="84">    <span class="syntax-keyword">if</span> (size &lt;= large_buffer_threshold) {</span>
+<span class="code-line" data-line="85">      <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">allocate_new_buffer</span>(size + alignment, alignment);</span>
+<span class="code-line" data-line="86">      <span class="syntax-keyword">return</span> <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">allocate</span>(size, alignment);</span>
+<span class="code-line" data-line="87">    }</span>
+<span class="code-line" data-line="88"><span class="syntax-preprocessor">#ifdef BLI_DEBUG_LINEAR_ALLOCATOR_SIZE</span></span>
+<span class="code-line" data-line="89">    user_requested_size_ += size;</span>
+<span class="code-line" data-line="90"><span class="syntax-preprocessor">#endif</span></span>
+<span class="code-line" data-line="91">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">allocator_large_buffer</span>(size, alignment);</span>
+<span class="code-line" data-line="92">  };</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L66</span><div><code><span class="syntax-keyword">void</span> *<span class="syntax-function">allocate</span>(<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> size, <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> alignment)</code><p>参数以字节为单位。size 与 alignment 使用有符号整数，契约检查先排除负值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L67</span><div><code>{</code><p>打开 void *allocate(const int64_t size, const int64_t alignment) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L68</span><div><code><span class="syntax-type">BLI_assert</span>(size &gt;= <span class="syntax-number">0</span>);</code><p>用户请求大小不得为负；零大小仍需遵守分配器契约。</p>
+</div></div><div class="line-explanation"><span class="line-number">L69</span><div><code><span class="syntax-type">BLI_assert</span>(alignment &gt;= <span class="syntax-number">1</span>);</code><p>对齐至少为 1，否则 alignment-1 的掩码模型不成立。</p>
+</div></div><div class="line-explanation"><span class="line-number">L70</span><div><code><span class="syntax-type">BLI_assert</span>(<span class="syntax-function">is_power_of_2</span>(alignment));</code><p>对齐必须为二的幂，后面的按位公式依赖此条件。</p>
+</div></div><div class="line-explanation"><span class="line-number">L72</span><div><code><span class="syntax-keyword">const</span> uintptr_t alignment_mask = alignment - <span class="syntax-number">1</span>;</code><p>生成对齐掩码。例如 alignment=8 时掩码为 7。</p>
+</div></div><div class="line-explanation"><span class="line-number">L73</span><div><code><span class="syntax-keyword">const</span> uintptr_t potential_allocation_begin = (current_begin_ + alignment_mask) &amp;</code><p>先加 alignment-1，准备把当前位置向上舍入。</p>
+</div></div><div class="line-explanation"><span class="line-number">L74</span><div><code>~alignment_mask;</code><p>清除低位得到对齐地址。这是前一行表达式的继续，而不是第二次分配。</p>
+</div></div><div class="line-explanation"><span class="line-number">L75</span><div><code><span class="syntax-keyword">const</span> uintptr_t potential_allocation_end = potential_allocation_begin + size;</code><p>计算请求末尾。输入极大时还要审查整数溢出；断言并没有给这一步自动提供溢出保护。</p>
+</div></div><div class="line-explanation"><span class="line-number">L77</span><div><code><span class="syntax-keyword">if</span> (potential_allocation_end &lt;= current_end_) {</code><p>末尾不超过当前块边界，才允许走快路径。</p>
+</div></div><div class="line-explanation"><span class="line-number">L78</span><div><code><span class="syntax-preprocessor">#ifdef BLI_DEBUG_LINEAR_ALLOCATOR_SIZE</span></code><p>条件编译：只有启用调试大小统计时编译接下来计数操作。</p>
+</div></div><div class="line-explanation"><span class="line-number">L79</span><div><code>user_requested_size_ += size;</code><p>累计用户真正请求的 size；对齐填充不算用户请求量。</p>
+</div></div><div class="line-explanation"><span class="line-number">L80</span><div><code><span class="syntax-preprocessor">#endif</span></code><p>结束这段条件编译。</p>
+</div></div><div class="line-explanation"><span class="line-number">L81</span><div><code>current_begin_ = potential_allocation_end;</code><p>推进游标到本次请求结尾，下一次分配不能覆盖此区间。</p>
+</div></div><div class="line-explanation"><span class="line-number">L82</span><div><code><span class="syntax-keyword">return</span> reinterpret_cast&lt;<span class="syntax-keyword">void</span> *&gt;(potential_allocation_begin);</code><p>把已对齐的整数地址还原为 void*，交给调用者。</p>
+</div></div><div class="line-explanation"><span class="line-number">L83</span><div><code>}</code><p>结束 if (potential_allocation_end &lt;= current_end_) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L84</span><div><code><span class="syntax-keyword">if</span> (size &lt;= large_buffer_threshold) {</code><p>快路径失败后，判断请求是否仍适合普通缓冲块。</p>
+</div></div><div class="line-explanation"><span class="line-number">L85</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">allocate_new_buffer</span>(size + alignment, alignment);</code><p>申请新缓冲块，同时为对齐保留空间。底层块如何增长需继续打开 allocate_new_buffer。</p>
+</div></div><div class="line-explanation"><span class="line-number">L86</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">allocate</span>(size, alignment);</code><p>有了新块后重试同一分配逻辑，复用统一的对齐与统计规则。</p>
+</div></div><div class="line-explanation"><span class="line-number">L87</span><div><code>}</code><p>结束 if (size &lt;= large_buffer_threshold) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L88</span><div><code><span class="syntax-preprocessor">#ifdef BLI_DEBUG_LINEAR_ALLOCATOR_SIZE</span></code><p>条件编译：这里对应大块路径的请求量统计。</p>
+</div></div><div class="line-explanation"><span class="line-number">L89</span><div><code>user_requested_size_ += size;</code><p>大块路径同样累计用户字节，避免统计遗漏。</p>
+</div></div><div class="line-explanation"><span class="line-number">L90</span><div><code><span class="syntax-preprocessor">#endif</span></code><p>结束条件编译。</p>
+</div></div><div class="line-explanation"><span class="line-number">L91</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">allocator_large_buffer</span>(size, alignment);</code><p>超大请求交给独立大块分配路径，避免把常规块策略拖成巨大常驻块。</p>
+</div></div><div class="line-explanation"><span class="line-number">L92</span><div><code>};</code><p>结束 void *allocate(const int64_t size, const int64_t alignment) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>令 current_begin_=1003、alignment=8、size=12。掩码是 7，对齐起点是 1008，末尾是 1020。若 current_end_=1024，则推进到 1020；若边界为 1016，则不能接受这次分配，必须换块。地址示例只用于整数推演。</p>
+<h4>调用关系与设计判断</h4><p>每次 allocate 的局部正确性依赖当前块地址边界有效，跨块正确性依赖 owned_buffers_ 保留旧块。不能在换块时释放仍被用户引用的旧分配。对齐测试、跨块存活测试与特大块测试覆盖的是三种不同责任。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_linear_allocator.hh">BLI_linear_allocator.hh</a></div><p>先看所有缓冲块、当前可用空间与类的限制。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 29 行 · SHA-256 95fe936dfa9e</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_linear_allocator.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_linear_allocator.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">26</span>,<span class="syntax-number">57</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_linear_allocator.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/tests/BLI_linear_allocator_test.cc">BLI_linear_allocator_test.cc</a></div><p>检查大小、对齐和跨块分配的用例。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 20 行 · SHA-256 efcb4df3c5eb</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/tests/BLI_linear_allocator_test.cc</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/tests/BLI_linear_allocator_test.cc&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">17</span>,<span class="syntax-number">48</span> -- <span class="syntax-string">&quot;source/blender/blenlib/tests/BLI_linear_allocator_test.cc&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/c5f4d5e448e4508586087e7ec8edfb0a2b6c38ec" target="_blank" rel="noopener">c5f4d5e448e</a> <span>Jacques Lucke · 2020-04-24</span></div><h3>BLI: add LinearAllocator</h3><p>从最初用途理解该分配器的范围：大量小元素，而非替代所有堆分配。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This allocator is useful when it is necessary to allocate many small elements.</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenlib/<span class="syntax-type">BLI_linear_allocator</span>.hh    | <span class="syntax-number">173</span> ++++++++++++++++++++++</span>
+<span class="code-line" data-line="2"> tests/gtests/blenlib/<span class="syntax-type">BLI_linear_allocator_test</span>.cc | <span class="syntax-number">113</span> ++++++++++++++</span>
+<span class="code-line" data-line="3"> tests/gtests/blenlib/<span class="syntax-type">CMakeLists</span>.txt               |   <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="4"> <span class="syntax-number">3</span> files changed, <span class="syntax-number">287</span> <span class="syntax-function">insertions</span>(+)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat c5f4d5e448e</span>
+<span class="code-line" data-line="2">git show c5f4d5e448e</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show c5f4d5e448e -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>实现固定缓冲区 bump allocator，支持 1、4、8、16 字节对齐。</p>
+</li><li><strong>任务 02</strong><p>记录每次 padding，验证返回地址与对齐要求的余数为零。</p>
+</li><li><strong>任务 03</strong><p>再加入多块增长，验证旧块地址稳定，明确整体释放时机。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="03-01-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="03-01-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="03-01-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>线性分配为什么不适合任意释放？</summary><p>它通过省略每块独立回收管理来简化路径，寿命不一致会留下不能及时回收的空间。</p>
+</details><details class="question"><summary>释放整块内存会调用字符串析构吗？</summary><p>不会自动由原始内存释放完成，必须有对象层的析构管理。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="03-01" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E6%80%A7%E8%83%BD%E5%A5%91%E7%BA%A6/03-%E9%87%8D%E5%BB%BA%E7%AD%96%E7%95%A5%E4%B8%8E%E6%80%A7%E8%83%BD%E5%AE%9E%E9%AA%8C.html">← 上一篇：一次重建要值得：从操作序列理解均摊成本</a><a href="../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/02-ResourceScope%E4%B8%8E%E9%80%86%E5%BA%8F%E9%94%80%E6%AF%81.html">下一篇：ResourceScope：把动态资源组织成一个作用域 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

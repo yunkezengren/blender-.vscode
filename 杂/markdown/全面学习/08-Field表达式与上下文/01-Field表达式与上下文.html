@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="同一个 Position 表达式如何在不同几何数据上得到不同结果。">
+<title>Field：把表达式与求值位置分开 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="08-01"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">Field表达式与上下文</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>EXPRESSIONS / CONTEXT / LESSON 08-01</div><h1>Field：把表达式与求值位置分开</h1><p class="lede">同一个 Position 表达式如何在不同几何数据上得到不同结果。</p><div class="chips"><span class="chip">方向 08 · Field表达式与上下文</span><span class="chip">专题 1/3</span><span class="chip">正文 1,826 字符</span><span class="chip">建议研读 20 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E4%B8%8A%E4%B8%8B%E6%96%87.html">01 Field：把表达式与求值位置分开</a><a href="02-FieldEvaluator%E4%B8%8E%E5%AE%9E%E9%99%85%E8%8A%82%E7%82%B9.html">02 从 Set Position 追到 FieldEvaluator</a><a href="03-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E6%9E%90%E6%9E%84.html">03 Field 的演化：减少分配之后，还要考虑销毁</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>区分“要计算什么”与“在哪些几何元素上计算”。从 FieldInput、FieldOperation、FieldContext 和 FieldEvaluator 进入求值，再阅读 2026 年存储重构。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>MultiFunction、图共享、运行时类型、虚拟数组和作用域管理。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>构造表达式</strong></div><div class="flow-step"><span>02</span><strong>提供上下文</strong></div><div class="flow-step"><span>03</span><strong>确定选择</strong></div><div class="flow-step"><span>04</span><strong>组织批量过程</strong></div><div class="flow-step"><span>05</span><strong>取得结果</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>画出表达式依赖与内存所有权两张图，标出共享子表达式。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>Field 描述计算关系</h3>
+<p>Position*Scale+Offset 可以在节点连接时被构造，但此时未必知道最终针对哪个几何组件、哪个属性域和哪些索引求值。Field 表达式保存计算关系，FieldContext 在实际求值时提供输入含义。把表达式与上下文分开，才能让节点组形成可复用计算。</p>
+<p>不要把 Field 简化为已经展开的数组。一个常量可以成为 Field，一个输入可以从上下文读取数据，一个操作可以组合其他 Field。结果数组是一次具体求值产生或引用的数据。</p>
+<h3>当前类结构与旧资料不同</h3>
+<p>当前 FN_field.hh 中，GField 使用不同内部存储表示；Field&lt;T&gt; 提供静态类型包装，FieldInput 和 FieldOperation 表达输入与运算。2026 年重构后，旧文档里的统一 FieldNode 结构不能直接套用。</p>
+<p>阅读时先画持有关系：哪些类型拥有共享节点，哪些引用常见静态 Field，哪些存储常量。再画计算依赖图。这两张图相关但不同，前者决定销毁，后者决定求值。</p>
+<h3>上下文不是无限制的全局变量</h3>
+<p>上下文应提供本次计算所需的解释环境，例如几何数据与域。表达式中一个输入的含义需要由上下文明确解析。隐式地从任意全局对象读取，会削弱复用、测试和并发执行的可理解性。</p>
+<p>练习先限定一个一维点数组上下文：Position 读取该数组，Index 读取当前索引。相同表达式在两份上下文上求值，观察结构相同而值不同，这比一开始接入整个 Blender 更清晰。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<div class="demo" data-demo="field"><div class="demo-heading"><span class="pill">INTERACTIVE LAB</span><strong>改变一个条件，观察模型</strong></div><div class="demo-controls"></div><div class="demo-result" aria-live="polite"></div><p class="demo-caption">教学简化模型，帮助推演状态；不等同于 Blender 完整实现，也不执行性能基准。</p><noscript>开启 JavaScript 可使用交互；正文和源码仍可离线阅读。</noscript></div><aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要混淆 Field 的结构身份、深层语义相等和一次求值结果相等，它们是不同问题。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>GField 表示分派：提取操作节点并转移所有权</h3><p>完整函数展示当前 GField variant 的一种访问方式。它返回操作节点所有权句柄，不是直接计算 Field 的数值；类型分支与执行上下文是两回事。</p>
+<p>完整源码单元 · source/blender/functions/intern/field.cc · L202–L209。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/intern/field.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="202"><span class="syntax-type">FieldOperationPtr</span> <span class="syntax-type">GField</span>::<span class="syntax-function">try_extract_operation</span>()</span>
+<span class="code-line" data-line="203">{</span>
+<span class="code-line" data-line="204">  <span class="syntax-type">MultiFn</span> *multi_fn = std::get_if&lt;<span class="syntax-type">MultiFn</span>&gt;(&amp;variant_);</span>
+<span class="code-line" data-line="205">  <span class="syntax-keyword">if</span> (!multi_fn || !multi_fn-&gt;node) {</span>
+<span class="code-line" data-line="206">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">nullptr</span>;</span>
+<span class="code-line" data-line="207">  }</span>
+<span class="code-line" data-line="208">  <span class="syntax-keyword">return</span> std::<span class="syntax-function">move</span>(multi_fn-&gt;node);</span>
+<span class="code-line" data-line="209">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L202</span><div><code><span class="syntax-type">FieldOperationPtr</span> <span class="syntax-type">GField</span>::<span class="syntax-function">try_extract_operation</span>()</code><p>返回 FieldOperationPtr。方法不是 const，因为成功提取会移动内部所有权。</p>
+</div></div><div class="line-explanation"><span class="line-number">L203</span><div><code>{</code><p>打开 FieldOperationPtr GField::try_extract_operation() 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L204</span><div><code><span class="syntax-type">MultiFn</span> *multi_fn = std::get_if&lt;<span class="syntax-type">MultiFn</span>&gt;(&amp;variant_);</code><p>尝试取得 MultiFn 分支地址。分支不匹配时返回 nullptr，不抛出 bad_variant_access。</p>
+</div></div><div class="line-explanation"><span class="line-number">L205</span><div><code><span class="syntax-keyword">if</span> (!multi_fn || !multi_fn-&gt;node) {</code><p>既检查分支是否匹配，也检查其中节点句柄是否仍存在；已经提取过的对象可能保留分支但节点为空。</p>
+</div></div><div class="line-explanation"><span class="line-number">L206</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">nullptr</span>;</code><p>没有可提取操作时返回空句柄。调用者需要据此分支，不能直接解引用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L207</span><div><code>}</code><p>结束 if (!multi_fn || !multi_fn-&gt;node) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L208</span><div><code><span class="syntax-keyword">return</span> std::<span class="syntax-function">move</span>(multi_fn-&gt;node);</code><p>移动内部 node，把持有关系交给返回值；内部句柄成为移后状态。表达式的数值并没有被求出。</p>
+</div></div><div class="line-explanation"><span class="line-number">L209</span><div><code>}</code><p>结束 FieldOperationPtr GField::try_extract_operation() 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>常量 Field 在这里没有 MultiFn 分支，返回空。操作 Field 第一次提取可得到节点；随后再次提取通常得到空，因为 node 已经移动出去。这个函数适合所有权转移场景，不能作为无副作用的表达式查询。</p>
+<h4>调用关系与设计判断</h4><p>与 GFieldRef 对照：后者是求值期间的非拥有引用表示。表达式可以共享操作节点，实际输入值由 FieldContext 解释。把“表达式拥有谁”“引用借用谁”“上下文提供什么值”分别画成三种关系。</p>
+</article><article class="deep-reading"><h3>Field 常量折叠：无上下文依赖才允许提前求值</h3><p>完整函数解释表达式依赖信息怎样影响表示。无输入依赖的表达式可以提前求值成为常量；一个在当前样本里碰巧输出相同值的表达式，不一定满足这个条件。</p>
+<p>完整源码单元 · source/blender/functions/intern/field_evaluation.cc · L522–L533。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/intern/field_evaluation.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="522"><span class="syntax-type">GField</span> <span class="syntax-function">make_field_constant_if_possible</span>(<span class="syntax-type">GField</span> field)</span>
+<span class="code-line" data-line="523">{</span>
+<span class="code-line" data-line="524">  <span class="syntax-keyword">if</span> (field.<span class="syntax-function">depends_on_input</span>()) {</span>
+<span class="code-line" data-line="525">    <span class="syntax-keyword">return</span> field;</span>
+<span class="code-line" data-line="526">  }</span>
+<span class="code-line" data-line="527">  <span class="syntax-keyword">const</span> <span class="syntax-type">CPPType</span> &amp;type = field.<span class="syntax-function">cpp_type</span>();</span>
+<span class="code-line" data-line="528">  <span class="syntax-type">BUFFER_FOR_CPP_TYPE_VALUE</span>(type, buffer);</span>
+<span class="code-line" data-line="529">  <span class="syntax-function">evaluate_constant_field</span>(field, buffer);</span>
+<span class="code-line" data-line="530">  <span class="syntax-type">GField</span> new_field = <span class="syntax-type">GField</span>::<span class="syntax-function">from_constant</span>(type, buffer);</span>
+<span class="code-line" data-line="531">  type.<span class="syntax-function">destruct</span>(buffer);</span>
+<span class="code-line" data-line="532">  <span class="syntax-keyword">return</span> new_field;</span>
+<span class="code-line" data-line="533">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L522</span><div><code><span class="syntax-type">GField</span> <span class="syntax-function">make_field_constant_if_possible</span>(<span class="syntax-type">GField</span> field)</code><p>按值接收 Field 句柄，允许返回原对象或新的常量表示。</p>
+</div></div><div class="line-explanation"><span class="line-number">L523</span><div><code>{</code><p>打开 GField make_field_constant_if_possible(GField field) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L524</span><div><code><span class="syntax-keyword">if</span> (field.<span class="syntax-function">depends_on_input</span>()) {</code><p>有输入依赖时不能脱离上下文提前求一个统一值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L525</span><div><code><span class="syntax-keyword">return</span> field;</code><p>原样返回依赖输入的 Field。</p>
+</div></div><div class="line-explanation"><span class="line-number">L526</span><div><code>}</code><p>结束 if (field.depends_on_input()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L527</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">CPPType</span> &amp;type = field.<span class="syntax-function">cpp_type</span>();</code><p>取得表达式结果的运行时 C++ 类型。</p>
+</div></div><div class="line-explanation"><span class="line-number">L528</span><div><code><span class="syntax-type">BUFFER_FOR_CPP_TYPE_VALUE</span>(type, buffer);</code><p>为一个该类型值准备临时对齐存储。宏负责缓冲管理，不能把它等同于已经初始化 T。</p>
+</div></div><div class="line-explanation"><span class="line-number">L529</span><div><code><span class="syntax-function">evaluate_constant_field</span>(field, buffer);</code><p>在临时空间构造求出的常量值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L530</span><div><code><span class="syntax-type">GField</span> new_field = <span class="syntax-type">GField</span>::<span class="syntax-function">from_constant</span>(type, buffer);</code><p>把临时值复制或转存进拥有的 GField 常量表示。</p>
+</div></div><div class="line-explanation"><span class="line-number">L531</span><div><code>type.<span class="syntax-function">destruct</span>(buffer);</code><p>显式析构临时值，避免非平凡类型资源泄漏。</p>
+</div></div><div class="line-explanation"><span class="line-number">L532</span><div><code><span class="syntax-keyword">return</span> new_field;</code><p>返回新的常量 Field，它的有效性不能依赖已析构的临时 buffer。</p>
+</div></div><div class="line-explanation"><span class="line-number">L533</span><div><code>}</code><p>结束 GField make_field_constant_if_possible(GField field) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>常量表达式 2+3 可折成常量 5；Position.x+0 仍依赖输入，不能因为一个网格所有点 x 都为 5 就永久折成 5。若结果是非平凡类型，折叠后也要检查临时值与最终值析构各一次。</p>
+<h4>调用关系与设计判断</h4><p>沿 depends_on_input 的输入集合传播证明是否可折叠，再读 from_constant 怎样选择内联或拥有存储。常量折叠的正确性取决于语义依赖和函数纯度约定，性能收益才是后续问题。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_field.hh">FN_field.hh</a></div><p>辨认当前表达式句柄的不同存储表示。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 55 行 · SHA-256 4ce5d9b67e7b</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_field.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_field.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">52</span>,<span class="syntax-number">83</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_field.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_field.hh">FN_field.hh</a></div><p>观察上下文如何成为输入解释边界。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 291 行 · SHA-256 4ce5d9b67e7b</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_field.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_field.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">288</span>,<span class="syntax-number">319</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_field.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/bf47fb40fd6f0ee9386e9936cf213a1049c55b61" target="_blank" rel="noopener">bf47fb40fd6</a> <span>Jacques Lucke · 2021-09-09</span></div><h3>Geometry Nodes: fields and anonymous attributes</h3><p>读最初 Field 与匿名属性的需求说明。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This implements the initial core framework for fields and anonymous
+attributes (also see T91274).
+
+The new functionality is hidden behind the &quot;Geometry Nodes Fields&quot;
+feature flag. When enabled in the user preferences, the following
+new nodes become available: `Position`, `Index`, `Normal`,
+`Set Position` and `Attribute Capture`.
+
+Socket inspection has not been updated to work with fields yet.
+
+Besides these changes at the user level, this patch contains the
+ground work for:
+* building and evaluating fields at run-time (`FN_fields.hh`) and
+* creating and accessing anonymous attributes on geometry
+  (`BKE_anonymous_attribute.h`).
+
+For evaluating fields we use a new so called multi-function procedure
+(`FN_multi_function_procedure.hh`). It allows composing multi-functions
+in arbitrary ways and supports efficient evaluation as is required by
+fields. See `FN_multi_function_procedure.hh` for more details on how
+this evaluation mechanism can be used.
+
+A new `AttributeIDRef` has been added which allows handling named
+and anonymous attributes in the same way in many places.
+
+Hans and I worked on this patch together.
+
+Differential Revision: https://developer.blender.org/D12414</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">release/scripts/startup/bl_ui/space_userpref.py    |    <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="2"> release/scripts/startup/nodeitems_builtins.py      |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="3"> .../blender/blenkernel/<span class="syntax-type">BKE_anonymous_attribute</span>.h   |   <span class="syntax-number">43</span> +</span>
+<span class="code-line" data-line="4"> .../blender/blenkernel/<span class="syntax-type">BKE_anonymous_attribute</span>.hh  |  <span class="syntax-number">169</span> +++</span>
+<span class="code-line" data-line="5"> source/blender/blenkernel/<span class="syntax-type">BKE_attribute_access</span>.hh  |   <span class="syntax-number">98</span> +-</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/<span class="syntax-type">BKE_customdata</span>.h         |   <span class="syntax-number">12</span> +</span>
+<span class="code-line" data-line="7"> source/blender/blenkernel/<span class="syntax-type">BKE_geometry_set</span>.hh      |  <span class="syntax-number">114</span> +-</span>
+<span class="code-line" data-line="8"> .../blenkernel/<span class="syntax-type">BKE_geometry_set_instances</span>.hh       |    <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="9"> source/blender/blenkernel/<span class="syntax-type">BKE_node</span>.h               |    <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="10"> source/blender/blenkernel/<span class="syntax-type">CMakeLists</span>.txt           |    <span class="syntax-number">3</span> +</span>
+<span class="code-line" data-line="11"> .../blenkernel/intern/anonymous_attribute.cc       |  <span class="syntax-number">118</span> ++</span>
+<span class="code-line" data-line="12"> .../blender/blenkernel/intern/attribute_access.cc  |  <span class="syntax-number">422</span> ++++---</span>
+<span class="code-line" data-line="13"> .../blenkernel/intern/attribute_access_intern.hh   |   <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="14"> source/blender/blenkernel/intern/curve_eval.cc     |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="15"> source/blender/blenkernel/intern/customdata.c      |   <span class="syntax-number">53</span> +-</span>
+<span class="code-line" data-line="16"> .../blenkernel/intern/geometry_component_curve.cc  |   <span class="syntax-number">24</span> +-</span>
+<span class="code-line" data-line="17"> .../blenkernel/intern/geometry_component_mesh.cc   |   <span class="syntax-number">24</span> +-</span>
+<span class="code-line" data-line="18"> .../blenkernel/intern/geometry_set_instances.cc    |   <span class="syntax-number">53</span> +-</span>
+<span class="code-line" data-line="19"> source/blender/blenkernel/intern/node.cc           |    <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="20"> .../spreadsheet_data_source_geometry.cc            |   <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="21"> source/blender/functions/<span class="syntax-type">CMakeLists</span>.txt            |   <span class="syntax-number">11</span> +</span>
+<span class="code-line" data-line="22"> source/blender/functions/<span class="syntax-type">FN_field</span>.hh               |  <span class="syntax-number">456</span> ++++++++</span>
+<span class="code-line" data-line="23"> source/blender/functions/<span class="syntax-type">FN_field_cpp_type</span>.hh      |   <span class="syntax-number">72</span> ++</span>
+<span class="code-line" data-line="24"> .../blender/functions/<span class="syntax-type">FN_multi_function_builder</span>.hh |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="25"> .../blender/functions/<span class="syntax-type">FN_multi_function_params</span>.hh  |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="26"> .../functions/<span class="syntax-type">FN_multi_function_procedure</span>.hh       |  <span class="syntax-number">452</span> ++++++++</span>
+<span class="code-line" data-line="27"> .../<span class="syntax-type">FN_multi_function_procedure_builder</span>.hh         |  <span class="syntax-number">260</span> +++++</span>
+<span class="code-line" data-line="28"> .../<span class="syntax-type">FN_multi_function_procedure_executor</span>.hh        |   <span class="syntax-number">39</span> +</span>
+<span class="code-line" data-line="29"> source/blender/functions/intern/cpp_types.cc       |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="30"> source/blender/functions/intern/field.cc           |  <span class="syntax-number">569</span> +++++++++</span>
+<span class="code-line" data-line="31"> .../functions/intern/multi_function_builder.cc     |   <span class="syntax-number">28</span> +</span>
+<span class="code-line" data-line="32"> .../functions/intern/multi_function_procedure.cc   |  <span class="syntax-number">794</span> +++++++++++++</span>
+<span class="code-line" data-line="33"> .../intern/multi_function_procedure_builder.cc     |  <span class="syntax-number">175</span> +++</span>
+<span class="code-line" data-line="34"> .../intern/multi_function_procedure_executor.cc    | <span class="syntax-number">1212</span> ++++++++++++++++++++</span>
+<span class="code-line" data-line="35"> source/blender/functions/tests/<span class="syntax-type">FN_field_test</span>.cc    |  <span class="syntax-number">278</span> +++++</span>
+<span class="code-line" data-line="36"> .../tests/<span class="syntax-type">FN_multi_function_procedure_test</span>.cc      |  <span class="syntax-number">344</span> ++++++</span>
+<span class="code-line" data-line="37"> source/blender/makesdna/<span class="syntax-type">DNA_customdata_types</span>.h     |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="38"> source/blender/makesdna/<span class="syntax-type">DNA_node_types</span>.h           |    <span class="syntax-number">7</span> +</span>
+<span class="code-line" data-line="39"> source/blender/makesdna/<span class="syntax-type">DNA_userdef_types</span>.h        |    <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="40"> source/blender/makesrna/intern/rna_nodetree.c      |   <span class="syntax-number">20</span> +</span>
+<span class="code-line" data-line="41"> source/blender/makesrna/intern/rna_userdef.c       |    <span class="syntax-number">4</span> +</span>
+<span class="code-line" data-line="42"> source/blender/modifiers/intern/<span class="syntax-type">MOD_nodes</span>.cc       |   <span class="syntax-number">21</span> +-</span>
+<span class="code-line" data-line="43"> .../modifiers/intern/<span class="syntax-type">MOD_nodes_evaluator</span>.cc        |   <span class="syntax-number">63</span> +-</span>
+<span class="code-line" data-line="44"> source/blender/nodes/<span class="syntax-type">CMakeLists</span>.txt                |    <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="45"> source/blender/nodes/<span class="syntax-type">NOD_geometry</span>.h                |    <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="46"> source/blender/nodes/<span class="syntax-type">NOD_geometry_exec</span>.hh          |   <span class="syntax-number">72</span> +-</span>
+<span class="code-line" data-line="47"> source/blender/nodes/<span class="syntax-type">NOD_static_types</span>.h            |    <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="48"> .../blender/nodes/geometry/node_geometry_util.hh   |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="49"> .../geometry/nodes/node_geo_attribute_capture.cc   |  <span class="syntax-number">210</span> ++++</span>
+<span class="code-line" data-line="50"> .../geometry/nodes/node_geo_curve_endpoints.cc     |   <span class="syntax-number">51</span> +-</span>
+<span class="code-line" data-line="51"> .../geometry/nodes/node_geo_curve_resample.cc      |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="52"> .../nodes/geometry/nodes/node_geo_curve_reverse.cc |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="53"> .../geometry/nodes/node_geo_curve_spline_type.cc   |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="54"> .../geometry/nodes/node_geo_curve_subdivide.cc     |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="55"> .../geometry/nodes/node_geo_curve_to_points.cc     |   <span class="syntax-number">82</span> +-</span>
+<span class="code-line" data-line="56"> .../nodes/geometry/nodes/node_geo_curve_trim.cc    |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="57"> .../geometry/nodes/node_geo_delete_geometry.cc     |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="58"> .../nodes/geometry/nodes/node_geo_input_index.cc   |   <span class="syntax-number">60</span> +</span>
+<span class="code-line" data-line="59"> .../nodes/geometry/nodes/node_geo_input_normal.cc  |  <span class="syntax-number">211</span> ++++</span>
+<span class="code-line" data-line="60"> .../geometry/nodes/node_geo_input_position.cc      |   <span class="syntax-number">43</span> +</span>
+<span class="code-line" data-line="61"> .../nodes/geometry/nodes/node_geo_join_geometry.cc |   <span class="syntax-number">90</span> +-</span>
+<span class="code-line" data-line="62"> .../nodes/geometry/nodes/node_geo_mesh_to_curve.cc |   <span class="syntax-number">21</span> +-</span>
+<span class="code-line" data-line="63"> .../geometry/nodes/node_geo_point_distribute.cc    |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="64"> .../geometry/nodes/node_geo_point_separate.cc      |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="65"> .../nodes/geometry/nodes/node_geo_set_position.cc  |   <span class="syntax-number">79</span> ++</span>
+<span class="code-line" data-line="66"> .../nodes/intern/geometry_nodes_eval_log.cc        |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="67"> source/blender/nodes/intern/node_socket.cc         |   <span class="syntax-number">63</span> +-</span>
+<span class="code-line" data-line="68"> <span class="syntax-number">67</span> files changed, <span class="syntax-number">6674</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">468</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat bf47fb40fd6</span>
+<span class="code-line" data-line="2">git show bf47fb40fd6</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show bf47fb40fd6 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/66bee9561ba6b7ce89f0f95f4ed0420360c69924" target="_blank" rel="noopener">66bee9561ba</a> <span>Jacques Lucke · 2026-04-02</span></div><h3>Refactor: Functions: update field storage and API</h3><p>把旧模型接到当前存储，明确常量和常用 Field 的优化目标。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This reimplements the entire field API. Large parts of the API surface is the
+same, but how a field is stored has change significantly.
+
+The main motivating goals for this refactor were:
+* Support storing single value fields without doing an allocation.
+* Support referencing common fields without doing reference counting (e.g. the
+  position field).
+
+On top of these goals, a few other improvements were done:
+* Field types are not nullable anymore. So one needs to use `std::optional` in
+  such cases. This also implies that `GField` can&#x27;t be default-constructed
+  anymore because then it wouldn&#x27;t have a type.
+* Field comparisons are shallow now. Previously one could easily do a deep
+  comparison of nested field inputs.
+* `GField` now stores a `std::variant` to support different internal storage
+  types, making it more easily extensible.
+
+In my test file that is adapted from #156308 I get a speedup from 60ms to 54ms
+of the modifier evaluation time.
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/156723</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenkernel/<span class="syntax-type">BKE_bake_items_socket</span>.hh |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="2"> source/blender/blenkernel/<span class="syntax-type">BKE_geometry_fields</span>.hh   |   <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/<span class="syntax-type">BKE_node_socket_value</span>.hh |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="4"> source/blender/blenkernel/<span class="syntax-type">BKE_type_conversions</span>.hh  |   <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="5"> .../blender/blenkernel/intern/bake_items_socket.cc |   <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/intern/curves.cc         |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="7"> .../blenkernel/intern/geometry_component_curves.cc |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="8"> .../blender/blenkernel/intern/geometry_fields.cc   |   <span class="syntax-number">36</span> +-</span>
+<span class="code-line" data-line="9"> .../blender/blenkernel/intern/node_socket_value.cc |   <span class="syntax-number">21</span> +-</span>
+<span class="code-line" data-line="10"> .../blender/blenkernel/intern/type_conversions.cc  |    <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="11"> source/blender/blenlib/<span class="syntax-type">BLI_implicit_sharing_ptr</span>.hh |   <span class="syntax-number">18</span> +</span>
+<span class="code-line" data-line="12"> source/blender/functions/<span class="syntax-type">CMakeLists</span>.txt            |    <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="13"> source/blender/functions/<span class="syntax-type">FN_field</span>.hh               |  <span class="syntax-number">912</span> +++++++++--------</span>
+<span class="code-line" data-line="14"> source/blender/functions/<span class="syntax-type">FN_field_evaluation</span>.hh    |  <span class="syntax-number">217</span> +++++</span>
+<span class="code-line" data-line="15"> source/blender/functions/intern/field.cc           | <span class="syntax-number">1025</span> ++++++--------------</span>
+<span class="code-line" data-line="16"> .../blender/functions/intern/field_evaluation.cc   |  <span class="syntax-number">631</span> ++++++++++++</span>
+<span class="code-line" data-line="17"> source/blender/functions/tests/<span class="syntax-type">FN_field_test</span>.cc    |   <span class="syntax-number">34</span> +-</span>
+<span class="code-line" data-line="18"> source/blender/geometry/intern/resample_curves.cc  |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="19"> .../geometry/nodes/node_geo_accumulate_field.cc    |   <span class="syntax-number">26</span> +-</span>
+<span class="code-line" data-line="20"> .../blender/nodes/geometry/nodes/node_geo_bake.cc  |   <span class="syntax-number">13</span> +-</span>
+<span class="code-line" data-line="21"> .../geometry/nodes/node_geo_blur_attribute.cc      |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="22"> .../nodes/node_geo_curve_endpoint_selection.cc     |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="23"> .../nodes/node_geo_curve_handle_type_selection.cc  |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="24"> .../nodes/geometry/nodes/node_geo_curve_sample.cc  |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="25"> .../nodes/node_geo_curve_spline_parameter.cc       |   <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="26"> .../geometry/nodes/node_geo_curve_to_points.cc     |   <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="27"> .../node_geo_curve_topology_curve_of_point.cc      |   <span class="syntax-number">17</span> +-</span>
+<span class="code-line" data-line="28"> .../node_geo_curve_topology_points_of_curve.cc     |   <span class="syntax-number">29</span> +-</span>
+<span class="code-line" data-line="29"> .../geometry/nodes/node_geo_duplicate_elements.cc  |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="30"> .../nodes/node_geo_edge_paths_to_selection.cc      |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="31"> .../nodes/node_geo_edges_to_face_groups.cc         |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="32"> .../geometry/nodes/node_geo_evaluate_at_index.cc   |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="33"> .../geometry/nodes/node_geo_evaluate_on_domain.cc  |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="34"> .../nodes/geometry/nodes/node_geo_field_average.cc |   <span class="syntax-number">19</span> +-</span>
+<span class="code-line" data-line="35"> .../geometry/nodes/node_geo_field_min_and_max.cc   |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="36"> .../nodes/geometry/nodes/node_geo_field_to_grid.cc |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="37"> .../nodes/geometry/nodes/node_geo_field_to_list.cc |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="38"> .../geometry/nodes/node_geo_field_variance.cc      |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="39"> .../geometry/nodes/node_geo_index_of_nearest.cc    |   <span class="syntax-number">25</span> +-</span>
+<span class="code-line" data-line="40"> .../geometry/nodes/node_geo_input_curve_handles.cc |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="41"> .../nodes/geometry/nodes/node_geo_input_id.cc      |    <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="42"> .../nodes/geometry/nodes/node_geo_input_index.cc   |    <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="43"> .../nodes/node_geo_input_instance_bounds.cc        |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="44"> .../nodes/node_geo_input_instance_rotation.cc      |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="45"> .../nodes/node_geo_input_instance_scale.cc         |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="46"> .../nodes/node_geo_input_mesh_edge_angle.cc        |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="47"> .../nodes/node_geo_input_mesh_edge_neighbors.cc    |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="48"> .../nodes/node_geo_input_mesh_edge_vertices.cc     |   <span class="syntax-number">19</span> +-</span>
+<span class="code-line" data-line="49"> .../nodes/node_geo_input_mesh_face_area.cc         |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="50"> .../nodes/node_geo_input_mesh_face_is_planar.cc    |    <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="51"> .../nodes/node_geo_input_mesh_face_neighbors.cc    |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="52"> .../geometry/nodes/node_geo_input_mesh_island.cc   |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="53"> .../nodes/node_geo_input_mesh_vertex_neighbors.cc  |   <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="54"> .../nodes/node_geo_input_named_layer_selection.cc  |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="55"> .../nodes/geometry/nodes/node_geo_input_normal.cc  |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="56"> .../geometry/nodes/node_geo_input_position.cc      |    <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="57"> .../nodes/node_geo_input_shortest_edge_paths.cc    |   <span class="syntax-number">27</span> +-</span>
+<span class="code-line" data-line="58"> .../geometry/nodes/node_geo_input_spline_length.cc |    <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="59"> .../nodes/node_geo_input_spline_resolution.cc      |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="60"> .../nodes/geometry/nodes/node_geo_input_tangent.cc |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="61"> .../geometry/nodes/node_geo_input_voxel_index.cc   |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="62"> .../geometry/nodes/node_geo_material_selection.cc  |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="63"> .../nodes/geometry/nodes/node_geo_menu_switch.cc   |   <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="64"> .../nodes/node_geo_mesh_face_group_boundaries.cc   |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="65"> .../geometry/nodes/node_geo_mesh_to_points.cc      |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="66"> .../node_geo_mesh_topology_corners_of_edge.cc      |   <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="67"> .../node_geo_mesh_topology_corners_of_face.cc      |   <span class="syntax-number">25</span> +-</span>
+<span class="code-line" data-line="68"> .../node_geo_mesh_topology_corners_of_vertex.cc    |   <span class="syntax-number">25</span> +-</span>
+<span class="code-line" data-line="69"> .../node_geo_mesh_topology_edges_of_corner.cc      |   <span class="syntax-number">19</span> +-</span>
+<span class="code-line" data-line="70"> .../node_geo_mesh_topology_edges_of_vertex.cc      |   <span class="syntax-number">25</span> +-</span>
+<span class="code-line" data-line="71"> .../nodes/node_geo_mesh_topology_face_of_corner.cc |   <span class="syntax-number">22</span> +-</span>
+<span class="code-line" data-line="72"> ...node_geo_mesh_topology_offset_corner_in_face.cc |   <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="73"> .../node_geo_mesh_topology_vertex_of_corner.cc     |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="74"> .../nodes/node_geo_offset_point_in_curve.cc        |   <span class="syntax-number">20</span> +-</span>
+<span class="code-line" data-line="75"> .../nodes/geometry/nodes/node_geo_points.cc        |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="76"> .../geometry/nodes/node_geo_sample_uv_surface.cc   |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="77"> .../geometry/nodes/node_geo_set_curve_normal.cc    |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="78"> .../nodes/geometry/nodes/node_geo_set_material.cc  |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="79"> .../geometry/nodes/node_geo_set_mesh_normal.cc     |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="80"> .../geometry/nodes/node_geo_set_nurbs_order.cc     |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="81"> .../nodes/geometry/nodes/node_geo_set_position.cc  |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="82"> .../geometry/nodes/node_geo_set_shade_smooth.cc    |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="83"> .../nodes/geometry/nodes/node_geo_simulation.cc    |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="84"> .../nodes/node_geo_store_named_attribute.cc        |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="85"> .../geometry/nodes/node_geo_tool_selection.cc      |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="86"> .../geometry/nodes/node_geo_tool_set_face_set.cc   |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="87"> .../geometry/nodes/node_geo_tool_set_selection.cc  |   <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="88"> .../geometry/nodes/node_geo_uv_pack_islands.cc     |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="89"> .../nodes/geometry/nodes/node_geo_uv_tangent.cc    |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="90"> .../nodes/geometry/nodes/node_geo_uv_unwrap.cc     |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="91"> .../blender/nodes/intern/geometry_nodes_execute.cc |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="92"> ...geometry_nodes_foreach_geometry_element_zone.cc |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="93"> .../nodes/intern/geometry_nodes_lazy_function.cc   |   <span class="syntax-number">41</span> +-</span>
+<span class="code-line" data-line="94"> source/blender/nodes/intern/geometry_nodes_log.cc  |    <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="95"> source/blender/nodes/intern/node_declaration.cc    |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="96"> <span class="syntax-number">95</span> files changed, <span class="syntax-number">2109</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">1687</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 66bee9561ba</span>
+<span class="code-line" data-line="2">git show 66bee9561ba</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 66bee9561ba -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>实现 Constant、Position、Add 和 Mul 四种表达式。</p>
+</li><li><strong>任务 02</strong><p>在两组数据上复用同一个表达式对象，验证结果来自上下文而不是构造时数据。</p>
+</li><li><strong>任务 03</strong><p>画出表达式依赖与内存所有权两张图，标出共享子表达式。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="08-01-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="08-01-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="08-01-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>Field 等同于值数组吗？</summary><p>不等同，Field 表达计算关系，数组是给定上下文与选择上的求值结果表示之一。</p>
+</details><details class="question"><summary>相同表达式为什么可以有不同结果？</summary><p>输入由本次上下文解释，几何数据、域和选择可能不同。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="08-01" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../07-%E6%89%B9%E9%87%8F%E5%87%BD%E6%95%B0%E4%B8%8E%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B/03-Procedure%E4%B8%8E%E4%B8%B4%E6%97%B6%E5%80%BC%E5%AF%BF%E5%91%BD.html">← 上一篇：Procedure：把多个批量函数组成可执行过程</a><a href="../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E4%B8%8A%E4%B8%8B%E6%96%87/02-FieldEvaluator%E4%B8%8E%E5%AE%9E%E9%99%85%E8%8A%82%E7%82%B9.html">下一篇：从 Set Position 追到 FieldEvaluator →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

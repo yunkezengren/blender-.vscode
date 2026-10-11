@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="手工推演一条探测链，理解 Empty、Occupied 与 Removed 的不同含义。">
+<title>Map 的槽位：为什么删除不能简单清空 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="02-02"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">哈希表与性能契约</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>DATA STRUCTURES / CONTRACTS / LESSON 02-02</div><h1>Map 的槽位：为什么删除不能简单清空</h1><p class="lede">手工推演一条探测链，理解 Empty、Occupied 与 Removed 的不同含义。</p><div class="chips"><span class="chip">方向 02 · 哈希表与性能契约</span><span class="chip">专题 2/3</span><span class="chip">正文 2,019 字符</span><span class="chip">建议研读 22 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-%E7%9B%B8%E7%AD%89%E5%85%B3%E7%B3%BB%E4%B8%8E%E5%93%88%E5%B8%8C%E5%A5%91%E7%BA%A6.html">01 哈希的第一条规则：相等必须导向相同哈希</a><a href="02-%E5%BC%80%E6%94%BE%E5%AF%BB%E5%9D%80%E4%B8%8E%E5%88%A0%E9%99%A4%E7%8A%B6%E6%80%81.html">02 Map 的槽位：为什么删除不能简单清空</a><a href="03-%E9%87%8D%E5%BB%BA%E7%AD%96%E7%95%A5%E4%B8%8E%E6%80%A7%E8%83%BD%E5%AE%9E%E9%AA%8C.html">03 一次重建要值得：从操作序列理解均摊成本</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>把键的等价关系、槽位状态与重建策略放在同一个模型里。哈希表的真实难点经常来自删除和插入交替发生时的行为。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>完成容器模块；理解相等比较、模运算和均摊复杂度的基本含义。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>键的等价关系</strong></div><div class="flow-step"><span>02</span><strong>哈希与探测</strong></div><div class="flow-step"><span>03</span><strong>槽位状态</strong></div><div class="flow-step"><span>04</span><strong>删除与重建</strong></div><div class="flow-step"><span>05</span><strong>操作序列测量</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>分别统计成功查找与失败查找的探测次数，观察删除历史的影响。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>查找需要一个可靠的停止条件</h3>
+<p>教学版本采用线性探测：从哈希决定的槽位开始，遇到碰撞就检查后续位置。发现真正的空槽可以停止，因为按插入规则，目标键若存在就不会越过这个从未被占用的停止点。这个结论依赖于插入和查找采用一致的探测规则。Blender 的具体探测策略应从实现中读取，不要把教学线性探测直接当成其当前实现。</p>
+<p>假设 A 与 B 的起始槽相同，A 在槽 2，B 在槽 3。删除 A 后把槽 2 变为普通空槽，查找 B 会提前停止。因此删除需要保留探测链的信息，常见做法是留下 Removed 状态。</p>
+<h3>逻辑大小与探测压力不同</h3>
+<p>size 只统计有效元素。已经移除的槽位虽然没有键值，仍可能延长查找路径。于是相同 size 的两张表可能有不同的查找成本。理解 Map 时应同时关注有效槽数量、已用或移除槽数量、总容量以及触发重建的条件。</p>
+<p>BLI_map_slots.hh 将槽位管理从高层 Map 逻辑中分离。阅读时检查槽位从空到占用、占用到移除的转换，确认键和值在哪一步构造和析构。模板化槽位也可能允许不同存储策略，不应假定所有键类型占用相同元数据。</p>
+<h3>接口帮助调用者表达前提</h3>
+<p>lookup、lookup_ptr、lookup_or_add、add_new 等接口往往有不同前提和失败表达。一个宣称键一定存在的接口，可以省去调用者重复判断，但需要调试断言或清楚约定。选择接口时先判断你的知识：已知存在、可能不存在，还是需要查找并插入。</p>
+<p>返回的值指针也受重建影响。把 Map 中值的地址长期缓存到其他系统里，会把表的内部移动变成上层隐患；如需稳定身份，应明确使用单独所有权或间接句柄。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>复用 Removed 槽位必须同时保证不会漏掉后面的同键元素；插入策略与去重检查必须一起推演。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>普通查找：删除槽为什么不能终止探测</h3><p>这是完整的 const 查找实现。与重建函数对照，关键差别是查询必须继续越过删除槽，直到命中键或遇到真正空槽。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_map.hh · L1324–L1335。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_map.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1324">  <span class="syntax-keyword">const</span> <span class="syntax-type">Slot</span> *<span class="syntax-function">lookup_slot_ptr</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">ForwardKey</span> &amp;key, <span class="syntax-keyword">const</span> uint64_t hash) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="1325">  {</span>
+<span class="code-line" data-line="1326">    <span class="syntax-type">MAP_SLOT_PROBING_BEGIN</span> (hash, slot) {</span>
+<span class="code-line" data-line="1327">      <span class="syntax-keyword">if</span> (slot.<span class="syntax-function">contains</span>(key, is_equal_, hash)) {</span>
+<span class="code-line" data-line="1328">        <span class="syntax-keyword">return</span> &amp;slot;</span>
+<span class="code-line" data-line="1329">      }</span>
+<span class="code-line" data-line="1330">      <span class="syntax-keyword">if</span> (slot.<span class="syntax-function">is_empty</span>()) {</span>
+<span class="code-line" data-line="1331">        <span class="syntax-keyword">return</span> <span class="syntax-keyword">nullptr</span>;</span>
+<span class="code-line" data-line="1332">      }</span>
+<span class="code-line" data-line="1333">    }</span>
+<span class="code-line" data-line="1334">    <span class="syntax-type">MAP_SLOT_PROBING_END</span>();</span>
+<span class="code-line" data-line="1335">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L1324</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">Slot</span> *<span class="syntax-function">lookup_slot_ptr</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">ForwardKey</span> &amp;key, <span class="syntax-keyword">const</span> uint64_t hash) <span class="syntax-keyword">const</span></code><p>以键和已算出的哈希查询槽位。ForwardKey 模板声明在上一行；返回空指针表示缺失。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1325</span><div><code>{</code><p>打开 const Slot *lookup_slot_ptr(const ForwardKey &amp;key, const uint64_t hash) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1326</span><div><code><span class="syntax-type">MAP_SLOT_PROBING_BEGIN</span> (hash, slot) {</code><p>按哈希启动当前表的探测序列，宏提供候选 slot。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1327</span><div><code><span class="syntax-keyword">if</span> (slot.<span class="syntax-function">contains</span>(key, is_equal_, hash)) {</code><p>槽位 contains 同时使用键、相等比较器与哈希，不能仅凭哈希相同判断命中。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1328</span><div><code><span class="syntax-keyword">return</span> &amp;slot;</code><p>命中则返回槽位地址；后续 value 访问以它是占用槽为前提。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1329</span><div><code>}</code><p>结束 if (slot.contains(key, is_equal_, hash)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1330</span><div><code><span class="syntax-keyword">if</span> (slot.<span class="syntax-function">is_empty</span>()) {</code><p>只有真正 empty 才证明探测链没有这个键。removed 状态不会满足这里的终止条件。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1331</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">nullptr</span>;</code><p>遇到空槽返回缺失。若把删除槽也当 empty，后面的碰撞键会被错误判为不存在。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1332</span><div><code>}</code><p>结束 if (slot.is_empty()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1333</span><div><code>}</code><p>结束 MAP_SLOT_PROBING_BEGIN (hash, slot) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1334</span><div><code><span class="syntax-type">MAP_SLOT_PROBING_END</span>();</code><p>结束探测宏。终止性还依赖表的负载策略保证探测序列能遇到空槽。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1335</span><div><code>}</code><p>结束 const Slot *lookup_slot_ptr(const ForwardKey &amp;key, const uint64_t hash) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>A、B 有同样的初始桶，A 占槽 3，B 因碰撞占槽 4。删除 A 后槽 3 变 removed；查 B 时在槽 3 不命中也不终止，继续到槽 4。若删除直接设 empty，查询会在槽 3 返回 nullptr。</p>
+<h4>调用关系与设计判断</h4><p>这个反例应成为删除测试。再测试缺失键与一长串墓碑，记录探测次数，并对照 ensure_can_add 的重建条件。正确性由状态机保证，性能由墓碑清理与负载策略共同保证。</p>
+</article><article class="deep-reading"><h3>重建槽位：新表为什么必须重新探测</h3><p>完整辅助函数展示占用槽怎样进入新表。它不是把旧槽数组按原下标复制过去：掩码变化后，初始桶和碰撞路径都会变化。此处处理的是重建阶段，删除标记如何影响普通查找还要与槽位状态接口一起阅读。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_map.hh · L1151–L1162。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_map.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1151">  <span class="syntax-keyword">void</span> <span class="syntax-function">add_after_grow</span>(<span class="syntax-type">Slot</span> &amp;old_slot, <span class="syntax-type">SlotArray</span> &amp;new_slots, uint64_t new_slot_mask)</span>
+<span class="code-line" data-line="1152">  {</span>
+<span class="code-line" data-line="1153">    uint64_t hash = old_slot.<span class="syntax-function">get_hash</span>(<span class="syntax-type">Hash</span>());</span>
+<span class="code-line" data-line="1154">    <span class="syntax-type">SLOT_PROBING_BEGIN</span> (<span class="syntax-type">ProbingStrategy</span>, hash, new_slot_mask, slot_index) {</span>
+<span class="code-line" data-line="1155">      <span class="syntax-type">Slot</span> &amp;slot = new_slots[slot_index];</span>
+<span class="code-line" data-line="1156">      <span class="syntax-keyword">if</span> (slot.<span class="syntax-function">is_empty</span>()) {</span>
+<span class="code-line" data-line="1157">        slot.<span class="syntax-function">occupy</span>(std::<span class="syntax-function">move</span>(*old_slot.<span class="syntax-function">key</span>()), hash, std::<span class="syntax-function">move</span>(*old_slot.<span class="syntax-function">value</span>()));</span>
+<span class="code-line" data-line="1158">        <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="1159">      }</span>
+<span class="code-line" data-line="1160">    }</span>
+<span class="code-line" data-line="1161">    <span class="syntax-type">SLOT_PROBING_END</span>();</span>
+<span class="code-line" data-line="1162">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L1151</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">add_after_grow</span>(<span class="syntax-type">Slot</span> &amp;old_slot, <span class="syntax-type">SlotArray</span> &amp;new_slots, uint64_t new_slot_mask)</code><p>接收旧占用槽、新槽数组和新掩码；调用者必须保证 old_slot 真正拥有有效键值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1152</span><div><code>{</code><p>打开 void add_after_grow(Slot &amp;old_slot, SlotArray &amp;new_slots, uint64_t new_slot_mask) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1153</span><div><code>uint64_t hash = old_slot.<span class="syntax-function">get_hash</span>(<span class="syntax-type">Hash</span>());</code><p>取得旧键哈希。槽位策略可能保存哈希，也可能需要借助 Hash() 重算；此接口隔离这一差异。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1154</span><div><code><span class="syntax-type">SLOT_PROBING_BEGIN</span> (<span class="syntax-type">ProbingStrategy</span>, hash, new_slot_mask, slot_index) {</code><p>按新掩码启动探测。宏隐藏循环细节，必须继续打开 SLOT_PROBING_BEGIN 理解探测顺序和结束条件。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1155</span><div><code><span class="syntax-type">Slot</span> &amp;slot = new_slots[slot_index];</code><p>取得本次候选槽的引用。它属于 new_slots，不能误认为还是旧表。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1156</span><div><code><span class="syntax-keyword">if</span> (slot.<span class="syntax-function">is_empty</span>()) {</code><p>只在真正空槽上放入键值。重建的新表没有必要保留旧表删除留下的墓碑状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1157</span><div><code>slot.<span class="syntax-function">occupy</span>(std::<span class="syntax-function">move</span>(*old_slot.<span class="syntax-function">key</span>()), hash, std::<span class="syntax-function">move</span>(*old_slot.<span class="syntax-function">value</span>()));</code><p>移动旧键和旧值并标记新槽占用。具体构造、哈希保存和槽状态更新封装在 occupy 中；元素类型决定移动是否可能抛出。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1158</span><div><code><span class="syntax-keyword">return</span>;</code><p>成功插入就退出本函数，保证一个旧占用槽只产生一个新占用槽。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1159</span><div><code>}</code><p>结束 if (slot.is_empty()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1160</span><div><code>}</code><p>结束 SLOT_PROBING_BEGIN (ProbingStrategy, hash, new_slot_mask, slot_index) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1161</span><div><code><span class="syntax-type">SLOT_PROBING_END</span>();</code><p>关闭探测宏的结构。不要把宏当作普通无副作用函数；它参与生成探测循环。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1162</span><div><code>}</code><p>结束 void add_after_grow(Slot &amp;old_slot, SlotArray &amp;new_slots, uint64_t new_slot_mask) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>假设旧表有 8 个槽，新表有 16 个槽。同一哈希与掩码相与后的初始位置可能改变。旧表某槽之前有墓碑，新表只重插有效项，因此墓碑不会随键一起继承。使用多个初始桶相同的键可以验证碰撞处理。</p>
+<h4>调用关系与设计判断</h4><p>把普通查找的“空槽终止、删除槽继续”与重建的“寻找新空槽”分开。只理解重建不能证明删除正确；需要构造 A、B 碰撞，删除 A 后仍能找到 B 的例子，沿 lookup_slot__impl 逐个检查状态。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_map_slots.hh">BLI_map_slots.hh</a></div><p>追踪槽位的占用、移除和析构语义。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 48 行 · SHA-256 81247eedacf2</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_map_slots.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_map_slots.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">45</span>,<span class="syntax-number">76</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_map_slots.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_map.hh">BLI_map.hh</a></div><p>区分可能缺失的查询与具有前提的查询。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 508 行 · SHA-256 236ceadf1c36</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_map.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_map.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">505</span>,<span class="syntax-number">536</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_map.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/b242c618450e3c0011914112c3ffe31ae2e96028" target="_blank" rel="noopener">b242c618450</a> <span>Jacques Lucke · 2025-12-12</span></div><h3>Fix: BLI: bad performance edge case in hash table implementations</h3><p>先理解删除留下的历史信息，再进入重建策略的性能修复。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>The issue happened when the hash table (e.g. Map) has close to a power of two
+number of elements and repeatedly deletes and adds values. In this case the map
+is rebuild more often than is necessary, and in the worst case a rebuild happens
+each time something is removed and added again.
+
+The fix here is to make sure that each call to `realloc_and_reinsert` is
+actually worth it by making it grow the map in some cases where it previously
+wouldn&#x27;t. A similar optimization already exists in
+`Vector::realloc_to_at_least`.
+
+An alternative would be to support overriding removed-slots in `Map::add`, but
+that has negative performance implications for the most common case when no
+elements are ever removed.
+
+This brings back performance to the same level before #150009:
+`60k_cubes_same_mesh.blend: old: 11.3s, main: 70s, this patch: 11.3s`
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/151502</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenlib/<span class="syntax-type">BLI_map</span>.hh        | <span class="syntax-number">8</span> ++++++++</span>
+<span class="code-line" data-line="2"> source/blender/blenlib/<span class="syntax-type">BLI_set</span>.hh        | <span class="syntax-number">6</span> +++++-</span>
+<span class="code-line" data-line="3"> source/blender/blenlib/<span class="syntax-type">BLI_vector_set</span>.hh | <span class="syntax-number">6</span> +++++-</span>
+<span class="code-line" data-line="4"> <span class="syntax-number">3</span> files changed, <span class="syntax-number">18</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">2</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat b242c618450</span>
+<span class="code-line" data-line="2">git show b242c618450</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show b242c618450 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>用固定哈希函数制造碰撞，手绘插入 A、B、C，删除 B，再查找 C 的路径。</p>
+</li><li><strong>任务 02</strong><p>实现含三种状态的小表，为删除后的查找、重复插入和全部删除编写测试。</p>
+</li><li><strong>任务 03</strong><p>分别统计成功查找与失败查找的探测次数，观察删除历史的影响。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="02-02-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="02-02-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="02-02-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>Removed 与 Empty 都没有值，为什么不同？</summary><p>Removed 保留了探测链不能中断的信息，Empty 可以作为查找停止点。</p>
+</details><details class="question"><summary>size 相同，性能就接近吗？</summary><p>不一定，删除历史、负载、碰撞分布和探测长度都影响实际成本。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="02-02" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E6%80%A7%E8%83%BD%E5%A5%91%E7%BA%A6/01-%E7%9B%B8%E7%AD%89%E5%85%B3%E7%B3%BB%E4%B8%8E%E5%93%88%E5%B8%8C%E5%A5%91%E7%BA%A6.html">← 上一篇：哈希的第一条规则：相等必须导向相同哈希</a><a href="../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E6%80%A7%E8%83%BD%E5%A5%91%E7%BA%A6/03-%E9%87%8D%E5%BB%BA%E7%AD%96%E7%95%A5%E4%B8%8E%E6%80%A7%E8%83%BD%E5%AE%9E%E9%AA%8C.html">下一篇：一次重建要值得：从操作序列理解均摊成本 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

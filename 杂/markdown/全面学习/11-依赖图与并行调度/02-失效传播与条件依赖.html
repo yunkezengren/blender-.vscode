@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="借禁用修改器的优化，理解动态条件如何影响依赖图。">
+<title>需要更新、可以执行、实际执行：三个不同状态 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="11-02"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">依赖图与并行调度</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>DEPENDENCIES / SCHEDULING / LESSON 11-02</div><h1>需要更新、可以执行、实际执行：三个不同状态</h1><p class="lede">借禁用修改器的优化，理解动态条件如何影响依赖图。</p><div class="chips"><span class="chip">方向 11 · 依赖图与并行调度</span><span class="chip">专题 2/3</span><span class="chip">正文 1,818 字符</span><span class="chip">建议研读 20 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-Depsgraph%E7%9A%84%E5%88%86%E5%B1%82%E6%A8%A1%E5%9E%8B.html">01 Depsgraph：数据块、组件、操作与关系</a><a href="02-%E5%A4%B1%E6%95%88%E4%BC%A0%E6%92%AD%E4%B8%8E%E6%9D%A1%E4%BB%B6%E4%BE%9D%E8%B5%96.html">02 需要更新、可以执行、实际执行：三个不同状态</a><a href="03-%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E4%B8%8E%E5%B5%8C%E5%A5%97%E6%AD%BB%E9%94%81.html">03 并行系统：工作窃取、任务粒度与锁边界</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>场景 Depsgraph 负责更新关系与调度。把构图、脏标记传播、就绪判断和线程执行分开，并通过 Sergey 与 Brecht 的提交理解真实系统中的条件依赖和死锁。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>图遍历、拓扑排序、状态机、基本锁与原子知识。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>场景数据变化</strong></div><div class="flow-step"><span>02</span><strong>标记与传播</strong></div><div class="flow-step"><span>03</span><strong>可见性和条件</strong></div><div class="flow-step"><span>04</span><strong>依赖满足</strong></div><div class="flow-step"><span>05</span><strong>任务执行</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>添加两个消费者共享生产者，一个禁用一个启用，确认生产者仍执行一次。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>脏状态与就绪状态分开</h3>
+<p>源数据变化后，依赖它的结果可能失效。传播阶段决定哪些操作需要更新；调度阶段判断这些操作的前置依赖是否完成。一个操作可能已脏但暂时不就绪，也可能依赖已满足但本次不需要执行。把二者混成一个布尔量会让逻辑难以维护。</p>
+<p>从 deg_eval_flush.cc 追踪更新传播，再到 deg_eval.cc 看执行。教学版本可以用 dirty 与 remaining_dependencies 两个状态表达，真实实现还有更多细节，应保持层次对应而不宣称结构完全相同。</p>
+<h3>条件本身也可能需要求值</h3>
+<p>禁用修改器时不必执行其昂贵依赖，看起来简单。但如果启用状态受驱动或动画控制，为了知道它是否禁用，仍需更新决定该状态的数据。条件依赖与被条件控制的值依赖必须区别对待。</p>
+<p>f12f7800c29 优化禁用修改器的依赖求值，并包含手动可见性和驱动可见性场景。它适合与你学过的 Switch 对照：二者都涉及条件需求，但分别位于场景图与节点执行图。</p>
+<h3>验证应观测执行集合</h3>
+<p>最终画面相同不说明跳过计算正确。记录哪些操作被执行，确认禁用时昂贵工作被跳过，而改变条件时能够恢复执行。再测试条件的动画变化和共享依赖，避免让一个禁用消费者误伤另一个仍需结果的消费者。</p>
+<p>递增更新还要处理拓扑关系变化：新增依赖边与源值变化不是同一件事。教学阶段可以在图结构变化时全量重建，先把值变化下的更新协议做对。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要把图结构更新和数据值更新当成同一条缓存失效路径；两者可能需要不同重建范围。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>失效传播入口：队列中的 scheduled 不是实际求值完成</h3><p>这个完整函数属于 flush 阶段。它把入口标签放进传播队列，不能把这里的 scheduled=true 解读成工作线程已经执行了节点。</p>
+<p>完整源码单元 · source/blender/depsgraph/intern/eval/deg_eval_flush.cc · L98–L108。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/depsgraph/intern/eval/deg_eval_flush.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="98"><span class="syntax-keyword">inline</span> <span class="syntax-keyword">void</span> <span class="syntax-function">flush_schedule_entrypoints</span>(<span class="syntax-type">Depsgraph</span> *graph, <span class="syntax-type">FlushQueue</span> *queue)</span>
+<span class="code-line" data-line="99">{</span>
+<span class="code-line" data-line="100">  <span class="syntax-keyword">for</span> (<span class="syntax-type">OperationNode</span> *op_node : graph-&gt;entry_tags) {</span>
+<span class="code-line" data-line="101">    queue-&gt;<span class="syntax-function">push_back</span>(op_node);</span>
+<span class="code-line" data-line="102">    op_node-&gt;scheduled = <span class="syntax-keyword">true</span>;</span>
+<span class="code-line" data-line="103">    <span class="syntax-type">DEG_DEBUG_PRINTF</span>((::blender::<span class="syntax-type">Depsgraph</span> *)graph,</span>
+<span class="code-line" data-line="104">                     <span class="syntax-type">EVAL</span>,</span>
+<span class="code-line" data-line="105">                     <span class="syntax-string">&quot;Operation is entry point for update: %s\n&quot;</span>,</span>
+<span class="code-line" data-line="106">                     op_node-&gt;<span class="syntax-function">identifier</span>().<span class="syntax-function">c_str</span>());</span>
+<span class="code-line" data-line="107">  }</span>
+<span class="code-line" data-line="108">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L98</span><div><code><span class="syntax-keyword">inline</span> <span class="syntax-keyword">void</span> <span class="syntax-function">flush_schedule_entrypoints</span>(<span class="syntax-type">Depsgraph</span> *graph, <span class="syntax-type">FlushQueue</span> *queue)</code><p>接受依赖图与失效传播队列，工作在标签扩散阶段。</p>
+</div></div><div class="line-explanation"><span class="line-number">L99</span><div><code>{</code><p>打开 inline void flush_schedule_entrypoints(Depsgraph *graph, FlushQueue *queue) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L100</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-type">OperationNode</span> *op_node : graph-&gt;entry_tags) {</code><p>遍历被明确标记的更新入口。它们是传播起点，不一定包含所有后续受影响节点。</p>
+</div></div><div class="line-explanation"><span class="line-number">L101</span><div><code>queue-&gt;<span class="syntax-function">push_back</span>(op_node);</code><p>将入口放入队列，等待 flush 遍历它的后继关系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L102</span><div><code>op_node-&gt;scheduled = <span class="syntax-keyword">true</span>;</code><p>标记已经加入传播流程，以防同一阶段重复排队。这个字段在不同阶段的初始化和用途必须结合完整流程阅读。</p>
+</div></div><div class="line-explanation"><span class="line-number">L103</span><div><code><span class="syntax-type">DEG_DEBUG_PRINTF</span>((::blender::<span class="syntax-type">Depsgraph</span> *)graph,</code><p>调用调试输出宏，参数跨多行；它不改变依赖关系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L104</span><div><code><span class="syntax-type">EVAL</span>,</code><p>选择 EVAL 调试类别。</p>
+</div></div><div class="line-explanation"><span class="line-number">L105</span><div><code><span class="syntax-string">&quot;Operation is entry point for update: %s\n&quot;</span>,</code><p>格式串打印操作入口标识，换行属于日志格式。</p>
+</div></div><div class="line-explanation"><span class="line-number">L106</span><div><code>op_node-&gt;<span class="syntax-function">identifier</span>().<span class="syntax-function">c_str</span>());</code><p>取节点可读标识符的 C 字符串供本次日志调用使用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L107</span><div><code>}</code><p>结束 for (OperationNode *op_node : graph-&gt;entry_tags) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L108</span><div><code>}</code><p>结束 inline void flush_schedule_entrypoints(Depsgraph *graph, FlushQueue *queue) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>A 是修改入口，A→B→C。此函数最初只把 A 入队；后续 flush 扩散才标记 B、C 需要更新。真正执行阶段还要检查可见性、当前阶段和未完成父关系数。</p>
+<h4>调用关系与设计判断</h4><p>分别画三张状态表：needs_update 说明结果过期，pending parents 说明前置关系是否完成，scheduled 说明当前阶段是否已经安排。重置这些字段的时机与读取时机同样重要，不能只背一个字段名。</p>
+</article><article class="deep-reading"><h3>等待计数初始化：只等待本轮真正需要的父操作</h3><p>完整函数说明 num_links_pending 不是静态入度。它只统计当前可见且需要更新的非环操作父关系；已是最新的父节点不应阻塞本轮执行。</p>
+<p>完整源码单元 · source/blender/depsgraph/intern/eval/deg_eval.cc · L144–L174。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/depsgraph/intern/eval/deg_eval.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="144"><span class="syntax-keyword">void</span> <span class="syntax-function">calculate_pending_parents_for_node</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">DepsgraphEvalState</span> *state, <span class="syntax-type">OperationNode</span> *node)</span>
+<span class="code-line" data-line="145">{</span>
+<span class="code-line" data-line="146">  <span class="syntax-comment">/* Update counters, applies for both visible and invisible IDs. */</span></span>
+<span class="code-line" data-line="147">  node-&gt;num_links_pending = <span class="syntax-number">0</span>;</span>
+<span class="code-line" data-line="148">  node-&gt;scheduled = <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="149">  <span class="syntax-comment">/* Invisible IDs requires no pending operations. */</span></span>
+<span class="code-line" data-line="150">  <span class="syntax-keyword">if</span> (!<span class="syntax-function">check_operation_node_visible</span>(state, node)) {</span>
+<span class="code-line" data-line="151">    <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="152">  }</span>
+<span class="code-line" data-line="153">  <span class="syntax-comment">/* No need to bother with anything if node is not tagged for update. */</span></span>
+<span class="code-line" data-line="154">  <span class="syntax-keyword">if</span> ((node-&gt;flag &amp; <span class="syntax-type">DEPSOP_FLAG_NEEDS_UPDATE</span>) == <span class="syntax-number">0</span>) {</span>
+<span class="code-line" data-line="155">    <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="156">  }</span>
+<span class="code-line" data-line="157">  <span class="syntax-keyword">for</span> (<span class="syntax-type">Relation</span> *rel : node-&gt;inlinks) {</span>
+<span class="code-line" data-line="158">    <span class="syntax-keyword">if</span> (rel-&gt;from-&gt;type == <span class="syntax-type">NodeType</span>::<span class="syntax-type">OPERATION</span> &amp;&amp; (rel-&gt;flag &amp; <span class="syntax-type">RELATION_FLAG_CYCLIC</span>) == <span class="syntax-number">0</span>) {</span>
+<span class="code-line" data-line="159">      <span class="syntax-type">OperationNode</span> *from = <span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-type">OperationNode</span> *&gt;(rel-&gt;from);</span>
+<span class="code-line" data-line="160">      <span class="syntax-comment">/* TODO(sergey): This is how old layer system was checking for the</span></span>
+<span class="code-line" data-line="161"><span class="syntax-comment">       * calculation, but how is it possible that visible object depends</span></span>
+<span class="code-line" data-line="162"><span class="syntax-comment">       * on an invisible? This is something what is prohibited after</span></span>
+<span class="code-line" data-line="163"><span class="syntax-comment">       * deg_graph_build_flush_layers(). */</span></span>
+<span class="code-line" data-line="164">      <span class="syntax-keyword">if</span> (!<span class="syntax-function">check_operation_node_visible</span>(state, from)) {</span>
+<span class="code-line" data-line="165">        <span class="syntax-keyword">continue</span>;</span>
+<span class="code-line" data-line="166">      }</span>
+<span class="code-line" data-line="167">      <span class="syntax-comment">/* No need to wait for operation which is up to date. */</span></span>
+<span class="code-line" data-line="168">      <span class="syntax-keyword">if</span> ((from-&gt;flag &amp; <span class="syntax-type">DEPSOP_FLAG_NEEDS_UPDATE</span>) == <span class="syntax-number">0</span>) {</span>
+<span class="code-line" data-line="169">        <span class="syntax-keyword">continue</span>;</span>
+<span class="code-line" data-line="170">      }</span>
+<span class="code-line" data-line="171">      ++node-&gt;num_links_pending;</span>
+<span class="code-line" data-line="172">    }</span>
+<span class="code-line" data-line="173">  }</span>
+<span class="code-line" data-line="174">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L144</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">calculate_pending_parents_for_node</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">DepsgraphEvalState</span> *state, <span class="syntax-type">OperationNode</span> *node)</code><p>为一个操作节点计算本轮等待计数。</p>
+</div></div><div class="line-explanation"><span class="line-number">L145</span><div><code>{</code><p>打开 void calculate_pending_parents_for_node(const DepsgraphEvalState *state, OperationNode *node) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L146</span><div><code><span class="syntax-comment">/* Update counters, applies for both visible and invisible IDs. */</span></code><p>无论对象是否可见，先重置本轮计数与调度状态，避免沿用上轮数据。</p>
+</div></div><div class="line-explanation"><span class="line-number">L147</span><div><code>node-&gt;num_links_pending = <span class="syntax-number">0</span>;</code><p>先清零，不能沿用上次求值剩余计数。</p>
+</div></div><div class="line-explanation"><span class="line-number">L148</span><div><code>node-&gt;scheduled = <span class="syntax-keyword">false</span>;</code><p>重置已调度状态，开始新一轮协议。</p>
+</div></div><div class="line-explanation"><span class="line-number">L149</span><div><code><span class="syntax-comment">/* Invisible IDs requires no pending operations. */</span></code><p>不可见节点在此路径中不需要建立等待计数；可见性规则必须与后续调度过滤一致。</p>
+</div></div><div class="line-explanation"><span class="line-number">L150</span><div><code><span class="syntax-keyword">if</span> (!<span class="syntax-function">check_operation_node_visible</span>(state, node)) {</code><p>当前节点不可见时无需进入运行期等待计算。</p>
+</div></div><div class="line-explanation"><span class="line-number">L151</span><div><code><span class="syntax-keyword">return</span>;</code><p>不可见路径直接返回，计数保持零。</p>
+</div></div><div class="line-explanation"><span class="line-number">L152</span><div><code>}</code><p>结束 if (!check_operation_node_visible(state, node)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L153</span><div><code><span class="syntax-comment">/* No need to bother with anything if node is not tagged for update. */</span></code><p>当前操作未标记为过期时，不需要准备本轮执行等待。</p>
+</div></div><div class="line-explanation"><span class="line-number">L154</span><div><code><span class="syntax-keyword">if</span> ((node-&gt;flag &amp; <span class="syntax-type">DEPSOP_FLAG_NEEDS_UPDATE</span>) == <span class="syntax-number">0</span>) {</code><p>当前节点未过期时无需执行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L155</span><div><code><span class="syntax-keyword">return</span>;</code><p>未标记更新则返回。</p>
+</div></div><div class="line-explanation"><span class="line-number">L156</span><div><code>}</code><p>结束 if ((node-&gt;flag &amp; DEPSOP_FLAG_NEEDS_UPDATE) == 0) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L157</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-type">Relation</span> *rel : node-&gt;inlinks) {</code><p>遍历输入关系，注意不是简单取 inlinks.size()。</p>
+</div></div><div class="line-explanation"><span class="line-number">L158</span><div><code><span class="syntax-keyword">if</span> (rel-&gt;from-&gt;type == <span class="syntax-type">NodeType</span>::<span class="syntax-type">OPERATION</span> &amp;&amp; (rel-&gt;flag &amp; <span class="syntax-type">RELATION_FLAG_CYCLIC</span>) == <span class="syntax-number">0</span>) {</code><p>只统计来自操作节点且未标为循环关系的边。环处理策略在构图与标记阶段决定。</p>
+</div></div><div class="line-explanation"><span class="line-number">L159</span><div><code><span class="syntax-type">OperationNode</span> *from = <span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-type">OperationNode</span> *&gt;(rel-&gt;from);</code><p>将已确认类型的来源转成 OperationNode。</p>
+</div></div><div class="line-explanation"><span class="line-number">L160</span><div><code>/* <span class="syntax-type">TODO</span>(sergey): <span class="syntax-type">This</span> is how old layer system was checking <span class="syntax-keyword">for</span> the</code><p>源码保留关于可见对象依赖不可见对象的历史层系统疑问。它是尚需结合构图可见性传播理解的 TODO，不能当作已证明的无条件性质。</p>
+</div></div><div class="line-explanation"><span class="line-number">L161</span><div><code>* calculation, but how is it possible that visible object depends</code><p>续接 L160 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L162</span><div><code>* on an invisible? <span class="syntax-type">This</span> is something what is prohibited after</code><p>续接 L160 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L163</span><div><code>* <span class="syntax-function">deg_graph_build_flush_layers</span>(). */</code><p>续接 L160 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L164</span><div><code><span class="syntax-keyword">if</span> (!<span class="syntax-function">check_operation_node_visible</span>(state, from)) {</code><p>父节点不可见时不参与等待。</p>
+</div></div><div class="line-explanation"><span class="line-number">L165</span><div><code><span class="syntax-keyword">continue</span>;</code><p>跳过该父关系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L166</span><div><code>}</code><p>结束 if (!check_operation_node_visible(state, from)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L167</span><div><code><span class="syntax-comment">/* No need to wait for operation which is up to date. */</span></code><p>父操作结果已经最新时不应再等待它执行，否则可能等待一个本轮根本不会提交的任务。</p>
+</div></div><div class="line-explanation"><span class="line-number">L168</span><div><code><span class="syntax-keyword">if</span> ((from-&gt;flag &amp; <span class="syntax-type">DEPSOP_FLAG_NEEDS_UPDATE</span>) == <span class="syntax-number">0</span>) {</code><p>父操作不需要本轮更新时，它的结果被视为已经可用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L169</span><div><code><span class="syntax-keyword">continue</span>;</code><p>跳过已最新父节点。</p>
+</div></div><div class="line-explanation"><span class="line-number">L170</span><div><code>}</code><p>结束 if ((from-&gt;flag &amp; DEPSOP_FLAG_NEEDS_UPDATE) == 0) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L171</span><div><code>++node-&gt;num_links_pending;</code><p>剩余关系才增加等待计数。这是关系计数，多个边如何去重需要结合构图规则检查。</p>
+</div></div><div class="line-explanation"><span class="line-number">L172</span><div><code>}</code><p>结束 if (rel-&gt;from-&gt;type == NodeType::OPERATION &amp;&amp; (rel-&gt;flag &amp; RELATION_FLAG_CYCLIC) == 0) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L173</span><div><code>}</code><p>结束 for (Relation *rel : node-&gt;inlinks) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L174</span><div><code>}</code><p>结束 void calculate_pending_parents_for_node(const DepsgraphEvalState *state, OperationNode *node) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>节点 D 有父 B、C、E，B/C 需要本轮更新，E 已最新，则 pending=2。B 完成后减到 1，C 完成后减到 0，D 才可提交。把静态入度 3 当 pending 会一直等一个不会再执行的 E。</p>
+<h4>调用关系与设计判断</h4><p>与 flush 阶段对照：needs_update 决定谁过期，pending 决定过期节点何时可执行。条件依赖和可见性变化必须在初始化前被正确反映，否则即使原子递减完全正确，仍会在错误的初始计数上运行。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/depsgraph/intern/eval/deg_eval_flush.cc">deg_eval_flush.cc</a></div><p>识别失效传播阶段及其维护的信息。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 54 行 · SHA-256 b5ba44207884</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/depsgraph/intern/eval/deg_eval_flush.cc</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/depsgraph/intern/eval/deg_eval_flush.cc&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">51</span>,<span class="syntax-number">82</span> -- <span class="syntax-string">&quot;source/blender/depsgraph/intern/eval/deg_eval_flush.cc&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/depsgraph/intern/eval/deg_eval.cc">deg_eval.cc</a></div><p>接着查看调度阶段如何消费这些状态。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 48 行 · SHA-256 af73ab6297c0</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/depsgraph/intern/eval/deg_eval.cc</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/depsgraph/intern/eval/deg_eval.cc&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">45</span>,<span class="syntax-number">76</span> -- <span class="syntax-string">&quot;source/blender/depsgraph/intern/eval/deg_eval.cc&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/f12f7800c2965c721a4eb4baeb6b1ab129bfa375" target="_blank" rel="noopener">f12f7800c29</a> <span>Sergey Sharybin · 2022-08-04</span></div><h3>Depsgraph: Optimize evaluation of dependencies of disabled modifiers</h3><p>对照两类可见性测试：固定状态与由动画或驱动决定的状态。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Solves long-standing issue when dependencies of disabled modifiers are
+evaluated.
+
+Simple test case: no drivers or animation. Manually enabling modifier
+is expected to bring FPS up, enabling modifier will bring FPS (sine
+evaluation can not be avoided)
+
+F13336690
+
+More complex test case: modifier visibility is driven by an animated
+property. In am ideal world FPS during property being zero is fast
+and when property is 1 the FPS is low.
+
+F13336691.
+
+Differential Revision: https://developer.blender.org/D15625</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">.../depsgraph/intern/builder/deg_builder.cc        | <span class="syntax-number">19</span> ++++++++</span>
+<span class="code-line" data-line="2"> .../blender/depsgraph/intern/builder/deg_builder.h |  <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="3"> .../depsgraph/intern/builder/deg_builder_nodes.cc  | <span class="syntax-number">24</span> ++++++++-</span>
+<span class="code-line" data-line="4"> .../intern/builder/deg_builder_relations.cc        | <span class="syntax-number">10</span> ++++</span>
+<span class="code-line" data-line="5"> .../depsgraph/intern/builder/deg_builder_rna.cc    | <span class="syntax-number">12</span> ++++-</span>
+<span class="code-line" data-line="6"> .../blender/depsgraph/intern/depsgraph_relation.h  |  <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="7"> source/blender/depsgraph/intern/eval/deg_eval.cc   |  <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="8"> .../depsgraph/intern/eval/deg_eval_visibility.cc   | <span class="syntax-number">57</span> +++++++++++++++++++++-</span>
+<span class="code-line" data-line="9"> .../depsgraph/intern/eval/deg_eval_visibility.h    |  <span class="syntax-number">3</span> ++</span>
+<span class="code-line" data-line="10"> .../depsgraph/intern/node/deg_node_operation.cc    | <span class="syntax-number">10</span> ++++</span>
+<span class="code-line" data-line="11"> .../depsgraph/intern/node/deg_node_operation.h     |  <span class="syntax-number">3</span> ++</span>
+<span class="code-line" data-line="12"> <span class="syntax-number">11</span> files changed, <span class="syntax-number">139</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">5</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat f12f7800c29</span>
+<span class="code-line" data-line="2">git show f12f7800c29</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show f12f7800c29 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>实现 dirty 传播与 ready 判定，日志中分别记录两个阶段。</p>
+</li><li><strong>任务 02</strong><p>加入禁用操作与动态条件，验证条件变化能重新激活所需依赖。</p>
+</li><li><strong>任务 03</strong><p>添加两个消费者共享生产者，一个禁用一个启用，确认生产者仍执行一次。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="11-02-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="11-02-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="11-02-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>依赖都完成就一定需要执行吗？</summary><p>不一定，可能本次没有失效或没有有效需求。</p>
+</details><details class="question"><summary>禁用操作的所有上游都能跳过吗？</summary><p>不能，确定其禁用状态所需的条件，以及其他消费者的需求仍可能要求上游工作。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="11-02" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../11-%E4%BE%9D%E8%B5%96%E5%9B%BE%E4%B8%8E%E5%B9%B6%E8%A1%8C%E8%B0%83%E5%BA%A6/01-Depsgraph%E7%9A%84%E5%88%86%E5%B1%82%E6%A8%A1%E5%9E%8B.html">← 上一篇：Depsgraph：数据块、组件、操作与关系</a><a href="../11-%E4%BE%9D%E8%B5%96%E5%9B%BE%E4%B8%8E%E5%B9%B6%E8%A1%8C%E8%B0%83%E5%BA%A6/03-%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E4%B8%8E%E5%B5%8C%E5%A5%97%E6%AD%BB%E9%94%81.html">下一篇：并行系统：工作窃取、任务粒度与锁边界 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

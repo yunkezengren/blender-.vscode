@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="从函数参数和捕获变量的区别开始，理解 Bundle 与 Closure 带来的架构需求。">
+<title>Closure：函数作为值时，环境由谁保管 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="10-02"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">引用分析与闭包生命周期</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>REFERENCES / CLOSURES / LESSON 10-02</div><h1>Closure：函数作为值时，环境由谁保管</h1><p class="lede">从函数参数和捕获变量的区别开始，理解 Bundle 与 Closure 带来的架构需求。</p><div class="chips"><span class="chip">方向 10 · 引用分析与闭包生命周期</span><span class="chip">专题 2/3</span><span class="chip">正文 1,930 字符</span><span class="chip">建议研读 21 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-%E5%BC%95%E7%94%A8%E9%9B%86%E5%90%88%E4%B8%8E%E5%8C%BF%E5%90%8D%E5%B1%9E%E6%80%A7.html">01 引用分析：哪些数据仍被下游需要</a><a href="02-Closure%E4%B8%8E%E6%8D%95%E8%8E%B7%E7%8E%AF%E5%A2%83.html">02 Closure：函数作为值时，环境由谁保管</a><a href="03-%E6%89%A7%E8%A1%8C%E5%9B%BE%E4%B8%8E%E6%BA%90%E8%8A%82%E7%82%B9%E6%A0%91%E8%A7%A3%E8%80%A6.html">03 当源节点树销毁后，计算为什么还要继续存在</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>计算可以把数据和函数继续传递到更远的地方。学习引用集合、匿名属性保留、捕获环境以及执行数据独立存活的设计。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>Field、LazyFunction、共享所有权和图中的数据流。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>产生被引用数据</strong></div><div class="flow-step"><span>02</span><strong>传播引用信息</strong></div><div class="flow-step"><span>03</span><strong>捕获环境</strong></div><div class="flow-step"><span>04</span><strong>函数成为值</strong></div><div class="flow-step"><span>05</span><strong>独立延长寿命</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>加入签名不匹配测试，并说明错误在哪个边界报告。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>函数代码与环境组合成可执行值</h3>
+<p>一个闭包可以把计算定义和捕获环境一起传递。比如创建时捕获 scale=2，执行时传入 x，得到 2*x。这里 x 是调用参数，scale 属于环境。节点系统中的闭包也需要明确哪些输入由调用者提供，哪些值由创建时捕获。</p>
+<p>Bundle 把多个有名字的插槽值组合成一个值，并可以嵌套。它让函数和数据的传递更灵活，也让类型、生命周期和引用传播必须处理嵌套情况。</p>
+<h3>捕获不自动等于复制所有数据</h3>
+<p>实现可以捕获值、共享所有者或借用引用。不同选择决定结果是否独立于原环境，以及复制代价。教学练习先按值捕获简单数值；引入几何和 Field 时，再考虑共享、只读约束与延迟求值。</p>
+<p>8ec9c62d3ea 的初始实现说明中明确记录了一些惰性限制：某些组合值和捕获值即使最终不需要也会先求值。把这些看成该历史版本的限制，不能未经检查推断今天所有路径仍然如此。</p>
+<h3>签名与调用边界</h3>
+<p>闭包输入输出需要有可检查的签名，调用者必须匹配类型和数量。错误可以在编辑、构建或执行阶段被发现，设计应决定哪一层掌握足够信息。动态组合并不意味着放弃接口契约。</p>
+<p>阅读 NOD_geometry_nodes_closure.hh 时先找闭包持有什么，再读构建与执行入口。画出创建一次、调用多次的生命周期图，并标出捕获环境与每次调用临时存储。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>如果捕获引用，必须证明被引用对象覆盖闭包所有调用；不要因为闭包对象活着就认为环境也活着。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>Closure 捕获值：指针数组与对象寿命是两件事</h3><p>完整访问器明确返回的是一组指针的借用视图。Vector 拥有指针元素的存储，但仅凭这段代码无法证明被指向的 SocketValueVariant 由它拥有。</p>
+<p>完整源码单元 · source/blender/nodes/NOD_geometry_nodes_closure.hh · L127–L130。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/nodes/NOD_geometry_nodes_closure.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="127">  <span class="syntax-type">Span</span>&lt;<span class="syntax-keyword">const</span> bke::<span class="syntax-type">SocketValueVariant</span> *&gt; <span class="syntax-function">captured_values</span>() <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="128">  {</span>
+<span class="code-line" data-line="129">    <span class="syntax-keyword">return</span> captured_values_;</span>
+<span class="code-line" data-line="130">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L127</span><div><code><span class="syntax-type">Span</span>&lt;<span class="syntax-keyword">const</span> bke::<span class="syntax-type">SocketValueVariant</span> *&gt; <span class="syntax-function">captured_values</span>() <span class="syntax-keyword">const</span></code><p>返回 Span，其元素是指向 const SocketValueVariant 的指针。必须分别理解 Span 的借用寿命、指针数组的存储寿命和每个被指对象的寿命。</p>
+</div></div><div class="line-explanation"><span class="line-number">L128</span><div><code>{</code><p>打开 Span&lt;const bke::SocketValueVariant *&gt; captured_values() const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L129</span><div><code><span class="syntax-keyword">return</span> captured_values_;</code><p>把 captured_values_ 的连续存储借给调用者，不复制捕获对象。Closure 销毁或数组迁移后，这个 Span 会失效。</p>
+</div></div><div class="line-explanation"><span class="line-number">L130</span><div><code>}</code><p>结束 Span&lt;const bke::SocketValueVariant *&gt; captured_values() const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>捕获数组中有两个地址 p、q。复制 Closure 相关句柄或读取这个 Span，不会自动把 p、q 指向的值复制到新地址。如果 p 指向已离开作用域的局部变量，持有这个数组仍不能让它恢复有效。</p>
+<h4>调用关系与设计判断</h4><p>回到 Closure 构造器逐成员追踪 scope_、function_ 与 captured_values_ 的来源。证明哪个资源作用域保活捕获对象，以及默认输入值是否为独立拥有值。把捕获定义在外层节点树中的情况单独列出来验收。</p>
+</article><article class="deep-reading"><h3>Closure 完整构造：逐个区分拥有、共享与借用</h3><p>构造函数体虽然为空，真正工作都在成员初始化列表里。每个 std::move 和每个引用成员都体现一种不同的生命周期责任。</p>
+<p>完整源码单元 · source/blender/nodes/NOD_geometry_nodes_closure.hh · L73–L90。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/nodes/NOD_geometry_nodes_closure.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="73">  <span class="syntax-type">Closure</span>(std::shared_ptr&lt;<span class="syntax-type">ClosureSignature</span>&gt; signature,</span>
+<span class="code-line" data-line="74">          std::unique_ptr&lt;<span class="syntax-type">ResourceScope</span>&gt; scope,</span>
+<span class="code-line" data-line="75">          <span class="syntax-keyword">const</span> fn::lazy_function::<span class="syntax-type">LazyFunction</span> &amp;function,</span>
+<span class="code-line" data-line="76">          <span class="syntax-type">ClosureFunctionIndices</span> indices,</span>
+<span class="code-line" data-line="77">          <span class="syntax-type">Vector</span>&lt;bke::<span class="syntax-type">SocketValueVariant</span>&gt; default_input_values,</span>
+<span class="code-line" data-line="78">          std::optional&lt;<span class="syntax-type">ClosureSourceLocation</span>&gt; source_location,</span>
+<span class="code-line" data-line="79">          std::shared_ptr&lt;<span class="syntax-type">ClosureEvalLog</span>&gt; eval_log,</span>
+<span class="code-line" data-line="80">          <span class="syntax-type">Vector</span>&lt;<span class="syntax-keyword">const</span> bke::<span class="syntax-type">SocketValueVariant</span> *&gt; captured_values)</span>
+<span class="code-line" data-line="81">      : <span class="syntax-function">signature_</span>(signature),</span>
+<span class="code-line" data-line="82">        <span class="syntax-function">source_location_</span>(source_location),</span>
+<span class="code-line" data-line="83">        <span class="syntax-function">eval_log_</span>(eval_log),</span>
+<span class="code-line" data-line="84">        <span class="syntax-function">scope_</span>(std::<span class="syntax-function">move</span>(scope)),</span>
+<span class="code-line" data-line="85">        <span class="syntax-function">function_</span>(function),</span>
+<span class="code-line" data-line="86">        <span class="syntax-function">indices_</span>(indices),</span>
+<span class="code-line" data-line="87">        <span class="syntax-function">default_input_values_</span>(std::<span class="syntax-function">move</span>(default_input_values)),</span>
+<span class="code-line" data-line="88">        <span class="syntax-function">captured_values_</span>(std::<span class="syntax-function">move</span>(captured_values))</span>
+<span class="code-line" data-line="89">  {</span>
+<span class="code-line" data-line="90">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L73</span><div><code><span class="syntax-type">Closure</span>(std::shared_ptr&lt;<span class="syntax-type">ClosureSignature</span>&gt; signature,</code><p>签名通过 shared_ptr 共享拥有，外部可以与闭包一起保留接口描述。</p>
+</div></div><div class="line-explanation"><span class="line-number">L74</span><div><code>std::unique_ptr&lt;<span class="syntax-type">ResourceScope</span>&gt; scope,</code><p>ResourceScope 以 unique_ptr 传入，将取得唯一资源清理责任。</p>
+</div></div><div class="line-explanation"><span class="line-number">L75</span><div><code><span class="syntax-keyword">const</span> fn::lazy_function::<span class="syntax-type">LazyFunction</span> &amp;function,</code><p>函数体按 const 引用传入，此参数本身不转移实际函数对象所有权。</p>
+</div></div><div class="line-explanation"><span class="line-number">L76</span><div><code><span class="syntax-type">ClosureFunctionIndices</span> indices,</code><p>indices 描述闭包输入输出在 LazyFunction 中的位置关系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L77</span><div><code><span class="syntax-type">Vector</span>&lt;bke::<span class="syntax-type">SocketValueVariant</span>&gt; default_input_values,</code><p>默认输入值通过 Vector 按值传入，里面是值对象。</p>
+</div></div><div class="line-explanation"><span class="line-number">L78</span><div><code>std::optional&lt;<span class="syntax-type">ClosureSourceLocation</span>&gt; source_location,</code><p>可选源位置用于诊断与追踪，不必总存在。</p>
+</div></div><div class="line-explanation"><span class="line-number">L79</span><div><code>std::shared_ptr&lt;<span class="syntax-type">ClosureEvalLog</span>&gt; eval_log,</code><p>评估日志通过共享拥有保活。</p>
+</div></div><div class="line-explanation"><span class="line-number">L80</span><div><code><span class="syntax-type">Vector</span>&lt;<span class="syntax-keyword">const</span> bke::<span class="syntax-type">SocketValueVariant</span> *&gt; captured_values)</code><p>捕获值传入的是指针数组；被指向值的寿命仍要通过来源证明。</p>
+</div></div><div class="line-explanation"><span class="line-number">L81</span><div><code>: <span class="syntax-function">signature_</span>(signature),</code><p>保存签名 shared_ptr，增加一份共享持有关系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L82</span><div><code><span class="syntax-function">source_location_</span>(source_location),</code><p>保存可选源位置信息。</p>
+</div></div><div class="line-explanation"><span class="line-number">L83</span><div><code><span class="syntax-function">eval_log_</span>(eval_log),</code><p>保存日志 shared_ptr，闭包存活期间日志可以继续存在。</p>
+</div></div><div class="line-explanation"><span class="line-number">L84</span><div><code><span class="syntax-function">scope_</span>(std::<span class="syntax-function">move</span>(scope)),</code><p>移动 scope 的唯一所有权。调用后传入的 unique_ptr 不再负责这个作用域。</p>
+</div></div><div class="line-explanation"><span class="line-number">L85</span><div><code><span class="syntax-function">function_</span>(function),</code><p>保存函数引用，不复制多态函数对象。</p>
+</div></div><div class="line-explanation"><span class="line-number">L86</span><div><code><span class="syntax-function">indices_</span>(indices),</code><p>复制索引描述，容器内部可能拥有自己的映射数据。</p>
+</div></div><div class="line-explanation"><span class="line-number">L87</span><div><code><span class="syntax-function">default_input_values_</span>(std::<span class="syntax-function">move</span>(default_input_values)),</code><p>移动默认输入值数组，转移值与存储拥有关系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L88</span><div><code><span class="syntax-function">captured_values_</span>(std::<span class="syntax-function">move</span>(captured_values))</code><p>移动捕获指针数组，只转移指针存储；没有逐个复制被指向的 SocketValueVariant。</p>
+</div></div><div class="line-explanation"><span class="line-number">L89</span><div><code>{</code><p>打开 captured_values_(std::move(captured_values)) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L90</span><div><code>}</code><p>结束 captured_values_(std::move(captured_values)) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>构造 C 时把一个拥有 F 与捕获对象的 scope 移入 C，同时 function_ 指向 F。只要这份 scope 确实保活 F 与捕获对象，C 才可安全执行。若传入的 function 引用指向另一作用域栈对象，移动一个无关 scope 无法补救。</p>
+<h4>调用关系与设计判断</h4><p>画三种边：unique_ptr 唯一拥有、shared_ptr 共享拥有、引用与裸指针借用。然后检查声明顺序与反向析构顺序，确保 function_ 所引用对象在执行期间存在，捕获指针没有指向临时默认值副本。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/nodes/NOD_geometry_nodes_closure.hh">NOD_geometry_nodes_closure.hh</a></div><p>从闭包定义追踪捕获内容与持有关系。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 55 行 · SHA-256 bec3e1ada4dd</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/nodes/NOD_geometry_nodes_closure.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/nodes/NOD_geometry_nodes_closure.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">52</span>,<span class="syntax-number">83</span> -- <span class="syntax-string">&quot;source/blender/nodes/NOD_geometry_nodes_closure.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/nodes/intern/geometry_nodes_closure.cc">geometry_nodes_closure.cc</a></div><p>结合头文件进入构造与执行实现。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 14 行 · SHA-256 c34b7c787d05</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/nodes/intern/geometry_nodes_closure.cc</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/nodes/intern/geometry_nodes_closure.cc&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">11</span>,<span class="syntax-number">42</span> -- <span class="syntax-string">&quot;source/blender/nodes/intern/geometry_nodes_closure.cc&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/8ec9c62d3ea8d8f00a375c01e7533a080f7476c5" target="_blank" rel="noopener">8ec9c62d3ea</a> <span>Jacques Lucke · 2025-04-03</span></div><h3>Geometry Nodes: add Closures and Bundles behind experimental feature flag</h3><p>分别阅读已实现功能、实验状态和当时明确记录的限制。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This implements bundles and closures which are described in more detail in this
+blog post: https://code.blender.org/2024/11/geometry-nodes-workshop-october-2024/
+
+tl;dr:
+* Bundles are containers that allow storing multiple socket values in a single
+  value. Each value in the bundle is identified by a name. Bundles can be
+  nested.
+* Closures are functions that are created with the Closure Zone and can be
+  evaluated with the Evaluate Closure node.
+
+To use the patch, the `Bundle and Closure Nodes` experimental feature has to be
+enabled. This is necessary, because these features are not fully done yet and
+still need iterations to improve the workflow before they can be officially
+released. These iterations are easier to do in `main` than in a separate branch
+though. That&#x27;s because this patch is quite large and somewhat prone to merge
+conflicts. Also other work we want to do, depends on this.
+
+This adds the following new nodes:
+* Combine Bundle: can pack multiple values into one.
+* Separate Bundle: extracts values from a bundle.
+* Closure Zone: outputs a closure zone for use in the `Evaluate Closure` node.
+* Evaluate Closure: evaluates the passed in closure.
+
+Things that will be added soon after this lands:
+* Fields in bundles and closures. The way this is done changes with #134811, so
+  I rather implement this once both are in `main`.
+* UI features for keeping sockets in sync (right now there are warnings only).
+
+One bigger issue is the limited support for lazyness. For example, all inputs of
+a Combine Bundle node will be evaluated, even if they are not all needed. The
+same is true for all captured values of a closure. This is a deeper limitation
+that needs to be resolved at some point. This will likely be done after an
+initial version of this patch is done.
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/128340</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">release/datafiles/userdef/userdef_default_theme.c  |   <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="2"> scripts/startup/bl_operators/node.py               |  <span class="syntax-number">12</span> +</span>
+<span class="code-line" data-line="3"> scripts/startup/bl_ui/node_add_menu.py             |   <span class="syntax-number">7</span> +</span>
+<span class="code-line" data-line="4"> scripts/startup/bl_ui/node_add_menu_geometry.py    |   <span class="syntax-number">6</span> +</span>
+<span class="code-line" data-line="5"> scripts/startup/bl_ui/space_userpref.py            |   <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/<span class="syntax-type">BKE_bake_items</span>.hh        |  <span class="syntax-number">18</span> +</span>
+<span class="code-line" data-line="7"> source/blender/blenkernel/<span class="syntax-type">BKE_compute_contexts</span>.hh  |  <span class="syntax-number">28</span> +</span>
+<span class="code-line" data-line="8"> source/blender/blenkernel/<span class="syntax-type">BKE_node_legacy_types</span>.hh |   <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="9"> .../blender/blenkernel/<span class="syntax-type">BKE_node_tree_interface</span>.hh  |   <span class="syntax-number">4</span> +</span>
+<span class="code-line" data-line="10"> .../<span class="syntax-type">BKE_node_tree_reference_lifetimes</span>.hh           |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="11"> .../blenkernel/intern/bake_items_serialize.cc      |  <span class="syntax-number">52</span> ++</span>
+<span class="code-line" data-line="12"> .../blender/blenkernel/intern/bake_items_socket.cc | <span class="syntax-number">123</span> +++-</span>
+<span class="code-line" data-line="13"> .../blender/blenkernel/intern/compute_contexts.cc  |  <span class="syntax-number">30</span> +</span>
+<span class="code-line" data-line="14"> source/blender/blenkernel/intern/cpp_types.cc      |   <span class="syntax-number">7</span> +</span>
+<span class="code-line" data-line="15"> .../blenkernel/intern/geometry_nodes_bundle.cc     | <span class="syntax-number">146</span> +++++</span>
+<span class="code-line" data-line="16"> source/blender/blenkernel/intern/node.cc           |  <span class="syntax-number">82</span> ++-</span>
+<span class="code-line" data-line="17"> .../blender/blenkernel/intern/node_socket_value.cc |  <span class="syntax-number">26</span> +</span>
+<span class="code-line" data-line="18"> .../intern/node_tree_reference_lifetimes.cc        | <span class="syntax-number">216</span> ++++++-</span>
+<span class="code-line" data-line="19"> .../blenloader/intern/versioning_userdef.cc        |   <span class="syntax-number">4</span> +</span>
+<span class="code-line" data-line="20"> source/blender/depsgraph/<span class="syntax-type">CMakeLists</span>.txt            |   <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="21"> .../editors/geometry/node_group_operator.cc        |   <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="22"> source/blender/editors/include/<span class="syntax-type">UI_icons</span>.hh         |   <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="23"> source/blender/editors/include/<span class="syntax-type">UI_resources</span>.hh     |   <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="24"> .../blender/editors/interface/interface_icons.cc   |   <span class="syntax-number">4</span> +</span>
+<span class="code-line" data-line="25"> source/blender/editors/interface/resources.cc      |   <span class="syntax-number">3</span> +</span>
+<span class="code-line" data-line="26"> .../templates/interface_template_node_inputs.cc    |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="27"> source/blender/editors/object/<span class="syntax-type">CMakeLists</span>.txt       |   <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="28"> source/blender/editors/space_action/<span class="syntax-type">CMakeLists</span>.txt |   <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="29"> source/blender/editors/space_node/drawnode.cc      |  <span class="syntax-number">31</span> +-</span>
+<span class="code-line" data-line="30"> source/blender/editors/space_node/node_draw.cc     |  <span class="syntax-number">55</span> +-</span>
+<span class="code-line" data-line="31"> .../editors/space_node/node_relationships.cc       |   <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="32"> source/blender/editors/util/ed_viewer_path.cc      |   <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="33"> .../functions/<span class="syntax-type">FN_lazy_function_graph_executor</span>.hh   |   <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="34"> .../intern/lazy_function_graph_executor.cc         |  <span class="syntax-number">13</span> +</span>
+<span class="code-line" data-line="35"> source/blender/makesdna/<span class="syntax-type">DNA_node_types</span>.h           | <span class="syntax-number">111</span> ++++</span>
+<span class="code-line" data-line="36"> source/blender/makesdna/<span class="syntax-type">DNA_userdef_types</span>.h        |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="37"> source/blender/makesrna/intern/rna_node_socket.cc  |  <span class="syntax-number">58</span> ++</span>
+<span class="code-line" data-line="38"> source/blender/makesrna/intern/rna_nodetree.cc     | <span class="syntax-number">269</span> ++++++++</span>
+<span class="code-line" data-line="39"> source/blender/makesrna/intern/rna_userdef.cc      |  <span class="syntax-number">10</span> +</span>
+<span class="code-line" data-line="40"> source/blender/modifiers/intern/<span class="syntax-type">MOD_nodes</span>.cc       |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="41"> source/blender/nodes/<span class="syntax-type">CMakeLists</span>.txt                |   <span class="syntax-number">8</span> +</span>
+<span class="code-line" data-line="42"> source/blender/nodes/<span class="syntax-type">NOD_geometry_exec</span>.hh          |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="43"> source/blender/nodes/<span class="syntax-type">NOD_geometry_nodes_bundle</span>.hh  |  <span class="syntax-number">66</span> ++</span>
+<span class="code-line" data-line="44"> .../blender/nodes/<span class="syntax-type">NOD_geometry_nodes_bundle_fwd</span>.hh |  <span class="syntax-number">14</span> +</span>
+<span class="code-line" data-line="45"> source/blender/nodes/<span class="syntax-type">NOD_geometry_nodes_closure</span>.hh | <span class="syntax-number">119</span> ++++</span>
+<span class="code-line" data-line="46"> .../nodes/<span class="syntax-type">NOD_geometry_nodes_closure_eval</span>.hh       |  <span class="syntax-number">38</span> ++</span>
+<span class="code-line" data-line="47"> .../nodes/<span class="syntax-type">NOD_geometry_nodes_closure_fwd</span>.hh        |  <span class="syntax-number">14</span> +</span>
+<span class="code-line" data-line="48"> .../nodes/<span class="syntax-type">NOD_geometry_nodes_lazy_function</span>.hh      |  <span class="syntax-number">46</span> ++</span>
+<span class="code-line" data-line="49"> source/blender/nodes/<span class="syntax-type">NOD_geometry_nodes_log</span>.hh     |  <span class="syntax-number">27</span> +</span>
+<span class="code-line" data-line="50"> source/blender/nodes/<span class="syntax-type">NOD_socket_declarations</span>.hh    |  <span class="syntax-number">36</span> ++</span>
+<span class="code-line" data-line="51"> source/blender/nodes/<span class="syntax-type">NOD_socket_interface_key</span>.hh   |  <span class="syntax-number">32</span> +</span>
+<span class="code-line" data-line="52"> source/blender/nodes/<span class="syntax-type">NOD_socket_items_ui</span>.hh        |   <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="53"> source/blender/nodes/geometry/<span class="syntax-type">CMakeLists</span>.txt       |   <span class="syntax-number">4</span> +</span>
+<span class="code-line" data-line="54"> .../nodes/geometry/include/<span class="syntax-type">NOD_geo_bundle</span>.hh       | <span class="syntax-number">181</span> ++++++</span>
+<span class="code-line" data-line="55"> .../nodes/geometry/include/<span class="syntax-type">NOD_geo_closure</span>.hh      | <span class="syntax-number">339</span> ++++++++++</span>
+<span class="code-line" data-line="56"> .../nodes/geometry/include/<span class="syntax-type">NOD_geo_repeat</span>.hh       |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="57"> .../nodes/geometry/include/<span class="syntax-type">NOD_geo_simulation</span>.hh   |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="58"> .../blender/nodes/geometry/node_geometry_tree.cc   |  <span class="syntax-number">34</span> +-</span>
+<span class="code-line" data-line="59"> .../blender/nodes/geometry/nodes/node_geo_bake.cc  |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="60"> .../nodes/geometry/nodes/node_geo_closure.cc       | <span class="syntax-number">237</span> +++++++</span>
+<span class="code-line" data-line="61"> .../geometry/nodes/node_geo_combine_bundle.cc      | <span class="syntax-number">157</span> +++++</span>
+<span class="code-line" data-line="62"> .../geometry/nodes/node_geo_evaluate_closure.cc    | <span class="syntax-number">163</span> +++++</span>
+<span class="code-line" data-line="63"> .../nodes/geometry/nodes/node_geo_index_switch.cc  |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="64"> .../nodes/geometry/nodes/node_geo_menu_switch.cc   |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="65"> .../geometry/nodes/node_geo_separate_bundle.cc     | <span class="syntax-number">174</span> +++++</span>
+<span class="code-line" data-line="66"> .../nodes/geometry/nodes/node_geo_simulation.cc    |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="67"> .../nodes/geometry/nodes/node_geo_switch.cc        |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="68"> .../blender/nodes/intern/geometry_nodes_bundle.cc  | <span class="syntax-number">149</span> +++++</span>
+<span class="code-line" data-line="69"> .../blender/nodes/intern/geometry_nodes_closure.cc |  <span class="syntax-number">31</span> +</span>
+<span class="code-line" data-line="70"> .../nodes/intern/geometry_nodes_closure_zone.cc    | <span class="syntax-number">717</span> +++++++++++++++++++++</span>
+<span class="code-line" data-line="71"> .../blender/nodes/intern/geometry_nodes_execute.cc |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="72"> ...geometry_nodes_foreach_geometry_element_zone.cc |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="73"> .../nodes/intern/geometry_nodes_lazy_function.cc   | <span class="syntax-number">253</span> ++++++--</span>
+<span class="code-line" data-line="74"> source/blender/nodes/intern/geometry_nodes_log.cc  |  <span class="syntax-number">38</span> ++</span>
+<span class="code-line" data-line="75"> .../nodes/intern/geometry_nodes_repeat_zone.cc     |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="76"> source/blender/nodes/intern/node_common.cc         |   <span class="syntax-number">8</span> +</span>
+<span class="code-line" data-line="77"> source/blender/nodes/intern/node_declaration.cc    |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="78"> source/blender/nodes/intern/node_register.cc       |  <span class="syntax-number">20</span> +</span>
+<span class="code-line" data-line="79"> source/blender/nodes/intern/node_socket.cc         |  <span class="syntax-number">41</span> ++</span>
+<span class="code-line" data-line="80"> .../nodes/intern/node_socket_declarations.cc       |  <span class="syntax-number">96</span> +++</span>
+<span class="code-line" data-line="81"> <span class="syntax-number">80</span> files changed, <span class="syntax-number">4317</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">164</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 8ec9c62d3ea</span>
+<span class="code-line" data-line="2">git show 8ec9c62d3ea</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 8ec9c62d3ea -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>实现带数值捕获的闭包，创建后改变原变量，验证你声明的捕获语义。</p>
+</li><li><strong>任务 02</strong><p>让闭包进入一个包含多个命名值的 Bundle，再取出执行。</p>
+</li><li><strong>任务 03</strong><p>加入签名不匹配测试，并说明错误在哪个边界报告。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="10-02-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="10-02-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="10-02-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>捕获变量与函数参数有什么区别？</summary><p>捕获环境随闭包保存，参数由每次调用提供；两者寿命与绑定时机不同。</p>
+</details><details class="question"><summary>初始功能提交里的限制就是当前行为吗？</summary><p>不是，需要把历史说明与当前源码、后续提交区分。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="10-02" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../10-%E5%BC%95%E7%94%A8%E5%88%86%E6%9E%90%E4%B8%8E%E9%97%AD%E5%8C%85%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/01-%E5%BC%95%E7%94%A8%E9%9B%86%E5%90%88%E4%B8%8E%E5%8C%BF%E5%90%8D%E5%B1%9E%E6%80%A7.html">← 上一篇：引用分析：哪些数据仍被下游需要</a><a href="../10-%E5%BC%95%E7%94%A8%E5%88%86%E6%9E%90%E4%B8%8E%E9%97%AD%E5%8C%85%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/03-%E6%89%A7%E8%A1%8C%E5%9B%BE%E4%B8%8E%E6%BA%90%E8%8A%82%E7%82%B9%E6%A0%91%E8%A7%A3%E8%80%A6.html">下一篇：当源节点树销毁后，计算为什么还要继续存在 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

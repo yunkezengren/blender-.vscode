@@ -1,0 +1,31 @@
+{
+  "wide_layouts": [
+    {
+      "width": 1440,
+      "mainWidth": 1002.40625,
+      "paragraphWidth": 1002.40625,
+      "rightGap": 0,
+      "highlightedTokens": 253,
+      "overflow": false
+    },
+    {
+      "width": 1920,
+      "mainWidth": 1428,
+      "paragraphWidth": 1428,
+      "rightGap": 0,
+      "highlightedTokens": 253,
+      "overflow": false
+    },
+    {
+      "width": 2560,
+      "mainWidth": 2004,
+      "paragraphWidth": 2004,
+      "rightGap": 0,
+      "highlightedTokens": 253,
+      "overflow": false
+    }
+  ],
+  "verified_complete_units": 95,
+  "verified_explained_lines": 1291,
+  "source_roundtrip": "passed"
+}

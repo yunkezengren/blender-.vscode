@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="一个函数拆成两个函数，为什么能够避免原本不需要的求值。">
+<title>拆分计算职责：从 Menu Switch 修复理解精确依赖 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="09-03"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">惰性函数与节点执行器</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>LAZY EVALUATION / COMPOSITION / LESSON 09-03</div><h1>拆分计算职责：从 Menu Switch 修复理解精确依赖</h1><p class="lede">一个函数拆成两个函数，为什么能够避免原本不需要的求值。</p><div class="chips"><span class="chip">方向 09 · 惰性函数与节点执行器</span><span class="chip">专题 3/3</span><span class="chip">正文 1,957 字符</span><span class="chip">建议研读 22 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-LazyFunction%E7%8A%B6%E6%80%81%E6%9C%BA.html">01 LazyFunction：计算可以暂停，等待真正需要的输入</a><a href="02-%E5%9B%BE%E7%BB%84%E5%90%88%E4%B8%8E%E8%8A%82%E7%82%B9%E9%99%8D%E4%BD%8E.html">02 从节点树到执行图：构建、预处理与执行分层</a><a href="03-MenuSwitch%E4%BE%9D%E8%B5%96%E7%8E%AF%E4%BF%AE%E5%A4%8D.html">03 拆分计算职责：从 Menu Switch 修复理解精确依赖</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>从 Switch 的分阶段输入请求开始，理解 LazyFunction、Graph 与 GraphExecutor，再研究几何节点如何被转换成执行图。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>图遍历、状态机、Field 与批量函数；先做串行教学实现。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>输出需求</strong></div><div class="flow-step"><span>02</span><strong>请求条件</strong></div><div class="flow-step"><span>03</span><strong>判断输入需求</strong></div><div class="flow-step"><span>04</span><strong>调度依赖</strong></div><div class="flow-step"><span>05</span><strong>产出结果</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>验证不同 selector、嵌套组和共享分支，确保没有漏算必要节点。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>同一界面节点可以有不同依赖</h3>
+<p>Menu Switch 的选择状态只依赖选择输入，而最终输出值还依赖被选分支。若把所有输出都粗略关联到全部值输入，就会引入本来不必要的依赖。匿名属性引用收集又需要知道哪些插槽被使用，这使需求分析与值计算发生互动。</p>
+<p>0f87eef0ea9 的提交说明指出，错误组织会造成依赖环，打破环时的保守回退把值当成需要，从而触发额外求值。正确结果可能仍然出现，因此只比较最终数值不容易发现问题。</p>
+<h3>以最小依赖集合划分计算</h3>
+<p>修复将输出值计算和各分支使用布尔量分成两个惰性函数。后者只依赖第一个选择输入，避免无意拉入所有候选值。这是架构拆分的具体标准：两个输出拥有不同依赖集合，而且这种差异影响执行行为。</p>
+<p>并非所有多输出函数都应拆开。拆分会增加图节点、接口和调度开销。只有当依赖精度、复用或生命周期收益明确时才值得。先用最小失败例子证明需求，再评价复杂度。</p>
+<h3>验证未发生的事情</h3>
+<p>修复针对的是不应执行的分支，因此测试需要观察执行事件、计数，或使用受控的失败分支。无限循环式测试容易挂住整个测试进程；教学版本最好使用明确异常或计数断言，并设定测试超时。</p>
+<p>阅读历史回归测试时，把图转换前后的需求关系分别画出来。若能说明是哪条边被移除、为什么不会丢掉必要工作，就已经理解了修复的核心。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要把所有环都当成用户节点图中的非法循环；内部需求与引用分析也可能产生额外关系。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>Menu Switch 使用信息：仅由条件计算分支需求</h3><p>此处选择文件中第 2 个同签名实现，对应 Menu Switch Socket Usage，而非前面的值计算函数。分开使用信息与实际数值计算，可以让依赖关系更加精确。</p>
+<p>完整源码单元 · source/blender/nodes/geometry/nodes/node_geo_menu_switch.cc · L499–L514。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/nodes/geometry/nodes/node_geo_menu_switch.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="499">  <span class="syntax-keyword">void</span> <span class="syntax-function">execute_impl</span>(lf::<span class="syntax-type">Params</span> &amp;params, <span class="syntax-keyword">const</span> lf::<span class="syntax-type">Context</span> &amp; <span class="syntax-comment">/*context*/</span>) <span class="syntax-keyword">const</span> override</span>
+<span class="code-line" data-line="500">  {</span>
+<span class="code-line" data-line="501">    <span class="syntax-keyword">const</span> <span class="syntax-type">SocketValueVariant</span> &amp;condition_variant = params.get_input&lt;<span class="syntax-type">SocketValueVariant</span>&gt;(<span class="syntax-number">0</span>);</span>
+<span class="code-line" data-line="502">    <span class="syntax-keyword">if</span> (condition_variant.<span class="syntax-function">is_context_dependent_field</span>()) {</span>
+<span class="code-line" data-line="503">      <span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : <span class="syntax-type">IndexRange</span>(enum_def_.items_num)) {</span>
+<span class="code-line" data-line="504">        params.<span class="syntax-function">set_output</span>(i, <span class="syntax-keyword">true</span>);</span>
+<span class="code-line" data-line="505">      }</span>
+<span class="code-line" data-line="506">    }</span>
+<span class="code-line" data-line="507">    <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="508">      <span class="syntax-keyword">const</span> <span class="syntax-type">MenuValue</span> value = condition_variant.copy_as&lt;<span class="syntax-type">MenuValue</span>&gt;();</span>
+<span class="code-line" data-line="509">      <span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : <span class="syntax-type">IndexRange</span>(enum_def_.items_num)) {</span>
+<span class="code-line" data-line="510">        <span class="syntax-keyword">const</span> <span class="syntax-type">NodeEnumItem</span> &amp;enum_item = enum_def_.<span class="syntax-function">items</span>()[i];</span>
+<span class="code-line" data-line="511">        params.<span class="syntax-function">set_output</span>(i, value.value == enum_item.identifier);</span>
+<span class="code-line" data-line="512">      }</span>
+<span class="code-line" data-line="513">    }</span>
+<span class="code-line" data-line="514">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L499</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">execute_impl</span>(lf::<span class="syntax-type">Params</span> &amp;params, <span class="syntax-keyword">const</span> lf::<span class="syntax-type">Context</span> &amp; <span class="syntax-comment">/*context*/</span>) <span class="syntax-keyword">const</span> override</code><p>实现输出使用布尔量的惰性函数；本函数不直接返回被选分支的数据值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L500</span><div><code>{</code><p>打开 void execute_impl(lf::Params &amp;params, const lf::Context &amp; /*context*/) const override 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L501</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">SocketValueVariant</span> &amp;condition_variant = params.get_input&lt;<span class="syntax-type">SocketValueVariant</span>&gt;(<span class="syntax-number">0</span>);</code><p>读取条件的 SocketValueVariant。条件作为这个函数的必要输入应已可用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L502</span><div><code><span class="syntax-keyword">if</span> (condition_variant.<span class="syntax-function">is_context_dependent_field</span>()) {</code><p>若条件依赖上下文，在单次图层面无法知道所有元素选择哪一项。</p>
+</div></div><div class="line-explanation"><span class="line-number">L503</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : <span class="syntax-type">IndexRange</span>(enum_def_.items_num)) {</code><p>逐个枚举候选项。</p>
+</div></div><div class="line-explanation"><span class="line-number">L504</span><div><code>params.<span class="syntax-function">set_output</span>(i, <span class="syntax-keyword">true</span>);</code><p>保守地声明每项都可能被需要，避免丢失某些元素实际要用的分支。</p>
+</div></div><div class="line-explanation"><span class="line-number">L505</span><div><code>}</code><p>结束 for (const int i : IndexRange(enum_def_.items_num)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L506</span><div><code>}</code><p>结束 if (condition_variant.is_context_dependent_field()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L507</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入前一个条件不成立时的路径；两条路径分别检查对象与存储状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L508</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">MenuValue</span> value = condition_variant.copy_as&lt;<span class="syntax-type">MenuValue</span>&gt;();</code><p>条件不是上下文相关 Field 时，可以读取统一的 MenuValue。</p>
+</div></div><div class="line-explanation"><span class="line-number">L509</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : <span class="syntax-type">IndexRange</span>(enum_def_.items_num)) {</code><p>逐个枚举候选项以写出完整需求向量。</p>
+</div></div><div class="line-explanation"><span class="line-number">L510</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">NodeEnumItem</span> &amp;enum_item = enum_def_.<span class="syntax-function">items</span>()[i];</code><p>取得该项定义，重点是稳定 identifier，不是它在数组中的位置。</p>
+</div></div><div class="line-explanation"><span class="line-number">L511</span><div><code>params.<span class="syntax-function">set_output</span>(i, value.value == enum_item.identifier);</code><p>比较当前值与标识符；只有对应项输出 true，其他输出 false。</p>
+</div></div><div class="line-explanation"><span class="line-number">L512</span><div><code>}</code><p>结束 for (const int i : IndexRange(enum_def_.items_num)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L513</span><div><code>}</code><p>结束 else { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L514</span><div><code>}</code><p>结束 void execute_impl(lf::Params &amp;params, const lf::Context &amp; /*context*/) const override 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>菜单项 identifier 为 [10,20,40]，条件是统一值 20，则使用向量为 [false,true,false]。若条件是每个元素不同的 Field，当前层保守输出全 true。数组下标 1 与 identifier 20 不能互换。</p>
+<h4>调用关系与设计判断</h4><p>结合 0f87eef0ea9 查看使用信息函数的输入连线是否只依赖条件，而不是依赖它自己正在决定的分支值。再沿构建器检查输出使用信息如何连接到值执行器，才能证明拆分确实打断了错误依赖。</p>
+</article><article class="deep-reading"><h3>Menu Switch 单值路径：只请求选中输入</h3><p>完整值执行器与前面的使用信息函数配对。它需要处理输入暂未到达、合法菜单值和找不到菜单项三种情形。</p>
+<p>完整源码单元 · source/blender/nodes/geometry/nodes/node_geo_menu_switch.cc · L356–L383。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/nodes/geometry/nodes/node_geo_menu_switch.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="356">  <span class="syntax-keyword">void</span> <span class="syntax-function">execute_single</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">MenuValue</span> condition, lf::<span class="syntax-type">Params</span> &amp;params) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="357">  {</span>
+<span class="code-line" data-line="358">    <span class="syntax-keyword">bool</span> output_was_set = <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="359">    <span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : <span class="syntax-type">IndexRange</span>(enum_def_.items_num)) {</span>
+<span class="code-line" data-line="360">      <span class="syntax-keyword">const</span> <span class="syntax-type">NodeEnumItem</span> &amp;enum_item = enum_def_.items_array[i];</span>
+<span class="code-line" data-line="361">      <span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> input_index = i + <span class="syntax-number">1</span>;</span>
+<span class="code-line" data-line="362">      <span class="syntax-keyword">const</span> <span class="syntax-keyword">bool</span> is_selected = enum_item.identifier == condition.value;</span>
+<span class="code-line" data-line="363">      <span class="syntax-keyword">if</span> (is_selected) {</span>
+<span class="code-line" data-line="364">        <span class="syntax-type">SocketValueVariant</span> *value_to_forward =</span>
+<span class="code-line" data-line="365">            params.try_get_input_data_ptr_or_request&lt;<span class="syntax-type">SocketValueVariant</span>&gt;(input_index);</span>
+<span class="code-line" data-line="366">        <span class="syntax-keyword">if</span> (value_to_forward == <span class="syntax-keyword">nullptr</span>) {</span>
+<span class="code-line" data-line="367">          <span class="syntax-comment">/* Try again when the value is available. */</span></span>
+<span class="code-line" data-line="368">          <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="369">        }</span>
+<span class="code-line" data-line="370"></span>
+<span class="code-line" data-line="371">        params.<span class="syntax-function">set_output</span>(<span class="syntax-number">0</span>, std::<span class="syntax-function">move</span>(*value_to_forward));</span>
+<span class="code-line" data-line="372">        output_was_set = <span class="syntax-keyword">true</span>;</span>
+<span class="code-line" data-line="373">      }</span>
+<span class="code-line" data-line="374">      <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="375">        params.<span class="syntax-function">set_input_unused</span>(input_index);</span>
+<span class="code-line" data-line="376">      }</span>
+<span class="code-line" data-line="377">    }</span>
+<span class="code-line" data-line="378">    <span class="syntax-keyword">if</span> (!output_was_set) {</span>
+<span class="code-line" data-line="379">      <span class="syntax-comment">/* No guarantee that the switch input matches any enum,</span></span>
+<span class="code-line" data-line="380"><span class="syntax-comment">       * set default outputs to ensure valid state. */</span></span>
+<span class="code-line" data-line="381">      <span class="syntax-function">set_default_value_for_output_socket</span>(params, <span class="syntax-number">0</span>, node_.<span class="syntax-function">output_socket</span>(<span class="syntax-number">0</span>));</span>
+<span class="code-line" data-line="382">    }</span>
+<span class="code-line" data-line="383">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L356</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">execute_single</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">MenuValue</span> condition, lf::<span class="syntax-type">Params</span> &amp;params) <span class="syntax-keyword">const</span></code><p>condition 是已经统一解释的菜单值，params 提供分支数据的按需状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L357</span><div><code>{</code><p>打开 void execute_single(const MenuValue condition, lf::Params &amp;params) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L358</span><div><code><span class="syntax-keyword">bool</span> output_was_set = <span class="syntax-keyword">false</span>;</code><p>记录本轮是否已经产生输出。</p>
+</div></div><div class="line-explanation"><span class="line-number">L359</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : <span class="syntax-type">IndexRange</span>(enum_def_.items_num)) {</code><p>遍历菜单项。项数量与输入布局在构造阶段一致。</p>
+</div></div><div class="line-explanation"><span class="line-number">L360</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">NodeEnumItem</span> &amp;enum_item = enum_def_.items_array[i];</code><p>取得该项定义。</p>
+</div></div><div class="line-explanation"><span class="line-number">L361</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> input_index = i + <span class="syntax-number">1</span>;</code><p>分支输入编号比项下标多一，因为第 0 个输入是条件。</p>
+</div></div><div class="line-explanation"><span class="line-number">L362</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">bool</span> is_selected = enum_item.identifier == condition.value;</code><p>用稳定 identifier 与 condition.value 比较，不用界面显示顺序代替标识。</p>
+</div></div><div class="line-explanation"><span class="line-number">L363</span><div><code><span class="syntax-keyword">if</span> (is_selected) {</code><p>只有选中项进入请求路径。</p>
+</div></div><div class="line-explanation"><span class="line-number">L364</span><div><code><span class="syntax-type">SocketValueVariant</span> *value_to_forward =</code><p>声明将要转发的输入地址，语句跨两行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L365</span><div><code>params.try_get_input_data_ptr_or_request&lt;<span class="syntax-type">SocketValueVariant</span>&gt;(input_index);</code><p>查询或请求这个分支的 SocketValueVariant；其他分支不因此被求值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L366</span><div><code><span class="syntax-keyword">if</span> (value_to_forward == <span class="syntax-keyword">nullptr</span>) {</code><p>缺失表示本轮需暂停。</p>
+</div></div><div class="line-explanation"><span class="line-number">L367</span><div><code><span class="syntax-comment">/* Try again when the value is available. */</span></code><p>被选中的分支值尚未到达时暂停，等待输入到达后再次执行，不能把空地址当成完整结果。</p>
+</div></div><div class="line-explanation"><span class="line-number">L368</span><div><code><span class="syntax-keyword">return</span>;</code><p>直接返回，等待执行器把所请求值送达后重试。</p>
+</div></div><div class="line-explanation"><span class="line-number">L369</span><div><code>}</code><p>结束 if (value_to_forward == nullptr) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L371</span><div><code>params.<span class="syntax-function">set_output</span>(<span class="syntax-number">0</span>, std::<span class="syntax-function">move</span>(*value_to_forward));</code><p>把选中值移动到输出，转移其值持有关系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L372</span><div><code>output_was_set = <span class="syntax-keyword">true</span>;</code><p>记下已经设置输出，避免后面再写默认值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L373</span><div><code>}</code><p>结束 if (is_selected) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L374</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入前一个条件不成立时的路径；两条路径分别检查对象与存储状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L375</span><div><code>params.<span class="syntax-function">set_input_unused</span>(input_index);</code><p>未选中的输入明确标为不用，帮助执行器跳过上游工作。</p>
+</div></div><div class="line-explanation"><span class="line-number">L376</span><div><code>}</code><p>结束 else { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L377</span><div><code>}</code><p>结束 for (const int i : IndexRange(enum_def_.items_num)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L378</span><div><code><span class="syntax-keyword">if</span> (!output_was_set) {</code><p>遍历结束仍无匹配项时，不能留下无定义的结果。</p>
+</div></div><div class="line-explanation"><span class="line-number">L379</span><div><code>/* <span class="syntax-type">No</span> guarantee that the <span class="syntax-keyword">switch</span> input matches any <span class="syntax-keyword">enum</span>,</code><p>菜单值不保证与现存枚举项匹配，必须设置类型正确的默认结果，而不能让输出一直未构造。</p>
+</div></div><div class="line-explanation"><span class="line-number">L380</span><div><code>* set <span class="syntax-keyword">default</span> outputs to ensure valid state. */</code><p>续接 L379 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L381</span><div><code><span class="syntax-function">set_default_value_for_output_socket</span>(params, <span class="syntax-number">0</span>, node_.<span class="syntax-function">output_socket</span>(<span class="syntax-number">0</span>));</code><p>按输出 socket 类型构造默认值，维持有效状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L382</span><div><code>}</code><p>结束 if (!output_was_set) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L383</span><div><code>}</code><p>结束 void execute_single(const MenuValue condition, lf::Params &amp;params) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>菜单 identifier=[10,20,40]，condition=20，只请求输入 2；若输入 2 缺失先返回。condition=99 没有匹配项，最后构造默认结果。一个旧文件中的菜单值可能已不存在，这条默认路径仍有实际意义。</p>
+<h4>调用关系与设计判断</h4><p>比较 execute_field：上下文相关条件通常需要所有候选 Field，不能沿用单值路径的只取一个分支。把数据依赖与使用信息分别表达，才能避免使用信息计算反过来等待自己决定是否需要的数据。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/nodes/geometry/nodes/node_geo_menu_switch.cc">node_geo_menu_switch.cc</a></div><p>观察特殊节点对应的惰性函数。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 312 行 · SHA-256 cc510c2c9007</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/nodes/geometry/nodes/node_geo_menu_switch.cc</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/nodes/geometry/nodes/node_geo_menu_switch.cc&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">309</span>,<span class="syntax-number">340</span> -- <span class="syntax-string">&quot;source/blender/nodes/geometry/nodes/node_geo_menu_switch.cc&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/nodes/intern/geometry_nodes_lazy_function.cc">geometry_nodes_lazy_function.cc</a></div><p>结合提交 diff 追踪循环处理与保守回退。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 1682 行 · SHA-256 28f744e66560</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/nodes/intern/geometry_nodes_lazy_function.cc</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/nodes/intern/geometry_nodes_lazy_function.cc&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">1679</span>,<span class="syntax-number">1710</span> -- <span class="syntax-string">&quot;source/blender/nodes/intern/geometry_nodes_lazy_function.cc&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/0f87eef0ea914687fe31e6813df21aebd1dae8ac" target="_blank" rel="noopener">0f87eef0ea9</a> <span>Jacques Lucke · 2026-06-02</span></div><h3>Fix: Geometry Nodes: unnecessary evaluation with specific usage of Menu Switch node</h3><p>聚焦拆分前后的输入依赖与新回归测试；这是一份架构边界案例。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This fixes an issue where some nodes are evaluated even though their output is
+not needed.
+
+The issue is caused by a cyclic dependency when determining of which sockets the
+referenced anonymous attributes should be gathered. Breaking the cyclic
+dependency in `fix_link_cycles` has the fallback of assuming that the value is
+used.
+
+The fix is to split the Menu Switch node evaluation into two lazy-functions. One
+that only computes the output value, and one that outputs all the booleans for
+the individual cases. This works because the output booleans only depend on the
+first input and not all the value inputs.
+
+A regression test has been added that fails (by crash or timeout) when this
+change is broken somehow.
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/159482</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">.../nodes/<span class="syntax-type">NOD_geometry_nodes_lazy_function</span>.hh      |   <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="2"> .../nodes/geometry/nodes/node_geo_menu_switch.cc   | <span class="syntax-number">180</span> ++++++++++++++++-----</span>
+<span class="code-line" data-line="3"> .../nodes/intern/geometry_nodes_lazy_function.cc   |  <span class="syntax-number">38</span> +++--</span>
+<span class="code-line" data-line="4"> .../menu_switch_no_unnecessary_evaluation.blend    |   <span class="syntax-number">3</span> +</span>
+<span class="code-line" data-line="5"> .../utilities/menu_switch_variations.blend         |   <span class="syntax-number">3</span> +</span>
+<span class="code-line" data-line="6"> <span class="syntax-number">5</span> files changed, <span class="syntax-number">167</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">59</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 0f87eef0ea9</span>
+<span class="code-line" data-line="2">git show 0f87eef0ea9</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 0f87eef0ea9 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>在教学图中显式产生 branch_used 布尔输出，先实现粗糙的全输入依赖版本。</p>
+</li><li><strong>任务 02</strong><p>用执行计数证明它多算了分支，再拆分使用信息与值计算。</p>
+</li><li><strong>任务 03</strong><p>验证不同 selector、嵌套组和共享分支，确保没有漏算必要节点。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="09-03-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="09-03-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="09-03-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>结果正确，为什么仍是缺陷？</summary><p>不必要求值可能造成巨大性能损失，甚至触发本应不可达的错误或超时。</p>
+</details><details class="question"><summary>拆分的依据是什么？</summary><p>输出的真实依赖集合不同，并且需要精确表达以维持正确的按需行为。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="09-03" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../09-%E6%83%B0%E6%80%A7%E5%87%BD%E6%95%B0%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E5%99%A8/02-%E5%9B%BE%E7%BB%84%E5%90%88%E4%B8%8E%E8%8A%82%E7%82%B9%E9%99%8D%E4%BD%8E.html">← 上一篇：从节点树到执行图：构建、预处理与执行分层</a><a href="../10-%E5%BC%95%E7%94%A8%E5%88%86%E6%9E%90%E4%B8%8E%E9%97%AD%E5%8C%85%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/01-%E5%BC%95%E7%94%A8%E9%9B%86%E5%90%88%E4%B8%8E%E5%8C%BF%E5%90%8D%E5%B1%9E%E6%80%A7.html">下一篇：引用分析：哪些数据仍被下游需要 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

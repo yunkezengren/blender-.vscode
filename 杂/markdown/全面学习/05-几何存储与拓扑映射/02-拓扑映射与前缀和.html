@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="从面到顶点的已有关系，构造顶点到相邻元素的反向查询。">
+<title>拓扑映射：计数、前缀和、填充的三阶段构造 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="05-02"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">几何存储与拓扑映射</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>GEOMETRY / DATA LAYOUT / LESSON 05-02</div><h1>拓扑映射：计数、前缀和、填充的三阶段构造</h1><p class="lede">从面到顶点的已有关系，构造顶点到相邻元素的反向查询。</p><div class="chips"><span class="chip">方向 05 · 几何存储与拓扑映射</span><span class="chip">专题 2/3</span><span class="chip">正文 1,860 字符</span><span class="chip">建议研读 21 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-OffsetIndices%E4%B8%8E%E5%87%A0%E4%BD%95%E8%A1%A8%E7%A4%BA.html">01 OffsetIndices：用相邻偏移表达一组变长区间</a><a href="02-%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84%E4%B8%8E%E5%89%8D%E7%BC%80%E5%92%8C.html">02 拓扑映射：计数、前缀和、填充的三阶段构造</a><a href="03-%E6%95%B0%E6%8D%AE%E5%B8%83%E5%B1%80%E8%BF%81%E7%A7%BB%E4%B8%8E%E6%8E%A5%E5%8F%A3%E6%BC%94%E5%8C%96.html">03 一次布局重构怎样安全穿过整个项目</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>从面角点的连续排列推导 OffsetIndices，再构建反向拓扑映射。学习 Hans 如何通过改变表示方式，减少内存、分配和不一致状态。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>Span、数组、前缀和；知道顶点、边、面和角点的区别。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>面到角点</strong></div><div class="flow-step"><span>02</span><strong>偏移数组</strong></div><div class="flow-step"><span>03</span><strong>角点到顶点</strong></div><div class="flow-step"><span>04</span><strong>反向分组</strong></div><div class="flow-step"><span>05</span><strong>缓存拓扑关系</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>记录分配次数、构造耗时和遍历所有邻接关系的耗时，而不只测查询一个顶点。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>把反向关系当成分组问题</h3>
+<p>已知每个角点引用哪个顶点，要快速查询一个顶点对应的角点，可以为每个顶点建立一组角点索引。vector&lt;vector&lt;int&gt;&gt; 很直观，但可能产生大量小分配。连续数据数组加偏移能把这些组放在少量大块内存中。</p>
+<p>GroupedSpan 将偏移与实际数据视图结合，访问一组时取得一个 Span。它本身主要表达分组访问，所有权仍由保存偏移和数据的对象承担。拓扑映射的生命周期因此需要一起管理两部分存储。</p>
+<h3>三遍构造与不变量</h3>
+<p>第一遍统计每个顶点的出现次数。第二遍对计数做前缀和，获得每组开始位置和总大小。第三遍使用临时写游标，把角点索引填入其顶点对应区间。填充后每组写入数量应等于计数，所有输出位置都应被恰好写一次。</p>
+<p>不要直接修改最终 offsets 来当写游标，否则构造结束后分组边界被破坏。可以使用独立 cursor 数组。并行化时多个角点可能写同一组，需要原子游标、线程局部分组或其他明确的冲突处理。</p>
+<h3>反向映射的语义也要精确</h3>
+<p>顶点到角点与顶点到面的关系不完全相同。一个面若包含重复顶点，简单从角点转成面索引可能产生重复面。算法是否允许这种输入、结果是否需要去重，都应由接口规定。</p>
+<p>4d841e1b355 统一旧 C 与较新的 C++ 映射实现，同时考虑减少内存和后续缓存。学习其价值时，把调用语法、布局以及缓存复用一起看，不能只数减少了多少行代码。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>验证必须检查组内内容和组边界，只有总元素数量正确远远不够。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>实际拓扑构建：从边端点到顶点分组</h3><p>完整函数直接来自 mesh_mapping.cc，展示连续表示怎样进入实际网格算法。先把每条边的两个端点展开，再反向分组；输出数组由调用者拥有，返回值只是视图。</p>
+<p>完整源码单元 · source/blender/blenkernel/intern/mesh_mapping.cc · L278–L292。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenkernel/intern/mesh_mapping.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="278"><span class="syntax-type">GroupedSpan</span>&lt;<span class="syntax-keyword">int</span>&gt; <span class="syntax-function">build_vert_to_edge_map</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">Span</span>&lt;int2&gt; edges,</span>
+<span class="code-line" data-line="279">                                        <span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> verts_num,</span>
+<span class="code-line" data-line="280">                                        <span class="syntax-type">Array</span>&lt;<span class="syntax-keyword">int</span>&gt; &amp;r_offsets,</span>
+<span class="code-line" data-line="281">                                        <span class="syntax-type">Array</span>&lt;<span class="syntax-keyword">int</span>&gt; &amp;r_indices)</span>
+<span class="code-line" data-line="282">{</span>
+<span class="code-line" data-line="283">  <span class="syntax-keyword">const</span> <span class="syntax-type">Span</span>&lt;<span class="syntax-keyword">int</span>&gt; edge_verts = edges.cast&lt;<span class="syntax-keyword">int</span>&gt;();</span>
+<span class="code-line" data-line="284">  r_offsets = <span class="syntax-function">create_reverse_offsets</span>(edge_verts, verts_num);</span>
+<span class="code-line" data-line="285">  <span class="syntax-keyword">const</span> <span class="syntax-type">OffsetIndices</span>&lt;<span class="syntax-keyword">int</span>&gt; <span class="syntax-function">offsets</span>(r_offsets);</span>
+<span class="code-line" data-line="286">  r_indices.<span class="syntax-function">reinitialize</span>(offsets.<span class="syntax-function">total_size</span>());</span>
+<span class="code-line" data-line="287"></span>
+<span class="code-line" data-line="288">  <span class="syntax-comment">/* Group edges by vertex. Each edge stores two vertices consecutively, so the edge index for a</span></span>
+<span class="code-line" data-line="289"><span class="syntax-comment">   * position in #edge_verts is that position divided by two. */</span></span>
+<span class="code-line" data-line="290">  offset_indices::<span class="syntax-function">reverse_indices_in_groups</span>(edge_verts, offsets, r_indices, <span class="syntax-number">2</span>);</span>
+<span class="code-line" data-line="291">  <span class="syntax-keyword">return</span> {offsets, r_indices};</span>
+<span class="code-line" data-line="292">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L278</span><div><code><span class="syntax-type">GroupedSpan</span>&lt;<span class="syntax-keyword">int</span>&gt; <span class="syntax-function">build_vert_to_edge_map</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">Span</span>&lt;int2&gt; edges,</code><p>edges 的每个 int2 保存一条边的两个顶点编号，函数返回按顶点分组的边编号。</p>
+</div></div><div class="line-explanation"><span class="line-number">L279</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> verts_num,</code><p>verts_num 给出输出组数量，即使某顶点没有任何边也需要一组空范围。</p>
+</div></div><div class="line-explanation"><span class="line-number">L280</span><div><code><span class="syntax-type">Array</span>&lt;<span class="syntax-keyword">int</span>&gt; &amp;r_offsets,</code><p>r_offsets 是调用者提供的偏移数组，函数会更新其内容与大小。</p>
+</div></div><div class="line-explanation"><span class="line-number">L281</span><div><code><span class="syntax-type">Array</span>&lt;<span class="syntax-keyword">int</span>&gt; &amp;r_indices)</code><p>r_indices 是调用者提供的连续结果数组；它必须与返回视图一起存活。</p>
+</div></div><div class="line-explanation"><span class="line-number">L282</span><div><code>{</code><p>打开 Array&lt;int&gt; &amp;r_indices) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L283</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">Span</span>&lt;<span class="syntax-keyword">int</span>&gt; edge_verts = edges.cast&lt;<span class="syntax-keyword">int</span>&gt;();</code><p>把 int2 连续存储看成 int 序列，每条边贡献两个端点。这里不复制端点。</p>
+</div></div><div class="line-explanation"><span class="line-number">L284</span><div><code>r_offsets = <span class="syntax-function">create_reverse_offsets</span>(edge_verts, verts_num);</code><p>计算反向偏移，内部完成按顶点计数及前缀和。顶点编号必须在 verts_num 范围内。</p>
+</div></div><div class="line-explanation"><span class="line-number">L285</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">OffsetIndices</span>&lt;<span class="syntax-keyword">int</span>&gt; <span class="syntax-function">offsets</span>(r_offsets);</code><p>用生成的偏移建立非拥有 OffsetIndices 视图。</p>
+</div></div><div class="line-explanation"><span class="line-number">L286</span><div><code>r_indices.<span class="syntax-function">reinitialize</span>(offsets.<span class="syntax-function">total_size</span>());</code><p>按总关联数量准备结果数组，每条边通常贡献两次关联。</p>
+</div></div><div class="line-explanation"><span class="line-number">L288</span><div><code>/* <span class="syntax-type">Group</span> edges by vertex. <span class="syntax-type">Each</span> edge stores two vertices consecutively, so the edge index <span class="syntax-keyword">for</span> a</code><p>每条边连续存放两个端点，因此端点序列中的位置除以二才是原边编号。分组输出存边编号，而不是端点位置。</p>
+</div></div><div class="line-explanation"><span class="line-number">L289</span><div><code>* position in #edge_verts is that position divided by two. */</code><p>续接 L288 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L290</span><div><code>offset_indices::<span class="syntax-function">reverse_indices_in_groups</span>(edge_verts, offsets, r_indices, <span class="syntax-number">2</span>);</code><p>把原端点位置转换成边编号后填入对应顶点的组；最后参数 2 表示每两个连续端点对应同一条边。</p>
+</div></div><div class="line-explanation"><span class="line-number">L291</span><div><code><span class="syntax-keyword">return</span> {offsets, r_indices};</code><p>返回组合视图。r_offsets 或 r_indices 后续迁移会使此前返回的视图失效。</p>
+</div></div><div class="line-explanation"><span class="line-number">L292</span><div><code>}</code><p>结束 Array&lt;int&gt; &amp;r_indices) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>edges=[(0,1),(1,2)]、verts_num=4。端点序列 [0,1,1,2]，各顶点计数 [1,2,1,0]，偏移 [0,1,3,4,4]。连续结果可表达组 0=[0]、组 1=[0,1]、组 2=[1]、组 3=[]。组内顺序若需要稳定，应以实际填充实现为准。</p>
+<h4>调用关系与设计判断</h4><p>继续展开 create_reverse_offsets 和 reverse_indices_in_groups，逐个核对计数、前缀和、游标填充。不要把结果视图复制当作数据深拷贝；调用方通常让两个 Array 与视图一起留在同一作用域。</p>
+</article><article class="deep-reading"><h3>GroupedSpan：偏移与连续数据的组合</h3><p>这是分组结果的完整访问函数。计数、前缀和、填充发生在构建阶段；这里消费构建出的偏移，不再次重建分组。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_offset_indices.hh · L133–L136。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_offset_indices.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="133">  <span class="syntax-type">Span</span>&lt;<span class="syntax-type">T</span>&gt; <span class="syntax-keyword">operator</span>[](<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> index) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="134">  {</span>
+<span class="code-line" data-line="135">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">this</span>-&gt;data.<span class="syntax-function">slice</span>(<span class="syntax-keyword">this</span>-&gt;offsets[index]);</span>
+<span class="code-line" data-line="136">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L133</span><div><code><span class="syntax-type">Span</span>&lt;<span class="syntax-type">T</span>&gt; <span class="syntax-keyword">operator</span>[](<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> index) <span class="syntax-keyword">const</span></code><p>返回某个组的借用 Span&lt;T&gt;。GroupedSpan 不因这次访问拥有或复制数据。</p>
+</div></div><div class="line-explanation"><span class="line-number">L134</span><div><code>{</code><p>打开 Span&lt;T&gt; operator[](const int64_t index) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L135</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">this</span>-&gt;data.<span class="syntax-function">slice</span>(<span class="syntax-keyword">this</span>-&gt;offsets[index]);</code><p>先由 offsets[index] 求出半开范围，再从连续 data 切出对应子视图。偏移中的数是 data 的位置，而 data 中保存的值可以是另一种实体编号。</p>
+</div></div><div class="line-explanation"><span class="line-number">L136</span><div><code>}</code><p>结束 Span&lt;T&gt; operator[](const int64_t index) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>顶点到边映射的 offsets=[0,2,3]，data=[4,7,9]。第 0 个顶点关联边 [4,7]，第 1 个关联 [9]。偏移 2 不是边编号 2，而是 data 中的起点。</p>
+<h4>调用关系与设计判断</h4><p>沿 mesh_mapping.cc 的构建过程核对：第一遍统计每组数量，前缀和求起点，第二遍用独立游标填充，最后断言每组写入数量匹配统计。结果验证用朴素逐组扫描做基准，不能仅用同一个前缀和算法重新计算一次。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_offset_indices.hh">BLI_offset_indices.hh</a></div><p>分组视图如何组合偏移与数据。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 123 行 · SHA-256 12eed50b3acf</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_offset_indices.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_offset_indices.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">120</span>,<span class="syntax-number">151</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_offset_indices.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenkernel/intern/mesh_mapping.cc">mesh_mapping.cc</a></div><p>沿一个具体 build 函数追踪计数、偏移和填充。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 267 行 · SHA-256 c2432ed63240</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenkernel/intern/mesh_mapping.cc</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenkernel/intern/mesh_mapping.cc&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">264</span>,<span class="syntax-number">295</span> -- <span class="syntax-string">&quot;source/blender/blenkernel/intern/mesh_mapping.cc&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/4d841e1b355959aba4b55e9f7bfa83af0ed2d162" target="_blank" rel="noopener">4d841e1b355</a> <span>Hans Goudey · 2023-05-24</span></div><h3>Mesh: Reimplement and unify topology maps</h3><p>定位新的连续映射表示，再查看一个调用者怎样消费 GroupedSpan。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Combine the newer less efficient C++ implementations and the older
+less convenient C functions. The maps now contain one large array of
+indices, split into groups by a separate array of offset indices.
+Though performance of creating the maps is relatively unchanged, the
+new implementation uses 4 bytes less per source element than the C
+maps, and 20 bytes less than the newer C++ functions (which also
+had more overhead with larger N-gons). The usage syntax is simpler
+than the C functions as well.
+
+The reduced memory usage is helpful for when these maps are cached
+in the near future. It will also allow sharing the offsets between
+maps for different domains like vertex to corner and vertex to face.
+
+A simple `GroupedSpan` class is introduced to make accessing the
+topology maps much simpler. It combines offset indices and a separate
+span, splitting it into chunks in an efficient way.
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/107861</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenkernel/<span class="syntax-type">BKE_mesh_mapping</span>.h       |  <span class="syntax-number">99</span> ++---</span>
+<span class="code-line" data-line="2"> source/blender/blenkernel/<span class="syntax-type">BKE_paint</span>.h              |  <span class="syntax-number">35</span> +-</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/<span class="syntax-type">BKE_pbvh</span>.h               |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="4"> source/blender/blenkernel/<span class="syntax-type">BKE_subdiv_mesh</span>.hh       |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="5"> source/blender/blenkernel/intern/mesh_fair.cc      |  <span class="syntax-number">57</span> ++-</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/intern/mesh_mapping.cc   | <span class="syntax-number">458</span> ++++++---------------</span>
+<span class="code-line" data-line="7"> .../blenkernel/intern/mesh_merge_customdata.cc     |  <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="8"> source/blender/blenkernel/intern/mesh_normals.cc   |  <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="9"> source/blender/blenkernel/intern/mesh_remap.cc     | <span class="syntax-number">135</span> +++---</span>
+<span class="code-line" data-line="10"> .../blender/blenkernel/intern/mesh_remesh_voxel.cc |  <span class="syntax-number">55</span> ++-</span>
+<span class="code-line" data-line="11"> source/blender/blenkernel/intern/multires.cc       |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="12"> .../intern/multires_reshape_apply_base.cc          |  <span class="syntax-number">27</span> +-</span>
+<span class="code-line" data-line="13"> .../blenkernel/intern/multires_unsubdivide.cc      |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="14"> source/blender/blenkernel/intern/paint.cc          |  <span class="syntax-number">39</span> +-</span>
+<span class="code-line" data-line="15"> source/blender/blenkernel/intern/pbvh.cc           |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="16"> source/blender/blenkernel/intern/pbvh_colors.cc    |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="17"> source/blender/blenkernel/intern/pbvh_intern.hh    |   <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="18"> source/blender/blenkernel/intern/subdiv_mesh.cc    |  <span class="syntax-number">29</span> +-</span>
+<span class="code-line" data-line="19"> source/blender/blenlib/<span class="syntax-type">BLI_offset_indices</span>.hh       |  <span class="syntax-number">50</span> ++-</span>
+<span class="code-line" data-line="20"> source/blender/blenlib/intern/offset_indices.cc    |  <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="21"> .../draw/intern/draw_cache_impl_subdivision.cc     |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="22"> source/blender/editors/mesh/editface.cc            |  <span class="syntax-number">28</span> +-</span>
+<span class="code-line" data-line="23"> source/blender/editors/object/object_modifier.cc   |  <span class="syntax-number">20</span> +-</span>
+<span class="code-line" data-line="24"> source/blender/editors/object/object_vgroup.cc     |  <span class="syntax-number">28</span> +-</span>
+<span class="code-line" data-line="25"> .../blender/editors/sculpt_paint/paint_vertex.cc   |  <span class="syntax-number">62</span> ++-</span>
+<span class="code-line" data-line="26"> source/blender/editors/sculpt_paint/sculpt.cc      |  <span class="syntax-number">50</span> +--</span>
+<span class="code-line" data-line="27"> .../editors/sculpt_paint/sculpt_automasking.cc     |  <span class="syntax-number">15</span> -</span>
+<span class="code-line" data-line="28"> .../blender/editors/sculpt_paint/sculpt_dyntopo.cc |   <span class="syntax-number">4</span> -</span>
+<span class="code-line" data-line="29"> .../blender/editors/sculpt_paint/sculpt_expand.cc  |  <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="30"> .../editors/sculpt_paint/sculpt_face_set.cc        |  <span class="syntax-number">26</span> +-</span>
+<span class="code-line" data-line="31"> .../editors/sculpt_paint/sculpt_filter_color.cc    |   <span class="syntax-number">4</span> -</span>
+<span class="code-line" data-line="32"> .../editors/sculpt_paint/sculpt_filter_mask.cc     |   <span class="syntax-number">4</span> -</span>
+<span class="code-line" data-line="33"> .../editors/sculpt_paint/sculpt_geodesic.cc        |  <span class="syntax-number">24</span> +-</span>
+<span class="code-line" data-line="34"> source/blender/editors/sculpt_paint/sculpt_ops.cc  |   <span class="syntax-number">4</span> -</span>
+<span class="code-line" data-line="35"> .../blender/editors/sculpt_paint/sculpt_smooth.cc  |   <span class="syntax-number">6</span> -</span>
+<span class="code-line" data-line="36"> source/blender/geometry/intern/mesh_split_edges.cc |  <span class="syntax-number">26</span> +-</span>
+<span class="code-line" data-line="37"> source/blender/modifiers/intern/<span class="syntax-type">MOD_skin</span>.cc        |  <span class="syntax-number">77</span> ++--</span>
+<span class="code-line" data-line="38"> .../modifiers/intern/<span class="syntax-type">MOD_weighted_normal</span>.cc        |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="39"> .../geometry/nodes/node_geo_blur_attribute.cc      | <span class="syntax-number">182</span> ++++----</span>
+<span class="code-line" data-line="40"> .../nodes/geometry/nodes/node_geo_dual_mesh.cc     |  <span class="syntax-number">21</span> +-</span>
+<span class="code-line" data-line="41"> .../nodes/node_geo_edges_to_face_groups.cc         |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="42"> .../nodes/geometry/nodes/node_geo_extrude_mesh.cc  |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="43"> .../node_geo_mesh_topology_corners_of_vertex.cc    |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="44"> .../node_geo_mesh_topology_edges_of_corner.cc      |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="45"> .../node_geo_mesh_topology_edges_of_vertex.cc      |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="46"> .../nodes/node_geo_mesh_topology_face_of_corner.cc |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="47"> ...node_geo_mesh_topology_offset_corner_in_face.cc |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="48"> source/blender/render/intern/texture_margin.cc     |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="49"> <span class="syntax-number">48</span> files changed, <span class="syntax-number">704</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">1004</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 4d841e1b355</span>
+<span class="code-line" data-line="2">git show 4d841e1b355</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 4d841e1b355 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>实现 vertex_to_corner，与朴素嵌套数组版本逐组比较。</p>
+</li><li><strong>任务 02</strong><p>添加孤立顶点、无角点、共享边、重复顶点输入，定义重复项策略。</p>
+</li><li><strong>任务 03</strong><p>记录分配次数、构造耗时和遍历所有邻接关系的耗时，而不只测查询一个顶点。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="05-02-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="05-02-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="05-02-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>为什么前缀和之后还需要 cursor？</summary><p>offsets 表达最终分组边界，cursor 表达当前写入进度，职责不同。</p>
+</details><details class="question"><summary>连续存储自动支持并行填充吗？</summary><p>不自动支持，同一组的写游标可能竞争，需要独立的并行构造策略。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="05-02" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/01-OffsetIndices%E4%B8%8E%E5%87%A0%E4%BD%95%E8%A1%A8%E7%A4%BA.html">← 上一篇：OffsetIndices：用相邻偏移表达一组变长区间</a><a href="../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-%E6%95%B0%E6%8D%AE%E5%B8%83%E5%B1%80%E8%BF%81%E7%A7%BB%E4%B8%8E%E6%8E%A5%E5%8F%A3%E6%BC%94%E5%8C%96.html">下一篇：一次布局重构怎样安全穿过整个项目 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

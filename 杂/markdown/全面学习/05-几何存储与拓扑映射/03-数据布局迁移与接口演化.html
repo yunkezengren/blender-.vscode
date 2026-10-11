@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="把 Hans 的网格迁移当成系统设计案例，理解存储改变如何传导到读写、属性和兼容。">
+<title>一次布局重构怎样安全穿过整个项目 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="05-03"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">几何存储与拓扑映射</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>GEOMETRY / DATA LAYOUT / LESSON 05-03</div><h1>一次布局重构怎样安全穿过整个项目</h1><p class="lede">把 Hans 的网格迁移当成系统设计案例，理解存储改变如何传导到读写、属性和兼容。</p><div class="chips"><span class="chip">方向 05 · 几何存储与拓扑映射</span><span class="chip">专题 3/3</span><span class="chip">正文 1,693 字符</span><span class="chip">建议研读 19 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-OffsetIndices%E4%B8%8E%E5%87%A0%E4%BD%95%E8%A1%A8%E7%A4%BA.html">01 OffsetIndices：用相邻偏移表达一组变长区间</a><a href="02-%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84%E4%B8%8E%E5%89%8D%E7%BC%80%E5%92%8C.html">02 拓扑映射：计数、前缀和、填充的三阶段构造</a><a href="03-%E6%95%B0%E6%8D%AE%E5%B8%83%E5%B1%80%E8%BF%81%E7%A7%BB%E4%B8%8E%E6%8E%A5%E5%8F%A3%E6%BC%94%E5%8C%96.html">03 一次布局重构怎样安全穿过整个项目</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>从面角点的连续排列推导 OffsetIndices，再构建反向拓扑映射。学习 Hans 如何通过改变表示方式，减少内存、分配和不一致状态。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>Span、数组、前缀和；知道顶点、边、面和角点的区别。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>面到角点</strong></div><div class="flow-step"><span>02</span><strong>偏移数组</strong></div><div class="flow-step"><span>03</span><strong>角点到顶点</strong></div><div class="flow-step"><span>04</span><strong>反向分组</strong></div><div class="flow-step"><span>05</span><strong>缓存拓扑关系</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>写迁移报告：前提、兼容策略、测试样本和未支持输入。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>先确定一个唯一事实来源</h3>
+<p>把同一信息保存两份会产生同步负担。移除 MPoly 后，面的范围来自统一偏移数组。迁移计划应列出所有读者、写者、复制操作和序列化边界，确认每个入口都接受新表示。若某条旧路径仍写旧数据，系统就会形成两个互相矛盾的事实来源。</p>
+<p>通过 git show --stat 先分类文件，再选每类一个代表精读。大量调用点变化往往只是表达方式迁移，但版本转换、所有权和可写 API 的变化可能有不同风险。</p>
+<h3>内存收益与使用成本一起考虑</h3>
+<p>减少结构大小可能改善缓存和复制成本，但 N+1 偏移数组不再像普通每面属性那样存放，某些复制代码需要专门处理。好的重构说明既描述收益，也记录临时限制和后续计划。</p>
+<p>把这与隐式共享模块连接起来：紧凑连续数组适合共享，但读写路径必须知道何时分离。两个改动可以先后落地，不必强求一次提交同时解决表示、共享、缓存和所有调用者优化。</p>
+<h3>兼容性是数据模型的一部分</h3>
+<p>历史文件可能不满足新布局要求，版本转换负责把它们带入新不变量。Python/RNA 暴露的可写字段也可能不再适合直接修改，否则会破坏整体连续性。API 的可变性需要随数据模型变化。</p>
+<p>练习写一份迁移说明：旧状态集合如何映射到新状态集合、哪些旧状态需要修正、哪些外部写法失效、如何验证保存再加载。这个思考过程会帮助你以后设计任何基础结构重构。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要把机械替换调用者等同于完成迁移；数据载入、复制和外部可写接口同样需要验证。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>切片迁移：切的是组，不是组内元素</h3><p>布局迁移时最容易写错的调用之一是 slice。此处完整函数保留绝对偏移值，并多取一个末尾哨兵；它没有把范围重新归零。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_offset_indices.hh · L103–L107。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_offset_indices.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="103">  <span class="syntax-type">OffsetIndices</span> <span class="syntax-function">slice</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">IndexRange</span> range) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="104">  {</span>
+<span class="code-line" data-line="105">    <span class="syntax-type">BLI_assert</span>(range.<span class="syntax-function">is_empty</span>() || offsets_.<span class="syntax-function">index_range</span>().<span class="syntax-function">drop_back</span>(<span class="syntax-number">1</span>).<span class="syntax-function">contains</span>(range.<span class="syntax-function">last</span>()));</span>
+<span class="code-line" data-line="106">    <span class="syntax-keyword">return</span> <span class="syntax-type">OffsetIndices</span>(offsets_.<span class="syntax-function">slice</span>(range.<span class="syntax-function">start</span>(), range.<span class="syntax-function">size</span>() + <span class="syntax-number">1</span>));</span>
+<span class="code-line" data-line="107">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L103</span><div><code><span class="syntax-type">OffsetIndices</span> <span class="syntax-function">slice</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">IndexRange</span> range) <span class="syntax-keyword">const</span></code><p>参数是源组的范围，返回一个借用原偏移存储的 OffsetIndices。</p>
+</div></div><div class="line-explanation"><span class="line-number">L104</span><div><code>{</code><p>打开 OffsetIndices slice(const IndexRange range) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L105</span><div><code><span class="syntax-type">BLI_assert</span>(range.<span class="syntax-function">is_empty</span>() || offsets_.<span class="syntax-function">index_range</span>().<span class="syntax-function">drop_back</span>(<span class="syntax-number">1</span>).<span class="syntax-function">contains</span>(range.<span class="syntax-function">last</span>()));</code><p>非空范围的最后一个组必须有效。空范围的特殊条件并不能取消下一行底层 Span 切片的地址合法性要求。</p>
+</div></div><div class="line-explanation"><span class="line-number">L106</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-type">OffsetIndices</span>(offsets_.<span class="syntax-function">slice</span>(range.<span class="syntax-function">start</span>(), range.<span class="syntax-function">size</span>() + <span class="syntax-number">1</span>));</code><p>从组起点切出 range.size()+1 个偏移值，多出来的一个就是最后组的结束哨兵。返回值仍依赖原偏移数组的寿命。</p>
+</div></div><div class="line-explanation"><span class="line-number">L107</span><div><code>}</code><p>结束 OffsetIndices slice(const IndexRange range) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>offsets=[0,3,5,9]，取组范围 start=1,size=2，结果偏移是 [3,5,9]，表示原 data 的 [3,5) 与 [5,9)。若把它配上从 3 开始的新 data 子数组而不重新基准化偏移，就会错位。</p>
+<h4>调用关系与设计判断</h4><p>检查迁移后的每个调用点是否仍把组编号当组编号，以及 data 是否仍使用同一个绝对索引空间。编译通过只能说明类型匹配，不能证明索引空间一致；用非零切片起点和空组组合做回归样例。</p>
+</article><article class="deep-reading"><h3>布局迁移后的消费算法：Corner 到 Face 映射</h3><p>完整算法入口使用统一 OffsetIndices 接口，不必重新读取旧 MPoly 的起点与长度字段。返回 Array 拥有结果，不像 GroupedSpan 仅借用调用者数组。</p>
+<p>完整源码单元 · source/blender/blenkernel/intern/mesh_mapping.cc · L271–L276。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenkernel/intern/mesh_mapping.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="271"><span class="syntax-type">Array</span>&lt;<span class="syntax-keyword">int</span>&gt; <span class="syntax-function">build_corner_to_face_map</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">OffsetIndices</span>&lt;<span class="syntax-keyword">int</span>&gt; faces)</span>
+<span class="code-line" data-line="272">{</span>
+<span class="code-line" data-line="273">  <span class="syntax-type">Array</span>&lt;<span class="syntax-keyword">int</span>&gt; <span class="syntax-function">map</span>(faces.<span class="syntax-function">total_size</span>());</span>
+<span class="code-line" data-line="274">  offset_indices::<span class="syntax-function">build_reverse_map</span>(faces, map);</span>
+<span class="code-line" data-line="275">  <span class="syntax-keyword">return</span> map;</span>
+<span class="code-line" data-line="276">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L271</span><div><code><span class="syntax-type">Array</span>&lt;<span class="syntax-keyword">int</span>&gt; <span class="syntax-function">build_corner_to_face_map</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">OffsetIndices</span>&lt;<span class="syntax-keyword">int</span>&gt; faces)</code><p>输入每个 face 的 corner 半开范围，输出每个 corner 所属 face 编号。</p>
+</div></div><div class="line-explanation"><span class="line-number">L272</span><div><code>{</code><p>打开 Array&lt;int&gt; build_corner_to_face_map(const OffsetIndices&lt;int&gt; faces) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L273</span><div><code><span class="syntax-type">Array</span>&lt;<span class="syntax-keyword">int</span>&gt; <span class="syntax-function">map</span>(faces.<span class="syntax-function">total_size</span>());</code><p>为总 corner 数分配结果 Array。这里默认 faces 覆盖相应完整 corner 空间，子切片的非零起点契约需要单独核对。</p>
+</div></div><div class="line-explanation"><span class="line-number">L274</span><div><code>offset_indices::<span class="syntax-function">build_reverse_map</span>(faces, map);</code><p>展开每个 face 范围，把 face 编号写到对应 corners。具体并行与填充在 build_reverse_map 中。</p>
+</div></div><div class="line-explanation"><span class="line-number">L275</span><div><code><span class="syntax-keyword">return</span> map;</code><p>按值返回拥有数组，调用者无需保活函数局部 map 变量本身。</p>
+</div></div><div class="line-explanation"><span class="line-number">L276</span><div><code>}</code><p>结束 Array&lt;int&gt; build_corner_to_face_map(const OffsetIndices&lt;int&gt; faces) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>faces offsets=[0,3,7]，结果 map=[0,0,0,1,1,1,1]。face 1 包含四个 corners；它们的 vertex 编号可以重复或跳跃，不能用 corner_to_face 结果去替代 corner_verts。</p>
+<h4>调用关系与设计判断</h4><p>对照 7966cd16d6d 的接口迁移，逐个列出旧读取字段如何映射为 faces[face] 的 start/size。真正的架构收益是让所有消费者遵守同一范围模型，而不只是减少某个结构的字节数。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenkernel/BKE_mesh_mapping.hh">BKE_mesh_mapping.hh</a></div><p>检查上层算法看到的拓扑查询边界。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 14 行 · SHA-256 e9b9a61c6e37</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenkernel/BKE_mesh_mapping.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenkernel/BKE_mesh_mapping.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">11</span>,<span class="syntax-number">42</span> -- <span class="syntax-string">&quot;source/blender/blenkernel/BKE_mesh_mapping.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_offset_indices.hh">BLI_offset_indices.hh</a></div><p>把新模型的统一访问规则作为迁移后的契约。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 82 行 · SHA-256 12eed50b3acf</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_offset_indices.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_offset_indices.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">79</span>,<span class="syntax-number">110</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_offset_indices.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/7966cd16d6dc4e66d01f7bd68a090107c1a7978c" target="_blank" rel="noopener">7966cd16d6d</a> <span>Hans Goudey · 2023-04-04</span></div><h3>Mesh: Replace MPoly struct with offset indices</h3><p>重点读提交说明中的 Some 部分，那里记录了迁移代价与兼容问题。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Implements #95967.
+
+Currently the `MPoly` struct is 12 bytes, and stores the index of a
+face&#x27;s first corner and the number of corners/verts/edges. Polygons
+and corners are always created in order by Blender, meaning each
+face&#x27;s corners will be after the previous face&#x27;s corners. We can take
+advantage of this fact and eliminate the redundancy in mesh face
+storage by only storing a single integer corner offset for each face.
+The size of the face is then encoded by the offset of the next face.
+The size of a single integer is 4 bytes, so this reduces memory
+usage by 3 times.
+
+The same method is used for `CurvesGeometry`, so Blender already has
+an abstraction to simplify using these offsets called `OffsetIndices`.
+This class is used to easily retrieve a range of corner indices for
+each face. This also gives the opportunity for sharing some logic with
+curves.
+
+Another benefit of the change is that the offsets and sizes stored in
+`MPoly` can no longer disagree with each other. Storing faces in the
+order of their corners can simplify some code too.
+
+Face/polygon variables now use the `IndexRange` type, which comes with
+quite a few utilities that can simplify code.
+
+Some:
+- The offset integer array has to be one longer than the face count to
+  avoid a branch for every face, which means the data is no longer part
+  of the mesh&#x27;s `CustomData`.
+- We lose the ability to &quot;reference&quot; an original mesh&#x27;s offset array
+  until more reusable CoW from #104478 is committed. That will be added
+  in a separate commit.
+- Since they aren&#x27;t part of `CustomData`, poly offsets often have to be
+  copied manually.
+- To simplify using `OffsetIndices` in many places, some functions and
+  structs in headers were moved to only compile in C++.
+- All meshes created by Blender use the same order for faces and face
+  corners, but just in case, meshes with mismatched order are fixed by
+  versioning code.
+- `MeshPolygon.totloop` is no longer editable in RNA. This API break is
+  necessary here unfortunately. It should be worth it in 3.6, since
+  that&#x27;s the best way to allow loading meshes from 4.0, which is
+  important for an LTS version.
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/105938</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">intern/cycles/blender/mesh.cpp                     |  <span class="syntax-number">42</span> +--</span>
+<span class="code-line" data-line="2"> source/blender/blenkernel/<span class="syntax-type">BKE_DerivedMesh</span>.h        |  <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/<span class="syntax-type">BKE_deform</span>.h             |  <span class="syntax-number">13</span> +-</span>
+<span class="code-line" data-line="4"> source/blender/blenkernel/<span class="syntax-type">BKE_mesh</span>.h               |  <span class="syntax-number">27</span> +-</span>
+<span class="code-line" data-line="5"> source/blender/blenkernel/<span class="syntax-type">BKE_mesh</span>.hh              |  <span class="syntax-number">50</span> ++--</span>
+<span class="code-line" data-line="6"> .../blender/blenkernel/<span class="syntax-type">BKE_mesh_legacy_convert</span>.h   |  <span class="syntax-number">31</span> ++-</span>
+<span class="code-line" data-line="7"> source/blender/blenkernel/<span class="syntax-type">BKE_mesh_mapping</span>.h       |  <span class="syntax-number">62</span> ++---</span>
+<span class="code-line" data-line="8"> source/blender/blenkernel/<span class="syntax-type">BKE_mesh_remap</span>.h         |  <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="9"> source/blender/blenkernel/<span class="syntax-type">BKE_mesh_tangent</span>.h       |  <span class="syntax-number">27</span> +-</span>
+<span class="code-line" data-line="10"> source/blender/blenkernel/<span class="syntax-type">BKE_multires</span>.h           |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="11"> source/blender/blenkernel/<span class="syntax-type">BKE_paint</span>.h              |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="12"> source/blender/blenkernel/<span class="syntax-type">BKE_particle</span>.h           |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="13"> source/blender/blenkernel/<span class="syntax-type">BKE_pbvh</span>.h               |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="14"> source/blender/blenkernel/<span class="syntax-type">BKE_shrinkwrap</span>.h         |   <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="15"> source/blender/blenkernel/<span class="syntax-type">BKE_subdiv_ccg</span>.h         |  <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="16"> source/blender/blenkernel/<span class="syntax-type">BKE_volume_to_mesh</span>.hh    |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="17"> source/blender/blenkernel/intern/<span class="syntax-type">CCGSubSurf</span>.c      |   <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="18"> source/blender/blenkernel/intern/<span class="syntax-type">DerivedMesh</span>.cc    |  <span class="syntax-number">40</span> ++-</span>
+<span class="code-line" data-line="19"> source/blender/blenkernel/intern/bvhutils.cc       |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="20"> source/blender/blenkernel/intern/cdderivedmesh.cc  |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="21"> source/blender/blenkernel/intern/cloth.cc          |  <span class="syntax-number">37</span> ++-</span>
+<span class="code-line" data-line="22"> source/blender/blenkernel/intern/crazyspace.cc     |  <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="23"> .../blenkernel/intern/curve_to_mesh_convert.cc     |  <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="24"> source/blender/blenkernel/intern/customdata.cc     |  <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="25"> source/blender/blenkernel/intern/data_transfer.cc  |  <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="26"> source/blender/blenkernel/intern/deform.cc         |  <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="27"> source/blender/blenkernel/intern/dynamicpaint.cc   |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="28"> source/blender/blenkernel/intern/fluid.cc          |  <span class="syntax-number">31</span> +--</span>
+<span class="code-line" data-line="29"> .../blenkernel/intern/geometry_component_mesh.cc   |  <span class="syntax-number">85</span> +++----</span>
+<span class="code-line" data-line="30"> .../blenkernel/intern/gpencil_geom_legacy.cc       |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="31"> source/blender/blenkernel/intern/key.cc            |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="32"> .../blender/blenkernel/intern/mball_tessellate.cc  |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="33"> source/blender/blenkernel/intern/mesh.cc           |  <span class="syntax-number">71</span> ++++--</span>
+<span class="code-line" data-line="34"> .../blenkernel/intern/mesh_boolean_convert.cc      | <span class="syntax-number">119</span> ++++-----</span>
+<span class="code-line" data-line="35"> .../blender/blenkernel/intern/mesh_calc_edges.cc   |  <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="36"> source/blender/blenkernel/intern/mesh_convert.cc   |  <span class="syntax-number">46</span> ++--</span>
+<span class="code-line" data-line="37"> source/blender/blenkernel/intern/mesh_evaluate.cc  |  <span class="syntax-number">92</span> ++++---</span>
+<span class="code-line" data-line="38"> source/blender/blenkernel/intern/mesh_fair.cc      |  <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="39"> source/blender/blenkernel/intern/mesh_iterators.cc |  <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="40"> .../blenkernel/intern/mesh_legacy_convert.cc       | <span class="syntax-number">150</span> ++++++++---</span>
+<span class="code-line" data-line="41"> source/blender/blenkernel/intern/mesh_mapping.cc   | <span class="syntax-number">194</span> ++++++--------</span>
+<span class="code-line" data-line="42"> .../blenkernel/intern/mesh_merge_customdata.cc     |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="43"> source/blender/blenkernel/intern/mesh_mirror.cc    |  <span class="syntax-number">21</span> +-</span>
+<span class="code-line" data-line="44"> source/blender/blenkernel/intern/mesh_normals.cc   |  <span class="syntax-number">95</span> +++----</span>
+<span class="code-line" data-line="45"> source/blender/blenkernel/intern/mesh_remap.cc     | <span class="syntax-number">212</span> +++++++---------</span>
+<span class="code-line" data-line="46"> .../blender/blenkernel/intern/mesh_remesh_voxel.cc |  <span class="syntax-number">39</span> ++-</span>
+<span class="code-line" data-line="47"> source/blender/blenkernel/intern/mesh_runtime.cc   |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="48"> source/blender/blenkernel/intern/mesh_tangent.cc   |  <span class="syntax-number">70</span> +++--</span>
+<span class="code-line" data-line="49"> .../blender/blenkernel/intern/mesh_tessellate.cc   |  <span class="syntax-number">52</span> ++--</span>
+<span class="code-line" data-line="50"> source/blender/blenkernel/intern/mesh_validate.cc  |  <span class="syntax-number">99</span> ++++----</span>
+<span class="code-line" data-line="51"> source/blender/blenkernel/intern/mesh_wrapper.cc   |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="52"> source/blender/blenkernel/intern/multires.cc       |  <span class="syntax-number">43</span> ++--</span>
+<span class="code-line" data-line="53"> .../blender/blenkernel/intern/multires_reshape.hh  |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="54"> .../intern/multires_reshape_apply_base.cc          |  <span class="syntax-number">22</span> +-</span>
+<span class="code-line" data-line="55"> .../blenkernel/intern/multires_reshape_smooth.cc   |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="56"> .../intern/multires_reshape_subdivide.cc           |  <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="57"> .../blenkernel/intern/multires_reshape_util.cc     |  <span class="syntax-number">13</span> +-</span>
+<span class="code-line" data-line="58"> .../blenkernel/intern/multires_reshape_vertcos.cc  |   <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="59"> .../blenkernel/intern/multires_unsubdivide.cc      |  <span class="syntax-number">32</span> ++-</span>
+<span class="code-line" data-line="60"> source/blender/blenkernel/intern/object_dupli.cc   |  <span class="syntax-number">31</span> +--</span>
+<span class="code-line" data-line="61"> source/blender/blenkernel/intern/paint.cc          |  <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="62"> source/blender/blenkernel/intern/pbvh.cc           |  <span class="syntax-number">34</span> +--</span>
+<span class="code-line" data-line="63"> source/blender/blenkernel/intern/pbvh_colors.cc    |  <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="64"> source/blender/blenkernel/intern/pbvh_intern.hh    |   <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="65"> source/blender/blenkernel/intern/shrinkwrap.cc     |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="66"> source/blender/blenkernel/intern/softbody.c        |  <span class="syntax-number">29</span> ++-</span>
+<span class="code-line" data-line="67"> source/blender/blenkernel/intern/subdiv_ccg.cc     |  <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="68"> .../blender/blenkernel/intern/subdiv_ccg_mask.cc   |  <span class="syntax-number">27</span> +-</span>
+<span class="code-line" data-line="69"> .../blenkernel/intern/subdiv_converter_mesh.cc     |  <span class="syntax-number">31</span> +--</span>
+<span class="code-line" data-line="70"> .../intern/subdiv_displacement_multires.cc         |  <span class="syntax-number">55</span> ++--</span>
+<span class="code-line" data-line="71"> source/blender/blenkernel/intern/subdiv_eval.cc    |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="72"> source/blender/blenkernel/intern/subdiv_foreach.cc | <span class="syntax-number">281</span> ++++++++++-----------</span>
+<span class="code-line" data-line="73"> source/blender/blenkernel/intern/subdiv_mesh.cc    | <span class="syntax-number">143</span> +++++------</span>
+<span class="code-line" data-line="74"> source/blender/blenkernel/intern/subsurf_ccg.cc    |  <span class="syntax-number">50</span> ++--</span>
+<span class="code-line" data-line="75"> source/blender/blenkernel/intern/volume_to_mesh.cc |  <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="76"> source/blender/blenlib/<span class="syntax-type">BLI_offset_indices</span>.hh       |  <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="77"> source/blender/blenloader/intern/versioning_290.cc |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="78"> source/blender/blenloader/intern/versioning_400.cc |   <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="79"> source/blender/bmesh/intern/bmesh_mesh_convert.cc  |  <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="80"> source/blender/draw/<span class="syntax-type">DRW_pbvh</span>.hh                    |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="81"> .../blender/draw/intern/draw_cache_extract_mesh.cc |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="82"> .../intern/draw_cache_extract_mesh_render_data.cc  |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="83"> .../draw/intern/draw_cache_impl_subdivision.cc     |  <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="84"> source/blender/draw/intern/draw_pbvh.cc            |   <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="85"> .../draw/intern/mesh_extractors/extract_mesh.hh    |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="86"> .../mesh_extractors/extract_mesh_ibo_edituv.cc     |  <span class="syntax-number">28</span> +-</span>
+<span class="code-line" data-line="87"> .../mesh_extractors/extract_mesh_ibo_fdots.cc      |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="88"> .../mesh_extractors/extract_mesh_ibo_lines.cc      |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="89"> .../extract_mesh_ibo_lines_adjacency.cc            |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="90"> .../extract_mesh_ibo_lines_paint_mask.cc           |  <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="91"> .../mesh_extractors/extract_mesh_ibo_points.cc     |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="92"> .../mesh_extractors/extract_mesh_ibo_tris.cc       |   <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="93"> .../mesh_extractors/extract_mesh_vbo_attributes.cc |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="94"> .../mesh_extractors/extract_mesh_vbo_edge_fac.cc   |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="95"> .../mesh_extractors/extract_mesh_vbo_edit_data.cc  |   <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="96"> .../extract_mesh_vbo_edituv_data.cc                |  <span class="syntax-number">13</span> +-</span>
+<span class="code-line" data-line="97"> .../extract_mesh_vbo_edituv_stretch_angle.cc       |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="98"> .../extract_mesh_vbo_edituv_stretch_area.cc        |  <span class="syntax-number">17</span> +-</span>
+<span class="code-line" data-line="99"> .../extract_mesh_vbo_fdots_edituv_data.cc          |   <span class="syntax-number">1</span> -</span>
+<span class="code-line" data-line="100"> .../mesh_extractors/extract_mesh_vbo_fdots_pos.cc  |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="101"> .../mesh_extractors/extract_mesh_vbo_fdots_uv.cc   |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="102"> .../mesh_extractors/extract_mesh_vbo_lnor.cc       |  <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="103"> .../extract_mesh_vbo_mesh_analysis.cc              |  <span class="syntax-number">46</span> ++--</span>
+<span class="code-line" data-line="104"> .../mesh_extractors/extract_mesh_vbo_orco.cc       |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="105"> .../mesh_extractors/extract_mesh_vbo_pos_nor.cc    |  <span class="syntax-number">13</span> +-</span>
+<span class="code-line" data-line="106"> .../extract_mesh_vbo_sculpt_data.cc                |  <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="107"> .../mesh_extractors/extract_mesh_vbo_select_idx.cc |  <span class="syntax-number">17</span> +-</span>
+<span class="code-line" data-line="108"> .../intern/mesh_extractors/extract_mesh_vbo_tan.cc |   <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="109"> .../mesh_extractors/extract_mesh_vbo_weights.cc    |  <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="110"> source/blender/editors/armature/meshlaplacian.cc   |  <span class="syntax-number">30</span> +--</span>
+<span class="code-line" data-line="111"> source/blender/editors/mesh/editface.cc            |  <span class="syntax-number">60</span> ++---</span>
+<span class="code-line" data-line="112"> source/blender/editors/mesh/editmesh_undo.cc       |  <span class="syntax-number">36</span> +++</span>
+<span class="code-line" data-line="113"> source/blender/editors/mesh/mesh_data.cc           |  <span class="syntax-number">33</span> ++-</span>
+<span class="code-line" data-line="114"> source/blender/editors/mesh/meshtools.cc           |  <span class="syntax-number">29</span> ++-</span>
+<span class="code-line" data-line="115"> source/blender/editors/object/object_bake_api.cc   |  <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="116"> source/blender/editors/sculpt_paint/paint_hide.cc  |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="117"> .../editors/sculpt_paint/paint_image_proj.cc       |  <span class="syntax-number">13</span> +-</span>
+<span class="code-line" data-line="118"> source/blender/editors/sculpt_paint/paint_mask.cc  |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="119"> .../blender/editors/sculpt_paint/paint_vertex.cc   |  <span class="syntax-number">91</span> +++----</span>
+<span class="code-line" data-line="120"> .../sculpt_paint/paint_vertex_weight_ops.cc        |  <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="121"> source/blender/editors/sculpt_paint/sculpt.cc      |  <span class="syntax-number">34</span> +--</span>
+<span class="code-line" data-line="122"> .../blender/editors/sculpt_paint/sculpt_dyntopo.cc |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="123"> .../blender/editors/sculpt_paint/sculpt_expand.cc  |  <span class="syntax-number">42</span> ++-</span>
+<span class="code-line" data-line="124"> .../editors/sculpt_paint/sculpt_face_set.cc        |  <span class="syntax-number">30</span> +--</span>
+<span class="code-line" data-line="125"> .../editors/sculpt_paint/sculpt_geodesic.cc        |  <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="126"> .../blender/editors/sculpt_paint/sculpt_intern.hh  |   <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="127"> source/blender/editors/sculpt_paint/sculpt_undo.cc |   <span class="syntax-number">4</span> +</span>
+<span class="code-line" data-line="128"> .../spreadsheet_data_source_geometry.cc            |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="129"> source/blender/editors/space_view3d/drawobject.cc  |   <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="130"> .../editors/transform/transform_snap_object.cc     |  <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="131"> source/blender/editors/uvedit/uvedit_unwrap_ops.cc |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="132"> .../intern/blender_interface/<span class="syntax-type">BlenderFileLoader</span>.cpp |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="133"> .../blender_interface/<span class="syntax-type">BlenderStrokeRenderer</span>.cpp    |  <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="134"> source/blender/geometry/intern/mesh_flip_faces.cc  |   <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="135"> .../geometry/intern/mesh_merge_by_distance.cc      |  <span class="syntax-number">36</span> ++-</span>
+<span class="code-line" data-line="136"> .../geometry/intern/mesh_primitive_cuboid.cc       |  <span class="syntax-number">24</span> +-</span>
+<span class="code-line" data-line="137"> source/blender/geometry/intern/mesh_split_edges.cc |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="138"> .../blender/geometry/intern/realize_instances.cc   |  <span class="syntax-number">17</span> +-</span>
+<span class="code-line" data-line="139"> .../blender/io/alembic/exporter/abc_writer_mesh.cc |  <span class="syntax-number">20</span> +-</span>
+<span class="code-line" data-line="140"> source/blender/io/alembic/intern/abc_customdata.cc |  <span class="syntax-number">55</span> ++--</span>
+<span class="code-line" data-line="141"> source/blender/io/alembic/intern/abc_customdata.h  |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="142"> .../blender/io/alembic/intern/abc_reader_mesh.cc   |  <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="143"> source/blender/io/collada/<span class="syntax-type">GeometryExporter</span>.cpp     |  <span class="syntax-number">43</span> ++--</span>
+<span class="code-line" data-line="144"> source/blender/io/collada/<span class="syntax-type">MeshImporter</span>.cpp         |  <span class="syntax-number">24</span> +-</span>
+<span class="code-line" data-line="145"> source/blender/io/collada/<span class="syntax-type">MeshImporter</span>.h           |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="146"> .../io/ply/exporter/ply_export_load_plydata.cc     |  <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="147"> source/blender/io/ply/importer/ply_import_mesh.cc  |   <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="148"> source/blender/io/stl/importer/stl_import_mesh.cc  |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="149"> source/blender/io/usd/intern/usd_reader_mesh.cc    |  <span class="syntax-number">45</span> ++--</span>
+<span class="code-line" data-line="150"> source/blender/io/usd/intern/usd_reader_shape.cc   |  <span class="syntax-number">21</span> +-</span>
+<span class="code-line" data-line="151"> source/blender/io/usd/intern/usd_writer_mesh.cc    |  <span class="syntax-number">17</span> +-</span>
+<span class="code-line" data-line="152"> .../io/wavefront_obj/exporter/obj_export_mesh.cc   |  <span class="syntax-number">40</span> ++-</span>
+<span class="code-line" data-line="153"> .../io/wavefront_obj/exporter/obj_export_mesh.hh   |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="154"> .../io/wavefront_obj/importer/obj_import_mesh.cc   |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="155"> source/blender/makesdna/<span class="syntax-type">DNA_customdata_types</span>.h     |   <span class="syntax-number">1</span> -</span>
+<span class="code-line" data-line="156"> source/blender/makesdna/<span class="syntax-type">DNA_mesh_types</span>.h           |  <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="157"> source/blender/makesdna/<span class="syntax-type">DNA_meshdata_types</span>.h       |  <span class="syntax-number">79</span> +++---</span>
+<span class="code-line" data-line="158"> source/blender/makesrna/intern/rna_mesh.c          |  <span class="syntax-number">76</span> ++++--</span>
+<span class="code-line" data-line="159"> source/blender/makesrna/intern/rna_mesh_api.c      |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="160"> source/blender/makesrna/intern/rna_particle.c      |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="161"> source/blender/modifiers/intern/<span class="syntax-type">MOD_array</span>.cc       |  <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="162"> source/blender/modifiers/intern/<span class="syntax-type">MOD_build</span>.cc       |  <span class="syntax-number">38</span> +--</span>
+<span class="code-line" data-line="163"> .../modifiers/intern/<span class="syntax-type">MOD_correctivesmooth</span>.cc       |  <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="164"> source/blender/modifiers/intern/<span class="syntax-type">MOD_explode</span>.cc     |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="165"> .../modifiers/intern/<span class="syntax-type">MOD_laplaciansmooth</span>.cc        |  <span class="syntax-number">22</span> +-</span>
+<span class="code-line" data-line="166"> source/blender/modifiers/intern/<span class="syntax-type">MOD_mask</span>.cc        |  <span class="syntax-number">72</span> +++---</span>
+<span class="code-line" data-line="167"> source/blender/modifiers/intern/<span class="syntax-type">MOD_meshcache</span>.c    |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="168"> .../modifiers/intern/<span class="syntax-type">MOD_meshsequencecache</span>.cc      |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="169"> source/blender/modifiers/intern/<span class="syntax-type">MOD_normal_edit</span>.cc |  <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="170"> source/blender/modifiers/intern/<span class="syntax-type">MOD_ocean</span>.cc       |  <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="171"> .../modifiers/intern/<span class="syntax-type">MOD_particleinstance</span>.cc       |  <span class="syntax-number">20</span> +-</span>
+<span class="code-line" data-line="172"> source/blender/modifiers/intern/<span class="syntax-type">MOD_remesh</span>.cc      |  <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="173"> source/blender/modifiers/intern/<span class="syntax-type">MOD_screw</span>.cc       |  <span class="syntax-number">31</span> +--</span>
+<span class="code-line" data-line="174"> .../modifiers/intern/<span class="syntax-type">MOD_solidify_extrude</span>.cc       |  <span class="syntax-number">89</span> +++----</span>
+<span class="code-line" data-line="175"> .../modifiers/intern/<span class="syntax-type">MOD_solidify_nonmanifold</span>.cc   | <span class="syntax-number">106</span> ++++----</span>
+<span class="code-line" data-line="176"> .../blender/modifiers/intern/<span class="syntax-type">MOD_surfacedeform</span>.cc  |  <span class="syntax-number">51</span> ++--</span>
+<span class="code-line" data-line="177"> source/blender/modifiers/intern/<span class="syntax-type">MOD_util</span>.cc        |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="178"> source/blender/modifiers/intern/<span class="syntax-type">MOD_uvproject</span>.cc   |  <span class="syntax-number">22</span> +-</span>
+<span class="code-line" data-line="179"> source/blender/modifiers/intern/<span class="syntax-type">MOD_uvwarp</span>.cc      |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="180"> .../modifiers/intern/<span class="syntax-type">MOD_weighted_normal</span>.cc        |  <span class="syntax-number">49</span> ++--</span>
+<span class="code-line" data-line="181"> .../geometry/nodes/node_geo_blur_attribute.cc      |  <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="182"> .../nodes/geometry/nodes/node_geo_convex_hull.cc   |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="183"> .../nodes/geometry/nodes/node_geo_curve_fill.cc    |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="184"> .../geometry/nodes/node_geo_delete_geometry.cc     | <span class="syntax-number">120</span> +++++----</span>
+<span class="code-line" data-line="185"> .../nodes/geometry/nodes/node_geo_dual_mesh.cc     |  <span class="syntax-number">62</span> +++--</span>
+<span class="code-line" data-line="186"> .../geometry/nodes/node_geo_duplicate_elements.cc  |  <span class="syntax-number">25</span> +-</span>
+<span class="code-line" data-line="187"> .../nodes/node_geo_edges_to_face_groups.cc         |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="188"> .../nodes/geometry/nodes/node_geo_extrude_mesh.cc  | <span class="syntax-number">149</span> +++++------</span>
+<span class="code-line" data-line="189"> .../nodes/node_geo_input_mesh_edge_angle.cc        |  <span class="syntax-number">35</span> ++-</span>
+<span class="code-line" data-line="190"> .../nodes/node_geo_input_mesh_face_area.cc         |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="191"> .../nodes/node_geo_input_mesh_face_is_planar.cc    |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="192"> .../nodes/node_geo_input_mesh_face_neighbors.cc    |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="193"> .../nodes/node_geo_mesh_face_group_boundaries.cc   |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="194"> .../nodes/node_geo_mesh_primitive_circle.cc        |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="195"> .../geometry/nodes/node_geo_mesh_primitive_cone.cc |  <span class="syntax-number">37</span> +--</span>
+<span class="code-line" data-line="196"> .../geometry/nodes/node_geo_mesh_primitive_grid.cc |  <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="197"> .../nodes/node_geo_mesh_primitive_uv_sphere.cc     |  <span class="syntax-number">31</span> +--</span>
+<span class="code-line" data-line="198"> .../node_geo_mesh_topology_corners_of_face.cc      |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="199"> .../node_geo_mesh_topology_edges_of_corner.cc      |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="200"> .../nodes/node_geo_mesh_topology_face_of_corner.cc |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="201"> ...node_geo_mesh_topology_offset_corner_in_face.cc |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="202"> .../geometry/nodes/node_geo_sample_nearest.cc      |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="203"> .../geometry/nodes/node_geo_scale_elements.cc      |  <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="204"> .../geometry/nodes/node_geo_uv_pack_islands.cc     |  <span class="syntax-number">20</span> +-</span>
+<span class="code-line" data-line="205"> .../nodes/geometry/nodes/node_geo_uv_unwrap.cc     |  <span class="syntax-number">20</span> +-</span>
+<span class="code-line" data-line="206"> .../geometry/nodes/node_geo_volume_to_mesh.cc      |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="207"> source/blender/render/intern/bake.cc               |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="208"> source/blender/render/intern/multires_bake.cc      |  <span class="syntax-number">81</span> +++---</span>
+<span class="code-line" data-line="209"> source/blender/render/intern/texture_margin.cc     |  <span class="syntax-number">29</span> +--</span>
+<span class="code-line" data-line="210"> <span class="syntax-number">209</span> files changed, <span class="syntax-number">2773</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">2987</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 7966cd16d6d</span>
+<span class="code-line" data-line="2">git show 7966cd16d6d</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 7966cd16d6d -- source/blender/…</span></span></code></pre></div>
+</details></article>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/4d841e1b355959aba4b55e9f7bfa83af0ed2d162" target="_blank" rel="noopener">4d841e1b355</a> <span>Hans Goudey · 2023-05-24</span></div><h3>Mesh: Reimplement and unify topology maps</h3><p>观察后续映射统一如何利用已经建立的布局基础。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Combine the newer less efficient C++ implementations and the older
+less convenient C functions. The maps now contain one large array of
+indices, split into groups by a separate array of offset indices.
+Though performance of creating the maps is relatively unchanged, the
+new implementation uses 4 bytes less per source element than the C
+maps, and 20 bytes less than the newer C++ functions (which also
+had more overhead with larger N-gons). The usage syntax is simpler
+than the C functions as well.
+
+The reduced memory usage is helpful for when these maps are cached
+in the near future. It will also allow sharing the offsets between
+maps for different domains like vertex to corner and vertex to face.
+
+A simple `GroupedSpan` class is introduced to make accessing the
+topology maps much simpler. It combines offset indices and a separate
+span, splitting it into chunks in an efficient way.
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/107861</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenkernel/<span class="syntax-type">BKE_mesh_mapping</span>.h       |  <span class="syntax-number">99</span> ++---</span>
+<span class="code-line" data-line="2"> source/blender/blenkernel/<span class="syntax-type">BKE_paint</span>.h              |  <span class="syntax-number">35</span> +-</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/<span class="syntax-type">BKE_pbvh</span>.h               |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="4"> source/blender/blenkernel/<span class="syntax-type">BKE_subdiv_mesh</span>.hh       |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="5"> source/blender/blenkernel/intern/mesh_fair.cc      |  <span class="syntax-number">57</span> ++-</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/intern/mesh_mapping.cc   | <span class="syntax-number">458</span> ++++++---------------</span>
+<span class="code-line" data-line="7"> .../blenkernel/intern/mesh_merge_customdata.cc     |  <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="8"> source/blender/blenkernel/intern/mesh_normals.cc   |  <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="9"> source/blender/blenkernel/intern/mesh_remap.cc     | <span class="syntax-number">135</span> +++---</span>
+<span class="code-line" data-line="10"> .../blender/blenkernel/intern/mesh_remesh_voxel.cc |  <span class="syntax-number">55</span> ++-</span>
+<span class="code-line" data-line="11"> source/blender/blenkernel/intern/multires.cc       |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="12"> .../intern/multires_reshape_apply_base.cc          |  <span class="syntax-number">27</span> +-</span>
+<span class="code-line" data-line="13"> .../blenkernel/intern/multires_unsubdivide.cc      |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="14"> source/blender/blenkernel/intern/paint.cc          |  <span class="syntax-number">39</span> +-</span>
+<span class="code-line" data-line="15"> source/blender/blenkernel/intern/pbvh.cc           |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="16"> source/blender/blenkernel/intern/pbvh_colors.cc    |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="17"> source/blender/blenkernel/intern/pbvh_intern.hh    |   <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="18"> source/blender/blenkernel/intern/subdiv_mesh.cc    |  <span class="syntax-number">29</span> +-</span>
+<span class="code-line" data-line="19"> source/blender/blenlib/<span class="syntax-type">BLI_offset_indices</span>.hh       |  <span class="syntax-number">50</span> ++-</span>
+<span class="code-line" data-line="20"> source/blender/blenlib/intern/offset_indices.cc    |  <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="21"> .../draw/intern/draw_cache_impl_subdivision.cc     |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="22"> source/blender/editors/mesh/editface.cc            |  <span class="syntax-number">28</span> +-</span>
+<span class="code-line" data-line="23"> source/blender/editors/object/object_modifier.cc   |  <span class="syntax-number">20</span> +-</span>
+<span class="code-line" data-line="24"> source/blender/editors/object/object_vgroup.cc     |  <span class="syntax-number">28</span> +-</span>
+<span class="code-line" data-line="25"> .../blender/editors/sculpt_paint/paint_vertex.cc   |  <span class="syntax-number">62</span> ++-</span>
+<span class="code-line" data-line="26"> source/blender/editors/sculpt_paint/sculpt.cc      |  <span class="syntax-number">50</span> +--</span>
+<span class="code-line" data-line="27"> .../editors/sculpt_paint/sculpt_automasking.cc     |  <span class="syntax-number">15</span> -</span>
+<span class="code-line" data-line="28"> .../blender/editors/sculpt_paint/sculpt_dyntopo.cc |   <span class="syntax-number">4</span> -</span>
+<span class="code-line" data-line="29"> .../blender/editors/sculpt_paint/sculpt_expand.cc  |  <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="30"> .../editors/sculpt_paint/sculpt_face_set.cc        |  <span class="syntax-number">26</span> +-</span>
+<span class="code-line" data-line="31"> .../editors/sculpt_paint/sculpt_filter_color.cc    |   <span class="syntax-number">4</span> -</span>
+<span class="code-line" data-line="32"> .../editors/sculpt_paint/sculpt_filter_mask.cc     |   <span class="syntax-number">4</span> -</span>
+<span class="code-line" data-line="33"> .../editors/sculpt_paint/sculpt_geodesic.cc        |  <span class="syntax-number">24</span> +-</span>
+<span class="code-line" data-line="34"> source/blender/editors/sculpt_paint/sculpt_ops.cc  |   <span class="syntax-number">4</span> -</span>
+<span class="code-line" data-line="35"> .../blender/editors/sculpt_paint/sculpt_smooth.cc  |   <span class="syntax-number">6</span> -</span>
+<span class="code-line" data-line="36"> source/blender/geometry/intern/mesh_split_edges.cc |  <span class="syntax-number">26</span> +-</span>
+<span class="code-line" data-line="37"> source/blender/modifiers/intern/<span class="syntax-type">MOD_skin</span>.cc        |  <span class="syntax-number">77</span> ++--</span>
+<span class="code-line" data-line="38"> .../modifiers/intern/<span class="syntax-type">MOD_weighted_normal</span>.cc        |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="39"> .../geometry/nodes/node_geo_blur_attribute.cc      | <span class="syntax-number">182</span> ++++----</span>
+<span class="code-line" data-line="40"> .../nodes/geometry/nodes/node_geo_dual_mesh.cc     |  <span class="syntax-number">21</span> +-</span>
+<span class="code-line" data-line="41"> .../nodes/node_geo_edges_to_face_groups.cc         |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="42"> .../nodes/geometry/nodes/node_geo_extrude_mesh.cc  |  <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="43"> .../node_geo_mesh_topology_corners_of_vertex.cc    |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="44"> .../node_geo_mesh_topology_edges_of_corner.cc      |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="45"> .../node_geo_mesh_topology_edges_of_vertex.cc      |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="46"> .../nodes/node_geo_mesh_topology_face_of_corner.cc |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="47"> ...node_geo_mesh_topology_offset_corner_in_face.cc |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="48"> source/blender/render/intern/texture_margin.cc     |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="49"> <span class="syntax-number">48</span> files changed, <span class="syntax-number">704</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">1004</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 4d841e1b355</span>
+<span class="code-line" data-line="2">git show 4d841e1b355</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 4d841e1b355 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>为你的小网格同时实现旧 face-start/size 与新 offsets 格式，并编写显式转换函数。</p>
+</li><li><strong>任务 02</strong><p>构造旧数据中的空区间和不连续区间，决定拒绝、修正还是重新打包。</p>
+</li><li><strong>任务 03</strong><p>写迁移报告：前提、兼容策略、测试样本和未支持输入。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="05-03-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="05-03-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="05-03-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>数据更紧凑是否足以证明重构值得？</summary><p>还要考虑访问成本、调用者复杂度、兼容和维护不变量的难度。</p>
+</details><details class="question"><summary>为什么不能继续允许任意修改单个面的数量？</summary><p>这可能让相邻面范围与整体存储不一致，需要更高层的重排操作。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="05-03" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/02-%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84%E4%B8%8E%E5%89%8D%E7%BC%80%E5%92%8C.html">← 上一篇：拓扑映射：计数、前缀和、填充的三阶段构造</a><a href="../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98/01-ImplicitSharing%E4%B8%8E%E5%86%99%E6%97%B6%E5%88%86%E7%A6%BB.html">下一篇：隐式共享：复制对象不必立即复制全部数据 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

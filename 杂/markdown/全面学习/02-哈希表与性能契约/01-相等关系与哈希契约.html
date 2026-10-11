@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="从 +0.0 与 -0.0 的修复入手，学习基础接口中的数学契约。">
+<title>哈希的第一条规则：相等必须导向相同哈希 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="02-01"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">哈希表与性能契约</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>DATA STRUCTURES / CONTRACTS / LESSON 02-01</div><h1>哈希的第一条规则：相等必须导向相同哈希</h1><p class="lede">从 +0.0 与 -0.0 的修复入手，学习基础接口中的数学契约。</p><div class="chips"><span class="chip">方向 02 · 哈希表与性能契约</span><span class="chip">专题 1/3</span><span class="chip">正文 1,853 字符</span><span class="chip">建议研读 21 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-%E7%9B%B8%E7%AD%89%E5%85%B3%E7%B3%BB%E4%B8%8E%E5%93%88%E5%B8%8C%E5%A5%91%E7%BA%A6.html">01 哈希的第一条规则：相等必须导向相同哈希</a><a href="02-%E5%BC%80%E6%94%BE%E5%AF%BB%E5%9D%80%E4%B8%8E%E5%88%A0%E9%99%A4%E7%8A%B6%E6%80%81.html">02 Map 的槽位：为什么删除不能简单清空</a><a href="03-%E9%87%8D%E5%BB%BA%E7%AD%96%E7%95%A5%E4%B8%8E%E6%80%A7%E8%83%BD%E5%AE%9E%E9%AA%8C.html">03 一次重建要值得：从操作序列理解均摊成本</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>把键的等价关系、槽位状态与重建策略放在同一个模型里。哈希表的真实难点经常来自删除和插入交替发生时的行为。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>完成容器模块；理解相等比较、模运算和均摊复杂度的基本含义。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>键的等价关系</strong></div><div class="flow-step"><span>02</span><strong>哈希与探测</strong></div><div class="flow-step"><span>03</span><strong>槽位状态</strong></div><div class="flow-step"><span>04</span><strong>删除与重建</strong></div><div class="flow-step"><span>05</span><strong>操作序列测量</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>让一个可变字段在插入后变化，分析为何应禁止这种键修改，而不是依赖偶然仍可查找到。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>哈希表首先依赖等价关系</h3>
+<p>哈希值用于缩小查找范围，相等比较用于确认是否为同一个键。因此相等的键必须得到相同哈希；不同键可以发生碰撞。若前一条件失效，表可能把逻辑上相同的键放进不同探测路径，查找和去重便失去可靠性。这个规则属于哈希与比较的联合契约，不能分别设计。</p>
+<p>自定义键中哪些字段参与相等，就必须相应考虑哪些字段参与哈希。参与哈希的状态在键处于表中时也不能随意变化，否则其存储位置与当前哈希不再一致。</p>
+<h3>位表示和数值语义不总是一致</h3>
+<p>IEEE 浮点中的正零与负零比较相等，却有不同位表示。直接 bit_cast 后哈希会破坏契约。Jacques 的修复在核心哈希层处理这个特殊情况，并让向量、矩阵等组合类型的哈希从正确的基础实现派生。修复范围体现了基础库设计的传播效应。</p>
+<p>NaN 又是另一类问题：它通常不等于自身。不能因为解决了正负零，就断言任意浮点值都能自然成为满足全部期望的键。应用需要说明 NaN 的允许性、归一化方式或专用相等语义。</p>
+<h3>组合类型需要组合证明</h3>
+<p>对二维向量的哈希，不妨先写出相等条件：两个分量分别相等。然后证明每个分量哈希满足契约，再分析组合函数。组合函数不需要无碰撞，却应该避免对常见输入产生严重聚集。测试需要同时检查正确性和分布，不要把二者混为一个指标。</p>
+<p>源码阅读时从 BLI_hash.hh 的标量处理走向组合类型。记录哪些调用者自行处理位表示，哪些统一使用基础哈希；后者更容易获得集中修复带来的收益。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<div class="demo" data-demo="hash"><div class="demo-heading"><span class="pill">INTERACTIVE LAB</span><strong>改变一个条件，观察模型</strong></div><div class="demo-controls"></div><div class="demo-result" aria-live="polite"></div><p class="demo-caption">教学简化模型，帮助推演状态；不等同于 Blender 完整实现，也不执行性能基准。</p><noscript>开启 JavaScript 可使用交互；正文和源码仍可离线阅读。</noscript></div><aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不能用一次随机分布实验替代契约测试；一个低概率的语义错误仍然是正确性缺陷。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>浮点哈希：在位表示之前处理相等关系</h3><p>这是 DefaultHash&lt;float&gt; 的完整调用运算符。读它时先写下 +0.0f == -0.0f 为真，再问这两个数的位表示是否一致。哈希函数必须服务于键的相等语义，不能只选择一个看起来便宜的编码。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_hash.hh · L154–L162。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_hash.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="154">  <span class="syntax-keyword">constexpr</span> uint64_t <span class="syntax-keyword">operator</span>()(<span class="syntax-keyword">const</span> <span class="syntax-keyword">float</span> value) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="155">  {</span>
+<span class="code-line" data-line="156">    <span class="syntax-comment">/* Make sure +0 and -0 hash to the same value. */</span></span>
+<span class="code-line" data-line="157">    <span class="syntax-keyword">if</span> (value == <span class="syntax-number">0</span>.0f) {</span>
+<span class="code-line" data-line="158">      <span class="syntax-keyword">return</span> <span class="syntax-number">0</span>;</span>
+<span class="code-line" data-line="159">    }</span>
+<span class="code-line" data-line="160">    <span class="syntax-comment">/* Explicit `uint64_t` cast to suppress CPPCHECK warning. */</span></span>
+<span class="code-line" data-line="161">    <span class="syntax-keyword">return</span> <span class="syntax-function">uint64_t</span>(std::bit_cast&lt;uint32_t&gt;(value));</span>
+<span class="code-line" data-line="162">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L154</span><div><code><span class="syntax-keyword">constexpr</span> uint64_t <span class="syntax-keyword">operator</span>()(<span class="syntax-keyword">const</span> <span class="syntax-keyword">float</span> value) <span class="syntax-keyword">const</span></code><p>函数接受 float 值并返回 64 位哈希；const 表明调用不修改哈希器自身。constexpr 允许满足条件时进行常量求值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L155</span><div><code>{</code><p>打开 constexpr uint64_t operator()(const float value) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L156</span><div><code><span class="syntax-comment">/* Make sure +0 and -0 hash to the same value. */</span></code><p>正零与负零按数值比较相等，必须得到同一个哈希。接下来的零分支修复位表示不同带来的查找问题。</p>
+</div></div><div class="line-explanation"><span class="line-number">L157</span><div><code><span class="syntax-keyword">if</span> (value == <span class="syntax-number">0</span>.0f) {</code><p>使用数值比较识别零，正零和负零都会进入这个分支；这里没有对所有浮点数进行近似比较。</p>
+</div></div><div class="line-explanation"><span class="line-number">L158</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-number">0</span>;</code><p>统一返回零，修复相等键产生不同哈希的问题。不同键允许同哈希，相等键则必须同哈希。</p>
+</div></div><div class="line-explanation"><span class="line-number">L159</span><div><code>}</code><p>结束 if (value == 0.0f) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L160</span><div><code><span class="syntax-comment">/* Explicit `uint64_t` cast to suppress CPPCHECK warning. */</span></code><p>显式扩大为 uint64_t 是为了抑制静态检查工具警告；真正读取浮点位表示的操作仍是 bit_cast&lt;uint32_t&gt;。</p>
+</div></div><div class="line-explanation"><span class="line-number">L161</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-function">uint64_t</span>(std::bit_cast&lt;uint32_t&gt;(value));</code><p>对非零 float 读取其 32 位表示，再扩宽为 uint64_t。bit_cast 保留表示，而数值转换 uint32_t(value) 会得到完全不同的函数。</p>
+</div></div><div class="line-explanation"><span class="line-number">L162</span><div><code>}</code><p>结束 constexpr uint64_t operator()(const float value) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>正零位表示通常为 0x00000000，负零为 0x80000000；直接使用表示会分到不同探测序列。当前函数先把两者归一为 0。普通数如 1.0f 进入 bit_cast 路径。NaN 的相等关系另有问题，不能把修复零推广成解决所有浮点键语义。</p>
+<h4>调用关系与设计判断</h4><p>对照 79ef927ea93，测试应把 +0 作为插入键、-0 作为查询键，再交换两者；只测试两个 hash 输出相等还不能证明容器整体查找正常。继续阅读 Map 查找中的 Equality 比较，明确哈希和相等各负责什么。</p>
+</article><article class="deep-reading"><h3>异构查询完整入口：哈希与相等必须跨类型一致</h3><p>这个完整函数允许查询键类型不同于存储键类型。省掉临时字符串构造的收益，建立在两种类型比较相等时仍产生同一哈希的前提上。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_map.hh · L516–L520。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_map.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="516">  <span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">ForwardKey</span>&gt; <span class="syntax-keyword">const</span> <span class="syntax-type">Value</span> *<span class="syntax-function">lookup_ptr_as</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">ForwardKey</span> &amp;key) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="517">  {</span>
+<span class="code-line" data-line="518">    <span class="syntax-keyword">const</span> <span class="syntax-type">Slot</span> *slot = <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">lookup_slot_ptr</span>(key, <span class="syntax-function">hash_</span>(key));</span>
+<span class="code-line" data-line="519">    <span class="syntax-keyword">return</span> (slot != <span class="syntax-keyword">nullptr</span>) ? slot-&gt;<span class="syntax-function">value</span>() : <span class="syntax-keyword">nullptr</span>;</span>
+<span class="code-line" data-line="520">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L516</span><div><code><span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">ForwardKey</span>&gt; <span class="syntax-keyword">const</span> <span class="syntax-type">Value</span> *<span class="syntax-function">lookup_ptr_as</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">ForwardKey</span> &amp;key) <span class="syntax-keyword">const</span></code><p>ForwardKey 是本次查询类型，可以是 StringRef 而存储 Key 是 std::string；const 查询不会修改 Map。</p>
+</div></div><div class="line-explanation"><span class="line-number">L517</span><div><code>{</code><p>打开 template&lt;typename ForwardKey&gt; const Value *lookup_ptr_as(const ForwardKey &amp;key) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L518</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">Slot</span> *slot = <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">lookup_slot_ptr</span>(key, <span class="syntax-function">hash_</span>(key));</code><p>使用 Map 保存的 hash_ 对本次查询键求哈希，再沿槽探测查询。Hash 必须能接受 ForwardKey，并与 Key 的哈希契约兼容。</p>
+</div></div><div class="line-explanation"><span class="line-number">L519</span><div><code><span class="syntax-keyword">return</span> (slot != <span class="syntax-keyword">nullptr</span>) ? slot-&gt;<span class="syntax-function">value</span>() : <span class="syntax-keyword">nullptr</span>;</code><p>找到占用槽则返回 value 地址，缺失则返回 nullptr。返回的是借用指针，Map 重建、删除该项或销毁后不能无条件继续使用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L520</span><div><code>}</code><p>结束 template&lt;typename ForwardKey&gt; const Value *lookup_ptr_as(const ForwardKey &amp;key) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>存储键为 std::string(&quot;mesh&quot;)，查询键为 StringRef(&quot;mesh&quot;)。若两者相等但哈希不同，探测可能从不同桶开始并提前遇到空槽，最终“明明存在却查不到”。哈希一致后仍要通过 Equality 排除碰撞键。</p>
+<h4>调用关系与设计判断</h4><p>独立键类型同时实现 hash() 与 hash_as(StringRef) 时，应共用相同规范化规则，例如大小写、编码与零值处理。测试跨类型插入/查询的双向组合，也要验证不同键碰撞仍可正确区分。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_hash.hh">BLI_hash.hh</a></div><p>检查标量哈希如何被其他类型复用。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 10 行 · SHA-256 0cc2c7e426df</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_hash.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_hash.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">7</span>,<span class="syntax-number">38</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_hash.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_map.hh">BLI_map.hh</a></div><p>观察哈希与相等比较共同参与查找的接口。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 508 行 · SHA-256 236ceadf1c36</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_map.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_map.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">505</span>,<span class="syntax-number">536</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_map.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/79ef927ea93304a1e270bedbee4c38afc5945f9f" target="_blank" rel="noopener">79ef927ea93</a> <span>Jacques Lucke · 2026-06-04</span></div><h3>Fix: BLI: ensure that +0.0 and -0.0 hash to the same value</h3><p>把正负零的失败例子写出来，再观察修复为什么放在核心哈希函数。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Floating point representation has the special case that `+0.0` and `-0.0` exist.
+They compare equal but do not have the same bit representation. This implies
+that a `bit_cast` does not work to get a hash from the number. It breaks the one
+rule for these hashes: if two values compare equal, they have to have the same
+hash.
+
+Floating point values have other special values but they don&#x27;t need the same
+treatment:
+* `+inf` and `-inf` have unique representations.
+* `nan` has many different representation, all of which never compare equal to
+  each other, even if the bit pattern is the same.
+
+The fix is to add this special case in the core hashing functions and to make
+sure that hashing functions of vectors, matrices, etc. derive from that.
+
+Unique hashing is updated to properly handle this too.
+
+This also fixes #158701.
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/159547</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenlib/<span class="syntax-type">BLI_color_types</span>.hh          | <span class="syntax-number">17</span> +++++---</span>
+<span class="code-line" data-line="2"> source/blender/blenlib/<span class="syntax-type">BLI_hash</span>.hh                 | <span class="syntax-number">12</span> +++++-</span>
+<span class="code-line" data-line="3"> source/blender/blenlib/<span class="syntax-type">BLI_math_matrix_types</span>.hh    | <span class="syntax-number">10</span> ++++-</span>
+<span class="code-line" data-line="4"> .../blender/blenlib/<span class="syntax-type">BLI_math_quaternion_types</span>.hh   |  <span class="syntax-number">7</span> +++-</span>
+<span class="code-line" data-line="5"> source/blender/blenlib/<span class="syntax-type">BLI_math_vector_types</span>.hh    | <span class="syntax-number">45</span> ++++++++++++----------</span>
+<span class="code-line" data-line="6"> source/blender/blenlib/<span class="syntax-type">BLI_unique_hash</span>.hh          | <span class="syntax-number">21</span> +++++++++-</span>
+<span class="code-line" data-line="7"> source/blender/blenlib/<span class="syntax-type">BLI_unroll</span>.hh               |  <span class="syntax-number">5</span> ++-</span>
+<span class="code-line" data-line="8"> source/blender/blenlib/tests/<span class="syntax-type">BLI_map_test</span>.cc       |  <span class="syntax-number">3</span> ++</span>
+<span class="code-line" data-line="9"> .../blender/blenlib/tests/<span class="syntax-type">BLI_math_vector_test</span>.cc  |  <span class="syntax-number">3</span> ++</span>
+<span class="code-line" data-line="10"> source/blender/nodes/<span class="syntax-type">NOD_menu_value</span>.hh             |  <span class="syntax-number">6</span> +++</span>
+<span class="code-line" data-line="11"> <span class="syntax-number">10</span> files changed, <span class="syntax-number">95</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">34</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 79ef927ea93</span>
+<span class="code-line" data-line="2">git show 79ef927ea93</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 79ef927ea93 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>为两个浮点分量组成的 Key 写相等和哈希，添加正零、负零和重复值测试。</p>
+</li><li><strong>任务 02</strong><p>明确你的容器如何处理 NaN，并测试文档声明的策略。</p>
+</li><li><strong>任务 03</strong><p>让一个可变字段在插入后变化，分析为何应禁止这种键修改，而不是依赖偶然仍可查找到。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="02-01-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="02-01-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="02-01-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>两个不同值哈希相同就是错误吗？</summary><p>不是，碰撞是允许的，必须通过相等比较区分；大量碰撞会影响性能。</p>
+</details><details class="question"><summary>正负零为什么不能直接按位哈希？</summary><p>它们数值比较相等，按位哈希可能得到不同值，违反相等必同哈希的要求。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="02-01" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../01-%E5%AE%B9%E5%99%A8%E4%B8%8E%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/03-%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E5%AE%B9%E5%99%A8%E5%AE%9E%E9%AA%8C.html">← 上一篇：容器失败路径：从异常安全到可验证的不变量</a><a href="../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E6%80%A7%E8%83%BD%E5%A5%91%E7%BA%A6/02-%E5%BC%80%E6%94%BE%E5%AF%BB%E5%9D%80%E4%B8%8E%E5%88%A0%E9%99%A4%E7%8A%B6%E6%80%81.html">下一篇：Map 的槽位：为什么删除不能简单清空 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="理解调用者作用域中的临时数据，以及资源之间的销毁顺序。">
+<title>ResourceScope：把动态资源组织成一个作用域 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="03-02"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">内存分配与运行时类型</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>MEMORY / TYPE ERASURE / LESSON 03-02</div><h1>ResourceScope：把动态资源组织成一个作用域</h1><p class="lede">理解调用者作用域中的临时数据，以及资源之间的销毁顺序。</p><div class="chips"><span class="chip">方向 03 · 内存分配与运行时类型</span><span class="chip">专题 2/3</span><span class="chip">正文 2,421 字符</span><span class="chip">建议研读 27 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-LinearAllocator%E4%B8%8E%E5%AF%B9%E9%BD%90.html">01 LinearAllocator：利用共同寿命减少分配成本</a><a href="02-ResourceScope%E4%B8%8E%E9%80%86%E5%BA%8F%E9%94%80%E6%AF%81.html">02 ResourceScope：把动态资源组织成一个作用域</a><a href="03-CPPType%E4%B8%8E%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4.html">03 CPPType：运行时如何正确构造、复制和销毁值</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>节点系统需要管理大量短命对象，也需要在运行时处理类型未知的值。分配策略、析构责任与类型描述共同构成可组合的底层机制。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>对象生命周期、对齐、函数指针、模板实例化。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>取得原始存储</strong></div><div class="flow-step"><span>02</span><strong>构造具体对象</strong></div><div class="flow-step"><span>03</span><strong>注册销毁责任</strong></div><div class="flow-step"><span>04</span><strong>擦除静态类型</strong></div><div class="flow-step"><span>05</span><strong>按类型操作</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>设计一个返回临时 Span 的函数，在接口注释中准确说明 scope 必须活多久。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>运行时也可以有作用域</h3>
+<p>普通 C++ 大括号里的局部变量按逆序析构。ResourceScope 把类似责任显式化：函数可以把资源交给调用者持有的 scope，让它们在统一时刻销毁。这对于类型、数量都在运行时才确定的执行临时数据尤其有用。</p>
+<p>先读类顶部注释，再看怎样登记构造出的对象和外部资源。它与 LinearAllocator 可以配合，但两者承担不同责任：一方组织存储，另一方确保适当的销毁动作发生。</p>
+<h3>逆序销毁需要依赖约定</h3>
+<p>如果后创建的 B 借用先创建的 A，按 B、A 的顺序销毁通常符合要求。反过来，若 A 的析构需要访问后创建的 B，这种顺序就不满足依赖。逆序销毁是一项可依赖的规则，不是自动解决任意资源依赖图的算法。</p>
+<p>资源登记成功与失败也要推演：构造对象之后、注册清理动作之前若失败，谁负责回收？可靠封装需要让这种间隙得到处理。把这类问题联系到上一模块的容器异常路径，能看到同一模式。</p>
+<h3>借用结果不能越过 scope</h3>
+<p>一个函数把临时数组交给 scope 后返回 Span，Span 的有效期受到 scope 约束。如果上层缓存了该 Span，而 scope 已销毁，问题与返回局部数组视图完全相同，只是寿命边界更隐蔽。</p>
+<p>阅读 FieldEvaluator 的 scope_ 成员时，可以追踪求值临时数据如何保活。不要通过“成员变量看起来还在”判断返回视图寿命，而应找到具体数据由谁拥有、什么时候销毁。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>把清理回调捕获到的引用也算进生命周期检查；回调还活着不代表其捕获对象仍有效。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>ResourceScope::construct：先构造，再登记所有权</h3><p>完整函数使用一个只负责析构的智能指针作为中间所有者，随后把责任转移给 scope。返回的是引用，因此返回值不能独立保活对象。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_resource_scope.hh · L219–L225。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_resource_scope.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="219"><span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">T</span>, <span class="syntax-keyword">typename</span>... <span class="syntax-type">Args</span>&gt; <span class="syntax-keyword">inline</span> <span class="syntax-type">T</span> &amp;<span class="syntax-type">ResourceScope</span>::<span class="syntax-function">construct</span>(<span class="syntax-type">Args</span> &amp;&amp;...args)</span>
+<span class="code-line" data-line="220">{</span>
+<span class="code-line" data-line="221">  destruct_ptr&lt;<span class="syntax-type">T</span>&gt; value_ptr = allocator_.construct&lt;<span class="syntax-type">T</span>&gt;(std::forward&lt;<span class="syntax-type">Args</span>&gt;(args)...);</span>
+<span class="code-line" data-line="222">  <span class="syntax-type">T</span> &amp;value_ref = *value_ptr;</span>
+<span class="code-line" data-line="223">  <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">add</span>(std::<span class="syntax-function">move</span>(value_ptr));</span>
+<span class="code-line" data-line="224">  <span class="syntax-keyword">return</span> value_ref;</span>
+<span class="code-line" data-line="225">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L219</span><div><code><span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">T</span>, <span class="syntax-keyword">typename</span>... <span class="syntax-type">Args</span>&gt; <span class="syntax-keyword">inline</span> <span class="syntax-type">T</span> &amp;<span class="syntax-type">ResourceScope</span>::<span class="syntax-function">construct</span>(<span class="syntax-type">Args</span> &amp;&amp;...args)</code><p>T 是目标类型，Args 是转发参数包；返回 T&amp; 表示对象寿命由 scope 管理。</p>
+</div></div><div class="line-explanation"><span class="line-number">L220</span><div><code>{</code><p>打开 template&lt;typename T, typename... Args&gt; inline T &amp;ResourceScope::construct(Args &amp;&amp;...args) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L221</span><div><code>destruct_ptr&lt;<span class="syntax-type">T</span>&gt; value_ptr = allocator_.construct&lt;<span class="syntax-type">T</span>&gt;(std::forward&lt;<span class="syntax-type">Args</span>&gt;(args)...);</code><p>借助 allocator 构造 T，并暂时由 destruct_ptr 持有析构责任。std::forward 保留参数值类别；原始存储释放仍属于 allocator。</p>
+</div></div><div class="line-explanation"><span class="line-number">L222</span><div><code><span class="syntax-type">T</span> &amp;value_ref = *value_ptr;</code><p>取得对象引用，只建立别名，不转移所有权。</p>
+</div></div><div class="line-explanation"><span class="line-number">L223</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">add</span>(std::<span class="syntax-function">move</span>(value_ptr));</code><p>把析构责任移动登记到当前作用域。必须继续阅读 add(destruct_ptr&lt;T&gt;) 与资源列表析构顺序，才能完成整个生命周期证明。</p>
+</div></div><div class="line-explanation"><span class="line-number">L224</span><div><code><span class="syntax-keyword">return</span> value_ref;</code><p>返回引用供调用者使用；scope 销毁后该引用失效。</p>
+</div></div><div class="line-explanation"><span class="line-number">L225</span><div><code>}</code><p>结束 template&lt;typename T, typename... Args&gt; inline T &amp;ResourceScope::construct(Args &amp;&amp;...args) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>构造对象 A 后得到引用 r，scope 保存 A 的析构登记。函数局部 value_ptr 的责任已移走；函数返回时不会把 A 析构。退出 scope 后 A 被析构，此时 r 不再允许使用。将两个相互依赖资源按构造顺序登记，并检查实际释放顺序。</p>
+<h4>调用关系与设计判断</h4><p>区分三层：构造 T、登记析构动作、最终释放 allocator 块。自己实现时用事件日志记录 constructor/destructor，并验证登记阶段失败是否泄漏；不要仅凭使用了智能指针就宣称所有异常路径已经正确。</p>
+</article><article class="deep-reading"><h3>登记析构指针：拥有对象清理，空间仍归 allocator</h3><p>这是 construct 调用链中必须继续阅读的一层。destruct_ptr 与 unique_ptr 的差别直接体现在回调中：此处只调用析构，不执行 delete。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_resource_scope.hh · L181–L197。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_resource_scope.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="181"><span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">T</span>&gt; <span class="syntax-keyword">inline</span> <span class="syntax-type">T</span> *<span class="syntax-type">ResourceScope</span>::<span class="syntax-function">add</span>(destruct_ptr&lt;<span class="syntax-type">T</span>&gt; resource)</span>
+<span class="code-line" data-line="182">{</span>
+<span class="code-line" data-line="183">  <span class="syntax-type">T</span> *ptr = resource.<span class="syntax-function">release</span>();</span>
+<span class="code-line" data-line="184">  <span class="syntax-keyword">if</span> (ptr == <span class="syntax-keyword">nullptr</span>) {</span>
+<span class="code-line" data-line="185">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">nullptr</span>;</span>
+<span class="code-line" data-line="186">  }</span>
+<span class="code-line" data-line="187">  <span class="syntax-comment">/* There is no need to keep track of such types. */</span></span>
+<span class="code-line" data-line="188">  <span class="syntax-keyword">if</span> <span class="syntax-keyword">constexpr</span> (std::is_trivially_destructible_v&lt;<span class="syntax-type">T</span>&gt;) {</span>
+<span class="code-line" data-line="189">    <span class="syntax-keyword">return</span> ptr;</span>
+<span class="code-line" data-line="190">  }</span>
+<span class="code-line" data-line="191"></span>
+<span class="code-line" data-line="192">  <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">add</span>(ptr, [](<span class="syntax-keyword">void</span> *data) {</span>
+<span class="code-line" data-line="193">    <span class="syntax-type">T</span> *typed_data = reinterpret_cast&lt;<span class="syntax-type">T</span> *&gt;(data);</span>
+<span class="code-line" data-line="194">    typed_data-&gt;~<span class="syntax-type">T</span>();</span>
+<span class="code-line" data-line="195">  });</span>
+<span class="code-line" data-line="196">  <span class="syntax-keyword">return</span> ptr;</span>
+<span class="code-line" data-line="197">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L181</span><div><code><span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">T</span>&gt; <span class="syntax-keyword">inline</span> <span class="syntax-type">T</span> *<span class="syntax-type">ResourceScope</span>::<span class="syntax-function">add</span>(destruct_ptr&lt;<span class="syntax-type">T</span>&gt; resource)</code><p>按值取得只负责析构的指针所有权；函数会把责任登记到 scope。</p>
+</div></div><div class="line-explanation"><span class="line-number">L182</span><div><code>{</code><p>打开 template&lt;typename T&gt; inline T *ResourceScope::add(destruct_ptr&lt;T&gt; resource) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L183</span><div><code><span class="syntax-type">T</span> *ptr = resource.<span class="syntax-function">release</span>();</code><p>从临时智能指针释放责任并取出地址，后续登记逻辑需要接续承担清理。</p>
+</div></div><div class="line-explanation"><span class="line-number">L184</span><div><code><span class="syntax-keyword">if</span> (ptr == <span class="syntax-keyword">nullptr</span>) {</code><p>空资源不需要登记。</p>
+</div></div><div class="line-explanation"><span class="line-number">L185</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">nullptr</span>;</code><p>返回空表示没有对象。</p>
+</div></div><div class="line-explanation"><span class="line-number">L186</span><div><code>}</code><p>结束 if (ptr == nullptr) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L187</span><div><code><span class="syntax-comment">/* There is no need to keep track of such types. */</span></code><p>平凡可析构类型不需要登记显式析构回调；存储的统一回收仍由 allocator 完成。</p>
+</div></div><div class="line-explanation"><span class="line-number">L188</span><div><code><span class="syntax-keyword">if</span> <span class="syntax-keyword">constexpr</span> (std::is_trivially_destructible_v&lt;<span class="syntax-type">T</span>&gt;) {</code><p>在编译期识别平凡可析构类型；这种 T 无需显式析构动作。</p>
+</div></div><div class="line-explanation"><span class="line-number">L189</span><div><code><span class="syntax-keyword">return</span> ptr;</code><p>直接返回地址，不建立无用的资源回调。原始存储仍由 allocator 统一释放。</p>
+</div></div><div class="line-explanation"><span class="line-number">L190</span><div><code>}</code><p>结束 if constexpr (std::is_trivially_destructible_v&lt;T&gt;) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L192</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">add</span>(ptr, [](<span class="syntax-keyword">void</span> *data) {</code><p>对非平凡类型登记回调，userdata 保存对象地址。</p>
+</div></div><div class="line-explanation"><span class="line-number">L193</span><div><code><span class="syntax-type">T</span> *typed_data = reinterpret_cast&lt;<span class="syntax-type">T</span> *&gt;(data);</code><p>将类型擦除地址还原为 T*，其实际类型必须与登记时一致。</p>
+</div></div><div class="line-explanation"><span class="line-number">L194</span><div><code>typed_data-&gt;~<span class="syntax-type">T</span>();</code><p>只结束 T 的生命周期，不把 allocator 内部地址传给 delete。</p>
+</div></div><div class="line-explanation"><span class="line-number">L195</span><div><code>});</code><p>结束回调登记调用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L196</span><div><code><span class="syntax-keyword">return</span> ptr;</code><p>返回可供使用的地址，scope 仍控制析构时机。</p>
+</div></div><div class="line-explanation"><span class="line-number">L197</span><div><code>}</code><p>结束 template&lt;typename T&gt; inline T *ResourceScope::add(destruct_ptr&lt;T&gt; resource) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>allocator 块中构造一个 std::string，登记后退出 scope 会调用 string 析构，随后 allocator 的整块空间释放。若把 typed_data-&gt;~T() 换成 delete typed_data，就可能把线性块内部地址错误交给普通 delete。</p>
+<h4>调用关系与设计判断</h4><p>把 add(unique_ptr&lt;T&gt;)、add(shared_ptr&lt;T&gt;) 与此函数对照：第一种需要 delete，第二种释放一份共享引用，这一种只析构。相同的 void* userdata 并不代表相同的释放协议。</p>
+</article><article class="deep-reading"><h3>逆序释放的完整实现：分配器必须最后退出</h3><p>从登记过程走到真正析构。资源列表是 ChunkedList，源码约定其迭代顺序为构造逆序；这里不是先把列表反转，再向前遍历。</p>
+<p>完整源码单元 · source/blender/blenlib/intern/resource_scope.cc · L78–L90。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/intern/resource_scope.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="78"><span class="syntax-type">ResourceScope</span>::~<span class="syntax-type">ResourceScope</span>()</span>
+<span class="code-line" data-line="79">{</span>
+<span class="code-line" data-line="80">  <span class="syntax-comment">/* Frees all resources in reverse order of construction. Note that #ChunkedList always iterates</span></span>
+<span class="code-line" data-line="81"><span class="syntax-comment">   * in reverse order. */</span></span>
+<span class="code-line" data-line="82">  <span class="syntax-type">LinearAllocator</span>&lt;&gt; *used_allocator = &amp;allocator_;</span>
+<span class="code-line" data-line="83">  <span class="syntax-keyword">for</span> (<span class="syntax-type">ResourceData</span> &amp;resource : resources_) {</span>
+<span class="code-line" data-line="84">    <span class="syntax-keyword">void</span> *data = resource.data;</span>
+<span class="code-line" data-line="85">    resource.<span class="syntax-function">free</span>(data);</span>
+<span class="code-line" data-line="86">    <span class="syntax-keyword">if</span> (data == used_allocator) {</span>
+<span class="code-line" data-line="87">      <span class="syntax-keyword">break</span>;</span>
+<span class="code-line" data-line="88">    }</span>
+<span class="code-line" data-line="89">  }</span>
+<span class="code-line" data-line="90">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L78</span><div><code><span class="syntax-type">ResourceScope</span>::~<span class="syntax-type">ResourceScope</span>()</code><p>作用域退出时释放所有已登记资源。不能在这些回调里继续依赖已释放的更晚构造资源。</p>
+</div></div><div class="line-explanation"><span class="line-number">L79</span><div><code>{</code><p>打开 ResourceScope::~ResourceScope() 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L80</span><div><code>/* <span class="syntax-type">Frees</span> all resources in reverse order of construction. <span class="syntax-type">Note</span> that #<span class="syntax-type">ChunkedList</span> always iterates</code><p>资源按构造逆序释放，逆序来自 ChunkedList 的迭代规则；本函数没有额外倒序操作。</p>
+</div></div><div class="line-explanation"><span class="line-number">L81</span><div><code>* in reverse order. */</code><p>续接 L80 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L82</span><div><code><span class="syntax-type">LinearAllocator</span>&lt;&gt; *used_allocator = &amp;allocator_;</code><p>保存当前 allocator 地址，用于识别登记列表中 allocator 自身的释放项。</p>
+</div></div><div class="line-explanation"><span class="line-number">L83</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-type">ResourceData</span> &amp;resource : resources_) {</code><p>按资源列表提供的逆序遍历，每次处理一个 userdata 与释放函数对。</p>
+</div></div><div class="line-explanation"><span class="line-number">L84</span><div><code><span class="syntax-keyword">void</span> *data = resource.data;</code><p>取出 userdata 地址，避免在释放资源后继续依赖这个条目的存储。</p>
+</div></div><div class="line-explanation"><span class="line-number">L85</span><div><code>resource.<span class="syntax-function">free</span>(data);</code><p>调用该条目真实释放协议：可能是 delete、析构、共享引用释放或自定义动作。</p>
+</div></div><div class="line-explanation"><span class="line-number">L86</span><div><code><span class="syntax-keyword">if</span> (data == used_allocator) {</code><p>如果刚释放的就是列表赖以存活的 allocator，自身列表存储也可能已经退出。</p>
+</div></div><div class="line-explanation"><span class="line-number">L87</span><div><code><span class="syntax-keyword">break</span>;</code><p>立即 break，不再推进迭代器或读取被 allocator 管理的后续节点。</p>
+</div></div><div class="line-explanation"><span class="line-number">L88</span><div><code>}</code><p>结束 if (data == used_allocator) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L89</span><div><code>}</code><p>结束 for (ResourceData &amp;resource : resources_) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L90</span><div><code>}</code><p>结束 ResourceScope::~ResourceScope() 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>先登记 allocator，再登记 A，再登记 B，析构按 B、A、allocator 顺序执行。到 allocator 条目后必须停止：若继续访问列表，下一个迭代动作可能读取已经释放的分段存储。</p>
+<h4>调用关系与设计判断</h4><p>这个 break 把容器自身资源也放入同一登记体系，但需要精确的顺序不变量。自己实现时，除了记录回调顺序，还要让资源回调访问允许依赖的较早资源，验证它们在回调期间仍有效。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_resource_scope.hh">BLI_resource_scope.hh</a></div><p>把资源登记、构造和析构动作关联起来。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 37 行 · SHA-256 89ba4492cc38</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_resource_scope.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_resource_scope.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">34</span>,<span class="syntax-number">65</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_resource_scope.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_field_evaluation.hh">FN_field_evaluation.hh</a></div><p>观察真实调用者如何持有执行作用域。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 29 行 · SHA-256 04d5d49917e6</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_field_evaluation.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_field_evaluation.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">26</span>,<span class="syntax-number">57</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_field_evaluation.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/fe24e8e7109e5b37ad3a7c845922f1f601a96eb7" target="_blank" rel="noopener">fe24e8e7109</a> <span>Jacques Lucke · 2026-03-09</span></div><h3>BLI: optimize memory usage in ResourceScope</h3><p>关注作用域记录本身也有内存成本，优化应保持销毁语义。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This implements multiple improvements for the `ResourceScope` utility:
+* Instead of a `Vector` it uses a `ChunkedList` to keep track of resources. This
+  is has less memory overhead and does not require reallocations when growing.
+* One can pass an already existing `LinearAllocator` to a constructor instead of
+  always creating a new one.
+* New constructors that allow providing initial memory for the resource scope
+  (e.g. a large buffer on the stack).
+* If it creates a new allocator, it increases the initial allocation size and
+  uses the extra bytes as buffer in the allocator. This is instead of allocating
+  twice.
+* The size of `ResourceScope` shrinks from 176 bytes to just 16 bytes (although
+  it does use more when it has to create a new allocator).
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/155290</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">.../blenlib/<span class="syntax-type">BLI_linear_allocator_chunked_list</span>.hh   | <span class="syntax-number">28</span> +++++---</span>
+<span class="code-line" data-line="2"> source/blender/blenlib/<span class="syntax-type">BLI_resource_scope</span>.hh       | <span class="syntax-number">66</span> +++++++++++++++---</span>
+<span class="code-line" data-line="3"> source/blender/blenlib/intern/resource_scope.cc    | <span class="syntax-number">78</span> ++++++++++++++++++++--</span>
+<span class="code-line" data-line="4"> .../nodes/geometry/nodes/node_geo_field_to_grid.cc | <span class="syntax-number">12</span> ++--</span>
+<span class="code-line" data-line="5"> .../blender/nodes/intern/socket_usage_inference.cc |  <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="6"> .../nodes/intern/volume_grid_function_eval.cc      | <span class="syntax-number">12</span> ++--</span>
+<span class="code-line" data-line="7"> <span class="syntax-number">6</span> files changed, <span class="syntax-number">158</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">41</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat fe24e8e7109</span>
+<span class="code-line" data-line="2">git show fe24e8e7109</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show fe24e8e7109 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>实现保存清理回调的小型 Scope，记录三个资源的销毁顺序。</p>
+</li><li><strong>任务 02</strong><p>让 B 的析构读取 A 的存活标记，验证逆序销毁满足约定。</p>
+</li><li><strong>任务 03</strong><p>设计一个返回临时 Span 的函数，在接口注释中准确说明 scope 必须活多久。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="03-02-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="03-02-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="03-02-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>逆序销毁是否等于拓扑排序？</summary><p>不等于；它依赖资源按满足约束的顺序登记，不会推断任意依赖图。</p>
+</details><details class="question"><summary>scope 可以替代所有 shared_ptr 吗？</summary><p>不能；scope 适合统一寿命，独立延长寿命的对象可能需要其他所有权模型。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="03-02" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-LinearAllocator%E4%B8%8E%E5%AF%B9%E9%BD%90.html">← 上一篇：LinearAllocator：利用共同寿命减少分配成本</a><a href="../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/03-CPPType%E4%B8%8E%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4.html">下一篇：CPPType：运行时如何正确构造、复制和销毁值 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

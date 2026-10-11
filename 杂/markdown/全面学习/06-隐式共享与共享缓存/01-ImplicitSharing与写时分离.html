@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="从强引用、弱引用和可变性约束理解 Blender 的共享模型。">
+<title>隐式共享：复制对象不必立即复制全部数据 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="06-01"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">隐式共享与共享缓存</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>LIFETIMES / INVALIDATION / LESSON 06-01</div><h1>隐式共享：复制对象不必立即复制全部数据</h1><p class="lede">从强引用、弱引用和可变性约束理解 Blender 的共享模型。</p><div class="chips"><span class="chip">方向 06 · 隐式共享与共享缓存</span><span class="chip">专题 1/3</span><span class="chip">正文 2,329 字符</span><span class="chip">建议研读 26 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-ImplicitSharing%E4%B8%8E%E5%86%99%E6%97%B6%E5%88%86%E7%A6%BB.html">01 隐式共享：复制对象不必立即复制全部数据</a><a href="02-SharedCache%E4%B8%8E%E4%BE%9D%E8%B5%96%E7%9F%A9%E9%98%B5.html">02 共享缓存：哪些变化会让结果失效</a><a href="03-%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98%E4%BF%AE%E5%A4%8D%E5%A4%8D%E7%9B%98.html">03 一个修复暴露的抽象边界：失效不总等于丢弃</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>把引用计数、写时分离和缓存失效区分开，再研究它们如何合作。共享正确性依赖数据语义，而不只是指针是否存活。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>所有权、数组、基础原子概念；缓存实验先用单线程。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>只读数据共享</strong></div><div class="flow-step"><span>02</span><strong>请求可写访问</strong></div><div class="flow-step"><span>03</span><strong>必要时分离</strong></div><div class="flow-step"><span>04</span><strong>失效依赖缓存</strong></div><div class="flow-step"><span>05</span><strong>按需重新计算</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>增加只观察版本的弱句柄，清楚区分共享信息存活和数据存活。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>共享依赖只读约定</h3>
+<p>复制一个网格描述对象时，许多数组暂时可以继续共享。只要多个所有者都把共享数据当作只读，就能避免不必要的复制。要修改时，若只有一个强用户可原地写，否则先创建独立副本。这个规则将“拿到可写数据”变成重要的边界操作。</p>
+<p>ImplicitSharingInfo 不仅计数，还知道最终怎样销毁数据。引用信息可以独立于数据分配，也可以通过 ImplicitSharingMixin 嵌入对象。这样调用者不需要猜测底层使用哪种分配器。</p>
+<h3>弱引用并非可升级的 shared_ptr 模型</h3>
+<p>当前实现的弱用户保活共享信息，而不保证数据仍然存在；强用户为零时数据已过期。源码明确说明弱用户不能直接升级成强用户，因为其他代码可能在唯一强用户假设下修改数据。不能把 std::weak_ptr 的全部行为套进来。</p>
+<p>version 可以帮助检测数据是否变化，但它也需要正确的写入通知。每条可写访问路径若没有更新相应版本或分离规则，缓存键即使看起来完善，也会建立在错误信息上。</p>
+<h3>原子计数不等于对象任意线程安全</h3>
+<p>计数的原子操作负责引用信息的一部分并发行为，不代表多个线程可以同时修改同一几何数组。只有一个强用户也不能替代调用层的线程访问约束。并发写入、容器重分配和生命周期结束仍需各自的协议。</p>
+<p>在 GeometryComponent 中观察共享基类与几何组件的关系，再寻找请求可写数据的路径。阅读顺序应从只读复制走向可写分离，而不是从计数实现猜测所有调用者。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<div class="demo" data-demo="sharing"><div class="demo-heading"><span class="pill">INTERACTIVE LAB</span><strong>改变一个条件，观察模型</strong></div><div class="demo-controls"></div><div class="demo-result" aria-live="polite"></div><p class="demo-caption">教学简化模型，帮助推演状态；不等同于 Blender 完整实现，也不执行性能基准。</p><noscript>开启 JavaScript 可使用交互；正文和源码仍可离线阅读。</noscript></div><aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>任何绕过可写入口直接修改共享数组的路径，都可能同时污染多个看起来独立的对象。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>SharedCache::tag_dirty：失效只影响自己的分支</h3><p>SharedCache 的共享单位是 CacheData，它把 CacheMutex 和 T 放在一起，再由 shared_ptr 管理。此函数必须同时处理独占与共享：如果修改一个对象的失效状态导致另一个未变化对象也被迫重算，共享缓存的收益就会被破坏。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_shared_cache.hh · L52–L60。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_shared_cache.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="52">  <span class="syntax-keyword">void</span> <span class="syntax-function">tag_dirty</span>()</span>
+<span class="code-line" data-line="53">  {</span>
+<span class="code-line" data-line="54">    <span class="syntax-keyword">if</span> (cache_.<span class="syntax-function">use_count</span>() == <span class="syntax-number">1</span>) {</span>
+<span class="code-line" data-line="55">      cache_-&gt;mutex.<span class="syntax-function">tag_dirty</span>();</span>
+<span class="code-line" data-line="56">    }</span>
+<span class="code-line" data-line="57">    <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="58">      cache_ = std::make_shared&lt;<span class="syntax-type">CacheData</span>&gt;();</span>
+<span class="code-line" data-line="59">    }</span>
+<span class="code-line" data-line="60">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L52</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">tag_dirty</span>()</code><p>这是失效入口。它不接收计算函数，所以本次操作的目标是改变有效性与共享关系，不是立即计算新值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L53</span><div><code>{</code><p>进入函数，cache_ 指向当前缓存块。先判断是否还有其他 SharedCache 共享这个块。</p>
+</div></div><div class="line-explanation"><span class="line-number">L54</span><div><code><span class="syntax-keyword">if</span> (cache_.<span class="syntax-function">use_count</span>() == <span class="syntax-number">1</span>) {</code><p>use_count()==1 表示当前 shared_ptr 块只有一个拥有者。它帮助选择是否需要分离，不能被解读成允许任意线程同时修改同一个 SharedCache 对象。</p>
+</div></div><div class="line-explanation"><span class="line-number">L55</span><div><code>cache_-&gt;mutex.<span class="syntax-function">tag_dirty</span>();</code><p>独占时保留当前数据存储，把 mutex 的有效位标成失效。旧 T 可能仍在内存里，但不能再作为有效结果读取。</p>
+</div></div><div class="line-explanation"><span class="line-number">L56</span><div><code>}</code><p>结束独占分支。这个路径避免了一次新缓存块分配。</p>
+</div></div><div class="line-explanation"><span class="line-number">L57</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入共享分支：原块还被其他对象使用，不能直接污染它的有效状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L58</span><div><code>cache_ = std::make_shared&lt;<span class="syntax-type">CacheData</span>&gt;();</code><p>为当前对象创建新的默认 CacheData。原块由其他共享者继续持有；新块的 mutex 初始为失效。这条路径没有复制旧 T 的内容。</p>
+</div></div><div class="line-explanation"><span class="line-number">L59</span><div><code>}</code><p>结束共享分支。当前 cache_ 与其他对象的 cache_ 已不再指向同一块。</p>
+</div></div><div class="line-explanation"><span class="line-number">L60</span><div><code>}</code><p>函数结束。下一次 ensure 将针对当前缓存块计算；其他对象如果依然等价于旧输入，可以继续使用原结果。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>A 与 B 共享已缓存的 C0。A 的位置数据改变以后调用 tag_dirty：A 指向新块 C1，B 仍指向已缓存 C0。A.ensure 只填充 C1。若 A 原本独占 C0，则保留块地址，仅改变有效位。这里的共享条件来自调用者判断两个对象的数据是否等价，SharedCache 本身不会比较整份 Mesh。</p>
+<h4>调用关系与设计判断</h4><p>把位置变化、拓扑变化、属性变化分别列成行，把 bounds、normals、BVH 分别列成列，逐格说明是否失效。这张依赖矩阵决定何处调用 tag_dirty；容器只能执行分离策略，无法替系统猜出遗漏的依赖。</p>
+</article><article class="deep-reading"><h3>隐式共享：最后一个强用户与弱用户分别释放什么</h3><p>完整释放函数比单独读取引用计数更能说明生命周期。强用户保活数据；弱用户可以让共享信息继续存在，但不保活数据，也不允许像 std::weak_ptr 那样任意升级成强用户。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_implicit_sharing.hh · L142–L165。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_implicit_sharing.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="142">  <span class="syntax-keyword">void</span> <span class="syntax-function">remove_user_and_delete_if_last</span>() <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="143">  {</span>
+<span class="code-line" data-line="144">    <span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> old_user_count = strong_users_.<span class="syntax-function">fetch_sub</span>(<span class="syntax-number">1</span>, std::memory_order_acq_rel);</span>
+<span class="code-line" data-line="145">    <span class="syntax-type">BLI_assert</span>(old_user_count &gt;= <span class="syntax-number">1</span>);</span>
+<span class="code-line" data-line="146">    <span class="syntax-keyword">const</span> <span class="syntax-keyword">bool</span> was_last_user = old_user_count == <span class="syntax-number">1</span>;</span>
+<span class="code-line" data-line="147">    <span class="syntax-keyword">if</span> (was_last_user) {</span>
+<span class="code-line" data-line="148">      <span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> old_weak_user_count = weak_users_.<span class="syntax-function">load</span>(std::memory_order_acquire);</span>
+<span class="code-line" data-line="149">      <span class="syntax-type">BLI_assert</span>(old_weak_user_count &gt;= <span class="syntax-number">1</span>);</span>
+<span class="code-line" data-line="150">      <span class="syntax-keyword">if</span> (old_weak_user_count == <span class="syntax-number">1</span>) {</span>
+<span class="code-line" data-line="151">        <span class="syntax-comment">/* If the weak user count is 1 it means that there is no actual weak user. The 1 just</span></span>
+<span class="code-line" data-line="152"><span class="syntax-comment">         * indicates that there was still at least one strong user. */</span></span>
+<span class="code-line" data-line="153">        weak_users_ = <span class="syntax-number">0</span>;</span>
+<span class="code-line" data-line="154">        const_cast&lt;<span class="syntax-type">ImplicitSharingInfo</span> *&gt;(<span class="syntax-keyword">this</span>)-&gt;<span class="syntax-function">delete_self_with_data</span>();</span>
+<span class="code-line" data-line="155">      }</span>
+<span class="code-line" data-line="156">      <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="157">        <span class="syntax-comment">/* There is still at least one actual weak user, so don&#x27;t free the sharing info yet. The</span></span>
+<span class="code-line" data-line="158"><span class="syntax-comment">         * data can be freed though. */</span></span>
+<span class="code-line" data-line="159">        const_cast&lt;<span class="syntax-type">ImplicitSharingInfo</span> *&gt;(<span class="syntax-keyword">this</span>)-&gt;<span class="syntax-function">delete_data_only</span>();</span>
+<span class="code-line" data-line="160">        <span class="syntax-comment">/* Also remove the &quot;fake&quot; weak user that indicated that there was at least one strong</span></span>
+<span class="code-line" data-line="161"><span class="syntax-comment">         * user. */</span></span>
+<span class="code-line" data-line="162">        <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">remove_weak_user_and_delete_if_last</span>();</span>
+<span class="code-line" data-line="163">      }</span>
+<span class="code-line" data-line="164">    }</span>
+<span class="code-line" data-line="165">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L142</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">remove_user_and_delete_if_last</span>() <span class="syntax-keyword">const</span></code><p>当前强拥有者释放它的一份责任。const 允许通过共享信息的逻辑只读接口操作可变原子计数。</p>
+</div></div><div class="line-explanation"><span class="line-number">L143</span><div><code>{</code><p>打开 void remove_user_and_delete_if_last() const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L144</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> old_user_count = strong_users_.<span class="syntax-function">fetch_sub</span>(<span class="syntax-number">1</span>, std::memory_order_acq_rel);</code><p>原子减去一，并取得旧计数。acq_rel 同时提供此计数操作所需的获取与发布次序；不意味着数据内容可任意并发写。</p>
+</div></div><div class="line-explanation"><span class="line-number">L145</span><div><code><span class="syntax-type">BLI_assert</span>(old_user_count &gt;= <span class="syntax-number">1</span>);</code><p>旧计数至少为一，否则调用发生了重复释放或错误的持有协议。</p>
+</div></div><div class="line-explanation"><span class="line-number">L146</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">bool</span> was_last_user = old_user_count == <span class="syntax-number">1</span>;</code><p>旧计数为一表示刚刚移除了最后一个强拥有者。</p>
+</div></div><div class="line-explanation"><span class="line-number">L147</span><div><code><span class="syntax-keyword">if</span> (was_last_user) {</code><p>只有最后一个强拥有者才进入数据销毁决策。</p>
+</div></div><div class="line-explanation"><span class="line-number">L148</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> old_weak_user_count = weak_users_.<span class="syntax-function">load</span>(std::memory_order_acquire);</code><p>读取弱计数，其中包含强拥有期保留的一个隐含弱用户。</p>
+</div></div><div class="line-explanation"><span class="line-number">L149</span><div><code><span class="syntax-type">BLI_assert</span>(old_weak_user_count &gt;= <span class="syntax-number">1</span>);</code><p>弱计数至少为一，检查隐含弱用户不变量。</p>
+</div></div><div class="line-explanation"><span class="line-number">L150</span><div><code><span class="syntax-keyword">if</span> (old_weak_user_count == <span class="syntax-number">1</span>) {</code><p>弱计数恰为一时，没有真正的外部弱拥有者。</p>
+</div></div><div class="line-explanation"><span class="line-number">L151</span><div><code>/* <span class="syntax-type">If</span> the weak user count is <span class="syntax-number">1</span> it means that there is no actual weak user. <span class="syntax-type">The</span> <span class="syntax-number">1</span> just</code><p>弱计数中的 1 是强拥有期保留的隐含弱用户，恰为一表示没有真正外部弱句柄。</p>
+</div></div><div class="line-explanation"><span class="line-number">L152</span><div><code>* indicates that there was still at least one strong user. */</code><p>续接 L151 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L153</span><div><code>weak_users_ = <span class="syntax-number">0</span>;</code><p>清除隐含弱用户状态，整个共享信息即将销毁。</p>
+</div></div><div class="line-explanation"><span class="line-number">L154</span><div><code>const_cast&lt;<span class="syntax-type">ImplicitSharingInfo</span> *&gt;(<span class="syntax-keyword">this</span>)-&gt;<span class="syntax-function">delete_self_with_data</span>();</code><p>通过虚拟删除接口同时释放数据与共享信息。const_cast 用于进入实际销毁路径，不能在调用后继续访问 this。</p>
+</div></div><div class="line-explanation"><span class="line-number">L155</span><div><code>}</code><p>结束 if (old_weak_user_count == 1) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L156</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入前一个条件不成立时的路径；两条路径分别检查对象与存储状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L157</span><div><code>/* <span class="syntax-type">There</span> is still at least one actual weak user, so don&#x27;t free the sharing info yet. <span class="syntax-type">The</span></code><p>外部弱用户仍存在时，先释放数据但保留共享信息，让弱句柄还能判断已过期。</p>
+</div></div><div class="line-explanation"><span class="line-number">L158</span><div><code>* data can be freed though. */</code><p>续接 L157 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L159</span><div><code>const_cast&lt;<span class="syntax-type">ImplicitSharingInfo</span> *&gt;(<span class="syntax-keyword">this</span>)-&gt;<span class="syntax-function">delete_data_only</span>();</code><p>仍有外部弱拥有者时，只先释放数据，保留共享信息供弱句柄观察过期状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L160</span><div><code>/* <span class="syntax-type">Also</span> remove the <span class="syntax-string">&quot;fake&quot;</span> weak user that indicated that there was at least one strong</code><p>最后一个强用户退出后，还要减去代表强拥有期的隐含弱用户；真实弱用户另外计数。</p>
+</div></div><div class="line-explanation"><span class="line-number">L161</span><div><code>* user. */</code><p>续接 L160 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L162</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">remove_weak_user_and_delete_if_last</span>();</code><p>再移除代表强拥有期的隐含弱用户。若外部弱用户此时也退出，下一层负责最后清理。</p>
+</div></div><div class="line-explanation"><span class="line-number">L163</span><div><code>}</code><p>结束 else { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L164</span><div><code>}</code><p>结束 if (was_last_user) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L165</span><div><code>}</code><p>结束 void remove_user_and_delete_if_last() const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>strong=2、weak=1：第一次释放变 strong=1，不销毁；第二次变 strong=0，因为没有真正弱用户，整体释放。若 strong=1、weak=3，则最后强用户退出时先销毁数据，再把 weak 从 3 减到 2，两个外部弱句柄继续保留共享信息。</p>
+<h4>调用关系与设计判断</h4><p>与 add_user、add_weak_user、remove_weak_user_and_delete_if_last 一起建立状态转换表。写时分离必须先确认唯一强拥有，再修改或复制；计数安全与数据访问安全是两份证明。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_implicit_sharing.hh">BLI_implicit_sharing.hh</a></div><p>读 strong_users、weak_users、version 的状态定义。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 44 行 · SHA-256 ca734bf70749</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_implicit_sharing.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_implicit_sharing.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">41</span>,<span class="syntax-number">72</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_implicit_sharing.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenkernel/BKE_geometry_set.hh">BKE_geometry_set.hh</a></div><p>观察共享如何进入几何组件所有权。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 69 行 · SHA-256 fefa21b34aec</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenkernel/BKE_geometry_set.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenkernel/BKE_geometry_set.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">66</span>,<span class="syntax-number">97</span> -- <span class="syntax-string">&quot;source/blender/blenkernel/BKE_geometry_set.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/fbcddfcd68adc72f4dde6c1b769659ba8e9f086b" target="_blank" rel="noopener">fbcddfcd68a</a> <span>Jacques Lucke · 2023-03-28</span></div><h3>BLI: add core types for supporting implicit-sharing</h3><p>看通用共享基础设施如何替换 GeometrySet 中较零散的机制。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>The overall goal is to use implicit-sharing in many places in Blender
+that currently do unnecessary copies. See #95845 for more details.
+
+This commit only adds the base data structures in blenlib and uses those
+in `GeometrySet` and `AnonymousAttributeID`, which used a more ad-hoc
+version of implicit sharing already. #105994 lists some more places where
+support for implicit sharing can be added (most notably: custom data layers).
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/105994</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">.../blenkernel/<span class="syntax-type">BKE_anonymous_attribute_id</span>.hh       |  <span class="syntax-number">22</span> ++---</span>
+<span class="code-line" data-line="2"> source/blender/blenkernel/<span class="syntax-type">BKE_geometry_set</span>.hh      |  <span class="syntax-number">24</span> ++---</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/intern/customdata.cc     |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="4"> source/blender/blenkernel/intern/geometry_set.cc   |  <span class="syntax-number">27</span> ++---</span>
+<span class="code-line" data-line="5"> source/blender/blenlib/<span class="syntax-type">BLI_implicit_sharing</span>.hh     | <span class="syntax-number">109</span> +++++++++++++++++++++</span>
+<span class="code-line" data-line="6"> ...user_counter.hh =&gt; <span class="syntax-type">BLI_implicit_sharing_ptr</span>.hh} |  <span class="syntax-number">51</span> +++++-----</span>
+<span class="code-line" data-line="7"> source/blender/blenlib/<span class="syntax-type">CMakeLists</span>.txt              |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="8"> .../blenlib/tests/<span class="syntax-type">BLI_implicit_sharing_test</span>.cc     |  <span class="syntax-number">85</span> ++++++++++++++++</span>
+<span class="code-line" data-line="9"> source/blender/geometry/intern/mesh_split_edges.cc |   <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="10"> .../blender/geometry/intern/realize_instances.cc   |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="11"> <span class="syntax-number">10</span> files changed, <span class="syntax-number">250</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">93</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat fbcddfcd68a</span>
+<span class="code-line" data-line="2">git show fbcddfcd68a</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show fbcddfcd68a -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>为数组实现简化写时复制包装，复制后核对底层地址相同。</p>
+</li><li><strong>任务 02</strong><p>修改 B 前分离，确认 A 数值不变，并记录深复制次数。</p>
+</li><li><strong>任务 03</strong><p>增加只观察版本的弱句柄，清楚区分共享信息存活和数据存活。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="06-01-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="06-01-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="06-01-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>引用计数是原子的，元素就可以并行修改吗？</summary><p>不可以，引用管理和数据读写同步是不同层次。</p>
+</details><details class="question"><summary>弱用户可以任意恢复强拥有权吗？</summary><p>当前这套隐式共享接口明确不支持这样做，应遵守其可变性约定。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="06-01" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-%E6%95%B0%E6%8D%AE%E5%B8%83%E5%B1%80%E8%BF%81%E7%A7%BB%E4%B8%8E%E6%8E%A5%E5%8F%A3%E6%BC%94%E5%8C%96.html">← 上一篇：一次布局重构怎样安全穿过整个项目</a><a href="../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98/02-SharedCache%E4%B8%8E%E4%BE%9D%E8%B5%96%E7%9F%A9%E9%98%B5.html">下一篇：共享缓存：哪些变化会让结果失效 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

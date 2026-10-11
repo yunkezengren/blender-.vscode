@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="从 TBB 接入到 Mantaflow 死锁修复，理解并行不只是给循环增加线程。">
+<title>并行系统：工作窃取、任务粒度与锁边界 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="11-03"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">依赖图与并行调度</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>DEPENDENCIES / SCHEDULING / LESSON 11-03</div><h1>并行系统：工作窃取、任务粒度与锁边界</h1><p class="lede">从 TBB 接入到 Mantaflow 死锁修复，理解并行不只是给循环增加线程。</p><div class="chips"><span class="chip">方向 11 · 依赖图与并行调度</span><span class="chip">专题 3/3</span><span class="chip">正文 2,161 字符</span><span class="chip">建议研读 24 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-Depsgraph%E7%9A%84%E5%88%86%E5%B1%82%E6%A8%A1%E5%9E%8B.html">01 Depsgraph：数据块、组件、操作与关系</a><a href="02-%E5%A4%B1%E6%95%88%E4%BC%A0%E6%92%AD%E4%B8%8E%E6%9D%A1%E4%BB%B6%E4%BE%9D%E8%B5%96.html">02 需要更新、可以执行、实际执行：三个不同状态</a><a href="03-%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E4%B8%8E%E5%B5%8C%E5%A5%97%E6%AD%BB%E9%94%81.html">03 并行系统：工作窃取、任务粒度与锁边界</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>场景 Depsgraph 负责更新关系与调度。把构图、脏标记传播、就绪判断和线程执行分开，并通过 Sergey 与 Brecht 的提交理解真实系统中的条件依赖和死锁。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>图遍历、拓扑排序、状态机、基本锁与原子知识。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>场景数据变化</strong></div><div class="flow-step"><span>02</span><strong>标记与传播</strong></div><div class="flow-step"><span>03</span><strong>可见性和条件</strong></div><div class="flow-step"><span>04</span><strong>依赖满足</strong></div><div class="flow-step"><span>05</span><strong>任务执行</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>用纸面等待图分析一项嵌套调用案例，提出隔离、缩短持锁范围或重排的方案及代价。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>接口与调度后端分离</h3>
+<p>d8a3f3595af 将 Blender 的任务接口映射到 TBB 调度设施。学习重点是上层任务如何描述工作，以及后端怎样管理线程与可运行任务。使用成熟运行时可以减少自建调度器负担，但仍需理解其执行语义。</p>
+<p>任务粒度决定调度成本是否值得。大量极短任务可能被队列、同步和唤醒开销主导；过大的任务又可能造成负载不均衡。先测批量函数模块中的规模曲线，再讨论通用调度策略。</p>
+<h3>等待可能执行别的工作</h3>
+<p>工作窃取或嵌套并行运行时可能让一个线程在等待期间执行其他任务。如果调用代码在持锁状态下假定线程不会进入另一条路径，就可能产生意外重入或锁循环。8507336e769 描述 Mantaflow 窃取依赖图任务后与 GIL 形成递归锁问题，通过任务隔离处理。</p>
+<p>这里的 GIL、外部库锁、任务队列和调用栈属于不同层次。分析死锁要画等待关系，而不只是寻找某个 mutex.lock。一个线程持有什么、可能执行什么、等待谁释放什么，必须同时写清。</p>
+<h3>并行验证需要多个层面</h3>
+<p>结果一致性测试能发现漏算和数据竞争造成的错误，但无法保证没有低概率死锁。还需要受控调度、压力测试、超时，以及可用时的线程分析工具。超时只说明没有在规定时间完成，不直接证明锁环的位置。</p>
+<p>教学项目先用串行调度建立正确性基准，再增加有限线程池和显式依赖计数。不要先实现复杂窃取策略；先理解任务何时能运行、完成时通知谁、失败后怎样收尾。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要在持锁区调用未知的外部回调而不分析其阻塞、重入和再次调度行为。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>任务完成通知：先执行父操作，再提交就绪孩子</h3><p>此处选择有函数体的实现，完整展示工作线程回调。回调不会简单递归执行所有孩子，而是通过 schedule_children 和任务池安排后续工作。</p>
+<p>完整源码单元 · source/blender/depsgraph/intern/eval/deg_eval.cc · L111–L124。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/depsgraph/intern/eval/deg_eval.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="111"><span class="syntax-keyword">void</span> <span class="syntax-function">deg_task_run_func</span>(<span class="syntax-type">TaskPool</span> *pool, <span class="syntax-keyword">void</span> *taskdata)</span>
+<span class="code-line" data-line="112">{</span>
+<span class="code-line" data-line="113">  <span class="syntax-keyword">void</span> *userdata_v = <span class="syntax-type">BLI_task_pool_user_data</span>(pool);</span>
+<span class="code-line" data-line="114">  <span class="syntax-type">DepsgraphEvalState</span> *state = <span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-type">DepsgraphEvalState</span> *&gt;(userdata_v);</span>
+<span class="code-line" data-line="115"></span>
+<span class="code-line" data-line="116">  <span class="syntax-comment">/* Evaluate node. */</span></span>
+<span class="code-line" data-line="117">  <span class="syntax-type">OperationNode</span> *operation_node = reinterpret_cast&lt;<span class="syntax-type">OperationNode</span> *&gt;(taskdata);</span>
+<span class="code-line" data-line="118">  <span class="syntax-function">evaluate_node</span>(state, operation_node);</span>
+<span class="code-line" data-line="119"></span>
+<span class="code-line" data-line="120">  <span class="syntax-comment">/* Schedule children. */</span></span>
+<span class="code-line" data-line="121">  <span class="syntax-function">schedule_children</span>(state, operation_node, [&amp;](<span class="syntax-type">OperationNode</span> *node) {</span>
+<span class="code-line" data-line="122">    <span class="syntax-type">BLI_task_pool_push</span>(pool, deg_task_run_func, node, <span class="syntax-keyword">false</span>, <span class="syntax-keyword">nullptr</span>);</span>
+<span class="code-line" data-line="123">  });</span>
+<span class="code-line" data-line="124">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L111</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">deg_task_run_func</span>(<span class="syntax-type">TaskPool</span> *pool, <span class="syntax-keyword">void</span> *taskdata)</code><p>任务池回调使用 void* 携带操作节点。实际类型由提交任务的位置保证。</p>
+</div></div><div class="line-explanation"><span class="line-number">L112</span><div><code>{</code><p>打开 void deg_task_run_func(TaskPool *pool, void *taskdata) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L113</span><div><code><span class="syntax-keyword">void</span> *userdata_v = <span class="syntax-type">BLI_task_pool_user_data</span>(pool);</code><p>读取任务池用户数据。</p>
+</div></div><div class="line-explanation"><span class="line-number">L114</span><div><code><span class="syntax-type">DepsgraphEvalState</span> *state = <span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-type">DepsgraphEvalState</span> *&gt;(userdata_v);</code><p>把用户数据转换回本轮 DepsgraphEvalState；它必须存活到所有任务完成。</p>
+</div></div><div class="line-explanation"><span class="line-number">L116</span><div><code><span class="syntax-comment">/* Evaluate node. */</span></code><p>先完成当前操作回调，随后才能通知其孩子一条父关系已完成。</p>
+</div></div><div class="line-explanation"><span class="line-number">L117</span><div><code><span class="syntax-type">OperationNode</span> *operation_node = reinterpret_cast&lt;<span class="syntax-type">OperationNode</span> *&gt;(taskdata);</code><p>把 taskdata 转回 OperationNode，节点存储也必须在求值期间稳定。</p>
+</div></div><div class="line-explanation"><span class="line-number">L118</span><div><code><span class="syntax-function">evaluate_node</span>(state, operation_node);</code><p>先完成当前节点的实际求值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L120</span><div><code><span class="syntax-comment">/* Schedule children. */</span></code><p>当前操作完成后检查孩子的就绪条件，满足条件才提交，不直接无条件运行所有后继。</p>
+</div></div><div class="line-explanation"><span class="line-number">L121</span><div><code><span class="syntax-function">schedule_children</span>(state, operation_node, [&amp;](<span class="syntax-type">OperationNode</span> *node) {</code><p>随后通知子关系。lambda 捕获当前 pool 等上下文，并接收已判定可调度的节点。</p>
+</div></div><div class="line-explanation"><span class="line-number">L122</span><div><code><span class="syntax-type">BLI_task_pool_push</span>(pool, deg_task_run_func, node, <span class="syntax-keyword">false</span>, <span class="syntax-keyword">nullptr</span>);</code><p>把子节点提交到同一个任务池，不在当前栈上直接递归求值；参数 false 和 nullptr 的具体任务所有权语义需继续查看 BLI_task_pool_push 声明。</p>
+</div></div><div class="line-explanation"><span class="line-number">L123</span><div><code>});</code><p>结束 lambda 与 schedule_children 调用。任务池可能安排其他工作线程执行新节点。</p>
+</div></div><div class="line-explanation"><span class="line-number">L124</span><div><code>}</code><p>结束 void deg_task_run_func(TaskPool *pool, void *taskdata) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>菱形 A→B、A→C、B→D、C→D。A 完成后 B/C 可执行；D 必须等两条父关系都完成且只提交一次。工作窃取能让不同线程运行 B/C，但不会免除 D 的依赖计数与重复调度保护。</p>
+<h4>调用关系与设计判断</h4><p>继续检查 schedule_node 中原子递减和 scheduled 的原子设置。结合 8507336e769 研究任务等待期间持有 GIL 或外部锁的情况：依赖图无环，并不能排除线程与锁等待图存在环。</p>
+</article><article class="deep-reading"><h3>完整调度门槛：失效、依赖、阶段与去重</h3><p>完整调度函数是任务正确性的核心。父节点完成通知可能同时到达，因此依赖计数与重复提交分别使用原子操作；两个原子变量解决不同问题。</p>
+<p>完整源码单元 · source/blender/depsgraph/intern/eval/deg_eval.cc · L276–L322。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/depsgraph/intern/eval/deg_eval.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="276"><span class="syntax-keyword">void</span> <span class="syntax-function">schedule_node</span>(<span class="syntax-type">DepsgraphEvalState</span> *state,</span>
+<span class="code-line" data-line="277">                   <span class="syntax-type">OperationNode</span> *node,</span>
+<span class="code-line" data-line="278">                   <span class="syntax-keyword">bool</span> dec_parents,</span>
+<span class="code-line" data-line="279">                   <span class="syntax-keyword">const</span> <span class="syntax-type">FunctionRef</span>&lt;<span class="syntax-keyword">void</span>(<span class="syntax-type">OperationNode</span> *node)&gt; schedule_fn)</span>
+<span class="code-line" data-line="280">{</span>
+<span class="code-line" data-line="281">  <span class="syntax-comment">/* No need to schedule nodes of invisible ID. */</span></span>
+<span class="code-line" data-line="282">  <span class="syntax-keyword">if</span> (!<span class="syntax-function">check_operation_node_visible</span>(state, node)) {</span>
+<span class="code-line" data-line="283">    <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="284">  }</span>
+<span class="code-line" data-line="285">  <span class="syntax-comment">/* No need to schedule operations which are not tagged for update, they are</span></span>
+<span class="code-line" data-line="286"><span class="syntax-comment">   * considered to be up to date. */</span></span>
+<span class="code-line" data-line="287">  <span class="syntax-keyword">if</span> ((node-&gt;flag &amp; <span class="syntax-type">DEPSOP_FLAG_NEEDS_UPDATE</span>) == <span class="syntax-number">0</span>) {</span>
+<span class="code-line" data-line="288">    <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="289">  }</span>
+<span class="code-line" data-line="290">  <span class="syntax-comment">/* TODO(sergey): This is not strictly speaking safe to read</span></span>
+<span class="code-line" data-line="291"><span class="syntax-comment">   * num_links_pending. */</span></span>
+<span class="code-line" data-line="292">  <span class="syntax-keyword">if</span> (dec_parents) {</span>
+<span class="code-line" data-line="293">    <span class="syntax-type">BLI_assert</span>(node-&gt;num_links_pending &gt; <span class="syntax-number">0</span>);</span>
+<span class="code-line" data-line="294">    <span class="syntax-function">atomic_sub_and_fetch_uint32</span>(&amp;node-&gt;num_links_pending, <span class="syntax-number">1</span>);</span>
+<span class="code-line" data-line="295">  }</span>
+<span class="code-line" data-line="296">  <span class="syntax-comment">/* Cal not schedule operation while its dependencies are not yet</span></span>
+<span class="code-line" data-line="297"><span class="syntax-comment">   * evaluated. */</span></span>
+<span class="code-line" data-line="298">  <span class="syntax-keyword">if</span> (node-&gt;num_links_pending != <span class="syntax-number">0</span>) {</span>
+<span class="code-line" data-line="299">    <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="300">  }</span>
+<span class="code-line" data-line="301">  <span class="syntax-comment">/* During the copy-on-eval stage only schedule copy-on-eval nodes. */</span></span>
+<span class="code-line" data-line="302">  <span class="syntax-keyword">if</span> (!<span class="syntax-function">need_evaluate_operation_at_stage</span>(state, node)) {</span>
+<span class="code-line" data-line="303">    <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="304">  }</span>
+<span class="code-line" data-line="305">  <span class="syntax-comment">/* Actually schedule the node. */</span></span>
+<span class="code-line" data-line="306">  <span class="syntax-keyword">bool</span> is_scheduled = <span class="syntax-function">atomic_fetch_and_or_uint8</span>(reinterpret_cast&lt;uint8_t *&gt;(&amp;node-&gt;scheduled),</span>
+<span class="code-line" data-line="307">                                                <span class="syntax-function">uint8_t</span>(<span class="syntax-keyword">true</span>));</span>
+<span class="code-line" data-line="308">  <span class="syntax-keyword">if</span> (!is_scheduled) {</span>
+<span class="code-line" data-line="309">    <span class="syntax-keyword">if</span> (node-&gt;<span class="syntax-function">is_noop</span>()) {</span>
+<span class="code-line" data-line="310">      <span class="syntax-comment">/* Clear flags to avoid affecting subsequent update propagation.</span></span>
+<span class="code-line" data-line="311"><span class="syntax-comment">       * For normal nodes these are cleared when it is evaluated. */</span></span>
+<span class="code-line" data-line="312">      node-&gt;flag &amp;= ~<span class="syntax-type">DEPSOP_FLAG_CLEAR_ON_EVAL</span>;</span>
+<span class="code-line" data-line="313"></span>
+<span class="code-line" data-line="314">      <span class="syntax-comment">/* skip NOOP node, schedule children right away */</span></span>
+<span class="code-line" data-line="315">      <span class="syntax-function">schedule_children</span>(state, node, schedule_fn);</span>
+<span class="code-line" data-line="316">    }</span>
+<span class="code-line" data-line="317">    <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="318">      <span class="syntax-comment">/* children are scheduled once this task is completed */</span></span>
+<span class="code-line" data-line="319">      <span class="syntax-function">schedule_fn</span>(node);</span>
+<span class="code-line" data-line="320">    }</span>
+<span class="code-line" data-line="321">  }</span>
+<span class="code-line" data-line="322">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L276</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">schedule_node</span>(<span class="syntax-type">DepsgraphEvalState</span> *state,</code><p>调度入口接收本轮状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L277</span><div><code><span class="syntax-type">OperationNode</span> *node,</code><p>node 是待检查的子操作节点。</p>
+</div></div><div class="line-explanation"><span class="line-number">L278</span><div><code><span class="syntax-keyword">bool</span> dec_parents,</code><p>dec_parents 表示本次调用是否来自一条父关系完成通知。</p>
+</div></div><div class="line-explanation"><span class="line-number">L279</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">FunctionRef</span>&lt;<span class="syntax-keyword">void</span>(<span class="syntax-type">OperationNode</span> *node)&gt; schedule_fn)</code><p>schedule_fn 封装具体提交策略，可被线程池或其他执行方式复用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L280</span><div><code>{</code><p>打开 const FunctionRef&lt;void(OperationNode *node)&gt; schedule_fn) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L281</span><div><code><span class="syntax-comment">/* No need to schedule nodes of invisible ID. */</span></code><p>不可见节点不提交普通求值任务，规则必须与等待计数初始化保持一致。</p>
+</div></div><div class="line-explanation"><span class="line-number">L282</span><div><code><span class="syntax-keyword">if</span> (!<span class="syntax-function">check_operation_node_visible</span>(state, node)) {</code><p>先排除不可见节点。</p>
+</div></div><div class="line-explanation"><span class="line-number">L283</span><div><code><span class="syntax-keyword">return</span>;</code><p>不可见就返回，不提交工作。</p>
+</div></div><div class="line-explanation"><span class="line-number">L284</span><div><code>}</code><p>结束 if (!check_operation_node_visible(state, node)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L285</span><div><code>/* <span class="syntax-type">No</span> need to schedule operations which are not tagged <span class="syntax-keyword">for</span> update, they are</code><p>未标更新的操作被视为结果最新，不需要重新执行。失效传播决定是否设置该标志。</p>
+</div></div><div class="line-explanation"><span class="line-number">L286</span><div><code>* considered to be up to date. */</code><p>续接 L285 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L287</span><div><code><span class="syntax-keyword">if</span> ((node-&gt;flag &amp; <span class="syntax-type">DEPSOP_FLAG_NEEDS_UPDATE</span>) == <span class="syntax-number">0</span>) {</code><p>只对本轮需要更新的操作继续处理。</p>
+</div></div><div class="line-explanation"><span class="line-number">L288</span><div><code><span class="syntax-keyword">return</span>;</code><p>未过期直接返回。</p>
+</div></div><div class="line-explanation"><span class="line-number">L289</span><div><code>}</code><p>结束 if ((node-&gt;flag &amp; DEPSOP_FLAG_NEEDS_UPDATE) == 0) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L290</span><div><code>/* <span class="syntax-type">TODO</span>(sergey): <span class="syntax-type">This</span> is not strictly speaking safe to read</code><p>源码明确保留 num_links_pending 读取安全性的疑问。原子递减存在并不足以证明所有读取都没有并发问题，仍需结合阶段和读写位置审查。</p>
+</div></div><div class="line-explanation"><span class="line-number">L291</span><div><code>* num_links_pending. */</code><p>续接 L290 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L292</span><div><code><span class="syntax-keyword">if</span> (dec_parents) {</code><p>如果来自父完成通知，需要减少一条等待关系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L293</span><div><code><span class="syntax-type">BLI_assert</span>(node-&gt;num_links_pending &gt; <span class="syntax-number">0</span>);</code><p>断言等待数仍大于零，检测重复完成通知或错误初始化。</p>
+</div></div><div class="line-explanation"><span class="line-number">L294</span><div><code><span class="syntax-function">atomic_sub_and_fetch_uint32</span>(&amp;node-&gt;num_links_pending, <span class="syntax-number">1</span>);</code><p>原子递减一条未完成父关系，让并发完成通知不会丢失更新。</p>
+</div></div><div class="line-explanation"><span class="line-number">L295</span><div><code>}</code><p>结束 if (dec_parents) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L296</span><div><code>/* <span class="syntax-type">Cal</span> not schedule operation <span class="syntax-keyword">while</span> its dependencies are not yet</code><p>父依赖没有全部完成前不能提交当前操作；这条门槛与避免重复提交的 scheduled 门槛各解决一个问题。</p>
+</div></div><div class="line-explanation"><span class="line-number">L297</span><div><code>* evaluated. */</code><p>续接 L296 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L298</span><div><code><span class="syntax-keyword">if</span> (node-&gt;num_links_pending != <span class="syntax-number">0</span>) {</code><p>如果仍有未完成依赖，当前还不能执行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L299</span><div><code><span class="syntax-keyword">return</span>;</code><p>等待后续父完成通知，不提交。</p>
+</div></div><div class="line-explanation"><span class="line-number">L300</span><div><code>}</code><p>结束 if (node-&gt;num_links_pending != 0) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L301</span><div><code><span class="syntax-comment">/* During the copy-on-eval stage only schedule copy-on-eval nodes. */</span></code><p>当前阶段只允许符合阶段类型的操作执行，其他节点留给后续阶段。</p>
+</div></div><div class="line-explanation"><span class="line-number">L302</span><div><code><span class="syntax-keyword">if</span> (!<span class="syntax-function">need_evaluate_operation_at_stage</span>(state, node)) {</code><p>检查当前求值阶段允许执行此类操作；例如 copy-on-eval 阶段限制可执行类型。</p>
+</div></div><div class="line-explanation"><span class="line-number">L303</span><div><code><span class="syntax-keyword">return</span>;</code><p>阶段不匹配时返回，留给适当阶段处理。</p>
+</div></div><div class="line-explanation"><span class="line-number">L304</span><div><code>}</code><p>结束 if (!need_evaluate_operation_at_stage(state, node)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L305</span><div><code><span class="syntax-comment">/* Actually schedule the node. */</span></code><p>前面通过过滤与等待条件后，仍需要原子去重，保证并发通知只提交一次。</p>
+</div></div><div class="line-explanation"><span class="line-number">L306</span><div><code><span class="syntax-keyword">bool</span> is_scheduled = <span class="syntax-function">atomic_fetch_and_or_uint8</span>(reinterpret_cast&lt;uint8_t *&gt;(&amp;node-&gt;scheduled),</code><p>原子地把 scheduled 置真并取得旧值。它解决最后几条父通知竞争导致重复提交的问题。</p>
+</div></div><div class="line-explanation"><span class="line-number">L307</span><div><code><span class="syntax-function">uint8_t</span>(<span class="syntax-keyword">true</span>));</code><p>传入 true 的字节值，这行续接原子调用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L308</span><div><code><span class="syntax-keyword">if</span> (!is_scheduled) {</code><p>只有此前尚未安排的线程取得提交资格。</p>
+</div></div><div class="line-explanation"><span class="line-number">L309</span><div><code><span class="syntax-keyword">if</span> (node-&gt;<span class="syntax-function">is_noop</span>()) {</code><p>NOOP 节点不需要普通工作回调。</p>
+</div></div><div class="line-explanation"><span class="line-number">L310</span><div><code>/* <span class="syntax-type">Clear</span> flags to avoid affecting subsequent update propagation.</code><p>NOOP 没有普通 evaluate_node 回调，所以在这里清理对应标记，避免污染下一轮更新传播。</p>
+</div></div><div class="line-explanation"><span class="line-number">L311</span><div><code>* <span class="syntax-type">For</span> normal nodes these are cleared when it is evaluated. */</code><p>续接 L310 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L312</span><div><code>node-&gt;flag &amp;= ~<span class="syntax-type">DEPSOP_FLAG_CLEAR_ON_EVAL</span>;</code><p>清理本轮求值标记，避免影响后续更新传播。</p>
+</div></div><div class="line-explanation"><span class="line-number">L314</span><div><code><span class="syntax-comment">/* skip NOOP node, schedule children right away */</span></code><p>NOOP 只是依赖连接点，直接继续推动孩子，无需占用一次普通任务执行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L315</span><div><code><span class="syntax-function">schedule_children</span>(state, node, schedule_fn);</code><p>NOOP 立即推动孩子，相当于穿过纯依赖连接点。</p>
+</div></div><div class="line-explanation"><span class="line-number">L316</span><div><code>}</code><p>结束 if (node-&gt;is_noop()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L317</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入前一个条件不成立时的路径；两条路径分别检查对象与存储状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L318</span><div><code><span class="syntax-comment">/* children are scheduled once this task is completed */</span></code><p>普通节点必须真正执行完成后，才由任务回调调度孩子，不能在提交时提前通知完成。</p>
+</div></div><div class="line-explanation"><span class="line-number">L319</span><div><code><span class="syntax-function">schedule_fn</span>(node);</code><p>普通节点通过策略回调提交工作，孩子要等它实际执行结束后才调度。</p>
+</div></div><div class="line-explanation"><span class="line-number">L320</span><div><code>}</code><p>结束 else { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L321</span><div><code>}</code><p>结束 if (!is_scheduled) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L322</span><div><code>}</code><p>结束 const FunctionRef&lt;void(OperationNode *node)&gt; schedule_fn) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>B/C 同时完成通知 D，pending 从 2 变 1 再变 0。即使两个线程都观察到满足运行门槛，scheduled 的原子取旧值仍只允许一个提交。NOOP D 不占一个普通执行任务，而是立即处理后继关系。</p>
+<h4>调用关系与设计判断</h4><p>源码还保留了关于 num_links_pending 读取安全性的 TODO，研读时要正视这个限制，不能把“有原子操作”写成“整个函数并发已被完全证明”。进一步检查所有读写位置、阶段屏障和任务池等待协议，再分析持锁等待与嵌套任务的死锁可能。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_task.hh">BLI_task.hh</a></div><p>观察上层并行模式与粒度参数。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 14 行 · SHA-256 acc7e83bc7c9</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_task.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_task.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">11</span>,<span class="syntax-number">42</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_task.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/depsgraph/intern/eval/deg_eval.cc">deg_eval.cc</a></div><p>把任务调度放回依赖满足与完成通知的流程中。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 48 行 · SHA-256 af73ab6297c0</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/depsgraph/intern/eval/deg_eval.cc</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/depsgraph/intern/eval/deg_eval.cc&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">45</span>,<span class="syntax-number">76</span> -- <span class="syntax-string">&quot;source/blender/depsgraph/intern/eval/deg_eval.cc&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/d8a3f3595af0fb3ca5937e41c2728fd750d986ef" target="_blank" rel="noopener">d8a3f3595af</a> <span>Brecht Van Lommel · 2020-04-30</span></div><h3>Task: Use TBB as Task Scheduler</h3><p>看接口映射与后端替换，不把历史性能数字当作本地结果。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This patch enables TBB as the default task scheduler. TBB stands for Threading Building Blocks and is developed by Intel. The library contains several threading patters. This patch maps blenders BLI_task_* function to their counterpart. After this patch we can add more patterns. A promising one is TBB:graph that can be used for depsgraph, draw manager and compositor.
+
+Performance changes depends on the actual hardware. It was tested on different hardwares from laptops to workstations and we didn&#x27;t detected any downgrade of the performance.
+* Linux Xeon E5-2699 v4 got FPS boost from 12 to 17 using Spring&#x27;s 04_010_A.anim.blend.
+* AMD Ryzen Threadripper 2990WX 32-Core Animation playback goes from 9.5-10.5 FPS to 13.0-14.0 FPS on Agent 327 , 10_03_B.anim.blend.
+
+Reviewed By: brecht, sergey
+
+Differential Revision: https://developer.blender.org/D7475</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">build_files/cmake/<span class="syntax-type">Modules</span>/<span class="syntax-type">GTestTesting</span>.cmake       |    <span class="syntax-number">3</span> +</span>
+<span class="code-line" data-line="2"> source/blender/blenkernel/<span class="syntax-type">BKE_pbvh</span>.h               |   <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/<span class="syntax-type">CMakeLists</span>.txt           |    <span class="syntax-number">1</span> -</span>
+<span class="code-line" data-line="4"> .../blender/blenkernel/intern/editmesh_tangent.c   |    <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="5"> source/blender/blenkernel/intern/mesh_evaluate.c   |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/intern/mesh_tangent.c    |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="7"> source/blender/blenkernel/intern/ocean.c           |   <span class="syntax-number">35</span> +-</span>
+<span class="code-line" data-line="8"> source/blender/blenkernel/intern/particle.c        |    <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="9"> .../blenkernel/intern/particle_distribute.c        |   <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="10"> source/blender/blenkernel/intern/pbvh.c            |   <span class="syntax-number">28</span> +-</span>
+<span class="code-line" data-line="11"> source/blender/blenlib/<span class="syntax-type">BLI_task</span>.h                  |   <span class="syntax-number">66</span> +-</span>
+<span class="code-line" data-line="12"> source/blender/blenlib/<span class="syntax-type">BLI_threads</span>.h               |    <span class="syntax-number">2</span> -</span>
+<span class="code-line" data-line="13"> source/blender/blenlib/<span class="syntax-type">CMakeLists</span>.txt              |   <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="14"> source/blender/blenlib/intern/task_iterator.c      |  <span class="syntax-number">341</span> +-----</span>
+<span class="code-line" data-line="15"> source/blender/blenlib/intern/task_pool.cc         | <span class="syntax-number">1143</span> ++++++--------------</span>
+<span class="code-line" data-line="16"> .../intern/task_range.cc}                          |  <span class="syntax-number">103</span> +-</span>
+<span class="code-line" data-line="17"> source/blender/blenlib/intern/task_scheduler.cc    |   <span class="syntax-number">73</span> ++</span>
+<span class="code-line" data-line="18"> source/blender/blenlib/intern/threads.c            |   <span class="syntax-number">26</span> -</span>
+<span class="code-line" data-line="19"> source/blender/depsgraph/intern/eval/deg_eval.cc   |   <span class="syntax-number">55</span> +-</span>
+<span class="code-line" data-line="20"> .../blender/draw/intern/draw_cache_extract_mesh.c  |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="21"> source/blender/editors/mesh/editmesh_undo.c        |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="22"> source/blender/editors/physics/particle_edit.c     |    <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="23"> source/blender/editors/render/render_opengl.c      |   <span class="syntax-number">17</span> +-</span>
+<span class="code-line" data-line="24"> source/blender/editors/sculpt_paint/paint_cursor.c |    <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="25"> .../editors/sculpt_paint/paint_image_proj.c        |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="26"> source/blender/editors/sculpt_paint/paint_mask.c   |   <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="27"> source/blender/editors/sculpt_paint/paint_vertex.c |   <span class="syntax-number">28</span> +-</span>
+<span class="code-line" data-line="28"> source/blender/editors/sculpt_paint/sculpt.c       |  <span class="syntax-number">206</span> ++--</span>
+<span class="code-line" data-line="29"> source/blender/editors/sculpt_paint/sculpt_cloth.c |   <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="30"> .../blender/editors/sculpt_paint/sculpt_face_set.c |   <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="31"> .../editors/sculpt_paint/sculpt_filter_mask.c      |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="32"> .../editors/sculpt_paint/sculpt_filter_mesh.c      |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="33"> .../editors/sculpt_paint/sculpt_mask_expand.c      |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="34"> .../sculpt_paint/sculpt_multiplane_scrape.c        |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="35"> source/blender/editors/sculpt_paint/sculpt_pose.c  |   <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="36"> .../blender/editors/sculpt_paint/sculpt_smooth.c   |   <span class="syntax-number">31</span> +-</span>
+<span class="code-line" data-line="37"> .../editors/sculpt_paint/sculpt_transform.c        |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="38"> source/blender/editors/sculpt_paint/sculpt_undo.c  |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="39"> source/blender/editors/space_clip/clip_editor.c    |    <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="40"> source/blender/editors/space_clip/clip_ops.c       |    <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="41"> source/blender/editors/space_file/filelist.c       |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="42"> source/blender/imbuf/intern/imageprocess.c         |   <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="43"> source/blender/windowmanager/intern/wm_init_exit.c |    <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="44"> source/creator/creator.c                           |    <span class="syntax-number">4</span> +</span>
+<span class="code-line" data-line="45"> tests/gtests/blenlib/<span class="syntax-type">BLI_linklist_lockfree_test</span>.cc |    <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="46"> tests/gtests/blenlib/<span class="syntax-type">BLI_task_test</span>.cc              |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="47"> <span class="syntax-number">46</span> files changed, <span class="syntax-number">795</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">1641</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat d8a3f3595af</span>
+<span class="code-line" data-line="2">git show d8a3f3595af</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show d8a3f3595af -- source/blender/…</span></span></code></pre></div>
+</details></article>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/8507336e76902604a2128b23a4d8e52094031ab0" target="_blank" rel="noopener">8507336e769</a> <span>Sergey Sharybin · 2021-10-27</span></div><h3>Fix T92423: Blender freeze rendering animation with Mantaflow</h3><p>从提交说明还原任务窃取与锁依赖，再观察隔离放在哪一层。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Mantaflow could steal tasks from dependency graph, which under
+certain conditions causes a recursive lock involving GIL.
+
+Isolate threading done in mantaflow when it is interfaced form
+the dependency graph.
+
+Isolation done from the modifier, since the deeper calls are
+branching out quite quickly.
+
+Differential Revision: https://developer.blender.org/D13011</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/modifiers/intern/<span class="syntax-type">MOD_fluid</span>.c | <span class="syntax-number">41</span> ++++++++++++++++++++++++++---</span>
+<span class="code-line" data-line="2"> <span class="syntax-number">1</span> file changed, <span class="syntax-number">37</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">4</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 8507336e769</span>
+<span class="code-line" data-line="2">git show 8507336e769</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 8507336e769 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>为小 DAG 加入线程池，检查每个节点只在必要依赖完成后执行。</p>
+</li><li><strong>任务 02</strong><p>分别测细粒度与粗粒度任务，记录吞吐和线程利用情况。</p>
+</li><li><strong>任务 03</strong><p>用纸面等待图分析一项嵌套调用案例，提出隔离、缩短持锁范围或重排的方案及代价。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="11-03-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="11-03-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="11-03-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>调用 parallel_for 后只会执行我的循环吗？</summary><p>具体取决于运行时语义，嵌套和工作窃取可能影响线程执行的其他任务。</p>
+</details><details class="question"><summary>加一个大锁能保证系统正确吗？</summary><p>可能避免某些竞争，却可能导致死锁、重入问题和性能退化，仍需协议分析。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="11-03" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../11-%E4%BE%9D%E8%B5%96%E5%9B%BE%E4%B8%8E%E5%B9%B6%E8%A1%8C%E8%B0%83%E5%BA%A6/02-%E5%A4%B1%E6%95%88%E4%BC%A0%E6%92%AD%E4%B8%8E%E6%9D%A1%E4%BB%B6%E4%BE%9D%E8%B5%96.html">← 上一篇：需要更新、可以执行、实际执行：三个不同状态</a><a href="../12-KD%E6%A0%91%E4%B8%8E%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E5%AE%9E%E9%AA%8C/01-KDTree%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%B8%83%E5%B1%80.html">下一篇：KD-tree 的接口：谁拥有坐标，何时允许修改 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

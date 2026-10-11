@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="沿一个真实节点把表达式、选择、目标数组和求值作用域连接起来。">
+<title>从 Set Position 追到 FieldEvaluator · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="08-02"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">Field表达式与上下文</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>EXPRESSIONS / CONTEXT / LESSON 08-02</div><h1>从 Set Position 追到 FieldEvaluator</h1><p class="lede">沿一个真实节点把表达式、选择、目标数组和求值作用域连接起来。</p><div class="chips"><span class="chip">方向 08 · Field表达式与上下文</span><span class="chip">专题 2/3</span><span class="chip">正文 2,503 字符</span><span class="chip">建议研读 28 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E4%B8%8A%E4%B8%8B%E6%96%87.html">01 Field：把表达式与求值位置分开</a><a href="02-FieldEvaluator%E4%B8%8E%E5%AE%9E%E9%99%85%E8%8A%82%E7%82%B9.html">02 从 Set Position 追到 FieldEvaluator</a><a href="03-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E6%9E%90%E6%9E%84.html">03 Field 的演化：减少分配之后，还要考虑销毁</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>区分“要计算什么”与“在哪些几何元素上计算”。从 FieldInput、FieldOperation、FieldContext 和 FieldEvaluator 进入求值，再阅读 2026 年存储重构。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>MultiFunction、图共享、运行时类型、虚拟数组和作用域管理。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>构造表达式</strong></div><div class="flow-step"><span>02</span><strong>提供上下文</strong></div><div class="flow-step"><span>03</span><strong>确定选择</strong></div><div class="flow-step"><span>04</span><strong>组织批量过程</strong></div><div class="flow-step"><span>05</span><strong>取得结果</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>覆盖空选择、全选择、非零起点 mask 和不同长度上下文。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>从消费者向下追踪</h3>
+<p>Set Position 是理解 Field 的好入口：它需要在具体几何上解释位置、偏移和选择。阅读时先列出节点拿到哪些字段、在哪个域使用它们、怎样获得可写位置。随后跟进 FieldEvaluator，而不是从整个 field_evaluation.cc 第一行开始。</p>
+<p>FieldEvaluator 保存 context 引用、mask 引用或作用域内构造的 mask、待求值 Field 和结果数组。构造函数的指针形式特别强调传入 mask 的生命周期要求；这些小接口细节连接着整个结果管理。</p>
+<h3>选择也可以需要求值</h3>
+<p>set_selection 接受布尔 Field，先求出选择，再决定其他 Field 需要处理哪些元素。它与构造时 mask 的关系是交集。未选择的元素不应被当作已经计算的有效输出随意读取。</p>
+<p>如果同时需要多个共享子表达式的结果，把它们放入同一次合适的求值组织中，可以减少重复工作。是否真正共享以及如何调度，应沿当前实现验证，而不是仅凭两段节点图看起来相似判断。</p>
+<h3>写目标与结果寿命</h3>
+<p>add_with_destination 允许将结果写入调用者提供的目标表示。目标大小、类型和可写性需要满足契约；普通 add 则可能通过求值器管理结果表示及临时资源。调用者持有结果多久，取决于结果自身拥有关系与 evaluator 的作用域。</p>
+<p>当前析构中的断言能捕捉忘记调用 evaluate 的使用错误。学习时把构造、登记、执行、取结果、销毁当成一个完整协议，避免只记住单个方法名称。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>选择外的输出内存可能没有被计算或构造，不能把整块缓冲区都当成有效结果。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>FieldEvaluator 选择条件：登记阶段没有立刻执行</h3><p>先逐行读选择登记，再读生命周期检查。真实节点调用者通常先设置选择、登记字段与目标，然后统一 evaluate；这些步骤不能任意调换。</p>
+<p>完整源码单元 · source/blender/functions/FN_field_evaluation.hh · L68–L71。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/FN_field_evaluation.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="68">  <span class="syntax-keyword">void</span> <span class="syntax-function">set_selection</span>(<span class="syntax-type">Field</span>&lt;<span class="syntax-keyword">bool</span>&gt; selection)</span>
+<span class="code-line" data-line="69">  {</span>
+<span class="code-line" data-line="70">    selection_field_ = std::<span class="syntax-function">move</span>(selection);</span>
+<span class="code-line" data-line="71">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L68</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">set_selection</span>(<span class="syntax-type">Field</span>&lt;<span class="syntax-keyword">bool</span>&gt; selection)</code><p>接收一个布尔 Field 表达式。按值传参使方法可以取得该句柄的所有权。</p>
+</div></div><div class="line-explanation"><span class="line-number">L69</span><div><code>{</code><p>打开 void set_selection(Field&lt;bool&gt; selection) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L70</span><div><code>selection_field_ = std::<span class="syntax-function">move</span>(selection);</code><p>把表达式移动到 selection_field_。这里只替换登记条件，没有遍历几何元素，也没有生成最终选择掩码。</p>
+</div></div><div class="line-explanation"><span class="line-number">L71</span><div><code>}</code><p>结束 void set_selection(Field&lt;bool&gt; selection) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>构造器 mask 选中 [0,2,5]，选择 Field 在其中只有 2 和 5 为真，最终其他字段只需处理 [2,5]。构造 mask 之外的元素即使 selection 为真，也不因此自动加入。重复 set_selection 会替换先前表达式。</p>
+<h4>调用关系与设计判断</h4><p>沿 node_geo_set_position.cc 的 FieldEvaluator 调用进入 evaluate 实现，检查选择如何先求值、结果数组如何绑定位置属性，以及 scope_ 怎样保证临时值寿命。只有登记选择而忘记 evaluate，不会产生位置更新。</p>
+</article><article class="deep-reading"><h3>析构断言：协议要求在销毁前执行</h3><p>这个完整析构函数检查调用者是否完成协议。它没有在析构时自动执行所有字段，因此应在正常控制流中明确调用 evaluate。</p>
+<p>完整源码单元 · source/blender/functions/FN_field_evaluation.hh · L54–L59。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/FN_field_evaluation.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="54">  ~<span class="syntax-type">FieldEvaluator</span>()</span>
+<span class="code-line" data-line="55">  {</span>
+<span class="code-line" data-line="56">    <span class="syntax-comment">/* While this assert isn&#x27;t strictly necessary, and could be replaced with a warning,</span></span>
+<span class="code-line" data-line="57"><span class="syntax-comment">     * it will catch cases where someone forgets to call #evaluate(). */</span></span>
+<span class="code-line" data-line="58">    <span class="syntax-type">BLI_assert</span>(is_evaluated_);</span>
+<span class="code-line" data-line="59">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L54</span><div><code>~<span class="syntax-type">FieldEvaluator</span>()</code><p>析构阶段进入协议检查；类成员的实际析构随后按 C++ 规则进行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L55</span><div><code>{</code><p>打开 ~FieldEvaluator() 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L56</span><div><code>/* <span class="syntax-type">While</span> <span class="syntax-keyword">this</span> assert isn&#x27;t strictly necessary, and could be replaced with a warning,</code><p>析构断言用于发现调用者忘记 evaluate；它没有自动补做求值，也不是完整的运行期错误恢复方案。</p>
+</div></div><div class="line-explanation"><span class="line-number">L57</span><div><code>* it will <span class="syntax-keyword">catch</span> cases where someone forgets to call #<span class="syntax-function">evaluate</span>(). */</code><p>续接 L56 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L58</span><div><code><span class="syntax-type">BLI_assert</span>(is_evaluated_);</code><p>断言求值已完成。关闭断言时这条检查可能消失，但不会因此自动补上求值动作。</p>
+</div></div><div class="line-explanation"><span class="line-number">L59</span><div><code>}</code><p>结束 ~FieldEvaluator() 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>建立 evaluator、add 字段、直接离开作用域会触发此断言。把 evaluate 放在可能被提前 return 跳过的位置，也会违反正常路径预期。研究异常退出行为时要单独检查调用场景，不能把调试断言当作完整错误恢复机制。</p>
+<h4>调用关系与设计判断</h4><p>这是一种较强的接口使用约定。自己设计时可比较显式 finalize、返回求值结果的工厂函数、构造后立即执行三种接口，判断哪一种更容易让非法状态无法表达。</p>
+</article><article class="deep-reading"><h3>FieldEvaluator 完整执行：选择、表达式引用与结果写回</h3><p>这是此前登记接口真正进入执行的地方。请按同一字段编号同时追踪 fields_to_evaluate_、dst_varrays_、evaluated_varrays_ 与 output_pointer_infos_，它们的位置关系是接口不变量。</p>
+<p>完整源码单元 · source/blender/functions/intern/field_evaluation.cc · L590–L620。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/intern/field_evaluation.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="590"><span class="syntax-keyword">void</span> <span class="syntax-type">FieldEvaluator</span>::<span class="syntax-function">evaluate</span>()</span>
+<span class="code-line" data-line="591">{</span>
+<span class="code-line" data-line="592">  <span class="syntax-type">BLI_assert_msg</span>(!is_evaluated_, <span class="syntax-string">&quot;Cannot evaluate fields twice.&quot;</span>);</span>
+<span class="code-line" data-line="593"></span>
+<span class="code-line" data-line="594">  selection_mask_ = selection_field_ ?</span>
+<span class="code-line" data-line="595">                        <span class="syntax-function">evaluate_selection</span>(*selection_field_, context_, mask_, scope_) :</span>
+<span class="code-line" data-line="596">                        mask_;</span>
+<span class="code-line" data-line="597"></span>
+<span class="code-line" data-line="598">  <span class="syntax-type">Vector</span>&lt;<span class="syntax-type">GFieldRef</span>&gt; fields;</span>
+<span class="code-line" data-line="599">  fields.<span class="syntax-function">reserve</span>(fields_to_evaluate_.<span class="syntax-function">size</span>());</span>
+<span class="code-line" data-line="600">  <span class="syntax-keyword">static</span> <span class="syntax-keyword">constexpr</span> <span class="syntax-keyword">bool</span> true_value = <span class="syntax-keyword">true</span>;</span>
+<span class="code-line" data-line="601">  <span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : fields_to_evaluate_.<span class="syntax-function">index_range</span>()) {</span>
+<span class="code-line" data-line="602">    <span class="syntax-keyword">const</span> <span class="syntax-type">GField</span> &amp;field = fields_to_evaluate_[i];</span>
+<span class="code-line" data-line="603">    <span class="syntax-keyword">if</span> (field == selection_field_) {</span>
+<span class="code-line" data-line="604">      <span class="syntax-comment">/* Avoid evaluating the selection field again. */</span></span>
+<span class="code-line" data-line="605">      fields.<span class="syntax-function">append</span>(<span class="syntax-type">GFieldRef</span>::<span class="syntax-function">from_constant</span>(<span class="syntax-type">CPPType</span>::get&lt;<span class="syntax-keyword">bool</span>&gt;(), &amp;true_value));</span>
+<span class="code-line" data-line="606">    }</span>
+<span class="code-line" data-line="607">    <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="608">      fields.<span class="syntax-function">append</span>(field);</span>
+<span class="code-line" data-line="609">    }</span>
+<span class="code-line" data-line="610">  }</span>
+<span class="code-line" data-line="611">  evaluated_varrays_ = <span class="syntax-function">evaluate_fields</span>(scope_, fields, selection_mask_, context_, dst_varrays_);</span>
+<span class="code-line" data-line="612">  <span class="syntax-type">BLI_assert</span>(fields_to_evaluate_.<span class="syntax-function">size</span>() == evaluated_varrays_.<span class="syntax-function">size</span>());</span>
+<span class="code-line" data-line="613">  <span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : fields_to_evaluate_.<span class="syntax-function">index_range</span>()) {</span>
+<span class="code-line" data-line="614">    <span class="syntax-type">OutputPointerInfo</span> &amp;info = output_pointer_infos_[i];</span>
+<span class="code-line" data-line="615">    <span class="syntax-keyword">if</span> (info.dst != <span class="syntax-keyword">nullptr</span>) {</span>
+<span class="code-line" data-line="616">      info.<span class="syntax-function">set</span>(info.dst, evaluated_varrays_[i], scope_);</span>
+<span class="code-line" data-line="617">    }</span>
+<span class="code-line" data-line="618">  }</span>
+<span class="code-line" data-line="619">  is_evaluated_ = <span class="syntax-keyword">true</span>;</span>
+<span class="code-line" data-line="620">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L590</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-type">FieldEvaluator</span>::<span class="syntax-function">evaluate</span>()</code><p>执行本轮已登记字段。完成后才允许读取对应求值结果。</p>
+</div></div><div class="line-explanation"><span class="line-number">L591</span><div><code>{</code><p>打开 void FieldEvaluator::evaluate() 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L592</span><div><code><span class="syntax-type">BLI_assert_msg</span>(!is_evaluated_, <span class="syntax-string">&quot;Cannot evaluate fields twice.&quot;</span>);</code><p>禁止同一个 evaluator 二次求值，防止状态重复提交与结果混淆。</p>
+</div></div><div class="line-explanation"><span class="line-number">L594</span><div><code>selection_mask_ = selection_field_ ?</code><p>开始按是否存在选择表达式计算 selection_mask_。</p>
+</div></div><div class="line-explanation"><span class="line-number">L595</span><div><code><span class="syntax-function">evaluate_selection</span>(*selection_field_, context_, mask_, scope_) :</code><p>有选择时先在原 mask 与 context 中求布尔字段。</p>
+</div></div><div class="line-explanation"><span class="line-number">L596</span><div><code>mask_;</code><p>没有选择时直接沿用构造器 mask。这是三元表达式的另一分支。</p>
+</div></div><div class="line-explanation"><span class="line-number">L598</span><div><code><span class="syntax-type">Vector</span>&lt;<span class="syntax-type">GFieldRef</span>&gt; fields;</code><p>建立非拥有 GFieldRef 数组，减少本轮求值引用操作的成本。</p>
+</div></div><div class="line-explanation"><span class="line-number">L599</span><div><code>fields.<span class="syntax-function">reserve</span>(fields_to_evaluate_.<span class="syntax-function">size</span>());</code><p>为所有登记字段准备容量，避免追加过程中反复增长。</p>
+</div></div><div class="line-explanation"><span class="line-number">L600</span><div><code><span class="syntax-keyword">static</span> <span class="syntax-keyword">constexpr</span> <span class="syntax-keyword">bool</span> true_value = <span class="syntax-keyword">true</span>;</code><p>静态 true_value 保证下面 ConstantRef 指向的值在整个执行期间有效。</p>
+</div></div><div class="line-explanation"><span class="line-number">L601</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : fields_to_evaluate_.<span class="syntax-function">index_range</span>()) {</code><p>遍历登记字段编号，而不是遍历几何元素。</p>
+</div></div><div class="line-explanation"><span class="line-number">L602</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">GField</span> &amp;field = fields_to_evaluate_[i];</code><p>取得当前表达式拥有句柄。</p>
+</div></div><div class="line-explanation"><span class="line-number">L603</span><div><code><span class="syntax-keyword">if</span> (field == selection_field_) {</code><p>如果当前字段就是选择字段，在选中的元素上它已经必然为真。</p>
+</div></div><div class="line-explanation"><span class="line-number">L604</span><div><code><span class="syntax-comment">/* Avoid evaluating the selection field again. */</span></code><p>最终 mask 中的元素已经通过选择条件，因此同一选择字段在这些位置上必然为真，无需重复求值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L605</span><div><code>fields.<span class="syntax-function">append</span>(<span class="syntax-type">GFieldRef</span>::<span class="syntax-function">from_constant</span>(<span class="syntax-type">CPPType</span>::get&lt;<span class="syntax-keyword">bool</span>&gt;(), &amp;true_value));</code><p>使用统一 true 常量引用，避免对选择字段重复求值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L606</span><div><code>}</code><p>结束 if (field == selection_field_) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L607</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入前一个条件不成立时的路径；两条路径分别检查对象与存储状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L608</span><div><code>fields.<span class="syntax-function">append</span>(field);</code><p>普通字段保留原表达式引用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L609</span><div><code>}</code><p>结束 else { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L610</span><div><code>}</code><p>结束 for (const int i : fields_to_evaluate_.index_range()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L611</span><div><code>evaluated_varrays_ = <span class="syntax-function">evaluate_fields</span>(scope_, fields, selection_mask_, context_, dst_varrays_);</code><p>统一调用 evaluate_fields，提供资源作用域、实际选择、上下文和可选目标缓冲区。</p>
+</div></div><div class="line-explanation"><span class="line-number">L612</span><div><code><span class="syntax-type">BLI_assert</span>(fields_to_evaluate_.<span class="syntax-function">size</span>() == evaluated_varrays_.<span class="syntax-function">size</span>());</code><p>检查结果数量与登记数量一致，确保后面按相同编号写回合法。</p>
+</div></div><div class="line-explanation"><span class="line-number">L613</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : fields_to_evaluate_.<span class="syntax-function">index_range</span>()) {</code><p>遍历每个登记输出。</p>
+</div></div><div class="line-explanation"><span class="line-number">L614</span><div><code><span class="syntax-type">OutputPointerInfo</span> &amp;info = output_pointer_infos_[i];</code><p>取得外部输出指针及其类型恢复回调信息。</p>
+</div></div><div class="line-explanation"><span class="line-number">L615</span><div><code><span class="syntax-keyword">if</span> (info.dst != <span class="syntax-keyword">nullptr</span>) {</code><p>只有调用者确实登记了外部目的地址才写回。</p>
+</div></div><div class="line-explanation"><span class="line-number">L616</span><div><code>info.<span class="syntax-function">set</span>(info.dst, evaluated_varrays_[i], scope_);</code><p>用回调把求值后的 GVArray 转成调用者预期的结果句柄，scope 保活需要的临时资源。</p>
+</div></div><div class="line-explanation"><span class="line-number">L617</span><div><code>}</code><p>结束 if (info.dst != nullptr) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L618</span><div><code>}</code><p>结束 for (const int i : fields_to_evaluate_.index_range()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L619</span><div><code>is_evaluated_ = <span class="syntax-keyword">true</span>;</code><p>最后标记已求值。若前面抛出或未完成，不能提前发布成功状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L620</span><div><code>}</code><p>结束 void FieldEvaluator::evaluate() 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>登记字段 F0=Position、F1=selection，选择在原 mask=[0,2,5] 中保留 [2,5]。evaluate_fields 的两个输出仍对应 F0、F1，但 F1 可用统一 true 表示。若外部 varray_ptr 登记给 F0，则通过相同编号的 OutputPointerInfo 写回，而不是按类型搜索。</p>
+<h4>调用关系与设计判断</h4><p>接着阅读 evaluate_fields 如何把表达式转换为批量计算、如何处理 VArray 与目的数组生命周期。节点调用者必须在 context、mask、输入几何和目标属性都有效的期间执行；evaluator 内部有 scope，并不自动拥有所有外部借用对象。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/nodes/geometry/nodes/node_geo_set_position.cc">node_geo_set_position.cc</a></div><p>定位实际几何数据如何进入 FieldEvaluator。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 111 行 · SHA-256 a57eb7e24da0</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/nodes/geometry/nodes/node_geo_set_position.cc</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/nodes/geometry/nodes/node_geo_set_position.cc&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">108</span>,<span class="syntax-number">139</span> -- <span class="syntax-string">&quot;source/blender/nodes/geometry/nodes/node_geo_set_position.cc&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_field_evaluation.hh">FN_field_evaluation.hh</a></div><p>追踪 context、mask、scope 与结果存储。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 21 行 · SHA-256 04d5d49917e6</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_field_evaluation.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_field_evaluation.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">18</span>,<span class="syntax-number">49</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_field_evaluation.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/bf47fb40fd6f0ee9386e9936cf213a1049c55b61" target="_blank" rel="noopener">bf47fb40fd6</a> <span>Jacques Lucke · 2021-09-09</span></div><h3>Geometry Nodes: fields and anonymous attributes</h3><p>观察 Set Position 作为首批 Field 消费节点如何连接用户功能与底层框架。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This implements the initial core framework for fields and anonymous
+attributes (also see T91274).
+
+The new functionality is hidden behind the &quot;Geometry Nodes Fields&quot;
+feature flag. When enabled in the user preferences, the following
+new nodes become available: `Position`, `Index`, `Normal`,
+`Set Position` and `Attribute Capture`.
+
+Socket inspection has not been updated to work with fields yet.
+
+Besides these changes at the user level, this patch contains the
+ground work for:
+* building and evaluating fields at run-time (`FN_fields.hh`) and
+* creating and accessing anonymous attributes on geometry
+  (`BKE_anonymous_attribute.h`).
+
+For evaluating fields we use a new so called multi-function procedure
+(`FN_multi_function_procedure.hh`). It allows composing multi-functions
+in arbitrary ways and supports efficient evaluation as is required by
+fields. See `FN_multi_function_procedure.hh` for more details on how
+this evaluation mechanism can be used.
+
+A new `AttributeIDRef` has been added which allows handling named
+and anonymous attributes in the same way in many places.
+
+Hans and I worked on this patch together.
+
+Differential Revision: https://developer.blender.org/D12414</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">release/scripts/startup/bl_ui/space_userpref.py    |    <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="2"> release/scripts/startup/nodeitems_builtins.py      |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="3"> .../blender/blenkernel/<span class="syntax-type">BKE_anonymous_attribute</span>.h   |   <span class="syntax-number">43</span> +</span>
+<span class="code-line" data-line="4"> .../blender/blenkernel/<span class="syntax-type">BKE_anonymous_attribute</span>.hh  |  <span class="syntax-number">169</span> +++</span>
+<span class="code-line" data-line="5"> source/blender/blenkernel/<span class="syntax-type">BKE_attribute_access</span>.hh  |   <span class="syntax-number">98</span> +-</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/<span class="syntax-type">BKE_customdata</span>.h         |   <span class="syntax-number">12</span> +</span>
+<span class="code-line" data-line="7"> source/blender/blenkernel/<span class="syntax-type">BKE_geometry_set</span>.hh      |  <span class="syntax-number">114</span> +-</span>
+<span class="code-line" data-line="8"> .../blenkernel/<span class="syntax-type">BKE_geometry_set_instances</span>.hh       |    <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="9"> source/blender/blenkernel/<span class="syntax-type">BKE_node</span>.h               |    <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="10"> source/blender/blenkernel/<span class="syntax-type">CMakeLists</span>.txt           |    <span class="syntax-number">3</span> +</span>
+<span class="code-line" data-line="11"> .../blenkernel/intern/anonymous_attribute.cc       |  <span class="syntax-number">118</span> ++</span>
+<span class="code-line" data-line="12"> .../blender/blenkernel/intern/attribute_access.cc  |  <span class="syntax-number">422</span> ++++---</span>
+<span class="code-line" data-line="13"> .../blenkernel/intern/attribute_access_intern.hh   |   <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="14"> source/blender/blenkernel/intern/curve_eval.cc     |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="15"> source/blender/blenkernel/intern/customdata.c      |   <span class="syntax-number">53</span> +-</span>
+<span class="code-line" data-line="16"> .../blenkernel/intern/geometry_component_curve.cc  |   <span class="syntax-number">24</span> +-</span>
+<span class="code-line" data-line="17"> .../blenkernel/intern/geometry_component_mesh.cc   |   <span class="syntax-number">24</span> +-</span>
+<span class="code-line" data-line="18"> .../blenkernel/intern/geometry_set_instances.cc    |   <span class="syntax-number">53</span> +-</span>
+<span class="code-line" data-line="19"> source/blender/blenkernel/intern/node.cc           |    <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="20"> .../spreadsheet_data_source_geometry.cc            |   <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="21"> source/blender/functions/<span class="syntax-type">CMakeLists</span>.txt            |   <span class="syntax-number">11</span> +</span>
+<span class="code-line" data-line="22"> source/blender/functions/<span class="syntax-type">FN_field</span>.hh               |  <span class="syntax-number">456</span> ++++++++</span>
+<span class="code-line" data-line="23"> source/blender/functions/<span class="syntax-type">FN_field_cpp_type</span>.hh      |   <span class="syntax-number">72</span> ++</span>
+<span class="code-line" data-line="24"> .../blender/functions/<span class="syntax-type">FN_multi_function_builder</span>.hh |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="25"> .../blender/functions/<span class="syntax-type">FN_multi_function_params</span>.hh  |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="26"> .../functions/<span class="syntax-type">FN_multi_function_procedure</span>.hh       |  <span class="syntax-number">452</span> ++++++++</span>
+<span class="code-line" data-line="27"> .../<span class="syntax-type">FN_multi_function_procedure_builder</span>.hh         |  <span class="syntax-number">260</span> +++++</span>
+<span class="code-line" data-line="28"> .../<span class="syntax-type">FN_multi_function_procedure_executor</span>.hh        |   <span class="syntax-number">39</span> +</span>
+<span class="code-line" data-line="29"> source/blender/functions/intern/cpp_types.cc       |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="30"> source/blender/functions/intern/field.cc           |  <span class="syntax-number">569</span> +++++++++</span>
+<span class="code-line" data-line="31"> .../functions/intern/multi_function_builder.cc     |   <span class="syntax-number">28</span> +</span>
+<span class="code-line" data-line="32"> .../functions/intern/multi_function_procedure.cc   |  <span class="syntax-number">794</span> +++++++++++++</span>
+<span class="code-line" data-line="33"> .../intern/multi_function_procedure_builder.cc     |  <span class="syntax-number">175</span> +++</span>
+<span class="code-line" data-line="34"> .../intern/multi_function_procedure_executor.cc    | <span class="syntax-number">1212</span> ++++++++++++++++++++</span>
+<span class="code-line" data-line="35"> source/blender/functions/tests/<span class="syntax-type">FN_field_test</span>.cc    |  <span class="syntax-number">278</span> +++++</span>
+<span class="code-line" data-line="36"> .../tests/<span class="syntax-type">FN_multi_function_procedure_test</span>.cc      |  <span class="syntax-number">344</span> ++++++</span>
+<span class="code-line" data-line="37"> source/blender/makesdna/<span class="syntax-type">DNA_customdata_types</span>.h     |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="38"> source/blender/makesdna/<span class="syntax-type">DNA_node_types</span>.h           |    <span class="syntax-number">7</span> +</span>
+<span class="code-line" data-line="39"> source/blender/makesdna/<span class="syntax-type">DNA_userdef_types</span>.h        |    <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="40"> source/blender/makesrna/intern/rna_nodetree.c      |   <span class="syntax-number">20</span> +</span>
+<span class="code-line" data-line="41"> source/blender/makesrna/intern/rna_userdef.c       |    <span class="syntax-number">4</span> +</span>
+<span class="code-line" data-line="42"> source/blender/modifiers/intern/<span class="syntax-type">MOD_nodes</span>.cc       |   <span class="syntax-number">21</span> +-</span>
+<span class="code-line" data-line="43"> .../modifiers/intern/<span class="syntax-type">MOD_nodes_evaluator</span>.cc        |   <span class="syntax-number">63</span> +-</span>
+<span class="code-line" data-line="44"> source/blender/nodes/<span class="syntax-type">CMakeLists</span>.txt                |    <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="45"> source/blender/nodes/<span class="syntax-type">NOD_geometry</span>.h                |    <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="46"> source/blender/nodes/<span class="syntax-type">NOD_geometry_exec</span>.hh          |   <span class="syntax-number">72</span> +-</span>
+<span class="code-line" data-line="47"> source/blender/nodes/<span class="syntax-type">NOD_static_types</span>.h            |    <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="48"> .../blender/nodes/geometry/node_geometry_util.hh   |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="49"> .../geometry/nodes/node_geo_attribute_capture.cc   |  <span class="syntax-number">210</span> ++++</span>
+<span class="code-line" data-line="50"> .../geometry/nodes/node_geo_curve_endpoints.cc     |   <span class="syntax-number">51</span> +-</span>
+<span class="code-line" data-line="51"> .../geometry/nodes/node_geo_curve_resample.cc      |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="52"> .../nodes/geometry/nodes/node_geo_curve_reverse.cc |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="53"> .../geometry/nodes/node_geo_curve_spline_type.cc   |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="54"> .../geometry/nodes/node_geo_curve_subdivide.cc     |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="55"> .../geometry/nodes/node_geo_curve_to_points.cc     |   <span class="syntax-number">82</span> +-</span>
+<span class="code-line" data-line="56"> .../nodes/geometry/nodes/node_geo_curve_trim.cc    |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="57"> .../geometry/nodes/node_geo_delete_geometry.cc     |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="58"> .../nodes/geometry/nodes/node_geo_input_index.cc   |   <span class="syntax-number">60</span> +</span>
+<span class="code-line" data-line="59"> .../nodes/geometry/nodes/node_geo_input_normal.cc  |  <span class="syntax-number">211</span> ++++</span>
+<span class="code-line" data-line="60"> .../geometry/nodes/node_geo_input_position.cc      |   <span class="syntax-number">43</span> +</span>
+<span class="code-line" data-line="61"> .../nodes/geometry/nodes/node_geo_join_geometry.cc |   <span class="syntax-number">90</span> +-</span>
+<span class="code-line" data-line="62"> .../nodes/geometry/nodes/node_geo_mesh_to_curve.cc |   <span class="syntax-number">21</span> +-</span>
+<span class="code-line" data-line="63"> .../geometry/nodes/node_geo_point_distribute.cc    |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="64"> .../geometry/nodes/node_geo_point_separate.cc      |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="65"> .../nodes/geometry/nodes/node_geo_set_position.cc  |   <span class="syntax-number">79</span> ++</span>
+<span class="code-line" data-line="66"> .../nodes/intern/geometry_nodes_eval_log.cc        |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="67"> source/blender/nodes/intern/node_socket.cc         |   <span class="syntax-number">63</span> +-</span>
+<span class="code-line" data-line="68"> <span class="syntax-number">67</span> files changed, <span class="syntax-number">6674</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">468</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat bf47fb40fd6</span>
+<span class="code-line" data-line="2">git show bf47fb40fd6</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show bf47fb40fd6 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>让布尔表达式 Position&gt;0 决定选择，仅修改被选择的点。</p>
+</li><li><strong>任务 02</strong><p>增加两个输出共享同一中间表达式，记录实际计算次数。</p>
+</li><li><strong>任务 03</strong><p>覆盖空选择、全选择、非零起点 mask 和不同长度上下文。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="08-02-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="08-02-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="08-02-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>set_selection 会替代构造时的 mask 吗？</summary><p>有效选择受两者共同限制，当前接口说明是只计算二者都选中的元素。</p>
+</details><details class="question"><summary>结果视图可以永久缓存吗？</summary><p>需要先确认具体结果的所有者，不能超出其资源作用域。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="08-02" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E4%B8%8A%E4%B8%8B%E6%96%87/01-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E4%B8%8A%E4%B8%8B%E6%96%87.html">← 上一篇：Field：把表达式与求值位置分开</a><a href="../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E4%B8%8A%E4%B8%8B%E6%96%87/03-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E6%9E%90%E6%9E%84.html">下一篇：Field 的演化：减少分配之后，还要考虑销毁 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

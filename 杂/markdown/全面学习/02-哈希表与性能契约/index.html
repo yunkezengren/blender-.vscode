@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="把键的等价关系、槽位状态与重建策略放在同一个模型里。哈希表的真实难点经常来自删除和插入交替发生时的行为。">
+<title>哈希表与性能契约 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>DATA STRUCTURES / CONTRACTS</div><h1>02 / 哈希表与性能契约</h1><p class="lede">把键的等价关系、槽位状态与重建策略放在同一个模型里。哈希表的真实难点经常来自删除和插入交替发生时的行为。</p><div class="chips"><span class="chip">3 篇专题</span><span class="chip">当前源码 + 历史提交</span><span class="chip">可离线阅读</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#start" class="lv1">学习目标</a><a href="#chapters" class="lv1">三篇专题</a><a href="#deliver" class="lv1">完成标准</a></nav><main id="main"><section id="start"><h2><span class="n">01</span>先建立模型，再走进源码</h2>
+<p>完成容器模块；理解相等比较、模运算和均摊复杂度的基本含义。</p>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>键的等价关系</strong></div><div class="flow-step"><span>02</span><strong>哈希与探测</strong></div><div class="flow-step"><span>03</span><strong>槽位状态</strong></div><div class="flow-step"><span>04</span><strong>删除与重建</strong></div><div class="flow-step"><span>05</span><strong>操作序列测量</strong></div></div><aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">建议的阅读节奏</div><p>每次完成一篇原理阅读和一个最小实验。读完三个专题后，回到自己的 Blender 改动，寻找同类数据、所有权或依赖问题。</p>
+</aside>
+</section>
+<section id="chapters"><h2><span class="n">02</span>这个方向的三次深入</h2>
+<div class="lesson-grid module-grid"><a class="lesson-card" data-course-id="02-01" href="01-%E7%9B%B8%E7%AD%89%E5%85%B3%E7%B3%BB%E4%B8%8E%E5%93%88%E5%B8%8C%E5%A5%91%E7%BA%A6.html"><div class="card-top"><span>02 / 01</span><span class="completion-label">待学习</span></div><h3>哈希的第一条规则：相等必须导向相同哈希</h3><p>从 +0.0 与 -0.0 的修复入手，学习基础接口中的数学契约。</p><div class="card-bottom"><span>1,853 字符 · 21 分钟研读建议</span><b aria-hidden="true">↗</b></div></a><a class="lesson-card" data-course-id="02-02" href="02-%E5%BC%80%E6%94%BE%E5%AF%BB%E5%9D%80%E4%B8%8E%E5%88%A0%E9%99%A4%E7%8A%B6%E6%80%81.html"><div class="card-top"><span>02 / 02</span><span class="completion-label">待学习</span></div><h3>Map 的槽位：为什么删除不能简单清空</h3><p>手工推演一条探测链，理解 Empty、Occupied 与 Removed 的不同含义。</p><div class="card-bottom"><span>2,019 字符 · 22 分钟研读建议</span><b aria-hidden="true">↗</b></div></a><a class="lesson-card" data-course-id="02-03" href="03-%E9%87%8D%E5%BB%BA%E7%AD%96%E7%95%A5%E4%B8%8E%E6%80%A7%E8%83%BD%E5%AE%9E%E9%AA%8C.html"><div class="card-top"><span>02 / 03</span><span class="completion-label">待学习</span></div><h3>一次重建要值得：从操作序列理解均摊成本</h3><p>精读哈希表性能修复，练习把理论复杂度落实到具体触发条件。</p><div class="card-bottom"><span>2,218 字符 · 25 分钟研读建议</span><b aria-hidden="true">↗</b></div></a></div></section>
+<section id="deliver"><h2><span class="n">03</span>用这些成果验收</h2>
+<ul><li>让一个可变字段在插入后变化，分析为何应禁止这种键修改，而不是依赖偶然仍可查找到。</li><li>分别统计成功查找与失败查找的探测次数，观察删除历史的影响。</li><li>写一页实验报告，附原始计数和明确的未验证范围。</li></ul><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">继续前的自检</div><p>选择一个这里研究过的提交，只看提交说明就提出自己的方案，再用 diff 和后续修复校验你的推演。</p>
+</aside>
+</section>
+</main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

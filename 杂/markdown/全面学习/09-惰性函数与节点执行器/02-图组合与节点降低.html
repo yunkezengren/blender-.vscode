@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="理解 GraphExecutor 为什么本身也是 LazyFunction，以及节点组如何保持可组合。">
+<title>从节点树到执行图：构建、预处理与执行分层 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="09-02"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">惰性函数与节点执行器</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>LAZY EVALUATION / COMPOSITION / LESSON 09-02</div><h1>从节点树到执行图：构建、预处理与执行分层</h1><p class="lede">理解 GraphExecutor 为什么本身也是 LazyFunction，以及节点组如何保持可组合。</p><div class="chips"><span class="chip">方向 09 · 惰性函数与节点执行器</span><span class="chip">专题 2/3</span><span class="chip">正文 2,716 字符</span><span class="chip">建议研读 30 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-LazyFunction%E7%8A%B6%E6%80%81%E6%9C%BA.html">01 LazyFunction：计算可以暂停，等待真正需要的输入</a><a href="02-%E5%9B%BE%E7%BB%84%E5%90%88%E4%B8%8E%E8%8A%82%E7%82%B9%E9%99%8D%E4%BD%8E.html">02 从节点树到执行图：构建、预处理与执行分层</a><a href="03-MenuSwitch%E4%BE%9D%E8%B5%96%E7%8E%AF%E4%BF%AE%E5%A4%8D.html">03 拆分计算职责：从 Menu Switch 修复理解精确依赖</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>从 Switch 的分阶段输入请求开始，理解 LazyFunction、Graph 与 GraphExecutor，再研究几何节点如何被转换成执行图。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>图遍历、状态机、Field 与批量函数；先做串行教学实现。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>输出需求</strong></div><div class="flow-step"><span>02</span><strong>请求条件</strong></div><div class="flow-step"><span>03</span><strong>判断输入需求</strong></div><div class="flow-step"><span>04</span><strong>调度依赖</strong></div><div class="flow-step"><span>05</span><strong>产出结果</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>增加事件日志和显式副作用根节点，确保无普通输出的必要工作仍能执行。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>用户图与执行图有不同职责</h3>
+<p>用户节点树保存编辑语义、插槽和节点类型；执行图需要可调度的计算单元、实际依赖和运行期接口。GeometryNodesLazyFunctionBuilder 将前者组织成后者，加入必要的转换、输入处理和特殊行为。两种图不必一一对应。</p>
+<p>4130f1e674f 的一个关键变化是节点组转换成惰性函数图，并可以作为函数参与更大的图。组不再必须全部内联到父图，预处理也能在合适范围复用。理解这点就能看到组合如何控制系统规模。</p>
+<h3>图、预处理与执行实例</h3>
+<p>Graph 保存函数节点和插槽关系；GraphExecutor 持有图及图级接口映射，并保存可重复利用的预处理信息。每次实际执行还有自己的状态和临时存储。把三者画成不同寿命层次，能够解释哪些工作可以跨次复用。</p>
+<p>复用执行图或预处理并不等于永久缓存所有节点结果。前者复用结构准备，后者涉及源数据版本、效果和失效语义。学习时应分别列出缓存的是结构、程序还是数据值。</p>
+<h3>阅读巨型文件的方法</h3>
+<p>不要顺序通读 geometry_nodes_lazy_function.cc。先看 LazyFunctionForGeometryNode、LazyFunctionForMultiFunctionNode 和 LazyFunctionForGroupNode，理解普通几何操作、批量运算与组各自如何接入。再回到 Builder 的构建流程。</p>
+<p>GraphExecutor 的 Logger、SideEffectProvider 与 NodeExecuteWrapper 是值得单独研究的扩展边界：日志、必需副作用和上下文包装不必硬编码进每个节点。理解每个扩展点携带的知识，比记住所有成员更有用。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要把 UI 节点数量当作执行图节点数量，转换和特殊节点处理可能引入更多计算单元。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>GraphExecutor：每次执行状态独立于图结构</h3><p>完整 storage 构造函数把执行状态放入调用方提供的 allocator。GraphExecutor 自身可以描述结构，运行时状态由 GenericExecutor 持有。</p>
+<p>完整源码单元 · source/blender/functions/intern/lazy_function_graph_executor.cc · L74–L78。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/intern/lazy_function_graph_executor.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="74"><span class="syntax-keyword">void</span> *<span class="syntax-type">GraphExecutor</span>::<span class="syntax-function">init_storage</span>(<span class="syntax-type">LinearAllocator</span>&lt;&gt; &amp;allocator) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="75">{</span>
+<span class="code-line" data-line="76">  <span class="syntax-type">GenericExecutor</span> &amp;executor = *allocator.construct&lt;<span class="syntax-type">GenericExecutor</span>&gt;(*<span class="syntax-keyword">this</span>).<span class="syntax-function">release</span>();</span>
+<span class="code-line" data-line="77">  <span class="syntax-keyword">return</span> &amp;executor;</span>
+<span class="code-line" data-line="78">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L74</span><div><code><span class="syntax-keyword">void</span> *<span class="syntax-type">GraphExecutor</span>::<span class="syntax-function">init_storage</span>(<span class="syntax-type">LinearAllocator</span>&lt;&gt; &amp;allocator) <span class="syntax-keyword">const</span></code><p>接受执行期分配器并返回类型擦除 storage。对应销毁接口必须知道实际类型。</p>
+</div></div><div class="line-explanation"><span class="line-number">L75</span><div><code>{</code><p>打开 void *GraphExecutor::init_storage(LinearAllocator&lt;&gt; &amp;allocator) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L76</span><div><code><span class="syntax-type">GenericExecutor</span> &amp;executor = *allocator.construct&lt;<span class="syntax-type">GenericExecutor</span>&gt;(*<span class="syntax-keyword">this</span>).<span class="syntax-function">release</span>();</code><p>构造 GenericExecutor 并把临时 destruct_ptr 的责任 release 掉，留下对象由显式 storage 生命周期管理。传入 *this 关联图执行描述。</p>
+</div></div><div class="line-explanation"><span class="line-number">L77</span><div><code><span class="syntax-keyword">return</span> &amp;executor;</code><p>返回执行器地址。它的空间依赖 allocator 保活，不能在 allocator 销毁后继续执行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L78</span><div><code>}</code><p>结束 void *GraphExecutor::init_storage(LinearAllocator&lt;&gt; &amp;allocator) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>同一 GraphExecutor 描述可为两次执行建立两个独立 storage，避免把两次请求与输出状态混在一起。若复用同一个 storage 并发执行，则必须有明确协议，不能由“图结构只读”推出安全。</p>
+<h4>调用关系与设计判断</h4><p>下一段完整执行入口展示 storage 如何取回实际类型。再检查 destruct_storage 使用 destroy_at，只结束对象生命周期；原始块释放仍由 allocator 负责。这与 ResourceScope 的责任划分相呼应。</p>
+</article><article class="deep-reading"><h3>GraphExecutor：从类型擦除 storage 回到运行期执行器</h3><p>完整入口很短，但它明确了对象关系：当前 GraphExecutor 不临时重建节点树，而是取回预先初始化的 GenericExecutor。</p>
+<p>完整源码单元 · source/blender/functions/intern/lazy_function_graph_executor.cc · L68–L72。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/intern/lazy_function_graph_executor.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="68"><span class="syntax-keyword">void</span> <span class="syntax-type">GraphExecutor</span>::<span class="syntax-function">execute_impl</span>(<span class="syntax-type">Params</span> &amp;params, <span class="syntax-keyword">const</span> <span class="syntax-type">Context</span> &amp;context) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="69">{</span>
+<span class="code-line" data-line="70">  <span class="syntax-type">GenericExecutor</span> &amp;executor = *<span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-type">GenericExecutor</span> *&gt;(context.storage);</span>
+<span class="code-line" data-line="71">  executor.<span class="syntax-function">execute</span>(params, context);</span>
+<span class="code-line" data-line="72">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L68</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-type">GraphExecutor</span>::<span class="syntax-function">execute_impl</span>(<span class="syntax-type">Params</span> &amp;params, <span class="syntax-keyword">const</span> <span class="syntax-type">Context</span> &amp;context) <span class="syntax-keyword">const</span></code><p>这是 LazyFunction 的虚拟执行实现，接收本轮参数与上下文。</p>
+</div></div><div class="line-explanation"><span class="line-number">L69</span><div><code>{</code><p>打开 void GraphExecutor::execute_impl(Params &amp;params, const Context &amp;context) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L70</span><div><code><span class="syntax-type">GenericExecutor</span> &amp;executor = *<span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-type">GenericExecutor</span> *&gt;(context.storage);</code><p>把 context.storage 转回 GenericExecutor。正确性依赖此前使用同一 GraphExecutor 的 init_storage 初始化；任意 void* 不能安全传入。</p>
+</div></div><div class="line-explanation"><span class="line-number">L71</span><div><code>executor.<span class="syntax-function">execute</span>(params, context);</code><p>把参数与上下文交给实际执行器。真正的就绪检测、输入请求与任务调度在下一层，不能归给这个三行委托。</p>
+</div></div><div class="line-explanation"><span class="line-number">L72</span><div><code>}</code><p>结束 void GraphExecutor::execute_impl(Params &amp;params, const Context &amp;context) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>init_storage 返回 S，执行时 Context.storage 必须指向 S，结束后 destruct_storage(S) 只能调用一次。缺少初始化、传错图的 storage 或重复销毁，都属于接口协议错误。</p>
+<h4>调用关系与设计判断</h4><p>沿 GenericExecutor::execute 追踪结构预处理与本轮状态重置。复用图预处理不等于跨轮永久保留每个输出结果；必须明确哪一份数据是结构、哪一份是这次调用的状态。</p>
+</article><article class="deep-reading"><h3>GraphExecutor 完整初始化：图接口映射与结构预处理</h3><p>这里选择第二个构造器，包含完整接口映射和预处理。第一个构造器只收集默认接口后委托给它。外部图是借用，接口指针数组是自己的容器，两者寿命不同。</p>
+<p>完整源码单元 · source/blender/functions/intern/lazy_function_graph_executor.cc · L32–L66。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/intern/lazy_function_graph_executor.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="32"><span class="syntax-type">GraphExecutor</span>::<span class="syntax-type">GraphExecutor</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">Graph</span> &amp;graph,</span>
+<span class="code-line" data-line="33">                             <span class="syntax-type">Vector</span>&lt;<span class="syntax-keyword">const</span> <span class="syntax-type">GraphInputSocket</span> *&gt; graph_inputs,</span>
+<span class="code-line" data-line="34">                             <span class="syntax-type">Vector</span>&lt;<span class="syntax-keyword">const</span> <span class="syntax-type">GraphOutputSocket</span> *&gt; graph_outputs,</span>
+<span class="code-line" data-line="35">                             <span class="syntax-keyword">const</span> <span class="syntax-type">Logger</span> *logger,</span>
+<span class="code-line" data-line="36">                             <span class="syntax-keyword">const</span> <span class="syntax-type">SideEffectProvider</span> *side_effect_provider,</span>
+<span class="code-line" data-line="37">                             <span class="syntax-keyword">const</span> <span class="syntax-type">NodeExecuteWrapper</span> *node_execute_wrapper)</span>
+<span class="code-line" data-line="38">    : <span class="syntax-function">graph_</span>(graph),</span>
+<span class="code-line" data-line="39">      <span class="syntax-function">graph_inputs_</span>(std::<span class="syntax-function">move</span>(graph_inputs)),</span>
+<span class="code-line" data-line="40">      <span class="syntax-function">graph_outputs_</span>(std::<span class="syntax-function">move</span>(graph_outputs)),</span>
+<span class="code-line" data-line="41">      <span class="syntax-function">graph_input_index_by_socket_index_</span>(graph.<span class="syntax-function">graph_inputs</span>().<span class="syntax-function">size</span>(), -<span class="syntax-number">1</span>),</span>
+<span class="code-line" data-line="42">      <span class="syntax-function">graph_output_index_by_socket_index_</span>(graph.<span class="syntax-function">graph_outputs</span>().<span class="syntax-function">size</span>(), -<span class="syntax-number">1</span>),</span>
+<span class="code-line" data-line="43">      <span class="syntax-function">logger_</span>(logger),</span>
+<span class="code-line" data-line="44">      <span class="syntax-function">side_effect_provider_</span>(side_effect_provider),</span>
+<span class="code-line" data-line="45">      <span class="syntax-function">node_execute_wrapper_</span>(node_execute_wrapper)</span>
+<span class="code-line" data-line="46">{</span>
+<span class="code-line" data-line="47">  debug_name_ = graph.<span class="syntax-function">name</span>().<span class="syntax-function">c_str</span>();</span>
+<span class="code-line" data-line="48"></span>
+<span class="code-line" data-line="49">  <span class="syntax-comment">/* The graph executor can handle partial execution when there are still missing inputs. */</span></span>
+<span class="code-line" data-line="50">  allow_missing_requested_inputs_ = <span class="syntax-keyword">true</span>;</span>
+<span class="code-line" data-line="51"></span>
+<span class="code-line" data-line="52">  <span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : graph_inputs_.<span class="syntax-function">index_range</span>()) {</span>
+<span class="code-line" data-line="53">    <span class="syntax-keyword">const</span> <span class="syntax-type">OutputSocket</span> &amp;socket = *graph_inputs_[i];</span>
+<span class="code-line" data-line="54">    <span class="syntax-type">BLI_assert</span>(socket.<span class="syntax-function">node</span>().<span class="syntax-function">is_interface</span>());</span>
+<span class="code-line" data-line="55">    inputs_.<span class="syntax-function">append</span>({<span class="syntax-string">&quot;In&quot;</span>, socket.<span class="syntax-function">type</span>(), <span class="syntax-type">ValueUsage</span>::<span class="syntax-type">Maybe</span>});</span>
+<span class="code-line" data-line="56">    graph_input_index_by_socket_index_[socket.<span class="syntax-function">index</span>()] = i;</span>
+<span class="code-line" data-line="57">  }</span>
+<span class="code-line" data-line="58">  <span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : graph_outputs_.<span class="syntax-function">index_range</span>()) {</span>
+<span class="code-line" data-line="59">    <span class="syntax-keyword">const</span> <span class="syntax-type">InputSocket</span> &amp;socket = *graph_outputs_[i];</span>
+<span class="code-line" data-line="60">    <span class="syntax-type">BLI_assert</span>(socket.<span class="syntax-function">node</span>().<span class="syntax-function">is_interface</span>());</span>
+<span class="code-line" data-line="61">    outputs_.<span class="syntax-function">append</span>({<span class="syntax-string">&quot;Out&quot;</span>, socket.<span class="syntax-function">type</span>()});</span>
+<span class="code-line" data-line="62">    graph_output_index_by_socket_index_[socket.<span class="syntax-function">index</span>()] = i;</span>
+<span class="code-line" data-line="63">  }</span>
+<span class="code-line" data-line="64"></span>
+<span class="code-line" data-line="65">  <span class="syntax-type">GenericExecutor</span>::<span class="syntax-function">preprocess_graph</span>(*<span class="syntax-keyword">this</span>);</span>
+<span class="code-line" data-line="66">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L32</span><div><code><span class="syntax-type">GraphExecutor</span>::<span class="syntax-type">GraphExecutor</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">Graph</span> &amp;graph,</code><p>接收 Graph 引用，结构必须活得比 GraphExecutor 长。</p>
+</div></div><div class="line-explanation"><span class="line-number">L33</span><div><code><span class="syntax-type">Vector</span>&lt;<span class="syntax-keyword">const</span> <span class="syntax-type">GraphInputSocket</span> *&gt; graph_inputs,</code><p>显式给出对外输入所对应的图输入 socket 列表，允许只暴露特定接口。</p>
+</div></div><div class="line-explanation"><span class="line-number">L34</span><div><code><span class="syntax-type">Vector</span>&lt;<span class="syntax-keyword">const</span> <span class="syntax-type">GraphOutputSocket</span> *&gt; graph_outputs,</code><p>显式给出对外输出 socket 列表。</p>
+</div></div><div class="line-explanation"><span class="line-number">L35</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">Logger</span> *logger,</code><p>可选日志器通过借用指针提供，不由此函数取得所有权。</p>
+</div></div><div class="line-explanation"><span class="line-number">L36</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">SideEffectProvider</span> *side_effect_provider,</code><p>副作用提供者根据执行上下文给出必须执行的节点。</p>
+</div></div><div class="line-explanation"><span class="line-number">L37</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">NodeExecuteWrapper</span> *node_execute_wrapper)</code><p>可选执行包装器可插入额外行为；其对象寿命也由调用者保证。</p>
+</div></div><div class="line-explanation"><span class="line-number">L38</span><div><code>: <span class="syntax-function">graph_</span>(graph),</code><p>保存图引用，不深拷贝整个图。</p>
+</div></div><div class="line-explanation"><span class="line-number">L39</span><div><code><span class="syntax-function">graph_inputs_</span>(std::<span class="syntax-function">move</span>(graph_inputs)),</code><p>移动对外输入映射数组，拥有指针数组存储而借用 socket 对象。</p>
+</div></div><div class="line-explanation"><span class="line-number">L40</span><div><code><span class="syntax-function">graph_outputs_</span>(std::<span class="syntax-function">move</span>(graph_outputs)),</code><p>移动输出映射数组。</p>
+</div></div><div class="line-explanation"><span class="line-number">L41</span><div><code><span class="syntax-function">graph_input_index_by_socket_index_</span>(graph.<span class="syntax-function">graph_inputs</span>().<span class="syntax-function">size</span>(), -<span class="syntax-number">1</span>),</code><p>为图输入 socket 到函数接口编号的反向映射初始化 -1，未暴露接口保留缺失标记。</p>
+</div></div><div class="line-explanation"><span class="line-number">L42</span><div><code><span class="syntax-function">graph_output_index_by_socket_index_</span>(graph.<span class="syntax-function">graph_outputs</span>().<span class="syntax-function">size</span>(), -<span class="syntax-number">1</span>),</code><p>同样初始化图输出的反向映射。</p>
+</div></div><div class="line-explanation"><span class="line-number">L43</span><div><code><span class="syntax-function">logger_</span>(logger),</code><p>保存日志器地址。</p>
+</div></div><div class="line-explanation"><span class="line-number">L44</span><div><code><span class="syntax-function">side_effect_provider_</span>(side_effect_provider),</code><p>保存副作用提供者地址。</p>
+</div></div><div class="line-explanation"><span class="line-number">L45</span><div><code><span class="syntax-function">node_execute_wrapper_</span>(node_execute_wrapper)</code><p>保存执行包装器地址。</p>
+</div></div><div class="line-explanation"><span class="line-number">L46</span><div><code>{</code><p>打开 node_execute_wrapper_(node_execute_wrapper) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L47</span><div><code>debug_name_ = graph.<span class="syntax-function">name</span>().<span class="syntax-function">c_str</span>();</code><p>用图名字的字符地址作为调试名字；它也依赖名字存储有效，不能临时构造字符串后保存 c_str。</p>
+</div></div><div class="line-explanation"><span class="line-number">L49</span><div><code><span class="syntax-comment">/* The graph executor can handle partial execution when there are still missing inputs. */</span></code><p>图执行器允许所请求输入尚未全部到达时执行部分工作；实现必须能暂停、登记请求并在后续继续。</p>
+</div></div><div class="line-explanation"><span class="line-number">L50</span><div><code>allow_missing_requested_inputs_ = <span class="syntax-keyword">true</span>;</code><p>允许请求输入尚未到达时进行部分执行，符合惰性协议。</p>
+</div></div><div class="line-explanation"><span class="line-number">L52</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : graph_inputs_.<span class="syntax-function">index_range</span>()) {</code><p>遍历已暴露输入接口编号。</p>
+</div></div><div class="line-explanation"><span class="line-number">L53</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">OutputSocket</span> &amp;socket = *graph_inputs_[i];</code><p>图输入从图内部看是输出 socket，负责给内部节点提供值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L54</span><div><code><span class="syntax-type">BLI_assert</span>(socket.<span class="syntax-function">node</span>().<span class="syntax-function">is_interface</span>());</code><p>验证 socket 属于图接口节点。</p>
+</div></div><div class="line-explanation"><span class="line-number">L55</span><div><code>inputs_.<span class="syntax-function">append</span>({<span class="syntax-string">&quot;In&quot;</span>, socket.<span class="syntax-function">type</span>(), <span class="syntax-type">ValueUsage</span>::<span class="syntax-type">Maybe</span>});</code><p>把对应类型登记为函数输入，需求初始 Maybe。</p>
+</div></div><div class="line-explanation"><span class="line-number">L56</span><div><code>graph_input_index_by_socket_index_[socket.<span class="syntax-function">index</span>()] = i;</code><p>记录 socket 编号到对外输入编号的映射。</p>
+</div></div><div class="line-explanation"><span class="line-number">L57</span><div><code>}</code><p>结束 for (const int i : graph_inputs_.index_range()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L58</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : graph_outputs_.<span class="syntax-function">index_range</span>()) {</code><p>遍历已暴露输出接口编号。</p>
+</div></div><div class="line-explanation"><span class="line-number">L59</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">InputSocket</span> &amp;socket = *graph_outputs_[i];</code><p>图输出从图内部看是输入 socket，接收内部节点结果。</p>
+</div></div><div class="line-explanation"><span class="line-number">L60</span><div><code><span class="syntax-type">BLI_assert</span>(socket.<span class="syntax-function">node</span>().<span class="syntax-function">is_interface</span>());</code><p>检查接口节点身份。</p>
+</div></div><div class="line-explanation"><span class="line-number">L61</span><div><code>outputs_.<span class="syntax-function">append</span>({<span class="syntax-string">&quot;Out&quot;</span>, socket.<span class="syntax-function">type</span>()});</code><p>登记对外函数输出类型。</p>
+</div></div><div class="line-explanation"><span class="line-number">L62</span><div><code>graph_output_index_by_socket_index_[socket.<span class="syntax-function">index</span>()] = i;</code><p>记录反向输出映射。</p>
+</div></div><div class="line-explanation"><span class="line-number">L63</span><div><code>}</code><p>结束 for (const int i : graph_outputs_.index_range()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L65</span><div><code><span class="syntax-type">GenericExecutor</span>::<span class="syntax-function">preprocess_graph</span>(*<span class="syntax-keyword">this</span>);</code><p>对固定图结构做一次预处理；多次执行可以复用它，但本轮请求与值状态属于独立 storage。</p>
+</div></div><div class="line-explanation"><span class="line-number">L66</span><div><code>}</code><p>结束 node_execute_wrapper_(node_execute_wrapper) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>图内部 socket 编号 17 暴露为函数输入 0，映射表记录 [17]=0。没有暴露的图输入仍是 -1。输入与输出在图内部的 socket 方向恰好与外层函数接口互补，混淆两者会把映射接反。</p>
+<h4>调用关系与设计判断</h4><p>这个构造器解决结构配置，init_storage 解决本轮状态，execute_impl 驱动本轮执行，destruct_storage 结束运行对象。把四阶段分别画出拥有者，比把整个系统都称为“一个执行器类”更容易定位生命周期错误。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_lazy_function_graph_executor.hh">FN_lazy_function_graph_executor.hh</a></div><p>查看图引用、接口映射、预处理与执行 storage 的分离。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 91 行 · SHA-256 0518b91c27b6</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_lazy_function_graph_executor.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_lazy_function_graph_executor.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">88</span>,<span class="syntax-number">119</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_lazy_function_graph_executor.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/nodes/intern/geometry_nodes_lazy_function.cc">geometry_nodes_lazy_function.cc</a></div><p>从构建器定位图转换职责。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 1974 行 · SHA-256 28f744e66560</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/nodes/intern/geometry_nodes_lazy_function.cc</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/nodes/intern/geometry_nodes_lazy_function.cc&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">1971</span>,<span class="syntax-number">2002</span> -- <span class="syntax-string">&quot;source/blender/nodes/intern/geometry_nodes_lazy_function.cc&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/4130f1e674f83fc3d53979d3061469af34e1f873" target="_blank" rel="noopener">4130f1e674f</a> <span>Jacques Lucke · 2022-09-13</span></div><h3>Geometry Nodes: new evaluation system</h3><p>画出 node group、lazy graph 与 GraphExecutor 的组合关系。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This refactors the geometry nodes evaluation system. No changes for the
+user are expected. At a high level the goals are:
+* Support using geometry nodes outside of the geometry nodes modifier.
+* Support using the evaluator infrastructure for other purposes like field evaluation.
+* Support more nodes, especially when many of them are disabled behind switch nodes.
+* Support doing preprocessing on node groups.
+
+For more details see T98492.
+
+There are fairly detailed comments in the code, but here is a high level overview
+for how it works now:
+* There is a new &quot;lazy-function&quot; system. It is similar in spirit to the multi-function
+  system but with different goals. Instead of optimizing throughput for highly
+  parallelizable work, this system is designed to compute only the data that is actually
+  necessary. What data is necessary can be determined dynamically during evaluation.
+  Many lazy-functions can be composed in a graph to form a new lazy-function, which can
+  again be used in a graph etc.
+* Each geometry node group is converted into a lazy-function graph prior to evaluation.
+  To evaluate geometry nodes, one then just has to evaluate that graph. Node groups are
+  no longer inlined into their parents.
+
+Next steps for the evaluation system is to reduce the use of threads in some situations
+to avoid overhead. Many small node groups don&#x27;t benefit from multi-threading at all.
+This is much easier to do now because not everything has to be inlined in one huge
+node tree anymore.
+
+Differential Revision: https://developer.blender.org/D15914</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenkernel/<span class="syntax-type">BKE_compute_contexts</span>.hh  |   <span class="syntax-number">46</span> +</span>
+<span class="code-line" data-line="2"> source/blender/blenkernel/<span class="syntax-type">BKE_node_runtime</span>.hh      |   <span class="syntax-number">30</span> +-</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/<span class="syntax-type">CMakeLists</span>.txt           |    <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="4"> .../blender/blenkernel/intern/compute_contexts.cc  |   <span class="syntax-number">38</span> +</span>
+<span class="code-line" data-line="5"> source/blender/blenkernel/intern/node.cc           |    <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/intern/node_runtime.cc   |   <span class="syntax-number">18</span> +</span>
+<span class="code-line" data-line="7"> source/blender/blenlib/<span class="syntax-type">BLI_compute_context</span>.hh      |  <span class="syntax-number">173</span> ++</span>
+<span class="code-line" data-line="8"> source/blender/blenlib/<span class="syntax-type">BLI_multi_value_map</span>.hh      |    <span class="syntax-number">8</span> +</span>
+<span class="code-line" data-line="9"> source/blender/blenlib/<span class="syntax-type">CMakeLists</span>.txt              |    <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="10"> source/blender/blenlib/intern/compute_context.cc   |   <span class="syntax-number">48</span> +</span>
+<span class="code-line" data-line="11"> source/blender/blenlib/intern/cpp_type.cc          |    <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="12"> .../depsgraph/intern/builder/deg_builder_nodes.cc  |    <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="13"> source/blender/editors/include/<span class="syntax-type">UI_interface</span>.hh     |   <span class="syntax-number">13</span> +-</span>
+<span class="code-line" data-line="14"> .../interface_template_attribute_search.cc         |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="15"> source/blender/editors/space_node/node_draw.cc     |  <span class="syntax-number">451</span> ++---</span>
+<span class="code-line" data-line="16"> .../space_node/node_geometry_attribute_search.cc   |   <span class="syntax-number">65</span> +-</span>
+<span class="code-line" data-line="17"> .../spreadsheet_data_source_geometry.cc            |   <span class="syntax-number">49</span> +-</span>
+<span class="code-line" data-line="18"> source/blender/functions/<span class="syntax-type">CMakeLists</span>.txt            |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="19"> source/blender/functions/<span class="syntax-type">FN_field</span>.hh               |   <span class="syntax-number">11</span> +</span>
+<span class="code-line" data-line="20"> source/blender/functions/<span class="syntax-type">FN_field_cpp_type</span>.hh      |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="21"> source/blender/functions/<span class="syntax-type">FN_lazy_function</span>.hh       |  <span class="syntax-number">384</span> ++++</span>
+<span class="code-line" data-line="22"> .../blender/functions/<span class="syntax-type">FN_lazy_function_execute</span>.hh  |  <span class="syntax-number">122</span> ++</span>
+<span class="code-line" data-line="23"> source/blender/functions/<span class="syntax-type">FN_lazy_function_graph</span>.hh |  <span class="syntax-number">421</span> +++++</span>
+<span class="code-line" data-line="24"> .../functions/<span class="syntax-type">FN_lazy_function_graph_executor</span>.hh   |   <span class="syntax-number">98</span> +</span>
+<span class="code-line" data-line="25"> source/blender/functions/<span class="syntax-type">FN_multi_function</span>.hh      |    <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="26"> source/blender/functions/intern/cpp_types.cc       |    <span class="syntax-number">3</span> +</span>
+<span class="code-line" data-line="27"> source/blender/functions/intern/lazy_function.cc   |   <span class="syntax-number">66</span> +</span>
+<span class="code-line" data-line="28"> .../functions/intern/lazy_function_execute.cc      |   <span class="syntax-number">65</span> +</span>
+<span class="code-line" data-line="29"> .../functions/intern/lazy_function_graph.cc        |  <span class="syntax-number">181</span> ++</span>
+<span class="code-line" data-line="30"> .../intern/lazy_function_graph_executor.cc         | <span class="syntax-number">1163</span> ++++++++++++</span>
+<span class="code-line" data-line="31"> .../functions/tests/<span class="syntax-type">FN_lazy_function_test</span>.cc       |  <span class="syntax-number">115</span> ++</span>
+<span class="code-line" data-line="32"> source/blender/makesdna/<span class="syntax-type">DNA_node_types</span>.h           |    <span class="syntax-number">3</span> +</span>
+<span class="code-line" data-line="33"> source/blender/modifiers/<span class="syntax-type">CMakeLists</span>.txt            |    <span class="syntax-number">2</span> -</span>
+<span class="code-line" data-line="34"> source/blender/modifiers/intern/<span class="syntax-type">MOD_nodes</span>.cc       |  <span class="syntax-number">428</span> +++--</span>
+<span class="code-line" data-line="35"> .../modifiers/intern/<span class="syntax-type">MOD_nodes_evaluator</span>.cc        | <span class="syntax-number">1929</span> --------------------</span>
+<span class="code-line" data-line="36"> .../modifiers/intern/<span class="syntax-type">MOD_nodes_evaluator</span>.hh        |   <span class="syntax-number">44</span> -</span>
+<span class="code-line" data-line="37"> source/blender/nodes/<span class="syntax-type">CMakeLists</span>.txt                |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="38"> source/blender/nodes/<span class="syntax-type">NOD_geometry_exec</span>.hh          |  <span class="syntax-number">205</span> +--</span>
+<span class="code-line" data-line="39"> .../blender/nodes/<span class="syntax-type">NOD_geometry_nodes_eval_log</span>.hh   |  <span class="syntax-number">411</span> -----</span>
+<span class="code-line" data-line="40"> .../nodes/<span class="syntax-type">NOD_geometry_nodes_lazy_function</span>.hh      |  <span class="syntax-number">178</span> ++</span>
+<span class="code-line" data-line="41"> source/blender/nodes/<span class="syntax-type">NOD_geometry_nodes_log</span>.hh     |  <span class="syntax-number">340</span> ++++</span>
+<span class="code-line" data-line="42"> source/blender/nodes/<span class="syntax-type">NOD_multi_function</span>.hh         |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="43"> .../blender/nodes/geometry/node_geometry_exec.cc   |    <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="44"> .../nodes/geometry/nodes/node_geo_boolean.cc       |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="45"> .../nodes/node_geo_geometry_to_instance.cc         |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="46"> .../nodes/node_geo_input_named_attribute.cc        |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="47"> .../nodes/geometry/nodes/node_geo_join_geometry.cc |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="48"> .../geometry/nodes/node_geo_remove_attribute.cc    |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="49"> .../nodes/node_geo_store_named_attribute.cc        |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="50"> .../nodes/geometry/nodes/node_geo_string_join.cc   |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="51"> .../nodes/intern/geometry_nodes_eval_log.cc        |  <span class="syntax-number">520</span> ------</span>
+<span class="code-line" data-line="52"> .../nodes/intern/geometry_nodes_lazy_function.cc   | <span class="syntax-number">1327</span> ++++++++++++++</span>
+<span class="code-line" data-line="53"> source/blender/nodes/intern/geometry_nodes_log.cc  |  <span class="syntax-number">607</span> ++++++</span>
+<span class="code-line" data-line="54"> source/blender/nodes/intern/node_geometry_exec.cc  |   <span class="syntax-number">45</span> +-</span>
+<span class="code-line" data-line="55"> source/blender/nodes/intern/node_multi_function.cc |   <span class="syntax-number">22</span> +-</span>
+<span class="code-line" data-line="56"> <span class="syntax-number">55</span> files changed, <span class="syntax-number">6141</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">3554</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 4130f1e674f</span>
+<span class="code-line" data-line="2">git show 4130f1e674f</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 4130f1e674f -- source/blender/…</span></span></code></pre></div>
+</details></article>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/258678916ff90379b998ddf150f9f8a3fb360eaf" target="_blank" rel="noopener">258678916ff</a> <span>Jacques Lucke · 2023-03-14</span></div><h3>Geometry Nodes: use lazy-function directly for switch node</h3><p>观察把 Switch 下放到适当层次，如何简化普通几何节点执行接口。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This changes the Switch node so that it is implemented directly as a lazy-function,
+instead of as a normal geometry node which uses `GeoNodeExecParams`. This improves
+the design of the layered execution api, where different nodes can be implemented
+at a proper different abstraction level. The simplest kinds of nodes are implemented
+as multi-function, then there is `GeoNodeExecParams` and more specialized nodes are
+implemented as lazy-function. The switch node is special in the sense that it currently
+needs extra behavior in the lazy-function graph generation anyway.
+
+`GeoNodeExecParams` can be simplified as well, because the Switch node was the only
+one that used the `lazy_` methods.
+
+We could consider adding back lazy-input functionality to normal geometry nodes
+as it becomes necessary. Ideally, that could be integrated with the node declaration.
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/105696</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenkernel/<span class="syntax-type">BKE_node</span>.h               |   <span class="syntax-number">5</span> -</span>
+<span class="code-line" data-line="2"> source/blender/nodes/<span class="syntax-type">NOD_geometry_exec</span>.hh          |  <span class="syntax-number">25</span> ---</span>
+<span class="code-line" data-line="3"> .../nodes/<span class="syntax-type">NOD_geometry_nodes_lazy_function</span>.hh      |   <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="4"> .../nodes/geometry/nodes/node_geo_switch.cc        | <span class="syntax-number">230</span> +++++++++------------</span>
+<span class="code-line" data-line="5"> .../nodes/intern/geometry_nodes_lazy_function.cc   |  <span class="syntax-number">34</span> ++-</span>
+<span class="code-line" data-line="6"> <span class="syntax-number">5</span> files changed, <span class="syntax-number">133</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">163</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 258678916ff</span>
+<span class="code-line" data-line="2">git show 258678916ff</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 258678916ff -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>把你的 Switch 图封装成一个拥有输入输出的函数，再放入父图。</p>
+</li><li><strong>任务 02</strong><p>分别统计构图次数与执行次数，展示一张图多次执行。</p>
+</li><li><strong>任务 03</strong><p>增加事件日志和显式副作用根节点，确保无普通输出的必要工作仍能执行。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="09-02-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="09-02-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="09-02-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>为什么 GraphExecutor 继承 LazyFunction？</summary><p>使整张图仍遵循相同调用协议，从而可以嵌入另一张图。</p>
+</details><details class="question"><summary>预处理复用代表输入变化后不用执行吗？</summary><p>不代表，结构复用与结果有效性是不同问题。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="09-02" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../09-%E6%83%B0%E6%80%A7%E5%87%BD%E6%95%B0%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E5%99%A8/01-LazyFunction%E7%8A%B6%E6%80%81%E6%9C%BA.html">← 上一篇：LazyFunction：计算可以暂停，等待真正需要的输入</a><a href="../09-%E6%83%B0%E6%80%A7%E5%87%BD%E6%95%B0%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E5%99%A8/03-MenuSwitch%E4%BE%9D%E8%B5%96%E7%8E%AF%E4%BF%AE%E5%A4%8D.html">下一篇：拆分计算职责：从 Menu Switch 修复理解精确依赖 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

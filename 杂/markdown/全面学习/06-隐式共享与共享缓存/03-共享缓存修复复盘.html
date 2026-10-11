@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="把 b339e3937d8 与前一个法线缓存提交连读，学习局部更新需要保留什么。">
+<title>一个修复暴露的抽象边界：失效不总等于丢弃 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="06-03"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">隐式共享与共享缓存</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>LIFETIMES / INVALIDATION / LESSON 06-03</div><h1>一个修复暴露的抽象边界：失效不总等于丢弃</h1><p class="lede">把 b339e3937d8 与前一个法线缓存提交连读，学习局部更新需要保留什么。</p><div class="chips"><span class="chip">方向 06 · 隐式共享与共享缓存</span><span class="chip">专题 3/3</span><span class="chip">正文 2,059 字符</span><span class="chip">建议研读 23 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-ImplicitSharing%E4%B8%8E%E5%86%99%E6%97%B6%E5%88%86%E7%A6%BB.html">01 隐式共享：复制对象不必立即复制全部数据</a><a href="02-SharedCache%E4%B8%8E%E4%BE%9D%E8%B5%96%E7%9F%A9%E9%98%B5.html">02 共享缓存：哪些变化会让结果失效</a><a href="03-%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98%E4%BF%AE%E5%A4%8D%E5%A4%8D%E7%9B%98.html">03 一个修复暴露的抽象边界：失效不总等于丢弃</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>把引用计数、写时分离和缓存失效区分开，再研究它们如何合作。共享正确性依赖数据语义，而不只是指针是否存活。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>所有权、数组、基础原子概念；缓存实验先用单线程。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>只读数据共享</strong></div><div class="flow-step"><span>02</span><strong>请求可写访问</strong></div><div class="flow-step"><span>03</span><strong>必要时分离</strong></div><div class="flow-step"><span>04</span><strong>失效依赖缓存</strong></div><div class="flow-step"><span>05</span><strong>按需重新计算</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>先实现会丢失旧内容的错误版本，保留能稳定失败的最小回归测试。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>局部更新需要旧状态</h3>
+<p>通常缓存失效后可以完整重算，因此丢弃旧缓存很自然。但雕刻等工作流可能只更新受影响的局部，仍需要未变化部分的旧结果。共享状态下若 tag_dirty 直接建立空的新缓存，后续局部更新就可能缺失所需旧数据。</p>
+<p>b339e3937d8 在引入共享法线缓存后修复这类问题。其核心是把保留旧内容、标记失效和更新放在适合的操作中。当前 SharedCache::update 与 tag_dirty/ensure 的区别，应当从这个需求理解。</p>
+<h3>用操作语义划分 API</h3>
+<p>tag_dirty 表达旧结果整体不能使用；update 表达需要在已有内容基础上维护新结果。二者可能都触发共享分离，但分离时是否复制旧数据不同。一个含糊的 invalidate 接口若承担所有情况，调用者就难以知道内容是否仍存在。</p>
+<p>写状态转换表，横轴为唯一拥有或共享，纵轴为全量重算或局部维护。分别列出需要保留的数据、分配动作和其他对象看到的状态。四个格子能把隐含行为展开。</p>
+<h3>修复会移动责任边界</h3>
+<p>提交说明提到某些其他缓存需要手动标记失效，说明局部更新与更大系统的脏标记责任相互影响。读修复时要追踪谁拥有“知道哪些区域变化”的知识，谁只是通用缓存容器。</p>
+<p>不要为了一个局部修复立刻搭建万能缓存框架。先明确当前责任和可验证用例，再决定抽象是否足够重复、是否值得通用化。这个克制本身也是架构能力。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>局部缓存更新正确后，还要检查依赖它的其他缓存是否也被正确通知。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>SharedCache::update：为什么这里必须保留旧值</h3><p>这是与 tag_dirty 最值得逐行对照的函数。两者都要分离共享状态，但 update 的回调允许在旧数据基础上做小修改，因此共享分支必须复制旧 T。理解这一个参数差异，才能真正理解共享缓存修复的动机。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_shared_cache.hh · L77–L86。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_shared_cache.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="77">  <span class="syntax-keyword">void</span> <span class="syntax-function">update</span>(<span class="syntax-type">FunctionRef</span>&lt;<span class="syntax-keyword">void</span>(<span class="syntax-type">T</span> &amp;data)&gt; compute_cache)</span>
+<span class="code-line" data-line="78">  {</span>
+<span class="code-line" data-line="79">    <span class="syntax-keyword">if</span> (cache_.<span class="syntax-function">use_count</span>() == <span class="syntax-number">1</span>) {</span>
+<span class="code-line" data-line="80">      cache_-&gt;mutex.<span class="syntax-function">tag_dirty</span>();</span>
+<span class="code-line" data-line="81">    }</span>
+<span class="code-line" data-line="82">    <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="83">      cache_ = std::make_shared&lt;<span class="syntax-type">CacheData</span>&gt;(cache_-&gt;data);</span>
+<span class="code-line" data-line="84">    }</span>
+<span class="code-line" data-line="85">    cache_-&gt;mutex.<span class="syntax-function">ensure</span>([&amp;]() { <span class="syntax-function">compute_cache</span>(<span class="syntax-keyword">this</span>-&gt;cache_-&gt;data); });</span>
+<span class="code-line" data-line="86">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L77</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">update</span>(<span class="syntax-type">FunctionRef</span>&lt;<span class="syntax-keyword">void</span>(<span class="syntax-type">T</span> &amp;data)&gt; compute_cache)</code><p>update 的回调接收可写 T 引用。其语义包括保留现有缓存值，再按新的输入更新；它不是简单重复 tag_dirty 和默认构造。</p>
+</div></div><div class="line-explanation"><span class="line-number">L78</span><div><code>{</code><p>进入函数。需要先让当前对象取得可独立更新的缓存块。</p>
+</div></div><div class="line-explanation"><span class="line-number">L79</span><div><code><span class="syntax-keyword">if</span> (cache_.<span class="syntax-function">use_count</span>() == <span class="syntax-number">1</span>) {</code><p>只有一个拥有者时可以复用现有块，无须复制 T。引用计数用于共享关系判断，不代表整个对象自动线程安全。</p>
+</div></div><div class="line-explanation"><span class="line-number">L80</span><div><code>cache_-&gt;mutex.<span class="syntax-function">tag_dirty</span>();</code><p>把当前块标为失效，使随后 ensure 不会把旧值误当作已经完成本次更新的结果。旧 T 的内容仍然保留。</p>
+</div></div><div class="line-explanation"><span class="line-number">L81</span><div><code>}</code><p>结束独占分支。后面两个分支将汇合到同一次 ensure。</p>
+</div></div><div class="line-explanation"><span class="line-number">L82</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入共享分支，其他对象还需要继续观察旧值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L83</span><div><code>cache_ = std::make_shared&lt;<span class="syntax-type">CacheData</span>&gt;(cache_-&gt;data);</code><p>新建 CacheData，并把旧 cache_-&gt;data 传入构造函数复制 T。CacheData 的这个构造函数只初始化 data，mutex 仍以默认失效状态开始。不能写成无参 make_shared，否则更新回调读到的会是默认 T。</p>
+</div></div><div class="line-explanation"><span class="line-number">L84</span><div><code>}</code><p>结束共享分支。当前对象独立持有带有旧内容的新块，其他对象仍持有原块。</p>
+</div></div><div class="line-explanation"><span class="line-number">L85</span><div><code>cache_-&gt;mutex.<span class="syntax-function">ensure</span>([&amp;]() { <span class="syntax-function">compute_cache</span>(<span class="syntax-keyword">this</span>-&gt;cache_-&gt;data); });</code><p>调用 ensure 执行更新并由 CacheMutex 管理有效性。lambda 得到的是分离后的 this-&gt;cache_-&gt;data，不会有意修改仍被其他对象共享的原块。</p>
+</div></div><div class="line-explanation"><span class="line-number">L86</span><div><code>}</code><p>结束 update。成功后当前对象拥有更新后的有效缓存，其他共享者维持其原来的结果。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>假设缓存是 [1,2,3]，A 与 B 共享它，A 的更新操作仅把下标 1 改为 20。update 的共享分支先复制出 [1,2,3]，回调产生 [1,20,3]，B 仍读到 [1,2,3]。若改成 tag_dirty 后 ensure，并且回调只修改一个位置，默认构造的数据没有原来的另外两个值，结果就不符合增量更新契约。</p>
+<h4>调用关系与设计判断</h4><p>复盘 b339e3937d8 时先给出上面的最小反例，再看实际 sculpt 调用者的更新依赖。一个有意义的回归测试必须让两个对象先共享已填充缓存，然后只改变其中一个对象的局部内容，最后同时检查新对象的局部更新和旧对象的完整结果。只有单对象测试看不到这一类缺陷。</p>
+</article><article class="deep-reading"><h3>缓存结果读取：存在数据不代表结果有效</h3><p>完整访问器只借出结果引用。update 与 tag_dirty 改变的有效性必须在读取前通过 ensure 建立，而不是因为内存里还留着旧值就直接读取。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_shared_cache.hh · L89–L93。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_shared_cache.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="89">  <span class="syntax-keyword">const</span> <span class="syntax-type">T</span> &amp;<span class="syntax-function">data</span>() <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="90">  {</span>
+<span class="code-line" data-line="91">    <span class="syntax-type">BLI_assert</span>(cache_-&gt;mutex.<span class="syntax-function">is_cached</span>());</span>
+<span class="code-line" data-line="92">    <span class="syntax-keyword">return</span> cache_-&gt;data;</span>
+<span class="code-line" data-line="93">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L89</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">T</span> &amp;<span class="syntax-function">data</span>() <span class="syntax-keyword">const</span></code><p>返回 const T&amp;，避免复制大缓存；引用依赖当前 CacheData 的存活。</p>
+</div></div><div class="line-explanation"><span class="line-number">L90</span><div><code>{</code><p>打开 const T &amp;data() const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L91</span><div><code><span class="syntax-type">BLI_assert</span>(cache_-&gt;mutex.<span class="syntax-function">is_cached</span>());</code><p>检查缓存有效。is_cached 是有效性观察，不等于这个断言本身获取了一份长期同步锁。</p>
+</div></div><div class="line-explanation"><span class="line-number">L92</span><div><code><span class="syntax-keyword">return</span> cache_-&gt;data;</code><p>返回当前块中的 T。SharedCache 随后分离或销毁时，调用者不能无条件继续使用此前借出的引用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L93</span><div><code>}</code><p>结束 const T &amp;data() const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>tag_dirty 后 T 可能仍保留旧内容，但 data() 的契约不允许把它当最新结果。update 的回调可以在受控过程利用旧内容；普通读取者需要 ensure 完成以后再访问。</p>
+<h4>调用关系与设计判断</h4><p>一个共享块仍被另一个对象保活时，旧引用的存储寿命可能尚在，但语义上它对应旧输入。区分“地址还可访问”与“结果符合当前几何状态”，这是共享缓存修复中同样重要的一层正确性。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_shared_cache.hh">BLI_shared_cache.hh</a></div><p>检查共享时复制旧缓存内容的路径。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 77 行 · SHA-256 e4ed38df2ea7</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_shared_cache.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_shared_cache.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">74</span>,<span class="syntax-number">105</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_shared_cache.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_shared_cache.hh">BLI_shared_cache.hh</a></div><p>与不保留旧内容的失效行为对照。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 52 行 · SHA-256 e4ed38df2ea7</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_shared_cache.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_shared_cache.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">49</span>,<span class="syntax-number">80</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_shared_cache.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/b339e3937d8dc580b655efe599c3b0f97f412fb1" target="_blank" rel="noopener">b339e3937d8</a> <span>Hans Goudey · 2023-08-29</span></div><h3>Fix: Crash in sculpt mode with shared normals caches</h3><p>先重建崩溃前提，再解释为什么新增操作比单纯调整调用顺序更清楚。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Since the normals are stored in a shared cache, tagging them dirty
+recreated the cache from scratch when it was shared. Instead,
+add a function that updates the cache in the same call as tagging
+it dirty. This keeps the old state of the cache around even if it was
+shared, and reflects the way that it&#x27;s really the PBVH and sculpt
+mode managing the dirty status of normals while sculpt mode
+is active.
+
+One consequence is that the BVH cache and the triangulation
+cache need to be tagged dirty manually. I&#x27;d like to avoid abstracting
+this more than necessary, because I&#x27;m hoping in the long term
+different caching abstractions like a more global cache that takes
+implicit sharing versions into account will make this complexity
+unnecessary.
+
+Fixes #111628, #111563
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/111641</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenkernel/<span class="syntax-type">BKE_mesh</span>.h             |  <span class="syntax-number">6</span> ++++++</span>
+<span class="code-line" data-line="2"> source/blender/blenkernel/intern/mesh_runtime.cc |  <span class="syntax-number">5</span> +++++</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/intern/pbvh.cc         |  <span class="syntax-number">4</span> ++--</span>
+<span class="code-line" data-line="4"> source/blender/blenlib/<span class="syntax-type">BLI_shared_cache</span>.hh       | <span class="syntax-number">19</span> +++++++++++++++++++</span>
+<span class="code-line" data-line="5"> source/blender/editors/sculpt_paint/sculpt.cc    | <span class="syntax-number">11</span> ++++++++---</span>
+<span class="code-line" data-line="6"> <span class="syntax-number">5</span> files changed, <span class="syntax-number">40</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">5</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat b339e3937d8</span>
+<span class="code-line" data-line="2">git show b339e3937d8</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show b339e3937d8 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>在上一课的缓存中增加一组逐元素派生值，支持只更新一段。</p>
+</li><li><strong>任务 02</strong><p>让 A、B 共享结果，修改 B 的一小段，验证未改部分保留且 A 完全不变。</p>
+</li><li><strong>任务 03</strong><p>先实现会丢失旧内容的错误版本，保留能稳定失败的最小回归测试。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="06-03-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="06-03-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="06-03-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>把缓存标脏后旧内容一定还在吗？</summary><p>不能这样假设，具体 API 可能在共享时创建新空缓存。</p>
+</details><details class="question"><summary>为什么要保留错误版本的最小复现？</summary><p>它证明测试确实覆盖了原问题，避免只有新实现自证成功。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="06-03" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98/02-SharedCache%E4%B8%8E%E4%BE%9D%E8%B5%96%E7%9F%A9%E9%98%B5.html">← 上一篇：共享缓存：哪些变化会让结果失效</a><a href="../07-%E6%89%B9%E9%87%8F%E5%87%BD%E6%95%B0%E4%B8%8E%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B/01-MultiFunction%E7%AD%BE%E5%90%8D%E4%B8%8E%E5%8F%82%E6%95%B0.html">下一篇：MultiFunction：为一批元素设计调用约定 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

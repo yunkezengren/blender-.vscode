@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="精读哈希表性能修复，练习把理论复杂度落实到具体触发条件。">
+<title>一次重建要值得：从操作序列理解均摊成本 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="02-03"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">哈希表与性能契约</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>DATA STRUCTURES / CONTRACTS / LESSON 02-03</div><h1>一次重建要值得：从操作序列理解均摊成本</h1><p class="lede">精读哈希表性能修复，练习把理论复杂度落实到具体触发条件。</p><div class="chips"><span class="chip">方向 02 · 哈希表与性能契约</span><span class="chip">专题 3/3</span><span class="chip">正文 2,218 字符</span><span class="chip">建议研读 25 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-%E7%9B%B8%E7%AD%89%E5%85%B3%E7%B3%BB%E4%B8%8E%E5%93%88%E5%B8%8C%E5%A5%91%E7%BA%A6.html">01 哈希的第一条规则：相等必须导向相同哈希</a><a href="02-%E5%BC%80%E6%94%BE%E5%AF%BB%E5%9D%80%E4%B8%8E%E5%88%A0%E9%99%A4%E7%8A%B6%E6%80%81.html">02 Map 的槽位：为什么删除不能简单清空</a><a href="03-%E9%87%8D%E5%BB%BA%E7%AD%96%E7%95%A5%E4%B8%8E%E6%80%A7%E8%83%BD%E5%AE%9E%E9%AA%8C.html">03 一次重建要值得：从操作序列理解均摊成本</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>把键的等价关系、槽位状态与重建策略放在同一个模型里。哈希表的真实难点经常来自删除和插入交替发生时的行为。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>完成容器模块；理解相等比较、模运算和均摊复杂度的基本含义。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>键的等价关系</strong></div><div class="flow-step"><span>02</span><strong>哈希与探测</strong></div><div class="flow-step"><span>03</span><strong>槽位状态</strong></div><div class="flow-step"><span>04</span><strong>删除与重建</strong></div><div class="flow-step"><span>05</span><strong>操作序列测量</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>写一页实验报告，附原始计数和明确的未验证范围。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>构造最容易暴露策略的负载</h3>
+<p>考虑表中元素数接近某个容量边界，每轮删除一个旧键并插入一个新键。逻辑大小几乎不变，但移除槽位与扩容阈值不断互动。若重建没有留下足够余量，下一轮又可能触发重建，于是本应便宜的一系列操作反复支付整表搬迁成本。</p>
+<p>b242c618450 的提交说明正是在描述这种边界负载。作者通过在特定重建情况下增长表，让重建带来的收益足够持续。另一种复用已移除槽位的方案也有取舍：它可能给更常见、不发生删除的路径增加成本。</p>
+<h3>把测量拆成能解释的计数</h3>
+<p>只报告运行时间很难解释原因。为教学表记录 rehash 次数、搬迁元素总数、探测次数与峰值容量。若时间下降且搬迁次数显著下降，就有证据支持策略改变起作用。再检查内存增长是否符合预期，以及纯插入负载是否受到影响。</p>
+<p>对比时保持键生成序列、初始容量、优化级别和计时范围一致。先预热，再重复多个样本。提交中的原始性能数字属于作者的硬件与场景，不应被写成你机器上的实验结果。</p>
+<h3>优化也必须维护原有契约</h3>
+<p>扩容和重建过程中，所有有效键必须被放入与新容量匹配的探测路径。移除标记可以被清理，但有效元素不能丢失、复制成多个逻辑条目或遗留旧指针。性能修复完成后仍应运行碰撞和异常路径测试。</p>
+<p>最终说明应包含触发条件、原因、改动、收益与代价。如果只能说“换成更大的容量更快”，还没有形成完整设计判断；需要解释何时增长、增长多少以及为什么不会无限浪费内存。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要在测量循环里打印每一步；I/O 很可能盖过容器本身的差别。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>重建触发：活元素与墓碑共同占用探测空间</h3><p>这个完整函数是插入慢路径的入口。重点是条件使用 occupied_and_removed_slots_，而传给重建函数的要求使用 size()+1：两个计数解决不同问题。理解它能避免把所有重建都称为扩容。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_map.hh · L1359–L1365。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_map.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1359">  <span class="syntax-keyword">void</span> <span class="syntax-function">ensure_can_add</span>()</span>
+<span class="code-line" data-line="1360">  {</span>
+<span class="code-line" data-line="1361">    <span class="syntax-keyword">if</span> (occupied_and_removed_slots_ &gt;= usable_slots_) {</span>
+<span class="code-line" data-line="1362">      <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">realloc_and_reinsert</span>(<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>() + <span class="syntax-number">1</span>);</span>
+<span class="code-line" data-line="1363">      <span class="syntax-type">BLI_assert</span>(occupied_and_removed_slots_ &lt; usable_slots_);</span>
+<span class="code-line" data-line="1364">    }</span>
+<span class="code-line" data-line="1365">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L1359</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">ensure_can_add</span>()</code><p>这是内部容量准备函数，不插入键值，也不返回槽地址。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1360</span><div><code>{</code><p>打开 void ensure_can_add() 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1361</span><div><code><span class="syntax-keyword">if</span> (occupied_and_removed_slots_ &gt;= usable_slots_) {</code><p>占用槽与删除槽合计达到可用上限时，需要重新组织表。墓碑虽然不是活元素，仍会拖长探测。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1362</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">realloc_and_reinsert</span>(<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>() + <span class="syntax-number">1</span>);</code><p>按当前活元素数加一个新元素提出最低需求。重建可能只清除墓碑；最终容量策略需继续进入 realloc_and_reinsert 查看。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1363</span><div><code><span class="syntax-type">BLI_assert</span>(occupied_and_removed_slots_ &lt; usable_slots_);</code><p>验证重建后至少有一个可用余量。断言检查内部不变量，不代替重建算法本身。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1364</span><div><code>}</code><p>结束 if (occupied_and_removed_slots_ &gt;= usable_slots_) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1365</span><div><code>}</code><p>结束 void ensure_can_add() 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>假设 usable_slots_=6，活元素 2，删除槽 4，总计为 6。下一次插入触发重建，但最低活元素需求只是 3。若只看 size()==2 就判断无需重建，会忽略墓碑的探测成本；若把需求设为 7，又可能过度增长。</p>
+<h4>调用关系与设计判断</h4><p>结合 b242c618450 研究反复 erase/insert 的操作序列。记录每次活元素数、墓碑数、槽总数与重建次数；一次插入的耗时无法说明均摊复杂度。下一层必须检查容量选择是否给重复操作留下足够空间。</p>
+</article><article class="deep-reading"><h3>Map 完整重建：增长余量、空表特化与失败重置</h3><p>完整函数把 b242c618450 的策略放回真实实现。请连续跟踪四个成员计数，不要只读新槽数组的分配。异常路径选择重置容器，而不是恢复原键值集合。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_map.hh · L1099–L1149。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_map.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1099">  <span class="syntax-type">BLI_NOINLINE</span> <span class="syntax-keyword">void</span> <span class="syntax-function">realloc_and_reinsert</span>(<span class="syntax-keyword">int64_t</span> min_usable_slots)</span>
+<span class="code-line" data-line="1100">  {</span>
+<span class="code-line" data-line="1101">    <span class="syntax-comment">/* Avoid rebuilding the hash table just to get rid of a few removed slots. In this case, also</span></span>
+<span class="code-line" data-line="1102"><span class="syntax-comment">     * increase the map size to avoid a bad edge case. */</span></span>
+<span class="code-line" data-line="1103">    min_usable_slots = std::<span class="syntax-function">max</span>(min_usable_slots, <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>() * <span class="syntax-number">2</span>);</span>
+<span class="code-line" data-line="1104"></span>
+<span class="code-line" data-line="1105">    <span class="syntax-keyword">int64_t</span> total_slots, usable_slots;</span>
+<span class="code-line" data-line="1106">    max_load_factor_.<span class="syntax-function">compute_total_and_usable_slots</span>(</span>
+<span class="code-line" data-line="1107">        <span class="syntax-type">SlotArray</span>::<span class="syntax-function">inline_buffer_capacity</span>(), min_usable_slots, &amp;total_slots, &amp;usable_slots);</span>
+<span class="code-line" data-line="1108">    <span class="syntax-type">BLI_assert</span>(total_slots &gt;= <span class="syntax-number">1</span>);</span>
+<span class="code-line" data-line="1109">    <span class="syntax-keyword">const</span> uint64_t new_slot_mask = <span class="syntax-function">uint64_t</span>(total_slots) - <span class="syntax-number">1</span>;</span>
+<span class="code-line" data-line="1110"></span>
+<span class="code-line" data-line="1111">    <span class="syntax-comment">/**</span></span>
+<span class="code-line" data-line="1112"><span class="syntax-comment">     * Optimize the case when the map was empty beforehand. We can avoid some copies here.</span></span>
+<span class="code-line" data-line="1113"><span class="syntax-comment">     */</span></span>
+<span class="code-line" data-line="1114">    <span class="syntax-keyword">if</span> (<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>() == <span class="syntax-number">0</span>) {</span>
+<span class="code-line" data-line="1115">      <span class="syntax-keyword">try</span> {</span>
+<span class="code-line" data-line="1116">        slots_.<span class="syntax-function">reinitialize</span>(total_slots);</span>
+<span class="code-line" data-line="1117">      }</span>
+<span class="code-line" data-line="1118">      <span class="syntax-keyword">catch</span> (...) {</span>
+<span class="code-line" data-line="1119">        <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">noexcept_reset</span>();</span>
+<span class="code-line" data-line="1120">        <span class="syntax-keyword">throw</span>;</span>
+<span class="code-line" data-line="1121">      }</span>
+<span class="code-line" data-line="1122">      removed_slots_ = <span class="syntax-number">0</span>;</span>
+<span class="code-line" data-line="1123">      occupied_and_removed_slots_ = <span class="syntax-number">0</span>;</span>
+<span class="code-line" data-line="1124">      usable_slots_ = usable_slots;</span>
+<span class="code-line" data-line="1125">      slot_mask_ = new_slot_mask;</span>
+<span class="code-line" data-line="1126">      <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="1127">    }</span>
+<span class="code-line" data-line="1128"></span>
+<span class="code-line" data-line="1129">    <span class="syntax-type">SlotArray</span> <span class="syntax-function">new_slots</span>(total_slots);</span>
+<span class="code-line" data-line="1130"></span>
+<span class="code-line" data-line="1131">    <span class="syntax-keyword">try</span> {</span>
+<span class="code-line" data-line="1132">      <span class="syntax-keyword">for</span> (<span class="syntax-type">Slot</span> &amp;slot : slots_) {</span>
+<span class="code-line" data-line="1133">        <span class="syntax-keyword">if</span> (slot.<span class="syntax-function">is_occupied</span>()) {</span>
+<span class="code-line" data-line="1134">          <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">add_after_grow</span>(slot, new_slots, new_slot_mask);</span>
+<span class="code-line" data-line="1135">          slot.<span class="syntax-function">remove</span>();</span>
+<span class="code-line" data-line="1136">        }</span>
+<span class="code-line" data-line="1137">      }</span>
+<span class="code-line" data-line="1138">      slots_ = std::<span class="syntax-function">move</span>(new_slots);</span>
+<span class="code-line" data-line="1139">    }</span>
+<span class="code-line" data-line="1140">    <span class="syntax-keyword">catch</span> (...) {</span>
+<span class="code-line" data-line="1141">      <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">noexcept_reset</span>();</span>
+<span class="code-line" data-line="1142">      <span class="syntax-keyword">throw</span>;</span>
+<span class="code-line" data-line="1143">    }</span>
+<span class="code-line" data-line="1144"></span>
+<span class="code-line" data-line="1145">    occupied_and_removed_slots_ -= removed_slots_;</span>
+<span class="code-line" data-line="1146">    usable_slots_ = usable_slots;</span>
+<span class="code-line" data-line="1147">    removed_slots_ = <span class="syntax-number">0</span>;</span>
+<span class="code-line" data-line="1148">    slot_mask_ = new_slot_mask;</span>
+<span class="code-line" data-line="1149">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L1099</span><div><code><span class="syntax-type">BLI_NOINLINE</span> <span class="syntax-keyword">void</span> <span class="syntax-function">realloc_and_reinsert</span>(<span class="syntax-keyword">int64_t</span> min_usable_slots)</code><p>独立慢路径接收最低可用槽需求，注意可用槽数和总槽数因负载因子而不同。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1100</span><div><code>{</code><p>打开 BLI_NOINLINE void realloc_and_reinsert(int64_t min_usable_slots) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1101</span><div><code>/* <span class="syntax-type">Avoid</span> rebuilding the hash table just to get rid of a few removed slots. <span class="syntax-type">In</span> <span class="syntax-keyword">this</span> <span class="syntax-keyword">case</span>, also</code><p>重建不应只为了清除很少墓碑；同时增加余量，避免反复删除与插入导致重建过于频繁。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1102</span><div><code>* increase the map size to avoid a bad edge <span class="syntax-keyword">case</span>. */</code><p>续接 L1101 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1103</span><div><code>min_usable_slots = std::<span class="syntax-function">max</span>(min_usable_slots, <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>() * <span class="syntax-number">2</span>);</code><p>至少预留当前活元素数的两倍，避免为清除少量墓碑而频繁重建，正是均摊策略的核心。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1105</span><div><code><span class="syntax-keyword">int64_t</span> total_slots, usable_slots;</code><p>声明总槽数与负载允许的可用槽数。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1106</span><div><code>max_load_factor_.<span class="syntax-function">compute_total_and_usable_slots</span>(</code><p>调用负载因子策略计算两者。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1107</span><div><code><span class="syntax-type">SlotArray</span>::<span class="syntax-function">inline_buffer_capacity</span>(), min_usable_slots, &amp;total_slots, &amp;usable_slots);</code><p>同时考虑内嵌槽容量、最低需求并输出计算结果；这一行续接上一行调用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1108</span><div><code><span class="syntax-type">BLI_assert</span>(total_slots &gt;= <span class="syntax-number">1</span>);</code><p>保证总槽至少为一，后面 total_slots-1 才能形成有效掩码。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1109</span><div><code><span class="syntax-keyword">const</span> uint64_t new_slot_mask = <span class="syntax-function">uint64_t</span>(total_slots) - <span class="syntax-number">1</span>;</code><p>得到新掩码。掩码探测还依赖槽数满足策略要求，不能仅由减一公式证明。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1111</span><div><code>/**</code><p>原表没有活元素时无需逐项搬移，可以直接重初始化槽数组；仍要保持失败后计数与存储一致。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1112</span><div><code>* <span class="syntax-type">Optimize</span> the <span class="syntax-keyword">case</span> when the map was empty beforehand. <span class="syntax-type">We</span> can avoid some copies here.</code><p>续接 L1111 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1113</span><div><code>*/</code><p>续接 L1111 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1114</span><div><code><span class="syntax-keyword">if</span> (<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>() == <span class="syntax-number">0</span>) {</code><p>活元素为零时不需要搬移键值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1115</span><div><code><span class="syntax-keyword">try</span> {</code><p>保护空表重新初始化的失败路径。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1116</span><div><code>slots_.<span class="syntax-function">reinitialize</span>(total_slots);</code><p>将槽数组改为新大小，重新得到空槽状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1117</span><div><code>}</code><p>结束 try { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1118</span><div><code><span class="syntax-keyword">catch</span> (...) {</code><p>捕获初始化失败。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1119</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">noexcept_reset</span>();</code><p>把 Map 重置到无需再次抛出的安全空状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1120</span><div><code><span class="syntax-keyword">throw</span>;</code><p>重新抛出原异常。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1121</span><div><code>}</code><p>结束 catch (...) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1122</span><div><code>removed_slots_ = <span class="syntax-number">0</span>;</code><p>空表成功后，墓碑归零。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1123</span><div><code>occupied_and_removed_slots_ = <span class="syntax-number">0</span>;</code><p>占用与删除总计归零。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1124</span><div><code>usable_slots_ = usable_slots;</code><p>发布新可用槽数。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1125</span><div><code>slot_mask_ = new_slot_mask;</code><p>发布新掩码。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1126</span><div><code><span class="syntax-keyword">return</span>;</code><p>结束空表特化路径。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1127</span><div><code>}</code><p>结束 if (this-&gt;size() == 0) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1129</span><div><code><span class="syntax-type">SlotArray</span> <span class="syntax-function">new_slots</span>(total_slots);</code><p>非空表先创建独立的新槽数组，旧表暂时仍在。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1131</span><div><code><span class="syntax-keyword">try</span> {</code><p>保护逐项迁移与槽数组替换。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1132</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-type">Slot</span> &amp;slot : slots_) {</code><p>遍历旧表全部槽，不是只遍历 size 个连续槽。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1133</span><div><code><span class="syntax-keyword">if</span> (slot.<span class="syntax-function">is_occupied</span>()) {</code><p>只有 occupied 槽才拥有需要迁移的键值；empty 和 removed 跳过。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1134</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">add_after_grow</span>(slot, new_slots, new_slot_mask);</code><p>调用新掩码下的重探测插入，不保持旧下标。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1135</span><div><code>slot.<span class="syntax-function">remove</span>();</code><p>成功迁移后删除旧槽中的键值，避免两份所有者同时析构同一资源。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1136</span><div><code>}</code><p>结束 if (slot.is_occupied()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1137</span><div><code>}</code><p>结束 for (Slot &amp;slot : slots_) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1138</span><div><code>slots_ = std::<span class="syntax-function">move</span>(new_slots);</code><p>用新槽数组接管成员存储；旧槽数组按其移动赋值规则退出。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1139</span><div><code>}</code><p>结束 try { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1140</span><div><code><span class="syntax-keyword">catch</span> (...) {</code><p>捕获迁移或替换阶段的异常。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1141</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">noexcept_reset</span>();</code><p>失败时重置当前 Map，不承诺保留原键值集合。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1142</span><div><code><span class="syntax-keyword">throw</span>;</code><p>重新抛出，交给调用者处理失败。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1143</span><div><code>}</code><p>结束 catch (...) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1145</span><div><code>occupied_and_removed_slots_ -= removed_slots_;</code><p>正常路径扣除墓碑数，使占用与删除合计回到活元素数。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1146</span><div><code>usable_slots_ = usable_slots;</code><p>发布新的可用槽限制。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1147</span><div><code>removed_slots_ = <span class="syntax-number">0</span>;</code><p>墓碑数归零。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1148</span><div><code>slot_mask_ = new_slot_mask;</code><p>发布新掩码，恢复与新槽数组一致的查找坐标系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1149</span><div><code>}</code><p>结束 BLI_NOINLINE void realloc_and_reinsert(int64_t min_usable_slots) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>活元素 10、请求最低 11，先提升到至少 20，再由负载策略求总槽与可用槽。旧表有 6 个墓碑时，只迁移 10 个 occupied 项，最终 removed=0。若第 4 个键值移动抛出，前面若干旧槽已被 remove，不能再直接把原表当作完整旧状态；实现通过 noexcept_reset 保证容器可继续析构。</p>
+<h4>调用关系与设计判断</h4><p>独立验证查找、删除和重建后的全部键值，用资源计数类型检测重复销毁。性能测试使用反复插删序列，记录重建次数，解释为什么 size()*2 的余量减少后续重建，而不是只给一次基准耗时。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_map.hh">BLI_map.hh</a></div><p>查看新容量选择、槽位重建与所有权迁移。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 1099 行 · SHA-256 236ceadf1c36</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_map.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_map.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">1096</span>,<span class="syntax-number">1127</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_map.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/tests/BLI_map_test.cc">BLI_map_test.cc</a></div><p>把新的操作序列放进现有正确性测试思路中。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 24 行 · SHA-256 eafd63b44d76</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/tests/BLI_map_test.cc</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/tests/BLI_map_test.cc&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">21</span>,<span class="syntax-number">52</span> -- <span class="syntax-string">&quot;source/blender/blenlib/tests/BLI_map_test.cc&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/b242c618450e3c0011914112c3ffe31ae2e96028" target="_blank" rel="noopener">b242c618450</a> <span>Jacques Lucke · 2025-12-12</span></div><h3>Fix: BLI: bad performance edge case in hash table implementations</h3><p>先预测修复前重建次数，再阅读 min_usable_slots 与实际增长策略的变化。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>The issue happened when the hash table (e.g. Map) has close to a power of two
+number of elements and repeatedly deletes and adds values. In this case the map
+is rebuild more often than is necessary, and in the worst case a rebuild happens
+each time something is removed and added again.
+
+The fix here is to make sure that each call to `realloc_and_reinsert` is
+actually worth it by making it grow the map in some cases where it previously
+wouldn&#x27;t. A similar optimization already exists in
+`Vector::realloc_to_at_least`.
+
+An alternative would be to support overriding removed-slots in `Map::add`, but
+that has negative performance implications for the most common case when no
+elements are ever removed.
+
+This brings back performance to the same level before #150009:
+`60k_cubes_same_mesh.blend: old: 11.3s, main: 70s, this patch: 11.3s`
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/151502</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenlib/<span class="syntax-type">BLI_map</span>.hh        | <span class="syntax-number">8</span> ++++++++</span>
+<span class="code-line" data-line="2"> source/blender/blenlib/<span class="syntax-type">BLI_set</span>.hh        | <span class="syntax-number">6</span> +++++-</span>
+<span class="code-line" data-line="3"> source/blender/blenlib/<span class="syntax-type">BLI_vector_set</span>.hh | <span class="syntax-number">6</span> +++++-</span>
+<span class="code-line" data-line="4"> <span class="syntax-number">3</span> files changed, <span class="syntax-number">18</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">2</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat b242c618450</span>
+<span class="code-line" data-line="2">git show b242c618450</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show b242c618450 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>实现固定余量和几何增长两种策略，对同一增删序列比较。</p>
+</li><li><strong>任务 02</strong><p>增加纯查询、纯插入和高碰撞对照，避免只优化单一例子。</p>
+</li><li><strong>任务 03</strong><p>写一页实验报告，附原始计数和明确的未验证范围。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="02-03-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="02-03-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="02-03-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>均摊 O(1) 为什么还需要看触发条件？</summary><p>均摊分析依赖具体增长和重建规则；规则若不能保证足够多廉价操作摊薄重建，结论就不成立。</p>
+</details><details class="question"><summary>容量变大就是最优修复吗？</summary><p>需要同时衡量内存、普通负载和边界行为，不能仅凭一个计时样本判断。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="02-03" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E6%80%A7%E8%83%BD%E5%A5%91%E7%BA%A6/02-%E5%BC%80%E6%94%BE%E5%AF%BB%E5%9D%80%E4%B8%8E%E5%88%A0%E9%99%A4%E7%8A%B6%E6%80%81.html">← 上一篇：Map 的槽位：为什么删除不能简单清空</a><a href="../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-LinearAllocator%E4%B8%8E%E5%AF%B9%E9%BD%90.html">下一篇：LinearAllocator：利用共同寿命减少分配成本 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

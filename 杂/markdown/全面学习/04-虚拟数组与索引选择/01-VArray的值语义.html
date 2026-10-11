@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="观察接口如何统一不同表示，同时保留识别快速路径的能力。">
+<title>VArray：一百万个相同值不必分配一百万次 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="04-01"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">虚拟数组与索引选择</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>REPRESENTATION / THROUGHPUT / LESSON 04-01</div><h1>VArray：一百万个相同值不必分配一百万次</h1><p class="lede">观察接口如何统一不同表示，同时保留识别快速路径的能力。</p><div class="chips"><span class="chip">方向 04 · 虚拟数组与索引选择</span><span class="chip">专题 1/3</span><span class="chip">正文 1,597 字符</span><span class="chip">建议研读 18 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-VArray%E7%9A%84%E5%80%BC%E8%AF%AD%E4%B9%89.html">01 VArray：一百万个相同值不必分配一百万次</a><a href="02-IndexMask%E7%9A%84%E5%88%86%E6%AE%B5%E8%AE%BE%E8%AE%A1.html">02 IndexMask：为稀疏、连续与并行同时设计</a><a href="03-%E5%8E%BB%E8%99%9A%E6%8B%9F%E5%8C%96%E4%B8%8E%E4%BB%A3%E4%BB%B7%E6%A8%A1%E5%9E%8B.html">03 去虚拟化：把一次分派换成一个更好的循环</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>同一个逻辑数组可以是连续存储、重复单值或按需计算。通过 VArray、IndexMask 和去虚拟化，学习表达力与执行成本怎样共同设计。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>Span、模板、多态、连续内存和基本性能测量。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>逻辑数组</strong></div><div class="flow-step"><span>02</span><strong>具体表示</strong></div><div class="flow-step"><span>03</span><strong>选择范围</strong></div><div class="flow-step"><span>04</span><strong>表示分派</strong></div><div class="flow-step"><span>05</span><strong>批量内核</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>比较一次物化后重复读取，与每次调用计算函数的成本，明确测量次数和规模。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>数组是可索引的语义</h3>
+<p>一个逻辑长度为 N 的常量数组，只需要保存一个值和长度。另一种数组可能借用 Span，还有一种在访问索引时计算值。它们都支持按索引取值，但其存储与计算成本不同。VArray 提供统一外观，让属性和函数系统不必为每种表示暴露完全不同的高层接口。</p>
+<p>统一接口不应抹去所有信息。算法若能识别单值表示，可以把常量运算移出循环；识别连续 Span，则可以使用适合编译器优化的普通循环。通用性与快速路径通过有意设计的查询机制共存。</p>
+<h3>外层值对象与内部多态</h3>
+<p>d4c868da9f9 将外层 VArray 设计为更方便传递的固定大小值对象，内部再管理 VArrayImpl。它解决了过去频繁通过 unique_ptr 传递以及小对象分配的问题。当前实现已经继续演化，读历史提交是为了理解这次职责划分。</p>
+<p>不同实现的所有权可能不同：引用 Span 的实现不自动拥有原数组，持有容器的实现可能拥有数据。复制一个 VArray 后数据是否保活，必须看具体构造途径，不能仅凭外层看起来像值类型就判断。</p>
+<h3>物化是一项显式成本</h3>
+<p>把虚拟数组变成实际连续缓冲区称为物化。它可能让多次访问变便宜，也可能对本来只读少数元素的情况产生大量不必要工作。决定是否物化时要考虑后续访问次数、选择密度和每个元素的计算成本。</p>
+<p>在源码中追踪 materialize 或 VArraySpan 一类辅助接口，说明它是借用已有连续数组，还是为当前表示分配临时缓冲区。性能判断必须追到实际存储路径。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<div class="demo" data-demo="mask"><div class="demo-heading"><span class="pill">INTERACTIVE LAB</span><strong>改变一个条件，观察模型</strong></div><div class="demo-controls"></div><div class="demo-result" aria-live="polite"></div><p class="demo-caption">教学简化模型，帮助推演状态；不等同于 Blender 完整实现，也不执行性能基准。</p><noscript>开启 JavaScript 可使用交互；正文和源码仍可离线阅读。</noscript></div><aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>把逻辑数组长度误认为实际分配量，会导致错误的内存估计。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>单值 VArray：索引存在，存储不必展开</h3><p>完整函数来自 VArrayImpl_For_Single。它把逻辑长度与物理值数量分开：上层仍看到一个数组，下层只保存一个值。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_virtual_array.hh · L325–L328。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_virtual_array.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="325">  <span class="syntax-type">T</span> <span class="syntax-function">get</span>(<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> <span class="syntax-comment">/*index*/</span>) <span class="syntax-keyword">const</span> override</span>
+<span class="code-line" data-line="326">  {</span>
+<span class="code-line" data-line="327">    <span class="syntax-keyword">return</span> value_;</span>
+<span class="code-line" data-line="328">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L325</span><div><code><span class="syntax-type">T</span> <span class="syntax-function">get</span>(<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> <span class="syntax-comment">/*index*/</span>) <span class="syntax-keyword">const</span> override</code><p>覆盖虚拟读取接口，返回 T 值。参数被写成注释形式的名字，明确表示本实现不依赖具体索引。</p>
+</div></div><div class="line-explanation"><span class="line-number">L326</span><div><code>{</code><p>打开 T get(const int64_t /*index*/) const override 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L327</span><div><code><span class="syntax-keyword">return</span> value_;</code><p>所有有效索引都返回同一个 value_。返回值语义可能发生 T 的复制；它并不意味着每次读取都零成本。</p>
+</div></div><div class="line-explanation"><span class="line-number">L328</span><div><code>}</code><p>结束 T get(const int64_t /*index*/) const override 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>逻辑长度一百万、值为 7，则读取下标 0 和 999999 都得到 7，而内部无须为每个位置分配一个 7。越界契约仍存在：忽略 index 不是允许上层无限索引。</p>
+<h4>调用关系与设计判断</h4><p>继续读 VArray::operator[] 的范围断言和 common_info 的表示查询。算法若识别到单值表示，可以把某些工作提升到循环外；若要求输出实体数组，最后仍要承担写入一百万个值的成本。</p>
+</article><article class="deep-reading"><h3>单值物化：压缩表示转成真实对象数组</h3><p>完整函数展示虚拟数组最终必须写实体数据时的成本。重点不是所有位置值相同，而是目标位置已经初始化还是仅有原始存储。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_virtual_array.hh · L335–L348。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_virtual_array.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="335">  <span class="syntax-keyword">void</span> <span class="syntax-function">materialize</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> &amp;mask, <span class="syntax-type">T</span> *dst, <span class="syntax-keyword">const</span> <span class="syntax-keyword">bool</span> dst_is_uninitialized) <span class="syntax-keyword">const</span> override</span>
+<span class="code-line" data-line="336">  {</span>
+<span class="code-line" data-line="337">    <span class="syntax-keyword">if</span> <span class="syntax-keyword">constexpr</span> (std::is_trivially_copyable_v&lt;<span class="syntax-type">T</span>&gt;) {</span>
+<span class="code-line" data-line="338">      index_mask::detail::<span class="syntax-function">fill</span>(dst, value_, mask);</span>
+<span class="code-line" data-line="339">    }</span>
+<span class="code-line" data-line="340">    <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="341">      <span class="syntax-keyword">if</span> (dst_is_uninitialized) {</span>
+<span class="code-line" data-line="342">        mask.<span class="syntax-function">foreach_index</span>([&amp;](<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> i) { <span class="syntax-keyword">new</span> (dst + i) <span class="syntax-type">T</span>(value_); });</span>
+<span class="code-line" data-line="343">      }</span>
+<span class="code-line" data-line="344">      <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="345">        mask.<span class="syntax-function">foreach_index</span>([&amp;](<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> i) { dst[i] = value_; });</span>
+<span class="code-line" data-line="346">      }</span>
+<span class="code-line" data-line="347">    }</span>
+<span class="code-line" data-line="348">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L335</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">materialize</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> &amp;mask, <span class="syntax-type">T</span> *dst, <span class="syntax-keyword">const</span> <span class="syntax-keyword">bool</span> dst_is_uninitialized) <span class="syntax-keyword">const</span> override</code><p>输入 mask 选定输出位置，dst 指向实体存储，布尔参数决定使用构造还是赋值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L336</span><div><code>{</code><p>打开 void materialize(const IndexMask &amp;mask, T *dst, const bool dst_is_uninitialized) const override 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L337</span><div><code><span class="syntax-keyword">if</span> <span class="syntax-keyword">constexpr</span> (std::is_trivially_copyable_v&lt;<span class="syntax-type">T</span>&gt;) {</code><p>编译期识别平凡可复制类型，选择专门填充路径。</p>
+</div></div><div class="line-explanation"><span class="line-number">L338</span><div><code>index_mask::detail::<span class="syntax-function">fill</span>(dst, value_, mask);</code><p>只按 mask 填充选中位置，未选位置不会因此自动获得 value_。</p>
+</div></div><div class="line-explanation"><span class="line-number">L339</span><div><code>}</code><p>结束 if constexpr (std::is_trivially_copyable_v&lt;T&gt;) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L340</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入前一个条件不成立时的路径；两条路径分别检查对象与存储状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L341</span><div><code><span class="syntax-keyword">if</span> (dst_is_uninitialized) {</code><p>目标尚未初始化时，需要开始对象生命周期。</p>
+</div></div><div class="line-explanation"><span class="line-number">L342</span><div><code>mask.<span class="syntax-function">foreach_index</span>([&amp;](<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> i) { <span class="syntax-keyword">new</span> (dst + i) <span class="syntax-type">T</span>(value_); });</code><p>逐个选中下标 placement-new 构造 T，使用单值 value_ 复制构造。</p>
+</div></div><div class="line-explanation"><span class="line-number">L343</span><div><code>}</code><p>结束 if (dst_is_uninitialized) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L344</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入前一个条件不成立时的路径；两条路径分别检查对象与存储状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L345</span><div><code>mask.<span class="syntax-function">foreach_index</span>([&amp;](<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> i) { dst[i] = value_; });</code><p>目标已经有活对象时逐个执行赋值，不在已有对象上直接重复构造。</p>
+</div></div><div class="line-explanation"><span class="line-number">L346</span><div><code>}</code><p>结束 else { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L347</span><div><code>}</code><p>结束 else { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L348</span><div><code>}</code><p>结束 void materialize(const IndexMask &amp;mask, T *dst, const bool dst_is_uninitialized) const override 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>mask=[1,4]、value_=&quot;x&quot;，未初始化目标需要在 dst+1 与 dst+4 构造两个字符串；已初始化目标则对这两个位置赋值。未选位置如果仍未初始化，后续不能按整个缓冲区长度统一析构。</p>
+<h4>调用关系与设计判断</h4><p>读 materialize_compressed 时比较输出索引是否从零紧密排列。普通物化保持原下标，压缩物化改成选择序号；这一区别也会影响结果对象数量与清理范围。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_virtual_array.hh">BLI_virtual_array.hh</a></div><p>观察单值表示如何保留逻辑长度而不展开所有元素。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 314 行 · SHA-256 0dad9ae24591</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_virtual_array.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_virtual_array.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">311</span>,<span class="syntax-number">342</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_virtual_array.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_virtual_array.hh">BLI_virtual_array.hh</a></div><p>外层值对象如何封装内部实现。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 725 行 · SHA-256 0dad9ae24591</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_virtual_array.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_virtual_array.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">722</span>,<span class="syntax-number">753</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_virtual_array.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/d4c868da9f97a06c3457b8eafd344a23ed704874" target="_blank" rel="noopener">d4c868da9f9</a> <span>Jacques Lucke · 2021-11-16</span></div><h3>Geometry Nodes: refactor virtual array system</h3><p>重点读外层值语义、内部实现与小对象分配之间的关系。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Goals of this refactor:
+* Simplify creating virtual arrays.
+* Simplify passing virtual arrays around.
+* Simplify converting between typed and generic virtual arrays.
+* Reduce memory allocations.
+
+As a quick reminder, a virtual arrays is a data structure that behaves like an
+array (i.e. it can be accessed using an index). However, it may not actually
+be stored as array internally. The two most important implementations
+of virtual arrays are those that correspond to an actual plain array and those
+that have the same value for every index. However, many more
+implementations exist for various reasons (interfacing with legacy attributes,
+unified iterator over all points in multiple splines, ...).
+
+With this refactor the core types (`VArray`, `GVArray`, `VMutableArray` and
+`GVMutableArray`) can be used like &quot;normal values&quot;. They typically live
+on the stack. Before, they were usually inside a `std::unique_ptr`. This makes
+passing them around much easier. Creation of new virtual arrays is also
+much simpler now due to some constructors. Memory allocations are
+reduced by making use of small object optimization inside the core types.
+
+Previously, `VArray` was a class with virtual methods that had to be overridden
+to change the behavior of a the virtual array. Now,`VArray` has a fixed size
+and has no virtual methods. Instead it contains a `VArrayImpl` that is
+similar to the old `VArray`. `VArrayImpl` should rarely ever be used directly,
+unless a new virtual array implementation is added.
+
+To support the small object optimization for many `VArrayImpl` classes,
+a new `blender::Any` type is added. It is similar to `std::any` with two
+additional features. It has an adjustable inline buffer size and alignment.
+The inline buffer size of `std::any` can&#x27;t be relied on and is usually too
+small for our use case here. Furthermore, `blender::Any` can store
+additional user-defined type information without increasing the
+stack size.
+
+Differential Revision: https://developer.blender.org/D12986</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenkernel/<span class="syntax-type">BKE_attribute_access</span>.hh  |   <span class="syntax-number">63</span> +-</span>
+<span class="code-line" data-line="2"> source/blender/blenkernel/<span class="syntax-type">BKE_geometry_set</span>.hh      |   <span class="syntax-number">92</span> +-</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/<span class="syntax-type">BKE_spline</span>.hh            |   <span class="syntax-number">20</span> +-</span>
+<span class="code-line" data-line="4"> .../blender/blenkernel/intern/attribute_access.cc  |  <span class="syntax-number">136</span> ++-</span>
+<span class="code-line" data-line="5"> .../blenkernel/intern/attribute_access_intern.hh   |   <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="6"> .../blenkernel/intern/curve_to_mesh_convert.cc     |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="7"> .../blenkernel/intern/geometry_component_curve.cc  |  <span class="syntax-number">219</span> ++--</span>
+<span class="code-line" data-line="8"> .../intern/geometry_component_instances.cc         |   <span class="syntax-number">26</span> +-</span>
+<span class="code-line" data-line="9"> .../blenkernel/intern/geometry_component_mesh.cc   |  <span class="syntax-number">206</span> ++--</span>
+<span class="code-line" data-line="10"> .../intern/geometry_component_pointcloud.cc        |    <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="11"> .../blenkernel/intern/geometry_set_instances.cc    |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="12"> source/blender/blenkernel/intern/mesh_sample.cc    |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="13"> source/blender/blenkernel/intern/spline_base.cc    |   <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="14"> source/blender/blenkernel/intern/spline_bezier.cc  |   <span class="syntax-number">13</span> +-</span>
+<span class="code-line" data-line="15"> source/blender/blenkernel/intern/spline_nurbs.cc   |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="16"> source/blender/blenkernel/intern/spline_poly.cc    |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="17"> source/blender/blenlib/<span class="syntax-type">BLI_any</span>.hh                  |  <span class="syntax-number">319</span> +++++</span>
+<span class="code-line" data-line="18"> source/blender/blenlib/<span class="syntax-type">BLI_virtual_array</span>.hh        | <span class="syntax-number">1078</span> ++++++++++++-----</span>
+<span class="code-line" data-line="19"> source/blender/blenlib/<span class="syntax-type">CMakeLists</span>.txt              |    <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="20"> source/blender/blenlib/tests/<span class="syntax-type">BLI_any_test</span>.cc       |  <span class="syntax-number">108</span> ++</span>
+<span class="code-line" data-line="21"> .../blenlib/tests/<span class="syntax-type">BLI_virtual_array_test</span>.cc        |   <span class="syntax-number">55</span> +-</span>
+<span class="code-line" data-line="22"> .../spreadsheet_data_source_geometry.cc            |   <span class="syntax-number">22</span> +-</span>
+<span class="code-line" data-line="23"> source/blender/functions/<span class="syntax-type">FN_field</span>.hh               |   <span class="syntax-number">66</span> +-</span>
+<span class="code-line" data-line="24"> .../blender/functions/<span class="syntax-type">FN_generic_vector_array</span>.hh   |    <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="25"> .../blender/functions/<span class="syntax-type">FN_generic_virtual_array</span>.hh  | <span class="syntax-number">1252</span> +++++++++-----------</span>
+<span class="code-line" data-line="26"> .../functions/<span class="syntax-type">FN_generic_virtual_vector_array</span>.hh   |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="27"> .../blender/functions/<span class="syntax-type">FN_multi_function_params</span>.hh  |   <span class="syntax-number">26</span> +-</span>
+<span class="code-line" data-line="28"> source/blender/functions/intern/field.cc           |  <span class="syntax-number">164</span> +--</span>
+<span class="code-line" data-line="29"> .../functions/intern/generic_vector_array.cc       |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="30"> .../functions/intern/generic_virtual_array.cc      |  <span class="syntax-number">642</span> +++++++---</span>
+<span class="code-line" data-line="31"> .../intern/generic_virtual_vector_array.cc         |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="32"> .../functions/intern/multi_function_parallel.cc    |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="33"> .../intern/multi_function_procedure_executor.cc    |    <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="34"> source/blender/functions/tests/<span class="syntax-type">FN_field_test</span>.cc    |   <span class="syntax-number">50</span> +-</span>
+<span class="code-line" data-line="35"> .../tests/<span class="syntax-type">FN_multi_function_procedure_test</span>.cc      |   <span class="syntax-number">37</span> +</span>
+<span class="code-line" data-line="36"> .../geometry/intern/mesh_to_curve_convert.cc       |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="37"> source/blender/nodes/<span class="syntax-type">NOD_geometry_exec</span>.hh          |   <span class="syntax-number">27</span> +-</span>
+<span class="code-line" data-line="38"> source/blender/nodes/<span class="syntax-type">NOD_type_conversions</span>.hh       |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="39"> .../legacy/node_geo_align_rotation_to_vector.cc    |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="40"> .../nodes/legacy/node_geo_attribute_clamp.cc       |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="41"> .../nodes/legacy/node_geo_attribute_color_ramp.cc  |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="42"> .../nodes/legacy/node_geo_attribute_combine_xyz.cc |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="43"> .../nodes/legacy/node_geo_attribute_compare.cc     |   <span class="syntax-number">26</span> +-</span>
+<span class="code-line" data-line="44"> .../nodes/legacy/node_geo_attribute_convert.cc     |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="45"> .../nodes/legacy/node_geo_attribute_curve_map.cc   |   <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="46"> .../nodes/legacy/node_geo_attribute_map_range.cc   |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="47"> .../nodes/legacy/node_geo_attribute_math.cc        |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="48"> .../nodes/legacy/node_geo_attribute_mix.cc         |   <span class="syntax-number">21</span> +-</span>
+<span class="code-line" data-line="49"> .../nodes/legacy/node_geo_attribute_proximity.cc   |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="50"> .../nodes/legacy/node_geo_attribute_randomize.cc   |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="51"> .../legacy/node_geo_attribute_sample_texture.cc    |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="52"> .../legacy/node_geo_attribute_separate_xyz.cc      |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="53"> .../nodes/legacy/node_geo_attribute_transfer.cc    |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="54"> .../nodes/legacy/node_geo_attribute_vector_math.cc |   <span class="syntax-number">58</span> +-</span>
+<span class="code-line" data-line="55"> .../legacy/node_geo_attribute_vector_rotate.cc     |   <span class="syntax-number">42</span> +-</span>
+<span class="code-line" data-line="56"> .../nodes/legacy/node_geo_curve_endpoints.cc       |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="57"> .../nodes/legacy/node_geo_curve_reverse.cc         |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="58"> .../nodes/legacy/node_geo_curve_set_handles.cc     |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="59"> .../nodes/legacy/node_geo_curve_spline_type.cc     |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="60"> .../nodes/legacy/node_geo_curve_subdivide.cc       |   <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="61"> .../nodes/legacy/node_geo_curve_to_points.cc       |   <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="62"> .../nodes/legacy/node_geo_delete_geometry.cc       |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="63"> .../nodes/legacy/node_geo_material_assign.cc       |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="64"> .../nodes/legacy/node_geo_mesh_to_curve.cc         |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="65"> .../nodes/legacy/node_geo_point_distribute.cc      |   <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="66"> .../nodes/legacy/node_geo_point_instance.cc        |    <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="67"> .../geometry/nodes/legacy/node_geo_point_rotate.cc |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="68"> .../geometry/nodes/legacy/node_geo_point_scale.cc  |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="69"> .../nodes/legacy/node_geo_point_separate.cc        |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="70"> .../nodes/legacy/node_geo_point_translate.cc       |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="71"> .../nodes/legacy/node_geo_points_to_volume.cc      |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="72"> .../geometry/nodes/legacy/node_geo_raycast.cc      |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="73"> .../nodes/geometry/nodes/node_geo_convex_hull.cc   |   <span class="syntax-number">20</span> +-</span>
+<span class="code-line" data-line="74"> .../nodes/node_geo_curve_endpoint_selection.cc     |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="75"> .../nodes/geometry/nodes/node_geo_curve_fillet.cc  |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="76"> .../nodes/node_geo_curve_handle_type_selection.cc  |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="77"> .../geometry/nodes/node_geo_curve_parameter.cc     |   <span class="syntax-number">48</span> +-</span>
+<span class="code-line" data-line="78"> .../geometry/nodes/node_geo_curve_resample.cc      |   <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="79"> .../geometry/nodes/node_geo_curve_subdivide.cc     |    <span class="syntax-number">4</span> -</span>
+<span class="code-line" data-line="80"> .../geometry/nodes/node_geo_curve_to_points.cc     |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="81"> .../nodes/geometry/nodes/node_geo_curve_trim.cc    |   <span class="syntax-number">24</span> +-</span>
+<span class="code-line" data-line="82"> .../geometry/nodes/node_geo_delete_geometry.cc     |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="83"> .../nodes/node_geo_distribute_points_on_faces.cc   |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="84"> .../nodes/geometry/nodes/node_geo_input_normal.cc  |   <span class="syntax-number">80</span> +-</span>
+<span class="code-line" data-line="85"> .../geometry/nodes/node_geo_input_spline_length.cc |   <span class="syntax-number">30</span> +-</span>
+<span class="code-line" data-line="86"> .../nodes/geometry/nodes/node_geo_input_tangent.cc |   <span class="syntax-number">25</span> +-</span>
+<span class="code-line" data-line="87"> .../geometry/nodes/node_geo_instance_on_points.cc  |   <span class="syntax-number">31</span> +-</span>
+<span class="code-line" data-line="88"> .../nodes/geometry/nodes/node_geo_join_geometry.cc |   <span class="syntax-number">17</span> +-</span>
+<span class="code-line" data-line="89"> .../geometry/nodes/node_geo_material_selection.cc  |   <span class="syntax-number">19</span> +-</span>
+<span class="code-line" data-line="90"> .../geometry/nodes/node_geo_mesh_to_points.cc      |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="91"> .../geometry/nodes/node_geo_points_to_vertices.cc  |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="92"> .../geometry/nodes/node_geo_points_to_volume.cc    |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="93"> .../geometry/nodes/node_geo_transfer_attribute.cc  |   <span class="syntax-number">19</span> +-</span>
+<span class="code-line" data-line="94"> source/blender/nodes/intern/node_geometry_exec.cc  |   <span class="syntax-number">26</span> +-</span>
+<span class="code-line" data-line="95"> source/blender/nodes/intern/type_conversions.cc    |   <span class="syntax-number">58</span> +-</span>
+<span class="code-line" data-line="96"> .../nodes/shader/nodes/node_shader_tex_musgrave.cc |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="97"> .../nodes/shader/nodes/node_shader_tex_voronoi.cc  |   <span class="syntax-number">30</span> +-</span>
+<span class="code-line" data-line="98"> <span class="syntax-number">97</span> files changed, <span class="syntax-number">3378</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">2272</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat d4c868da9f9</span>
+<span class="code-line" data-line="2">git show d4c868da9f9</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show d4c868da9f9 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>实现 Single 与 Span 两种表示的 VariantArray。</p>
+</li><li><strong>任务 02</strong><p>让加法同时接收两种输入，验证 single+single 和 single+span。</p>
+</li><li><strong>任务 03</strong><p>比较一次物化后重复读取，与每次调用计算函数的成本，明确测量次数和规模。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="04-01-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="04-01-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="04-01-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>VArray 是不是总在延迟计算？</summary><p>不是，它可以直接引用已经存好的连续数组，也可以表示单值或其他数据来源。</p>
+</details><details class="question"><summary>物化一定更快吗？</summary><p>不一定，分配和填充有成本，访问模式决定其是否值得。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="04-01" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/03-CPPType%E4%B8%8E%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4.html">← 上一篇：CPPType：运行时如何正确构造、复制和销毁值</a><a href="../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/02-IndexMask%E7%9A%84%E5%88%86%E6%AE%B5%E8%AE%BE%E8%AE%A1.html">下一篇：IndexMask：为稀疏、连续与并行同时设计 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

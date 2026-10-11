@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="以一次真实的数据结构重构学习约束、布局与 API 的共同演化。">
+<title>IndexMask：为稀疏、连续与并行同时设计 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="04-02"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">虚拟数组与索引选择</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>REPRESENTATION / THROUGHPUT / LESSON 04-02</div><h1>IndexMask：为稀疏、连续与并行同时设计</h1><p class="lede">以一次真实的数据结构重构学习约束、布局与 API 的共同演化。</p><div class="chips"><span class="chip">方向 04 · 虚拟数组与索引选择</span><span class="chip">专题 2/3</span><span class="chip">正文 1,782 字符</span><span class="chip">建议研读 20 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-VArray%E7%9A%84%E5%80%BC%E8%AF%AD%E4%B9%89.html">01 VArray：一百万个相同值不必分配一百万次</a><a href="02-IndexMask%E7%9A%84%E5%88%86%E6%AE%B5%E8%AE%BE%E8%AE%A1.html">02 IndexMask：为稀疏、连续与并行同时设计</a><a href="03-%E5%8E%BB%E8%99%9A%E6%8B%9F%E5%8C%96%E4%B8%8E%E4%BB%A3%E4%BB%B7%E6%A8%A1%E5%9E%8B.html">03 去虚拟化：把一次分派换成一个更好的循环</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>同一个逻辑数组可以是连续存储、重复单值或按需计算。通过 VArray、IndexMask 和去虚拟化，学习表达力与执行成本怎样共同设计。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>Span、模板、多态、连续内存和基本性能测量。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>逻辑数组</strong></div><div class="flow-step"><span>02</span><strong>具体表示</strong></div><div class="flow-step"><span>03</span><strong>选择范围</strong></div><div class="flow-step"><span>04</span><strong>表示分派</strong></div><div class="flow-step"><span>05</span><strong>批量内核</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>实现分块构造后有序合并，记录临时内存与合并成本。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>选择集合需要有序且唯一</h3>
+<p>索引集合若有序且没有重复，就能让批量函数按稳定顺序处理选择，避免同一元素被重复写入，并利用连续段。这些约束给优化创造空间，也要求构造入口建立合法性。任意整数数组不能未经检查就当作满足全部约束的选择。</p>
+<p>最初用一个整数数组表示选择很直观，但存储较重，而且未知最终长度时，多线程往同一数组填充不方便。2023 年重构同时考虑了内存、并行构造、集合操作和循环优化。</p>
+<h3>局部小索引与全局偏移</h3>
+<p>提交描述的核心是把选择分为段，段内使用较小整数，再加较大的基准偏移恢复全局索引。段可以相对独立构建，连续范围还能避免逐元素保存全部索引。理解这种结构时，把逻辑索引、段内索引、段编号三个概念分开。</p>
+<p>更紧凑的表示需要额外定位步骤。重构也承认切片、随机访问与遍历接口发生取舍，foreach 风格有利于处理分段结构及并行选项。不能只取内存收益而忽略调用接口与访问代价。</p>
+<h3>让测试覆盖分布而不只有长度</h3>
+<p>同样选中十万个元素，连续一段、随机稀疏、多个短段和相隔很远的索引，可能有完全不同的表示成本。测量 from_bools 时还要控制选择概率。选择率接近零或一，往往可以走与随机一半不同的路径。</p>
+<p>先实现简单有序索引表，再做连续区间压缩，最后才尝试分段；每一步都用相同集合操作作为正确性基准。学习目标是重现取舍过程，不是第一天复制全部实现。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>段的辅助内存必须比借用它的 IndexMask 活得更久；压缩表示也有所有权问题。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>IndexMask：局部索引恢复全局索引</h3><p>这个完整运算符揭示分段表示的核心。RawMaskIterator 同时携带段编号与段内位置；它不是最终几何元素索引。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_index_mask.hh · L821–L824。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_index_mask.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="821"><span class="syntax-keyword">inline</span> <span class="syntax-keyword">int64_t</span> <span class="syntax-type">IndexMask</span>::<span class="syntax-keyword">operator</span>[](<span class="syntax-keyword">const</span> <span class="syntax-type">RawMaskIterator</span> &amp;it) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="822">{</span>
+<span class="code-line" data-line="823">  <span class="syntax-keyword">return</span> segment_offsets_[it.segment_i] + indices_by_segment_[it.segment_i][it.index_in_segment];</span>
+<span class="code-line" data-line="824">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L821</span><div><code><span class="syntax-keyword">inline</span> <span class="syntax-keyword">int64_t</span> <span class="syntax-type">IndexMask</span>::<span class="syntax-keyword">operator</span>[](<span class="syntax-keyword">const</span> <span class="syntax-type">RawMaskIterator</span> &amp;it) <span class="syntax-keyword">const</span></code><p>接受原始掩码迭代位置并返回 int64_t 全局元素索引。调用者必须保证迭代器属于当前有效 mask。</p>
+</div></div><div class="line-explanation"><span class="line-number">L822</span><div><code>{</code><p>打开 inline int64_t IndexMask::operator[](const RawMaskIterator &amp;it) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L823</span><div><code><span class="syntax-keyword">return</span> segment_offsets_[it.segment_i] + indices_by_segment_[it.segment_i][it.index_in_segment];</code><p>先用 segment_i 找到段偏移，再用 index_in_segment 取得局部索引，两者相加恢复实际元素编号。局部索引的窄存储与全局索引的宽范围因此可以同时存在。</p>
+</div></div><div class="line-explanation"><span class="line-number">L824</span><div><code>}</code><p>结束 inline int64_t IndexMask::operator[](const RawMaskIterator &amp;it) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>某段 offset 为 100000，段内条目为 [0,3,9]。迭代器 (该段,1) 返回 100003，不是 1，也不是 3。数组的第几个被选元素与这个元素的原始下标是不同坐标系。</p>
+<h4>调用关系与设计判断</h4><p>继续读 index_to_iterator 与 segment：前者把选择序号转换为迭代位置，后者提供按段遍历。高性能循环通常避免每个元素都重复做序号定位；同时要保持 IndexMaskMemory 及底层段数据存活。</p>
+</article><article class="deep-reading"><h3>单段掩码适配器：更新借用的段数据</h3><p>完整函数检查窄局部索引的约束，并更新内部掩码元数据。它保存 segment 的数据地址，所以返回的 IndexMask 并没有拥有一份独立索引拷贝。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_index_mask.hh · L573–L590。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_index_mask.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="573"><span class="syntax-keyword">inline</span> <span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> &amp;<span class="syntax-type">IndexMaskFromSegment</span>::<span class="syntax-function">update</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">IndexMaskSegment</span> segment)</span>
+<span class="code-line" data-line="574">{</span>
+<span class="code-line" data-line="575">  <span class="syntax-keyword">const</span> <span class="syntax-type">Span</span>&lt;int16_t&gt; indices = segment.<span class="syntax-function">base_span</span>();</span>
+<span class="code-line" data-line="576">  <span class="syntax-type">BLI_assert</span>(!indices.<span class="syntax-function">is_empty</span>());</span>
+<span class="code-line" data-line="577">  <span class="syntax-type">BLI_assert</span>(std::<span class="syntax-function">is_sorted</span>(indices.<span class="syntax-function">begin</span>(), indices.<span class="syntax-function">end</span>()));</span>
+<span class="code-line" data-line="578">  <span class="syntax-type">BLI_assert</span>(indices[<span class="syntax-number">0</span>] &gt;= <span class="syntax-number">0</span>);</span>
+<span class="code-line" data-line="579">  <span class="syntax-type">BLI_assert</span>(indices.<span class="syntax-function">last</span>() &lt; max_segment_size);</span>
+<span class="code-line" data-line="580">  <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> indices_num = indices.<span class="syntax-function">size</span>();</span>
+<span class="code-line" data-line="581"></span>
+<span class="code-line" data-line="582">  <span class="syntax-type">IndexMaskData</span> &amp;data = mask_.<span class="syntax-function">data_for_inplace_construction</span>();</span>
+<span class="code-line" data-line="583">  segment_offset_ = segment.<span class="syntax-function">offset</span>();</span>
+<span class="code-line" data-line="584">  segment_indices_ = indices.<span class="syntax-function">data</span>();</span>
+<span class="code-line" data-line="585">  cumulative_segment_sizes_[<span class="syntax-number">1</span>] = <span class="syntax-function">int16_t</span>(indices_num);</span>
+<span class="code-line" data-line="586">  data.indices_num_ = indices_num;</span>
+<span class="code-line" data-line="587">  data.end_index_in_segment_ = indices_num;</span>
+<span class="code-line" data-line="588"></span>
+<span class="code-line" data-line="589">  <span class="syntax-keyword">return</span> mask_;</span>
+<span class="code-line" data-line="590">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L573</span><div><code><span class="syntax-keyword">inline</span> <span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> &amp;<span class="syntax-type">IndexMaskFromSegment</span>::<span class="syntax-function">update</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">IndexMaskSegment</span> segment)</code><p>接收一个段视图，返回适配器内部 mask 的引用；适配器对象本身不能提前销毁。</p>
+</div></div><div class="line-explanation"><span class="line-number">L574</span><div><code>{</code><p>打开 inline const IndexMask &amp;IndexMaskFromSegment::update(const IndexMaskSegment segment) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L575</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">Span</span>&lt;int16_t&gt; indices = segment.<span class="syntax-function">base_span</span>();</code><p>取段内 int16_t 索引视图。</p>
+</div></div><div class="line-explanation"><span class="line-number">L576</span><div><code><span class="syntax-type">BLI_assert</span>(!indices.<span class="syntax-function">is_empty</span>());</code><p>要求至少有一个局部索引，下面读取首尾依赖此条件。</p>
+</div></div><div class="line-explanation"><span class="line-number">L577</span><div><code><span class="syntax-type">BLI_assert</span>(std::<span class="syntax-function">is_sorted</span>(indices.<span class="syntax-function">begin</span>(), indices.<span class="syntax-function">end</span>()));</code><p>要求有序，后续范围与遍历算法依赖单调性。</p>
+</div></div><div class="line-explanation"><span class="line-number">L578</span><div><code><span class="syntax-type">BLI_assert</span>(indices[<span class="syntax-number">0</span>] &gt;= <span class="syntax-number">0</span>);</code><p>要求首索引非负；有序性使后续元素也非负。</p>
+</div></div><div class="line-explanation"><span class="line-number">L579</span><div><code><span class="syntax-type">BLI_assert</span>(indices.<span class="syntax-function">last</span>() &lt; max_segment_size);</code><p>最大局部索引必须低于 max_segment_size，维持窄表示范围。</p>
+</div></div><div class="line-explanation"><span class="line-number">L580</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> indices_num = indices.<span class="syntax-function">size</span>();</code><p>取得实际段长度。</p>
+</div></div><div class="line-explanation"><span class="line-number">L582</span><div><code><span class="syntax-type">IndexMaskData</span> &amp;data = mask_.<span class="syntax-function">data_for_inplace_construction</span>();</code><p>取得内部 IndexMaskData 以更新结构；普通调用者不应绕过契约随意修改这些成员。</p>
+</div></div><div class="line-explanation"><span class="line-number">L583</span><div><code>segment_offset_ = segment.<span class="syntax-function">offset</span>();</code><p>记录全局偏移，局部索引之后要加上它。</p>
+</div></div><div class="line-explanation"><span class="line-number">L584</span><div><code>segment_indices_ = indices.<span class="syntax-function">data</span>();</code><p>保存索引数据的借用地址，不复制。</p>
+</div></div><div class="line-explanation"><span class="line-number">L585</span><div><code>cumulative_segment_sizes_[<span class="syntax-number">1</span>] = <span class="syntax-function">int16_t</span>(indices_num);</code><p>记录这一段的累计末尾。这里转成 int16_t 的正确性依赖段大小限制，不能任意放宽范围。</p>
+</div></div><div class="line-explanation"><span class="line-number">L586</span><div><code>data.indices_num_ = indices_num;</code><p>发布总选择数量。</p>
+</div></div><div class="line-explanation"><span class="line-number">L587</span><div><code>data.end_index_in_segment_ = indices_num;</code><p>记录最后一段的结束位置；此适配器只有一段。</p>
+</div></div><div class="line-explanation"><span class="line-number">L589</span><div><code><span class="syntax-keyword">return</span> mask_;</code><p>返回内部 mask。输入段的底层数据、适配器与返回引用的寿命必须配合。</p>
+</div></div><div class="line-explanation"><span class="line-number">L590</span><div><code>}</code><p>结束 inline const IndexMask &amp;IndexMaskFromSegment::update(const IndexMaskSegment segment) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>segment 的 offset=100000、base=[2,4,8]，更新后总数 3，恢复索引为 [100002,100004,100008]。再次 update 后先前拿到的 mask 引用仍指向同一个内部对象，但内容已经改变，不是快照。</p>
+<h4>调用关系与设计判断</h4><p>这是可复用临时适配器的设计。把“地址稳定”与“内容不变”分开：一个引用可持续指向同一对象，却观察到后续 update 的新状态。写并行调用者时，不能让多个任务未经协调共享修改同一个适配器。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_index_mask.hh">BLI_index_mask.hh</a></div><p>区分段内表示与恢复出的全局索引。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 130 行 · SHA-256 d86b6207c23b</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_index_mask.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_index_mask.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">127</span>,<span class="syntax-number">158</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_index_mask.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_index_mask.hh">BLI_index_mask.hh</a></div><p>检查遍历、切片与内存依赖。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 218 行 · SHA-256 d86b6207c23b</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_index_mask.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_index_mask.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">215</span>,<span class="syntax-number">246</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_index_mask.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/2cfcb8b0b805401a0ffb252fd41750fadb0392ab" target="_blank" rel="noopener">2cfcb8b0b80</a> <span>Jacques Lucke · 2023-05-24</span></div><h3>BLI: refactor IndexMask for better performance and memory usage</h3><p>精读 Goals 与 compromises，再把每条目标对应到数据成员或接口变化。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Goals of this refactor:
+* Reduce memory consumption of `IndexMask`. The old `IndexMask` uses an
+  `int64_t` for each index which is more than necessary in pretty much all
+  practical cases currently. Using `int32_t` might still become limiting
+  in the future in case we use this to index e.g. byte buffers larger than
+  a few gigabytes. We also don&#x27;t want to template `IndexMask`, because
+  that would cause a split in the &quot;ecosystem&quot;, or everything would have to
+  be implemented twice or templated.
+* Allow for more multi-threading. The old `IndexMask` contains a single
+  array. This is generally good but has the problem that it is hard to fill
+  from multiple-threads when the final size is not known from the beginning.
+  This is commonly the case when e.g. converting an array of bool to an
+  index mask. Currently, this kind of code only runs on a single thread.
+* Allow for efficient set operations like join, intersect and difference.
+  It should be possible to multi-thread those operations.
+* It should be possible to iterate over an `IndexMask` very efficiently.
+  The most important part of that is to avoid all memory access when iterating
+  over continuous ranges. For some core nodes (e.g. math nodes), we generate
+  optimized code for the cases of irregular index masks and simple index ranges.
+
+To achieve these goals, a few compromises had to made:
+* Slicing of the mask (at specific indices) and random element access is
+  `O(log #indices)` now, but with a low constant factor. It should be possible
+  to split a mask into n approximately equally sized parts in `O(n)` though,
+  making the time per split `O(1)`.
+* Using range-based for loops does not work well when iterating over a nested
+  data structure like the new `IndexMask`. Therefor, `foreach_*` functions with
+  callbacks have to be used. To avoid extra code complexity at the call site,
+  the `foreach_*` methods support multi-threading out of the box.
+
+The new data structure splits an `IndexMask` into an arbitrary number of ordered
+`IndexMaskSegment`. Each segment can contain at most `2^14 = 16384` indices. The
+indices within a segment are stored as `int16_t`. Each segment has an additional
+`int64_t` offset which allows storing arbitrary `int64_t` indices. This approach
+has the main benefits that segments can be processed/constructed individually on
+multiple threads without a serial bottleneck. Also it reduces the memory
+requirements significantly.
+
+For more details see comments in `BLI_index_mask.hh`.
+
+I did a few tests to verify that the data structure generally improves
+performance and does not cause regressions:
+* Our field evaluation benchmarks take about as much as before. This is to be
+  expected because we already made sure that e.g. add node evaluation is
+  vectorized. The important thing here is to check that changes to the way we
+  iterate over the indices still allows for auto-vectorization.
+* Memory usage by a mask is about 1/4 of what it was before in the average case.
+  That&#x27;s mainly caused by the switch from `int64_t` to `int16_t` for indices.
+  In the worst case, the memory requirements can be larger when there are many
+  indices that are very far away. However, when they are far away from each other,
+  that indicates that there aren&#x27;t many indices in total. In common cases, memory
+  usage can be way lower than 1/4 of before, because sub-ranges use static memory.
+* For some more specific numbers I benchmarked `IndexMask::from_bools` in
+  `index_mask_from_selection` on 10.000.000 elements at various probabilities for
+  `true` at every index:
+  ```
+  Probability      Old        New
+  0              4.6 ms     0.8 ms
+  0.001          5.1 ms     1.3 ms
+  0.2            8.4 ms     1.8 ms
+  0.5           15.3 ms     3.0 ms
+  0.8           20.1 ms     3.0 ms
+  0.999         25.1 ms     1.7 ms
+  1             13.5 ms     1.1 ms
+  ```
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/104629</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenkernel/<span class="syntax-type">BKE_attribute_math</span>.hh    |   <span class="syntax-number">20</span> +-</span>
+<span class="code-line" data-line="2"> source/blender/blenkernel/<span class="syntax-type">BKE_curves</span>.hh            |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/<span class="syntax-type">BKE_curves_utils</span>.hh      |   <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="4"> source/blender/blenkernel/<span class="syntax-type">BKE_geometry_fields</span>.hh   |   <span class="syntax-number">34</span> +-</span>
+<span class="code-line" data-line="5"> source/blender/blenkernel/<span class="syntax-type">BKE_instances</span>.hh         |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/<span class="syntax-type">BKE_mesh_sample</span>.hh       |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="7"> source/blender/blenkernel/intern/attribute_math.cc |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="8"> .../blenkernel/intern/curve_legacy_convert.cc      |   <span class="syntax-number">96</span> +-</span>
+<span class="code-line" data-line="9"> .../blender/blenkernel/intern/curves_geometry.cc   |  <span class="syntax-number">183</span> ++--</span>
+<span class="code-line" data-line="10"> source/blender/blenkernel/intern/curves_utils.cc   |   <span class="syntax-number">50</span> +-</span>
+<span class="code-line" data-line="11"> .../blenkernel/intern/geometry_component_curves.cc |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="12"> .../blenkernel/intern/geometry_component_mesh.cc   |   <span class="syntax-number">24</span> +-</span>
+<span class="code-line" data-line="13"> .../blender/blenkernel/intern/geometry_fields.cc   |   <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="14"> source/blender/blenkernel/intern/instances.cc      |   <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="15"> source/blender/blenkernel/intern/mesh_sample.cc    |   <span class="syntax-number">58</span> +-</span>
+<span class="code-line" data-line="16"> .../blender/blenkernel/intern/type_conversions.cc  |   <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="17"> source/blender/blenlib/<span class="syntax-type">BLI_array_utils</span>.hh          |   <span class="syntax-number">36</span> +-</span>
+<span class="code-line" data-line="18"> source/blender/blenlib/<span class="syntax-type">BLI_binary_search</span>.hh        |   <span class="syntax-number">36</span> +</span>
+<span class="code-line" data-line="19"> source/blender/blenlib/<span class="syntax-type">BLI_cpp_type</span>.hh             |   <span class="syntax-number">54</span> +-</span>
+<span class="code-line" data-line="20"> source/blender/blenlib/<span class="syntax-type">BLI_cpp_type_make</span>.hh        |   <span class="syntax-number">74</span> +-</span>
+<span class="code-line" data-line="21"> .../blender/blenlib/<span class="syntax-type">BLI_devirtualize_parameters</span>.hh |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="22"> source/blender/blenlib/<span class="syntax-type">BLI_generic_vector_array</span>.hh |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="23"> .../blender/blenlib/<span class="syntax-type">BLI_generic_virtual_array</span>.hh   |   <span class="syntax-number">64</span> +-</span>
+<span class="code-line" data-line="24"> source/blender/blenlib/<span class="syntax-type">BLI_index_mask</span>.hh           | <span class="syntax-number">1059</span> +++++++++++++++-----</span>
+<span class="code-line" data-line="25"> source/blender/blenlib/<span class="syntax-type">BLI_index_mask_ops</span>.hh       |   <span class="syntax-number">79</span> --</span>
+<span class="code-line" data-line="26"> source/blender/blenlib/<span class="syntax-type">BLI_length_parameterize</span>.hh  |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="27"> source/blender/blenlib/<span class="syntax-type">BLI_offset_span</span>.hh          |  <span class="syntax-number">108</span> ++</span>
+<span class="code-line" data-line="28"> source/blender/blenlib/<span class="syntax-type">BLI_task</span>.hh                 |   <span class="syntax-number">13</span> +</span>
+<span class="code-line" data-line="29"> .../blender/blenlib/<span class="syntax-type">BLI_unique_sorted_indices</span>.hh   |  <span class="syntax-number">151</span> +++</span>
+<span class="code-line" data-line="30"> source/blender/blenlib/<span class="syntax-type">BLI_virtual_array</span>.hh        |  <span class="syntax-number">111</span> +-</span>
+<span class="code-line" data-line="31"> source/blender/blenlib/<span class="syntax-type">CMakeLists</span>.txt              |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="32"> source/blender/blenlib/intern/array_utils.cc       |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="33"> .../blender/blenlib/intern/generic_vector_array.cc |   <span class="syntax-number">14</span> +-</span>
+<span class="code-line" data-line="34"> .../blenlib/intern/generic_virtual_array.cc        |   <span class="syntax-number">77</span> +-</span>
+<span class="code-line" data-line="35"> source/blender/blenlib/intern/index_mask.cc        |  <span class="syntax-number">698</span> +++++++++----</span>
+<span class="code-line" data-line="36"> .../blenlib/tests/<span class="syntax-type">BLI_binary_search_test</span>.cc        |   <span class="syntax-number">59</span> ++</span>
+<span class="code-line" data-line="37"> source/blender/blenlib/tests/<span class="syntax-type">BLI_cpp_type_test</span>.cc  |   <span class="syntax-number">40</span> +-</span>
+<span class="code-line" data-line="38"> .../blender/blenlib/tests/<span class="syntax-type">BLI_index_mask_test</span>.cc   |  <span class="syntax-number">354</span> +++----</span>
+<span class="code-line" data-line="39"> .../tests/<span class="syntax-type">BLI_unique_sorted_indices_test</span>.cc        |   <span class="syntax-number">64</span> ++</span>
+<span class="code-line" data-line="40"> .../blenlib/tests/<span class="syntax-type">BLI_virtual_array_test</span>.cc        |   <span class="syntax-number">19</span> +-</span>
+<span class="code-line" data-line="41"> .../blender/editors/curves/intern/curves_data.cc   |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="42"> .../blender/editors/curves/intern/curves_edit.cc   |    <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="43"> source/blender/editors/curves/intern/curves_ops.cc |    <span class="syntax-number">1</span> -</span>
+<span class="code-line" data-line="44"> .../editors/curves/intern/curves_selection.cc      |   <span class="syntax-number">26</span> +-</span>
+<span class="code-line" data-line="45"> source/blender/editors/include/<span class="syntax-type">ED_curves</span>.h         |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="46"> source/blender/editors/mesh/mesh_data.cc           |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="47"> .../editors/sculpt_paint/curves_sculpt_brush.cc    |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="48"> .../editors/sculpt_paint/curves_sculpt_comb.cc     |   <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="49"> .../editors/sculpt_paint/curves_sculpt_delete.cc   |   <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="50"> .../editors/sculpt_paint/curves_sculpt_density.cc  |  <span class="syntax-number">129</span> +--</span>
+<span class="code-line" data-line="51"> .../sculpt_paint/curves_sculpt_grow_shrink.cc      |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="52"> .../editors/sculpt_paint/curves_sculpt_intern.hh   |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="53"> .../editors/sculpt_paint/curves_sculpt_ops.cc      |   <span class="syntax-number">58</span> +-</span>
+<span class="code-line" data-line="54"> .../editors/sculpt_paint/curves_sculpt_pinch.cc    |   <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="55"> .../editors/sculpt_paint/curves_sculpt_puff.cc     |   <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="56"> .../sculpt_paint/curves_sculpt_selection.cc        |    <span class="syntax-number">2</span> -</span>
+<span class="code-line" data-line="57"> .../editors/sculpt_paint/curves_sculpt_slide.cc    |   <span class="syntax-number">62</span> +-</span>
+<span class="code-line" data-line="58"> .../editors/sculpt_paint/curves_sculpt_smooth.cc   |   <span class="syntax-number">87</span> +-</span>
+<span class="code-line" data-line="59"> .../sculpt_paint/curves_sculpt_snake_hook.cc       |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="60"> .../editors/sculpt_paint/paint_vertex_color_ops.cc |   <span class="syntax-number">22</span> +-</span>
+<span class="code-line" data-line="61"> .../spreadsheet_data_source_geometry.cc            |   <span class="syntax-number">13</span> +-</span>
+<span class="code-line" data-line="62"> .../spreadsheet_data_source_geometry.hh            |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="63"> .../space_spreadsheet/spreadsheet_row_filter.cc    |  <span class="syntax-number">142</span> ++-</span>
+<span class="code-line" data-line="64"> .../editors/transform/transform_convert_curves.cc  |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="65"> .../editors/transform/transform_gizmo_3d.cc        |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="66"> source/blender/functions/<span class="syntax-type">FN_field</span>.hh               |   <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="67"> source/blender/functions/<span class="syntax-type">FN_multi_function</span>.hh      |    <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="68"> .../blender/functions/<span class="syntax-type">FN_multi_function_builder</span>.hh |   <span class="syntax-number">88</span> +-</span>
+<span class="code-line" data-line="69"> .../blender/functions/<span class="syntax-type">FN_multi_function_params</span>.hh  |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="70"> .../<span class="syntax-type">FN_multi_function_procedure_executor</span>.hh        |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="71"> source/blender/functions/intern/field.cc           |   <span class="syntax-number">29</span> +-</span>
+<span class="code-line" data-line="72"> source/blender/functions/intern/multi_function.cc  |   <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="73"> .../functions/intern/multi_function_builder.cc     |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="74"> .../intern/multi_function_procedure_executor.cc    |   <span class="syntax-number">71</span> +-</span>
+<span class="code-line" data-line="75"> source/blender/functions/tests/<span class="syntax-type">FN_field_test</span>.cc    |   <span class="syntax-number">22</span> +-</span>
+<span class="code-line" data-line="76"> .../tests/<span class="syntax-type">FN_multi_function_procedure_test</span>.cc      |   <span class="syntax-number">45</span> +-</span>
+<span class="code-line" data-line="77"> .../functions/tests/<span class="syntax-type">FN_multi_function_test</span>.cc      |   <span class="syntax-number">57</span> +-</span>
+<span class="code-line" data-line="78"> .../tests/<span class="syntax-type">FN_multi_function_test_common</span>.hh         |   <span class="syntax-number">41</span> +-</span>
+<span class="code-line" data-line="79"> source/blender/geometry/<span class="syntax-type">GEO_curve_constraints</span>.hh   |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="80"> source/blender/geometry/<span class="syntax-type">GEO_fillet_curves</span>.hh       |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="81"> .../blender/geometry/<span class="syntax-type">GEO_mesh_merge_by_distance</span>.hh |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="82"> source/blender/geometry/<span class="syntax-type">GEO_mesh_split_edges</span>.hh    |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="83"> source/blender/geometry/<span class="syntax-type">GEO_mesh_to_curve</span>.hh       |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="84"> .../geometry/<span class="syntax-type">GEO_point_merge_by_distance</span>.hh        |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="85"> source/blender/geometry/<span class="syntax-type">GEO_set_curve_type</span>.hh      |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="86"> source/blender/geometry/<span class="syntax-type">GEO_subdivide_curves</span>.hh    |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="87"> source/blender/geometry/<span class="syntax-type">GEO_trim_curves</span>.hh         |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="88"> .../blender/geometry/intern/curve_constraints.cc   |   <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="89"> source/blender/geometry/intern/fillet_curves.cc    |   <span class="syntax-number">90</span> +-</span>
+<span class="code-line" data-line="90"> source/blender/geometry/intern/mesh_flip_faces.cc  |   <span class="syntax-number">22</span> +-</span>
+<span class="code-line" data-line="91"> .../geometry/intern/mesh_merge_by_distance.cc      |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="92"> source/blender/geometry/intern/mesh_split_edges.cc |   <span class="syntax-number">32</span> +-</span>
+<span class="code-line" data-line="93"> .../geometry/intern/mesh_to_curve_convert.cc       |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="94"> .../geometry/intern/point_merge_by_distance.cc     |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="95"> source/blender/geometry/intern/resample_curves.cc  |   <span class="syntax-number">40</span> +-</span>
+<span class="code-line" data-line="96"> source/blender/geometry/intern/set_curve_type.cc   |  <span class="syntax-number">211</span> ++--</span>
+<span class="code-line" data-line="97"> source/blender/geometry/intern/subdivide_curves.cc |  <span class="syntax-number">154</span> ++-</span>
+<span class="code-line" data-line="98"> source/blender/geometry/intern/trim_curves.cc      |  <span class="syntax-number">361</span> ++++---</span>
+<span class="code-line" data-line="99"> source/blender/modifiers/intern/<span class="syntax-type">MOD_weld</span>.cc        |   <span class="syntax-number">25</span> +-</span>
+<span class="code-line" data-line="100"> .../nodes/node_fn_align_euler_to_vector.cc         |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="101"> .../nodes/node_fn_input_special_characters.cc      |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="102"> .../nodes/function/nodes/node_fn_separate_color.cc |   <span class="syntax-number">26</span> +-</span>
+<span class="code-line" data-line="103"> .../blender/nodes/geometry/node_geometry_util.hh   |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="104"> .../geometry/nodes/node_geo_accumulate_field.cc    |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="105"> .../geometry/nodes/node_geo_blur_attribute.cc      |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="106"> .../nodes/node_geo_curve_endpoint_selection.cc     |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="107"> .../nodes/node_geo_curve_handle_type_selection.cc  |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="108"> .../nodes/geometry/nodes/node_geo_curve_sample.cc  |  <span class="syntax-number">122</span> ++-</span>
+<span class="code-line" data-line="109"> .../nodes/node_geo_curve_set_handle_type.cc        |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="110"> .../nodes/node_geo_curve_spline_parameter.cc       |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="111"> .../node_geo_curve_topology_curve_of_point.cc      |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="112"> .../node_geo_curve_topology_points_of_curve.cc     |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="113"> .../geometry/nodes/node_geo_delete_geometry.cc     |   <span class="syntax-number">45</span> +-</span>
+<span class="code-line" data-line="114"> .../geometry/nodes/node_geo_duplicate_elements.cc  |   <span class="syntax-number">22</span> +-</span>
+<span class="code-line" data-line="115"> .../nodes/node_geo_edge_paths_to_curves.cc         |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="116"> .../nodes/node_geo_edge_paths_to_selection.cc      |   <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="117"> .../nodes/node_geo_edges_to_face_groups.cc         |    <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="118"> .../geometry/nodes/node_geo_evaluate_at_index.cc   |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="119"> .../geometry/nodes/node_geo_evaluate_on_domain.cc  |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="120"> .../nodes/geometry/nodes/node_geo_extrude_mesh.cc  |   <span class="syntax-number">40</span> +-</span>
+<span class="code-line" data-line="121"> .../nodes/geometry/nodes/node_geo_image_texture.cc |   <span class="syntax-number">26</span> +-</span>
+<span class="code-line" data-line="122"> .../geometry/nodes/node_geo_index_of_nearest.cc    |   <span class="syntax-number">77</span> +-</span>
+<span class="code-line" data-line="123"> .../geometry/nodes/node_geo_input_curve_handles.cc |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="124"> .../nodes/node_geo_input_instance_rotation.cc      |    <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="125"> .../nodes/node_geo_input_instance_scale.cc         |    <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="126"> .../nodes/node_geo_input_mesh_edge_angle.cc        |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="127"> .../nodes/node_geo_input_mesh_edge_neighbors.cc    |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="128"> .../nodes/node_geo_input_mesh_edge_vertices.cc     |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="129"> .../nodes/node_geo_input_mesh_face_area.cc         |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="130"> .../nodes/node_geo_input_mesh_face_is_planar.cc    |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="131"> .../nodes/node_geo_input_mesh_face_neighbors.cc    |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="132"> .../geometry/nodes/node_geo_input_mesh_island.cc   |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="133"> .../nodes/node_geo_input_mesh_vertex_neighbors.cc  |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="134"> .../nodes/node_geo_input_named_attribute.cc        |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="135"> .../nodes/node_geo_input_shortest_edge_paths.cc    |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="136"> .../geometry/nodes/node_geo_input_spline_length.cc |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="137"> .../nodes/node_geo_input_spline_resolution.cc      |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="138"> .../nodes/geometry/nodes/node_geo_input_tangent.cc |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="139"> .../geometry/nodes/node_geo_material_selection.cc  |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="140"> .../nodes/node_geo_mesh_face_group_boundaries.cc   |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="141"> .../node_geo_mesh_topology_corners_of_face.cc      |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="142"> .../node_geo_mesh_topology_corners_of_vertex.cc    |   <span class="syntax-number">25</span> +-</span>
+<span class="code-line" data-line="143"> .../node_geo_mesh_topology_edges_of_corner.cc      |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="144"> .../node_geo_mesh_topology_edges_of_vertex.cc      |   <span class="syntax-number">25</span> +-</span>
+<span class="code-line" data-line="145"> .../nodes/node_geo_mesh_topology_face_of_corner.cc |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="146"> ...node_geo_mesh_topology_offset_corner_in_face.cc |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="147"> .../node_geo_mesh_topology_vertex_of_corner.cc     |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="148"> .../nodes/node_geo_offset_point_in_curve.cc        |   <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="149"> .../nodes/geometry/nodes/node_geo_points.cc        |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="150"> .../nodes/geometry/nodes/node_geo_proximity.cc     |   <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="151"> .../nodes/geometry/nodes/node_geo_raycast.cc       |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="152"> .../nodes/geometry/nodes/node_geo_sample_index.cc  |   <span class="syntax-number">32</span> +-</span>
+<span class="code-line" data-line="153"> .../geometry/nodes/node_geo_sample_nearest.cc      |   <span class="syntax-number">34</span> +-</span>
+<span class="code-line" data-line="154"> .../nodes/node_geo_sample_nearest_surface.cc       |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="155"> .../geometry/nodes/node_geo_sample_uv_surface.cc   |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="156"> .../nodes/geometry/nodes/node_geo_sample_volume.cc |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="157"> .../geometry/nodes/node_geo_scale_elements.cc      |   <span class="syntax-number">22</span> +-</span>
+<span class="code-line" data-line="158"> .../geometry/nodes/node_geo_set_curve_handles.cc   |    <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="159"> .../geometry/nodes/node_geo_set_curve_normal.cc    |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="160"> .../nodes/geometry/nodes/node_geo_set_material.cc  |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="161"> .../nodes/geometry/nodes/node_geo_set_position.cc  |   <span class="syntax-number">38</span> +-</span>
+<span class="code-line" data-line="162"> .../nodes/geometry/nodes/node_geo_triangulate.cc   |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="163"> .../geometry/nodes/node_geo_uv_pack_islands.cc     |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="164"> .../nodes/geometry/nodes/node_geo_uv_unwrap.cc     |   <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="165"> .../nodes/geometry/nodes/node_geo_volume_cube.cc   |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="166"> .../nodes/intern/geometry_nodes_lazy_function.cc   |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="167"> .../nodes/shader/nodes/node_shader_color_ramp.cc   |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="168"> .../nodes/shader/nodes/node_shader_curves.cc       |   <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="169"> .../blender/nodes/shader/nodes/node_shader_math.cc |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="170"> .../blender/nodes/shader/nodes/node_shader_mix.cc  |   <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="171"> .../nodes/shader/nodes/node_shader_mix_rgb.cc      |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="172"> .../nodes/shader/nodes/node_shader_sepcomb_rgb.cc  |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="173"> .../nodes/shader/nodes/node_shader_sepcomb_xyz.cc  |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="174"> .../nodes/shader/nodes/node_shader_tex_brick.cc    |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="175"> .../nodes/shader/nodes/node_shader_tex_checker.cc  |   <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="176"> .../nodes/shader/nodes/node_shader_tex_gradient.cc |   <span class="syntax-number">35</span> +-</span>
+<span class="code-line" data-line="177"> .../nodes/shader/nodes/node_shader_tex_magic.cc    |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="178"> .../nodes/shader/nodes/node_shader_tex_musgrave.cc |   <span class="syntax-number">82</span> +-</span>
+<span class="code-line" data-line="179"> .../nodes/shader/nodes/node_shader_tex_noise.cc    |   <span class="syntax-number">34</span> +-</span>
+<span class="code-line" data-line="180"> .../nodes/shader/nodes/node_shader_tex_voronoi.cc  |  <span class="syntax-number">122</span> +--</span>
+<span class="code-line" data-line="181"> .../nodes/shader/nodes/node_shader_tex_wave.cc     |   <span class="syntax-number">11</span> +-</span>
+<span class="code-line" data-line="182"> .../shader/nodes/node_shader_tex_white_noise.cc    |   <span class="syntax-number">36</span> +-</span>
+<span class="code-line" data-line="183"> <span class="syntax-number">182</span> files changed, <span class="syntax-number">4061</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">2954</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 2cfcb8b0b80</span>
+<span class="code-line" data-line="2">git show 2cfcb8b0b80</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 2cfcb8b0b80 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>为有序唯一索引实现交、并、差，使用普通集合验证结果。</p>
+</li><li><strong>任务 02</strong><p>比较连续、随机稀疏、短段和远距离分布的存储字节数。</p>
+</li><li><strong>任务 03</strong><p>实现分块构造后有序合并，记录临时内存与合并成本。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="04-02-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="04-02-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="04-02-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>更紧凑就一定更快吗？</summary><p>不一定，定位与解码有成本，必须结合主要访问模式。</p>
+</details><details class="question"><summary>为什么不能只测全选？</summary><p>全选通常有连续范围快速路径，不能代表稀疏选择的实际成本。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="04-02" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/01-VArray%E7%9A%84%E5%80%BC%E8%AF%AD%E4%B9%89.html">← 上一篇：VArray：一百万个相同值不必分配一百万次</a><a href="../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/03-%E5%8E%BB%E8%99%9A%E6%8B%9F%E5%8C%96%E4%B8%8E%E4%BB%A3%E4%BB%B7%E6%A8%A1%E5%9E%8B.html">下一篇：去虚拟化：把一次分派换成一个更好的循环 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

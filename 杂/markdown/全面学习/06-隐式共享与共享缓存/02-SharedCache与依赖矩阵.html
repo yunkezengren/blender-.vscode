@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="用网格法线与 BVH 建立缓存依赖矩阵，再看如何共享昂贵计算。">
+<title>共享缓存：哪些变化会让结果失效 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="06-02"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">隐式共享与共享缓存</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>LIFETIMES / INVALIDATION / LESSON 06-02</div><h1>共享缓存：哪些变化会让结果失效</h1><p class="lede">用网格法线与 BVH 建立缓存依赖矩阵，再看如何共享昂贵计算。</p><div class="chips"><span class="chip">方向 06 · 隐式共享与共享缓存</span><span class="chip">专题 2/3</span><span class="chip">正文 2,831 字符</span><span class="chip">建议研读 31 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-ImplicitSharing%E4%B8%8E%E5%86%99%E6%97%B6%E5%88%86%E7%A6%BB.html">01 隐式共享：复制对象不必立即复制全部数据</a><a href="02-SharedCache%E4%B8%8E%E4%BE%9D%E8%B5%96%E7%9F%A9%E9%98%B5.html">02 共享缓存：哪些变化会让结果失效</a><a href="03-%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98%E4%BF%AE%E5%A4%8D%E5%A4%8D%E7%9B%98.html">03 一个修复暴露的抽象边界：失效不总等于丢弃</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>把引用计数、写时分离和缓存失效区分开，再研究它们如何合作。共享正确性依赖数据语义，而不只是指针是否存活。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>所有权、数组、基础原子概念；缓存实验先用单线程。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>只读数据共享</strong></div><div class="flow-step"><span>02</span><strong>请求可写访问</strong></div><div class="flow-step"><span>03</span><strong>必要时分离</strong></div><div class="flow-step"><span>04</span><strong>失效依赖缓存</strong></div><div class="flow-step"><span>05</span><strong>按需重新计算</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>建立至少四类输入修改的依赖矩阵，并为每一格写验证用例。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>先列依赖，再设计缓存</h3>
+<p>法线、包围盒和 BVH 都是派生数据。位置变化可能影响三者，拓扑变化可能改变法线和加速结构，而一个无关命名属性变化未必影响它们。具体依赖要由实际算法确认。只有先定义哪些输入决定结果，才能正确决定复制后是否继续共享。</p>
+<p>SharedCache 允许等价对象共享按需计算结果。一方发生使缓存失效的变化时，需要停止共享该缓存。它与只共享源数组的隐式共享相关，但职责不同：一个管理源数据所有权，一个组织派生计算的复用。</p>
+<h3>ensure 与 tag_dirty 的语义</h3>
+<p>ensure 在需要时计算结果；tag_dirty 表示当前结果不再能使用。若缓存已共享，失效操作需要使当前对象拥有独立缓存状态，避免连带污染仍有效的另一个对象。阅读源码中的 use_count 分支，可以看到这种语义如何落在实现上。</p>
+<p>缓存的成本不只有计算时间，也包括每个对象的缓存包装、同步和复制开销。很便宜的计算不一定值得使用共享缓存。024d7d12e24 的说明就讨论了避免 BVH 重建的收益以及小网格复制的额外成本。</p>
+<h3>按照结果依赖拆分</h3>
+<p>383a145a190 把顶点和面法线计算与缓存进一步拆开，使不同情况可以复用已有结果。拆分并非越细越好：共同计算也可能共享工作，所以作者保留了适用时一起计算的选项。</p>
+<p>练习先用包围盒，容易验证；再加入法线或一项较贵统计。记录每次 ensure 实际触发计算的次数，比只观察 UI 看起来有没有变化更可靠。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要依据属性名字猜测依赖。某些算法会读取特定属性，必须沿实际输入确认。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>SharedCache::ensure：把数据与同步器连接起来</h3><p>这里展示完整委托函数。它本身没有展开锁算法：源码逐行阅读的价值之一，就是准确指出当前层做了什么，以及哪一层仍然需要继续打开。FunctionRef 是非拥有调用视图，因此不能把这个接口解释为保存一个长期计算任务。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_shared_cache.hh · L66–L69。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_shared_cache.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="66">  <span class="syntax-keyword">void</span> <span class="syntax-function">ensure</span>(<span class="syntax-type">FunctionRef</span>&lt;<span class="syntax-keyword">void</span>(<span class="syntax-type">T</span> &amp;data)&gt; compute_cache)</span>
+<span class="code-line" data-line="67">  {</span>
+<span class="code-line" data-line="68">    cache_-&gt;mutex.<span class="syntax-function">ensure</span>([&amp;]() { <span class="syntax-function">compute_cache</span>(<span class="syntax-keyword">this</span>-&gt;cache_-&gt;data); });</span>
+<span class="code-line" data-line="69">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L66</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">ensure</span>(<span class="syntax-type">FunctionRef</span>&lt;<span class="syntax-keyword">void</span>(<span class="syntax-type">T</span> &amp;data)&gt; compute_cache)</code><p>compute_cache 接受 T 的可写引用，并负责在需要时生成有效内容。FunctionRef 描述一个可调用对象的借用接口，不意味着复制并永久保存捕获环境。</p>
+</div></div><div class="line-explanation"><span class="line-number">L67</span><div><code>{</code><p>进入函数。当前层把缓存存储与 CacheMutex 关联起来。</p>
+</div></div><div class="line-explanation"><span class="line-number">L68</span><div><code>cache_-&gt;mutex.<span class="syntax-function">ensure</span>([&amp;]() { <span class="syntax-function">compute_cache</span>(<span class="syntax-keyword">this</span>-&gt;cache_-&gt;data); });</code><p>传入一个按引用捕获的 lambda；当 CacheMutex 判定需要计算时，它调用 compute_cache 并提供当前块的 data。已经有效时，CacheMutex 可直接返回。任务隔离、锁与二次检查要继续在 CacheMutex 的实现里读。</p>
+</div></div><div class="line-explanation"><span class="line-number">L69</span><div><code>}</code><p>结束函数。正常返回后，在满足底层同步契约和调用者失效约束时，缓存可供读取；若计算函数抛出，则不能宣称产生了有效结果。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>首次 ensure 的块有效位为 false，计算函数写入结果；随后相同缓存块上的 ensure 通常走已缓存路径，不重复运行回调。调用 tag_dirty 以后才允许下一次重新计算。用计数器记录回调运行次数，分别测试首次、重复访问、失效后访问与两个共享对象访问。</p>
+<h4>调用关系与设计判断</h4><p>阅读 BLI_cache_mutex.hh 的 ensure：它先以 acquire 读取有效位，命中则返回，否则调用 ensure_impl。仅看 SharedCache 的这一行无法证明整个并发协议；要继续追踪发布有效位的 store、锁内再次检查与计算异常处理。缓存读取与对同一对象进行失效/替换也不是可以任意并发的两个动作。</p>
+</article><article class="deep-reading"><h3>缓存计算的完整同步慢路径</h3><p>从 SharedCache::ensure 继续到真实锁协议。第二次检查用于处理另一个线程在自己等待锁时已经完成计算的情况。task isolation 处理持锁计算调用并行任务时的调度边界。</p>
+<p>完整源码单元 · source/blender/blenlib/intern/cache_mutex.cc · L14–L29。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/intern/cache_mutex.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="14"><span class="syntax-keyword">void</span> <span class="syntax-type">CacheMutex</span>::<span class="syntax-function">ensure_impl</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">FunctionRef</span>&lt;<span class="syntax-keyword">void</span>()&gt; compute_cache)</span>
+<span class="code-line" data-line="15">{</span>
+<span class="code-line" data-line="16">  <span class="syntax-keyword">if</span> (cache_valid_.<span class="syntax-function">load</span>(std::memory_order_acquire)) {</span>
+<span class="code-line" data-line="17">    <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="18">  }</span>
+<span class="code-line" data-line="19">  std::scoped_lock lock{mutex_};</span>
+<span class="code-line" data-line="20">  <span class="syntax-comment">/* Double checked lock. */</span></span>
+<span class="code-line" data-line="21">  <span class="syntax-keyword">if</span> (cache_valid_.<span class="syntax-function">load</span>(std::memory_order_relaxed)) {</span>
+<span class="code-line" data-line="22">    <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="23">  }</span>
+<span class="code-line" data-line="24">  <span class="syntax-comment">/* Use task isolation because a mutex is locked and the cache computation might use</span></span>
+<span class="code-line" data-line="25"><span class="syntax-comment">   * multi-threading. */</span></span>
+<span class="code-line" data-line="26">  threading::<span class="syntax-function">isolate_task</span>(compute_cache);</span>
+<span class="code-line" data-line="27"></span>
+<span class="code-line" data-line="28">  cache_valid_.<span class="syntax-function">store</span>(<span class="syntax-keyword">true</span>, std::memory_order_release);</span>
+<span class="code-line" data-line="29">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L14</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-type">CacheMutex</span>::<span class="syntax-function">ensure_impl</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">FunctionRef</span>&lt;<span class="syntax-keyword">void</span>()&gt; compute_cache)</code><p>输入借用计算回调，正常返回前可能同步运行它。</p>
+</div></div><div class="line-explanation"><span class="line-number">L15</span><div><code>{</code><p>打开 void CacheMutex::ensure_impl(const FunctionRef&lt;void()&gt; compute_cache) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L16</span><div><code><span class="syntax-keyword">if</span> (cache_valid_.<span class="syntax-function">load</span>(std::memory_order_acquire)) {</code><p>在拿锁之前再检查缓存有效位，可能已经被其他线程完成计算。</p>
+</div></div><div class="line-explanation"><span class="line-number">L17</span><div><code><span class="syntax-keyword">return</span>;</code><p>已有效就返回，不需要占用 mutex。</p>
+</div></div><div class="line-explanation"><span class="line-number">L18</span><div><code>}</code><p>结束 if (cache_valid_.load(std::memory_order_acquire)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L19</span><div><code>std::scoped_lock lock{mutex_};</code><p>scoped_lock 获取互斥锁，离开作用域自动解锁，包括计算回调抛出时。</p>
+</div></div><div class="line-explanation"><span class="line-number">L20</span><div><code><span class="syntax-comment">/* Double checked lock. */</span></code><p>锁内再次检查有效位，因为当前线程等待 mutex 的期间，另一线程可能已经完成计算。</p>
+</div></div><div class="line-explanation"><span class="line-number">L21</span><div><code><span class="syntax-keyword">if</span> (cache_valid_.<span class="syntax-function">load</span>(std::memory_order_relaxed)) {</code><p>持锁以后再次检查有效位；锁提供互斥同步，此处使用 relaxed 读取。</p>
+</div></div><div class="line-explanation"><span class="line-number">L22</span><div><code><span class="syntax-keyword">return</span>;</code><p>另一个线程若刚刚完成，本线程直接返回，防止重复计算。</p>
+</div></div><div class="line-explanation"><span class="line-number">L23</span><div><code>}</code><p>结束 if (cache_valid_.load(std::memory_order_relaxed)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L24</span><div><code>/* <span class="syntax-type">Use</span> task isolation because a mutex is locked and the cache computation might use</code><p>持有缓存 mutex 时计算回调可能再创建并行任务，任务隔离用于限制任务调度交错；它不是禁止回调并行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L25</span><div><code>* multi-threading. */</code><p>续接 L24 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L26</span><div><code>threading::<span class="syntax-function">isolate_task</span>(compute_cache);</code><p>在任务隔离区域运行计算，减少持锁并行任务与工作窃取交错带来的问题。隔离不是禁止所有并行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L28</span><div><code>cache_valid_.<span class="syntax-function">store</span>(<span class="syntax-keyword">true</span>, std::memory_order_release);</code><p>计算成功才以 release 发布有效位，配合读取端 acquire，使计算写入先于随后正确同步的读取。</p>
+</div></div><div class="line-explanation"><span class="line-number">L29</span><div><code>}</code><p>结束 void CacheMutex::ensure_impl(const FunctionRef&lt;void()&gt; compute_cache) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>线程 A/B 同时看到失效，A 先拿锁计算并发布 true。B 等待锁后第二次检查发现 true，跳过计算。若 A 的回调抛出，发布 true 不会执行；锁由 RAII 释放，后续线程仍可尝试计算，但数据是否处于可重试状态取决于回调。</p>
+<h4>调用关系与设计判断</h4><p>这套协议适用于按契约调用 ensure 的读者，不授权外部线程无锁修改 T。另行检查 tag_dirty 与读者的并发约束、SharedCache 对 cache_ 的替换是否可与 ensure 同时发生，不能把局部锁正确泛化成整个对象随意线程安全。</p>
+</article><article class="deep-reading"><h3>实际网格依赖矩阵：位置改变影响哪些缓存</h3><p>完整函数把共享缓存策略落实到 Mesh。位置变化不仅改变包围盒，也可能改变各类法线、三角划分和加速结构；漏掉一个缓存就可能得到地址有效但数值过期的结果。</p>
+<p>完整源码单元 · source/blender/blenkernel/intern/mesh_runtime.cc · L407–L416。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenkernel/intern/mesh_runtime.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="407"><span class="syntax-keyword">void</span> <span class="syntax-type">Mesh</span>::<span class="syntax-function">tag_positions_changed</span>()</span>
+<span class="code-line" data-line="408">{</span>
+<span class="code-line" data-line="409">  <span class="syntax-keyword">this</span>-&gt;runtime-&gt;vert_normals_cache.<span class="syntax-function">tag_dirty</span>();</span>
+<span class="code-line" data-line="410">  <span class="syntax-keyword">this</span>-&gt;runtime-&gt;face_normals_cache.<span class="syntax-function">tag_dirty</span>();</span>
+<span class="code-line" data-line="411">  <span class="syntax-keyword">this</span>-&gt;runtime-&gt;vert_normals_true_cache.<span class="syntax-function">tag_dirty</span>();</span>
+<span class="code-line" data-line="412">  <span class="syntax-keyword">this</span>-&gt;runtime-&gt;face_normals_true_cache.<span class="syntax-function">tag_dirty</span>();</span>
+<span class="code-line" data-line="413">  <span class="syntax-keyword">this</span>-&gt;runtime-&gt;corner_normals_cache.<span class="syntax-function">tag_dirty</span>();</span>
+<span class="code-line" data-line="414">  <span class="syntax-keyword">this</span>-&gt;runtime-&gt;shrinkwrap_boundary_cache.<span class="syntax-function">tag_dirty</span>();</span>
+<span class="code-line" data-line="415">  <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">tag_positions_changed_no_normals</span>();</span>
+<span class="code-line" data-line="416">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L407</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-type">Mesh</span>::<span class="syntax-function">tag_positions_changed</span>()</code><p>一般位置变化入口，不能用于只改变坐标系显示而未修改点数据的无关情况。</p>
+</div></div><div class="line-explanation"><span class="line-number">L408</span><div><code>{</code><p>打开 void Mesh::tag_positions_changed() 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L409</span><div><code><span class="syntax-keyword">this</span>-&gt;runtime-&gt;vert_normals_cache.<span class="syntax-function">tag_dirty</span>();</code><p>顶点法线依赖几何位置，标记失效。</p>
+</div></div><div class="line-explanation"><span class="line-number">L410</span><div><code><span class="syntax-keyword">this</span>-&gt;runtime-&gt;face_normals_cache.<span class="syntax-function">tag_dirty</span>();</code><p>面法线依赖几何位置，标记失效。</p>
+</div></div><div class="line-explanation"><span class="line-number">L411</span><div><code><span class="syntax-keyword">this</span>-&gt;runtime-&gt;vert_normals_true_cache.<span class="syntax-function">tag_dirty</span>();</code><p>真实顶点法线缓存同样失效；具体用途需沿各自计算入口对照。</p>
+</div></div><div class="line-explanation"><span class="line-number">L412</span><div><code><span class="syntax-keyword">this</span>-&gt;runtime-&gt;face_normals_true_cache.<span class="syntax-function">tag_dirty</span>();</code><p>真实面法线缓存也依赖位置。</p>
+</div></div><div class="line-explanation"><span class="line-number">L413</span><div><code><span class="syntax-keyword">this</span>-&gt;runtime-&gt;corner_normals_cache.<span class="syntax-function">tag_dirty</span>();</code><p>Corner 法线的结果可能受到影响，需要重新确定。</p>
+</div></div><div class="line-explanation"><span class="line-number">L414</span><div><code><span class="syntax-keyword">this</span>-&gt;runtime-&gt;shrinkwrap_boundary_cache.<span class="syntax-function">tag_dirty</span>();</code><p>Shrinkwrap 边界缓存失效，实际依赖要沿该缓存计算过程核对。</p>
+</div></div><div class="line-explanation"><span class="line-number">L415</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">tag_positions_changed_no_normals</span>();</code><p>委托不处理法线的公共位置变更部分，覆盖 BVH、包围盒等剩余缓存，避免重复写整份规则。</p>
+</div></div><div class="line-explanation"><span class="line-number">L416</span><div><code>}</code><p>结束 void Mesh::tag_positions_changed() 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>移动一个顶点可以改变相邻面朝向、顶点法线、bounds 与 BVH。复制出的网格若共享这些旧缓存，这些 tag_dirty 会按 SharedCache 的策略仅分离发生变化的对象，其他仍符合旧位置的对象保留旧结果。</p>
+<h4>调用关系与设计判断</h4><p>逐个缓存记录原始依赖与失效入口，再对实际编辑操作检查是否调用了合适入口。SharedCache 只能执行收到的失效信号，不能自动发现有人直接写了 position 数组。</p>
+</article><article class="deep-reading"><h3>平移特例：准确失效避免不必要重算</h3><p>完整函数说明失效矩阵可以利用变换不变量。所有点移动相同偏移不改变法线与三角划分，但它确实改变空间位置相关缓存。</p>
+<p>完整源码单元 · source/blender/blenkernel/intern/mesh_runtime.cc · L426–L431。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenkernel/intern/mesh_runtime.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="426"><span class="syntax-keyword">void</span> <span class="syntax-type">Mesh</span>::<span class="syntax-function">tag_positions_changed_uniformly</span>()</span>
+<span class="code-line" data-line="427">{</span>
+<span class="code-line" data-line="428">  <span class="syntax-comment">/* The normals and triangulation didn&#x27;t change, since all verts moved by the same amount. */</span></span>
+<span class="code-line" data-line="429">  <span class="syntax-function">free_bvh_caches</span>(*<span class="syntax-keyword">this</span>-&gt;runtime);</span>
+<span class="code-line" data-line="430">  <span class="syntax-keyword">this</span>-&gt;runtime-&gt;bounds_cache.<span class="syntax-function">tag_dirty</span>();</span>
+<span class="code-line" data-line="431">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L426</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-type">Mesh</span>::<span class="syntax-function">tag_positions_changed_uniformly</span>()</code><p>适用于所有顶点统一平移的专门入口，调用者必须保证这个前提，不是任意变形都能使用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L427</span><div><code>{</code><p>打开 void Mesh::tag_positions_changed_uniformly() 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L428</span><div><code><span class="syntax-comment">/* The normals and triangulation didn&#x27;t change, since all verts moved by the same amount. */</span></code><p>所有点同量平移时，边向量、法线与三角划分不变，因此无需使这些缓存失效；BVH 与 bounds 仍受空间位置变化影响。</p>
+</div></div><div class="line-explanation"><span class="line-number">L429</span><div><code><span class="syntax-function">free_bvh_caches</span>(*<span class="syntax-keyword">this</span>-&gt;runtime);</code><p>BVH 的空间界与位置有关，需要更新或重建。</p>
+</div></div><div class="line-explanation"><span class="line-number">L430</span><div><code><span class="syntax-keyword">this</span>-&gt;runtime-&gt;bounds_cache.<span class="syntax-function">tag_dirty</span>();</code><p>包围盒随平移改变，旧 bounds 不能直接作为当前结果读取。</p>
+</div></div><div class="line-explanation"><span class="line-number">L431</span><div><code>}</code><p>结束 void Mesh::tag_positions_changed_uniformly() 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>所有顶点加 (1,2,3)，边向量和法线不变，包围盒的 min/max 同样加该偏移。只移动一个点则破坏此特例前提，应该走一般位置变化入口。</p>
+<h4>调用关系与设计判断</h4><p>优化的关键不是少写几个 tag_dirty，而是证明某种变化保留哪些计算结果。先给出数学不变量，再选择更细失效入口；若不能证明，就不应为了更快而留下过期缓存。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_shared_cache.hh">BLI_shared_cache.hh</a></div><p>追踪 tag_dirty、ensure 和共享状态之间的关系。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 35 行 · SHA-256 e4ed38df2ea7</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_shared_cache.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_shared_cache.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">32</span>,<span class="syntax-number">63</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_shared_cache.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenkernel/BKE_mesh_types.hh">BKE_mesh_types.hh</a></div><p>观察实际网格运行时缓存的组织；缓存成员位于 BKE_mesh_types.hh。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 170 行 · SHA-256 00a7b4beb90b</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenkernel/BKE_mesh_types.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenkernel/BKE_mesh_types.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">167</span>,<span class="syntax-number">198</span> -- <span class="syntax-string">&quot;source/blender/blenkernel/BKE_mesh_types.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/383a145a190c620e8c0278db65cf183181fdadc7" target="_blank" rel="noopener">383a145a190</a> <span>Hans Goudey · 2023-08-25</span></div><h3>Mesh: Share normals caches by splitting vertex and face calculation</h3><p>读拆分法线计算与共享结果的理由。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Since vertex and face normals can be calculated separately, it simplifies
+things to further separate the two caches. This makes it easier to use
+`SharedCache` to avoid recalculating normals when copying meshes.
+
+Sharing vertex normal caches with meshes with the same positions and
+topology allows completely skipping recomputation as meshes are
+copied. The effects are similar to e8f4010611e7, but normals are much
+more expensive, so the benefit is larger.
+
+In a simple test changing a large grid&#x27;s generic attribute with geometry
+nodes, I observed a performance improvement from 12 to 17 FPS.
+Most real world situations will have smaller changes though.
+
+Completely splitting face and vertex calculation is slightly slower
+when face normals aren&#x27;t already calculated, so I kept the option
+to recalculate them together as well.
+
+This simplifies investigating the changes in #105920 which resolve
+non-determinism in the vertex normal calculation. If we can make the
+topology map creation fast enough, that might allow simplifying this
+code more in the future.
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/110479</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenkernel/<span class="syntax-type">BKE_mesh</span>.hh            |  <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="2"> source/blender/blenkernel/<span class="syntax-type">BKE_mesh_types</span>.hh      |  <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/intern/key.cc          |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="4"> source/blender/blenkernel/intern/mesh.cc         |   <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="5"> source/blender/blenkernel/intern/mesh_normals.cc | <span class="syntax-number">240</span> +++++++++++------------</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/intern/mesh_runtime.cc |  <span class="syntax-number">25</span> +--</span>
+<span class="code-line" data-line="7"> source/blender/blenkernel/intern/pbvh.cc         |  <span class="syntax-number">32</span> +--</span>
+<span class="code-line" data-line="8"> source/blender/makesrna/intern/rna_mesh_api.cc   |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="9"> <span class="syntax-number">8</span> files changed, <span class="syntax-number">156</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">182</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 383a145a190</span>
+<span class="code-line" data-line="2">git show 383a145a190</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 383a145a190 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/024d7d12e24a5468d3e9878adf29b0b0443b5dc8" target="_blank" rel="noopener">024d7d12e24</a> <span>Hans Goudey · 2024-12-04</span></div><h3>Mesh: Move BVH storage to shared cache system</h3><p>比较同一抽象在 BVH 上的复用方式及成本。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Avoid rebuilding BVH trees when meshes are copied.
+Similar to the other uses of the shared cache system,
+this can arbitrarily improve performance when meshes
+are copied but not deformed and BVH building is the
+main bottleneck. In a simple test file I got a 6x speedup.
+
+The amount of code is also reduced and the system is
+much simpler overall-- built out of common threading
+patterns like `SharedCache` with its double-checked lock.
+RAII is used in a few places to simplify memory management
+too.
+
+The downside is storing more `SharedCache` items in the
+mesh runtime struct. That has a slight cost when copying
+a small mesh many times, but we have ideas to improve that
+in the future anyway (#104327).
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/130865</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenkernel/<span class="syntax-type">BKE_bvhutils</span>.hh          |  <span class="syntax-number">42</span> +-</span>
+<span class="code-line" data-line="2"> source/blender/blenkernel/<span class="syntax-type">BKE_mesh_types</span>.hh        |  <span class="syntax-number">21</span> +-</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/<span class="syntax-type">BKE_shrinkwrap</span>.hh        |   <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="4"> .../blender/blenkernel/intern/attribute_access.cc  |  <span class="syntax-number">25</span> +-</span>
+<span class="code-line" data-line="5"> .../blenkernel/intern/attribute_access_intern.hh   |   <span class="syntax-number">4</span> +</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/intern/bvhutils.cc       | <span class="syntax-number">516</span> +++++++++------------</span>
+<span class="code-line" data-line="7"> source/blender/blenkernel/intern/cloth.cc          |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="8"> source/blender/blenkernel/intern/constraint.cc     |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="9"> source/blender/blenkernel/intern/dynamicpaint.cc   |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="10"> source/blender/blenkernel/intern/fluid.cc          |  <span class="syntax-number">13</span> +-</span>
+<span class="code-line" data-line="11"> source/blender/blenkernel/intern/mesh.cc           |  <span class="syntax-number">12</span> +</span>
+<span class="code-line" data-line="12"> .../blender/blenkernel/intern/mesh_attributes.cc   |  <span class="syntax-number">20</span> +-</span>
+<span class="code-line" data-line="13"> source/blender/blenkernel/intern/mesh_remap.cc     |  <span class="syntax-number">43</span> +-</span>
+<span class="code-line" data-line="14"> .../blender/blenkernel/intern/mesh_remesh_voxel.cc |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="15"> source/blender/blenkernel/intern/mesh_runtime.cc   |  <span class="syntax-number">37</span> +-</span>
+<span class="code-line" data-line="16"> source/blender/blenkernel/intern/shrinkwrap.cc     |  <span class="syntax-number">17</span> +-</span>
+<span class="code-line" data-line="17"> .../extract_mesh_vbo_mesh_analysis.cc              |  <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="18"> source/blender/editors/armature/meshlaplacian.cc   |   <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="19"> source/blender/editors/curves/intern/curves_ops.cc |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="20"> source/blender/editors/physics/particle_edit.cc    |  <span class="syntax-number">20</span> +-</span>
+<span class="code-line" data-line="21"> source/blender/editors/physics/particle_object.cc  |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="22"> .../editors/sculpt_paint/curves_sculpt_add.cc      |   <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="23"> .../editors/sculpt_paint/curves_sculpt_brush.cc    |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="24"> .../editors/sculpt_paint/curves_sculpt_density.cc  |  <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="25"> .../editors/sculpt_paint/curves_sculpt_ops.cc      |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="26"> .../editors/sculpt_paint/curves_sculpt_puff.cc     |   <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="27"> .../editors/sculpt_paint/curves_sculpt_slide.cc    |   <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="28"> source/blender/editors/sculpt_paint/paint_utils.cc |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="29"> .../editors/transform/transform_snap_object.cc     |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="30"> .../editors/transform/transform_snap_object.hh     |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="31"> .../transform/transform_snap_object_mesh.cc        |  <span class="syntax-number">29</span> +-</span>
+<span class="code-line" data-line="32"> .../blender/geometry/intern/curve_constraints.cc   |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="33"> source/blender/makesdna/<span class="syntax-type">DNA_mesh_types</span>.h           |  <span class="syntax-number">13</span> +</span>
+<span class="code-line" data-line="34"> source/blender/makesrna/intern/rna_object_api.cc   |  <span class="syntax-number">13</span> +-</span>
+<span class="code-line" data-line="35"> source/blender/modifiers/intern/<span class="syntax-type">MOD_surface</span>.cc     |  <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="36"> .../blender/modifiers/intern/<span class="syntax-type">MOD_surfacedeform</span>.cc  |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="37"> .../modifiers/intern/<span class="syntax-type">MOD_weightvgproximity</span>.cc      |  <span class="syntax-number">22</span> +-</span>
+<span class="code-line" data-line="38"> .../nodes/geometry/nodes/node_geo_proximity.cc     |   <span class="syntax-number">3</span> -</span>
+<span class="code-line" data-line="39"> .../nodes/geometry/nodes/node_geo_raycast.cc       |   <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="40"> .../geometry/nodes/node_geo_sample_nearest.cc      |  <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="41"> .../nodes/node_geo_sample_nearest_surface.cc       |   <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="42"> source/blender/render/intern/bake.cc               |   <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="43"> <span class="syntax-number">42</span> files changed, <span class="syntax-number">432</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">571</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 024d7d12e24</span>
+<span class="code-line" data-line="2">git show 024d7d12e24</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 024d7d12e24 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>实现两个对象共享包围盒缓存，统计实际计算次数。</p>
+</li><li><strong>任务 02</strong><p>修改 B 的位置后只使 B 的缓存失效，确认 A 仍可复用旧结果。</p>
+</li><li><strong>任务 03</strong><p>建立至少四类输入修改的依赖矩阵，并为每一格写验证用例。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="06-02-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="06-02-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="06-02-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>缓存还活着为什么也可能不能用？</summary><p>存活只说明资源未销毁，源数据变化可能已破坏结果有效性。</p>
+</details><details class="question"><summary>为什么拆分面法线与顶点法线？</summary><p>它们存在不同的复用机会；拆分能减少无关重算，但也需要考虑共同计算的收益。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="06-02" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98/01-ImplicitSharing%E4%B8%8E%E5%86%99%E6%97%B6%E5%88%86%E7%A6%BB.html">← 上一篇：隐式共享：复制对象不必立即复制全部数据</a><a href="../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98/03-%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98%E4%BF%AE%E5%A4%8D%E5%A4%8D%E7%9B%98.html">下一篇：一个修复暴露的抽象边界：失效不总等于丢弃 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="从一个只有地址和长度的视图，理解大型 C++ 工程为什么需要明确的借用接口。">
+<title>Span：把连续数据与所有权分开 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="01-01"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">容器与对象生命周期</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>FOUNDATIONS / OWNERSHIP / LESSON 01-01</div><h1>Span：把连续数据与所有权分开</h1><p class="lede">从一个只有地址和长度的视图，理解大型 C++ 工程为什么需要明确的借用接口。</p><div class="chips"><span class="chip">方向 01 · 容器与对象生命周期</span><span class="chip">专题 1/3</span><span class="chip">正文 2,508 字符</span><span class="chip">建议研读 28 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-Span%E4%B8%8E%E5%80%9F%E7%94%A8%E8%BE%B9%E7%95%8C.html">01 Span：把连续数据与所有权分开</a><a href="02-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%AF%B9%E8%B1%A1%E7%8A%B6%E6%80%81.html">02 Vector：容量、存活对象与迁移顺序</a><a href="03-%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E5%AE%B9%E5%99%A8%E5%AE%9E%E9%AA%8C.html">03 容器失败路径：从异常安全到可验证的不变量</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>从 Span 的借用语义进入 Vector 的存储模型，再追踪扩容失败时的对象状态。基础容器的难点是把每一块内存、每一个存活对象和每一种失败路径都解释清楚。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>指针与引用、构造析构、模板基础；不要求已经会写容器。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>外部所有者</strong></div><div class="flow-step"><span>02</span><strong>Span 借用</strong></div><div class="flow-step"><span>03</span><strong>Vector 拥有</strong></div><div class="flow-step"><span>04</span><strong>扩容迁移</strong></div><div class="flow-step"><span>05</span><strong>销毁与释放</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>写出三个返回值设计：借用视图、拥有的数组、调用者提供缓冲区，说明各自生命周期要求。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>从调用者的问题开始</h3>
+<p>假设一个函数要计算一组点的包围盒。点可能来自 Vector、固定大小数组，或另一个数组中的一段。函数需要的是可连续访问的元素，不需要决定容量，也不需要释放数据。Span 把这个需求表达成地址与长度，使同一算法能够接收不同所有者的数据。这里的通用性来自缩小接口要求，而不是增加继承层次。</p>
+<p>读 BLI_span.hh 时先看构造、size、operator[] 和 slice。对每个操作分别回答：是否复制元素、是否分配、是否延长底层数据寿命。一个切片通常只是新的视图；它的创建便宜，但原数组销毁后它也会失效。把这些语义画在调用栈上，比背下所有成员函数更有价值。</p>
+<h3>const 限制的是哪一层</h3>
+<p>Span&lt;T&gt; 提供只读元素访问；MutableSpan&lt;T&gt; 允许修改元素。const MutableSpan&lt;T&gt; 约束视图对象本身，并不自动把其所引用的元素变成只读。这和 const 指针、指向 const 对象的指针之间的区别相似。阅读接口时必须区分视图状态能否变化和目标数据能否变化。</p>
+<p>只读访问也不保证没有别名。另一个可写引用仍可能指向同一内存，所以多线程读写需要额外的同步和所有权约束。不要从一个 const 参数推导出整个系统中这份数据永远不变。</p>
+<h3>用生命周期图判断安全性</h3>
+<p>把所有者画成长条，把视图画成位于其内部的短条。视图被使用的整个区间都应落在有效存储区间内。Vector 扩容会改变存储位置，即使 Vector 对象还活着，旧 Span 也可能失效。因此检查生命周期时，必须同时追踪所有者寿命与其底层存储的稳定性。</p>
+<p>如果函数返回局部 Vector 的 Span，函数退出后会留下悬空视图。更可靠的接口可能让调用者提供目标缓冲区，或者直接返回拥有数据的对象。选择依据是结果需要活多久、谁能负责其销毁。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<div class="demo" data-demo="vector"><div class="demo-heading"><span class="pill">INTERACTIVE LAB</span><strong>改变一个条件，观察模型</strong></div><div class="demo-controls"></div><div class="demo-result" aria-live="polite"></div><p class="demo-caption">教学简化模型，帮助推演状态；不等同于 Blender 完整实现，也不执行性能基准。</p><noscript>开启 JavaScript 可使用交互；正文和源码仍可离线阅读。</noscript></div><aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>最常见错误是把视图看成轻量拥有者。它既不保活底层数据，也不跟随重新分配自动更新。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>Span::slice：只改变视图，不复制元素</h3><p>先把 Span 想成地址与长度这两个元数据。下面是一个完整函数；它返回新的借用视图，不分配内存，也不拥有原数组。读完每一行以后，应能指出谁负责保存底层对象，以及哪一次容器操作会让这个视图悬空。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_span.hh · L141–L147。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_span.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="141">  <span class="syntax-keyword">constexpr</span> <span class="syntax-type">Span</span> <span class="syntax-function">slice</span>(<span class="syntax-keyword">int64_t</span> start, <span class="syntax-keyword">int64_t</span> size) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="142">  {</span>
+<span class="code-line" data-line="143">    <span class="syntax-type">BLI_assert</span>(start &gt;= <span class="syntax-number">0</span>);</span>
+<span class="code-line" data-line="144">    <span class="syntax-type">BLI_assert</span>(size &gt;= <span class="syntax-number">0</span>);</span>
+<span class="code-line" data-line="145">    <span class="syntax-type">BLI_assert</span>(start + size &lt;= size_ || size == <span class="syntax-number">0</span>);</span>
+<span class="code-line" data-line="146">    <span class="syntax-keyword">return</span> <span class="syntax-type">Span</span>(data_ + start, size);</span>
+<span class="code-line" data-line="147">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L141</span><div><code><span class="syntax-keyword">constexpr</span> <span class="syntax-type">Span</span> <span class="syntax-function">slice</span>(<span class="syntax-keyword">int64_t</span> start, <span class="syntax-keyword">int64_t</span> size) <span class="syntax-keyword">const</span></code><p>constexpr 允许满足条件的调用参与常量求值；返回类型仍是 Span。两个 int64_t 参数分别描述偏移和元素数。末尾 const 约束当前视图对象，不延长底层数组的寿命。</p>
+</div></div><div class="line-explanation"><span class="line-number">L142</span><div><code>{</code><p>进入函数作用域。这里没有局部所有权对象，因此也没有离开作用域时替你保持数组存活的机制。</p>
+</div></div><div class="line-explanation"><span class="line-number">L143</span><div><code><span class="syntax-type">BLI_assert</span>(start &gt;= <span class="syntax-number">0</span>);</code><p>要求起点非负。BLI_assert 用于检查调用契约，不能把它当作面向不可信输入的运行时校验；关闭断言以后，调用者仍然必须满足前置条件。</p>
+</div></div><div class="line-explanation"><span class="line-number">L144</span><div><code><span class="syntax-type">BLI_assert</span>(size &gt;= <span class="syntax-number">0</span>);</code><p>要求元素数非负。负数若进入后续指针或长度运算，会破坏视图表达的区间模型。</p>
+</div></div><div class="line-explanation"><span class="line-number">L145</span><div><code><span class="syntax-type">BLI_assert</span>(start + size &lt;= size_ || size == <span class="syntax-number">0</span>);</code><p>对于非空切片，要求右端点不超过原视图长度；这里显式允许 size 为零的特殊路径。不要据此推断任意越界 start 都安全：下一行仍然进行指针算术，还必须满足 C++ 的地址运算规则。start + size 的有符号溢出也不是这条断言能修复的问题。</p>
+</div></div><div class="line-explanation"><span class="line-number">L146</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-type">Span</span>(data_ + start, size);</code><p>返回一个新 Span：新首地址向后移动 start 个 T，长度为 size。移动单位是元素而非字节；没有执行 T 的复制构造。新旧视图指向同一批对象，底层容器扩容以后两者都可能失效。</p>
+</div></div><div class="line-explanation"><span class="line-number">L147</span><div><code>}</code><p>结束函数。返回值拥有的是描述信息；它没有获得底层存储的所有权。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>令数组为 [10,20,30,40,50]，slice(1,3) 返回地址 &amp;array[1] 与长度 3，观察结果为 [20,30,40]。若底层是 Vector，随后发生一次实际迁移，原 Span 中的地址不会自动更新。可以把这个反例写成生命周期图，但不要在程序里解引用已失效的视图来“验证”。</p>
+<h4>调用关系与设计判断</h4><p>这个接口把“选择区间”和“管理存储”分开。它让函数接受不同容器的数据而不引入复制，但把生命周期责任留给调用者。独立设计时，先写清输入视图在调用期间有效，返回视图是否允许逃逸，以及调用期间是否有人能修改底层容器。</p>
+</article><article class="deep-reading"><h3>Span 的构造：地址与长度不等于所有权</h3><p>这是最基础的指针加长度构造器。先逐行明确它没有做的存储管理，再读切片和元素访问，才能避免把 Span 当成安全的拥有容器。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_span.hh · L94–L97。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_span.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="94">  <span class="syntax-keyword">constexpr</span> <span class="syntax-type">Span</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">T</span> *start, <span class="syntax-keyword">int64_t</span> size) : <span class="syntax-function">data_</span>(start), <span class="syntax-function">size_</span>(size)</span>
+<span class="code-line" data-line="95">  {</span>
+<span class="code-line" data-line="96">    <span class="syntax-type">BLI_assert</span>(size &gt;= <span class="syntax-number">0</span>);</span>
+<span class="code-line" data-line="97">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L94</span><div><code><span class="syntax-keyword">constexpr</span> <span class="syntax-type">Span</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">T</span> *start, <span class="syntax-keyword">int64_t</span> size) : <span class="syntax-function">data_</span>(start), <span class="syntax-function">size_</span>(size)</code><p>成员初始化列表保存 start 和 size，没有复制任何元素，也没有登记一个析构或释放动作。</p>
+</div></div><div class="line-explanation"><span class="line-number">L95</span><div><code>{</code><p>打开 constexpr Span(const T *start, int64_t size) : data_(start), size_(size) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L96</span><div><code><span class="syntax-type">BLI_assert</span>(size &gt;= <span class="syntax-number">0</span>);</code><p>长度不得为负。断言没有检查 start 指向的实际分配是否真的能容纳 size 个 T，也没有检查指针对象的存活时间。</p>
+</div></div><div class="line-explanation"><span class="line-number">L97</span><div><code>}</code><p>结束 constexpr Span(const T *start, int64_t size) : data_(start), size_(size) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>数组 a 有 5 个元素，Span(a,5) 合法；Span(a,500) 仅从这条断言看不会报负数错误，但后续访问并不合法。一个看似正确的 size 也无法修复已经悬空的 start。</p>
+<h4>调用关系与设计判断</h4><p>借用接口的边界校验只能使用已有元数据。真实分配长度、对象生命周期、并发修改者这些事实必须由拥有者与调用协议保证。函数如果保存 Span 到成员中，要在设计说明里直接写出它借用谁。</p>
+</article><article class="deep-reading"><h3>Span 元素读取：检查的是视图范围</h3><p>完整访问函数返回引用，没有复制 T。两条索引检查只证明 index 位于这份视图的声明范围，不证明底层内存真实有效。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_span.hh · L246–L251。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_span.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="246">  <span class="syntax-keyword">constexpr</span> <span class="syntax-keyword">const</span> <span class="syntax-type">T</span> &amp;<span class="syntax-keyword">operator</span>[](<span class="syntax-keyword">int64_t</span> index) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="247">  {</span>
+<span class="code-line" data-line="248">    <span class="syntax-type">BLI_assert</span>(index &gt;= <span class="syntax-number">0</span>);</span>
+<span class="code-line" data-line="249">    <span class="syntax-type">BLI_assert</span>(index &lt; size_);</span>
+<span class="code-line" data-line="250">    <span class="syntax-keyword">return</span> data_[index];</span>
+<span class="code-line" data-line="251">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L246</span><div><code><span class="syntax-keyword">constexpr</span> <span class="syntax-keyword">const</span> <span class="syntax-type">T</span> &amp;<span class="syntax-keyword">operator</span>[](<span class="syntax-keyword">int64_t</span> index) <span class="syntax-keyword">const</span></code><p>返回 const T&amp;，调用者可读元素，但不能通过此引用直接修改 T。</p>
+</div></div><div class="line-explanation"><span class="line-number">L247</span><div><code>{</code><p>打开 constexpr const T &amp;operator[](int64_t index) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L248</span><div><code><span class="syntax-type">BLI_assert</span>(index &gt;= <span class="syntax-number">0</span>);</code><p>下标不得为负。</p>
+</div></div><div class="line-explanation"><span class="line-number">L249</span><div><code><span class="syntax-type">BLI_assert</span>(index &lt; size_);</code><p>下标必须小于 size_，半开范围不包含 size_ 本身。</p>
+</div></div><div class="line-explanation"><span class="line-number">L250</span><div><code><span class="syntax-keyword">return</span> data_[index];</code><p>使用指针下标返回实际对象引用。返回引用的有效期仍取决于底层拥有者，函数返回本身不会保活它。</p>
+</div></div><div class="line-explanation"><span class="line-number">L251</span><div><code>}</code><p>结束 constexpr const T &amp;operator[](int64_t index) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>Span 指向 [10,20,30]，span[2] 返回 30 的引用；span[3] 越界。若原 Vector 已扩容，即使 index=0 满足范围断言，保存的地址也可能已经失效。</p>
+<h4>调用关系与设计判断</h4><p>const Span 和 Span&lt;const T&gt; 等类型细节要结合实际模板定义读，不能用一个 const 关键字笼统推断所有指针层级的可修改性。借用边界证明先于索引范围证明。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_span.hh">BLI_span.hh</a></div><p>观察类的存储成员和只读视图约束。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 74 行 · SHA-256 28120d187d6d</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_span.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_span.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">71</span>,<span class="syntax-number">102</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_span.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/tests/BLI_span_test.cc">BLI_span_test.cc</a></div><p>从最小调用例子检查构造与切片行为。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 14 行 · SHA-256 c7950ce508cc</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/tests/BLI_span_test.cc</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/tests/BLI_span_test.cc&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">11</span>,<span class="syntax-number">42</span> -- <span class="syntax-string">&quot;source/blender/blenlib/tests/BLI_span_test.cc&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/369d5e8ad2bb7c249c6b941779066b6aa99f9ea0" target="_blank" rel="noopener">369d5e8ad2b</a> <span>Jacques Lucke · 2019-09-12</span></div><h3>BLI: new C++ ArrayRef, Vector, Stack, ... data structures</h3><p>先读 ArrayRef 的设计说明；这个历史名称后来变为 Span。关注为什么它适合作为数组输入参数。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Many generic C++ data structures have been developed in the
+functions branch. This commit merges a first chunk of them into
+master. The following new data structures are included:
+
+Array: Owns a memory buffer with a fixed size. It is different
+  from std::array in that the size is not part of the type.
+
+ArrayRef: References an array owned by someone else. All elements
+  in the referenced array are considered to be const. This should
+  be the preferred parameter type for functions that take arrays
+  as input.
+
+MutableArrayRef: References an array owned by someone else. The
+  elements in the referenced array can be changed.
+
+IndexRange: Specifies a continuous range of integers with a start
+  and end index.
+
+IntrusiveListBaseWrapper: A utility class that allows iterating
+  over ListBase instances where the prev and next pointer are
+  stored in the objects directly.
+
+Stack: A stack implemented on top of a vector.
+
+Vector: An array that can grow dynamically.
+
+Allocators: Three allocator types are included that can be used
+  by the container types to support different use cases.
+
+The Stack and Vector support small object optimization. So when
+the amount of elements in them is below a certain threshold, no
+memory allocation is performed.
+
+Additionally, most methods have unit tests.
+
+I&#x27;m merging this without normal code review, after I checked the
+code roughly with Sergey, and after we talked about it with Brecht.</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenlib/<span class="syntax-type">BLI_allocator</span>.h             | <span class="syntax-number">127</span> +++++</span>
+<span class="code-line" data-line="2"> source/blender/blenlib/<span class="syntax-type">BLI_array_cxx</span>.h             | <span class="syntax-number">195</span> +++++++</span>
+<span class="code-line" data-line="3"> source/blender/blenlib/<span class="syntax-type">BLI_array_ref</span>.h             | <span class="syntax-number">423</span> +++++++++++++++</span>
+<span class="code-line" data-line="4"> source/blender/blenlib/<span class="syntax-type">BLI_index_range</span>.h           | <span class="syntax-number">193</span> +++++++</span>
+<span class="code-line" data-line="5"> source/blender/blenlib/<span class="syntax-type">BLI_listbase_wrapper</span>.h      |  <span class="syntax-number">97</span> ++++</span>
+<span class="code-line" data-line="6"> source/blender/blenlib/<span class="syntax-type">BLI_memory_utils_cxx</span>.h      |  <span class="syntax-number">81</span> +++</span>
+<span class="code-line" data-line="7"> source/blender/blenlib/<span class="syntax-type">BLI_stack_cxx</span>.h             | <span class="syntax-number">142</span> +++++</span>
+<span class="code-line" data-line="8"> source/blender/blenlib/<span class="syntax-type">BLI_temporary_allocator</span>.h   |  <span class="syntax-number">64</span> +++</span>
+<span class="code-line" data-line="9"> .../blender/blenlib/<span class="syntax-type">BLI_temporary_allocator_cxx</span>.h  |  <span class="syntax-number">35</span> ++</span>
+<span class="code-line" data-line="10"> source/blender/blenlib/<span class="syntax-type">BLI_vector</span>.h                | <span class="syntax-number">601</span> +++++++++++++++++++++</span>
+<span class="code-line" data-line="11"> source/blender/blenlib/<span class="syntax-type">CMakeLists</span>.txt              |  <span class="syntax-number">14</span> +</span>
+<span class="code-line" data-line="12"> source/blender/blenlib/intern/<span class="syntax-type">BLI_index_range</span>.cc   |  <span class="syntax-number">59</span> ++</span>
+<span class="code-line" data-line="13"> .../blenlib/intern/<span class="syntax-type">BLI_temporary_allocator</span>.cc      | <span class="syntax-number">115</span> ++++</span>
+<span class="code-line" data-line="14"> tests/gtests/blenlib/<span class="syntax-type">BLI_array_ref_test</span>.cc         | <span class="syntax-number">266</span> +++++++++</span>
+<span class="code-line" data-line="15"> tests/gtests/blenlib/<span class="syntax-type">BLI_array_test</span>.cc             | <span class="syntax-number">103</span> ++++</span>
+<span class="code-line" data-line="16"> tests/gtests/blenlib/<span class="syntax-type">BLI_index_range_test</span>.cc       | <span class="syntax-number">131</span> +++++</span>
+<span class="code-line" data-line="17"> tests/gtests/blenlib/<span class="syntax-type">BLI_stack_cxx_test</span>.cc         |  <span class="syntax-number">52</span> ++</span>
+<span class="code-line" data-line="18"> tests/gtests/blenlib/<span class="syntax-type">BLI_vector_test</span>.cc            | <span class="syntax-number">400</span> ++++++++++++++</span>
+<span class="code-line" data-line="19"> tests/gtests/blenlib/<span class="syntax-type">CMakeLists</span>.txt                |   <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="20"> <span class="syntax-number">19</span> files changed, <span class="syntax-number">3104</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">1</span> <span class="syntax-function">deletion</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 369d5e8ad2b</span>
+<span class="code-line" data-line="2">git show 369d5e8ad2b</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 369d5e8ad2b -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>写一个接收只读视图的求和函数，分别用数组、Vector 和切片调用。</p>
+</li><li><strong>任务 02</strong><p>记录 owner.data()，触发足够大的扩容，再检查新旧地址；不要解引用已经失效的旧视图。</p>
+</li><li><strong>任务 03</strong><p>写出三个返回值设计：借用视图、拥有的数组、调用者提供缓冲区，说明各自生命周期要求。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="01-01-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="01-01-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="01-01-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>Span 复制后，元素会复制吗？</summary><p>通常只复制视图描述；元素仍由原所有者管理。具体构造方式仍应以接口约定为准。</p>
+</details><details class="question"><summary>Vector 还活着，Span 就一定安全吗？</summary><p>不一定，扩容、移除元素或其他改变存储有效性的操作都可能破坏原视图。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="01-01" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../index.html">← 课程总览</a><a href="../01-%E5%AE%B9%E5%99%A8%E4%B8%8E%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/02-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%AF%B9%E8%B1%A1%E7%8A%B6%E6%80%81.html">下一篇：Vector：容量、存活对象与迁移顺序 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

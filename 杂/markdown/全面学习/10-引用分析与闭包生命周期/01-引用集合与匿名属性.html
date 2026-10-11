@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="把匿名属性的保留需求转换成可传播的引用信息。">
+<title>引用分析：哪些数据仍被下游需要 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="10-01"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">引用分析与闭包生命周期</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>REFERENCES / CLOSURES / LESSON 10-01</div><h1>引用分析：哪些数据仍被下游需要</h1><p class="lede">把匿名属性的保留需求转换成可传播的引用信息。</p><div class="chips"><span class="chip">方向 10 · 引用分析与闭包生命周期</span><span class="chip">专题 1/3</span><span class="chip">正文 2,019 字符</span><span class="chip">建议研读 22 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-%E5%BC%95%E7%94%A8%E9%9B%86%E5%90%88%E4%B8%8E%E5%8C%BF%E5%90%8D%E5%B1%9E%E6%80%A7.html">01 引用分析：哪些数据仍被下游需要</a><a href="02-Closure%E4%B8%8E%E6%8D%95%E8%8E%B7%E7%8E%AF%E5%A2%83.html">02 Closure：函数作为值时，环境由谁保管</a><a href="03-%E6%89%A7%E8%A1%8C%E5%9B%BE%E4%B8%8E%E6%BA%90%E8%8A%82%E7%82%B9%E6%A0%91%E8%A7%A3%E8%80%A6.html">03 当源节点树销毁后，计算为什么还要继续存在</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>计算可以把数据和函数继续传递到更远的地方。学习引用集合、匿名属性保留、捕获环境以及执行数据独立存活的设计。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>Field、LazyFunction、共享所有权和图中的数据流。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>产生被引用数据</strong></div><div class="flow-step"><span>02</span><strong>传播引用信息</strong></div><div class="flow-step"><span>03</span><strong>捕获环境</strong></div><div class="flow-step"><span>04</span><strong>函数成为值</strong></div><div class="flow-step"><span>05</span><strong>独立延长寿命</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>画出值边和引用需求边，用不同颜色解释它们的关系。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>引用存在于数值以外</h3>
+<p>一个 Field 可能引用几何上存储的匿名属性。几何继续流经节点时，若过早删除该属性，下游再求值 Field 就会缺少数据。仅追踪几何值本身的存活还不够，必须知道有哪些计算仍引用其中的信息。</p>
+<p>这里需要区分 C++ 指针生命周期和几何数据中的语义引用。一个 Field 对象没有悬空指针，也可能因为所需属性没有传播而无法得到正确结果。引用分析管理的是跨节点的数据需要关系。</p>
+<h3>从专用术语提炼通用模型</h3>
+<p>67c7485bfd9 将一些围绕匿名属性的专用逻辑统一到引用集合抽象。提交目标包括减少构图时重复处理，并为可以包含 Field 与几何的 Bundle、Closure 做准备。好的抽象提炼来自已有重复与具体扩展需求。</p>
+<p>读 ReferenceSet 与 reference_lifetimes 文件时，记录集合中的元素代表什么、何时合并、何时附加到传递几何的路径。不要把集合并操作本身当作全部算法；真正重要的是沿哪些边传播哪些事实。</p>
+<h3>用最小图推演保留与释放</h3>
+<p>构造一个源节点创建属性 a 和引用 a 的 Field，然后让几何经过中间操作，下游再求值 Field。沿途标记必须保留 a 的位置。再增加一条不消费 Field 的分支，讨论能否减少该分支的保留需求。</p>
+<p>教学版本可以保守保留以优先保证正确，再逐步细化。保守结果的成本是多带数据；过于激进的结果可能丢失必要属性。测试必须同时检查结果正确与传播范围合理。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<div class="demo" data-demo="closure"><div class="demo-heading"><span class="pill">INTERACTIVE LAB</span><strong>改变一个条件，观察模型</strong></div><div class="demo-controls"></div><div class="demo-result" aria-live="polite"></div><p class="demo-caption">教学简化模型，帮助推演状态；不等同于 Blender 完整实现，也不执行性能基准。</p><noscript>开启 JavaScript 可使用交互；正文和源码仍可离线阅读。</noscript></div><aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要把匿名属性引用分析直接当成通用内存垃圾回收器；二者分析对象和语义不同。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>引用集合的完整定义：共享的是名字集合</h3><p>这个小类本身就是完整研读单元。它没有实现图上的存活分析，只承载运行期传播的匿名属性名字；不要把数据容器与分析算法混为一谈。</p>
+<p>完整源码单元 · source/blender/blenkernel/BKE_geometry_nodes_reference_set.hh · L21–L29。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenkernel/BKE_geometry_nodes_reference_set.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="21"><span class="syntax-keyword">class</span> <span class="syntax-type">GeometryNodesReferenceSet</span> {</span>
+<span class="code-line" data-line="22"> <span class="syntax-keyword">public</span>:</span>
+<span class="code-line" data-line="23">  <span class="syntax-comment">/**</span></span>
+<span class="code-line" data-line="24"><span class="syntax-comment">   * This uses `std::shared_ptr` because attributes sets are passed around by value during geometry</span></span>
+<span class="code-line" data-line="25"><span class="syntax-comment">   * nodes evaluation, and this makes it very small if there is no name. Also it makes copying very</span></span>
+<span class="code-line" data-line="26"><span class="syntax-comment">   * cheap.</span></span>
+<span class="code-line" data-line="27"><span class="syntax-comment">   */</span></span>
+<span class="code-line" data-line="28">  std::shared_ptr&lt;<span class="syntax-type">Set</span>&lt;std::string&gt;&gt; names;</span>
+<span class="code-line" data-line="29">};</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L21</span><div><code><span class="syntax-keyword">class</span> <span class="syntax-type">GeometryNodesReferenceSet</span> {</code><p>定义 GeometryNodesReferenceSet 类型，服务于几何节点运行期引用传播。</p>
+</div></div><div class="line-explanation"><span class="line-number">L22</span><div><code><span class="syntax-keyword">public</span>:</code><p>后续成员是公开接口，调用者可以直接观察或替换 names。</p>
+</div></div><div class="line-explanation"><span class="line-number">L23</span><div><code>/**</code><p>运行期集合按值传递很频繁，用 shared_ptr 使空集合句柄较小、复制便宜；它并不自动为 Set 提供写时分离。</p>
+</div></div><div class="line-explanation"><span class="line-number">L24</span><div><code>* <span class="syntax-type">This</span> uses `std::shared_ptr` because attributes sets are passed around by value during geometry</code><p>续接 L23 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L25</span><div><code>* nodes evaluation, and <span class="syntax-keyword">this</span> makes it very small <span class="syntax-keyword">if</span> there is no name. <span class="syntax-type">Also</span> it makes copying very</code><p>续接 L23 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L26</span><div><code>* cheap.</code><p>续接 L23 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L27</span><div><code>*/</code><p>续接 L23 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L28</span><div><code>std::shared_ptr&lt;<span class="syntax-type">Set</span>&lt;std::string&gt;&gt; names;</code><p>shared_ptr 持有一个字符串 Set。句柄复制可共享集合，空指针可以表达没有名字；共享同一可变 Set 时，修改责任必须由调用者协调。</p>
+</div></div><div class="line-explanation"><span class="line-number">L29</span><div><code>};</code><p>结束 class GeometryNodesReferenceSet { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>A.names 与 B.names 指向同一个集合 {attr_a}，复制句柄并不会复制字符串集合。若某处直接插入 attr_b，两者都会看到变化。要判断这是否正确，必须查看实际合并与传播代码，不能把 shared_ptr 自动理解为写时复制。</p>
+<h4>调用关系与设计判断</h4><p>继续查找 GeometryNodesReferenceSet 的使用点，沿输出引用需求到输入传播的方向追踪。把“哪些属性要保留”的图级分析结果与“本次传递的名字集合”分别记录，检查分支合并与匿名属性释放边界。</p>
+</article><article class="deep-reading"><h3>引用集合条件合并：需求先到，数据才按需请求</h3><p>完整实现来自 LazyFunctionForJoinReferenceSets。Use 布尔量控制对应集合是否需要；缺少必要集合时暂停，绝不先发布不完整结果。</p>
+<p>完整源码单元 · source/blender/nodes/intern/geometry_nodes_lazy_function.cc · L1486–L1524。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/nodes/intern/geometry_nodes_lazy_function.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1486">  <span class="syntax-keyword">void</span> <span class="syntax-function">execute_impl</span>(lf::<span class="syntax-type">Params</span> &amp;params, <span class="syntax-keyword">const</span> lf::<span class="syntax-type">Context</span> &amp; <span class="syntax-comment">/*context*/</span>) <span class="syntax-keyword">const</span> override</span>
+<span class="code-line" data-line="1487">  {</span>
+<span class="code-line" data-line="1488">    <span class="syntax-type">Vector</span>&lt;<span class="syntax-type">GeometryNodesReferenceSet</span> *&gt; sets;</span>
+<span class="code-line" data-line="1489">    <span class="syntax-keyword">bool</span> set_is_missing = <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="1490">    <span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : <span class="syntax-type">IndexRange</span>(amount_)) {</span>
+<span class="code-line" data-line="1491">      <span class="syntax-keyword">if</span> (params.get_input&lt;<span class="syntax-keyword">bool</span>&gt;(<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">get_use_input</span>(i))) {</span>
+<span class="code-line" data-line="1492">        <span class="syntax-keyword">if</span> (<span class="syntax-type">GeometryNodesReferenceSet</span> *set =</span>
+<span class="code-line" data-line="1493">                params.try_get_input_data_ptr_or_request&lt;<span class="syntax-type">GeometryNodesReferenceSet</span>&gt;(</span>
+<span class="code-line" data-line="1494">                    <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">get_reference_set_input</span>(i)))</span>
+<span class="code-line" data-line="1495">        {</span>
+<span class="code-line" data-line="1496">          sets.<span class="syntax-function">append</span>(set);</span>
+<span class="code-line" data-line="1497">        }</span>
+<span class="code-line" data-line="1498">        <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="1499">          set_is_missing = <span class="syntax-keyword">true</span>;</span>
+<span class="code-line" data-line="1500">        }</span>
+<span class="code-line" data-line="1501">      }</span>
+<span class="code-line" data-line="1502">    }</span>
+<span class="code-line" data-line="1503">    <span class="syntax-keyword">if</span> (set_is_missing) {</span>
+<span class="code-line" data-line="1504">      <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="1505">    }</span>
+<span class="code-line" data-line="1506">    <span class="syntax-type">GeometryNodesReferenceSet</span> joined_set;</span>
+<span class="code-line" data-line="1507">    <span class="syntax-keyword">if</span> (sets.<span class="syntax-function">is_empty</span>()) {</span>
+<span class="code-line" data-line="1508">      <span class="syntax-comment">/* Nothing to do. */</span></span>
+<span class="code-line" data-line="1509">    }</span>
+<span class="code-line" data-line="1510">    <span class="syntax-keyword">else</span> <span class="syntax-keyword">if</span> (sets.<span class="syntax-function">size</span>() == <span class="syntax-number">1</span>) {</span>
+<span class="code-line" data-line="1511">      joined_set.names = std::<span class="syntax-function">move</span>(sets[<span class="syntax-number">0</span>]-&gt;names);</span>
+<span class="code-line" data-line="1512">    }</span>
+<span class="code-line" data-line="1513">    <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="1514">      joined_set.names = std::make_shared&lt;<span class="syntax-type">Set</span>&lt;std::string&gt;&gt;();</span>
+<span class="code-line" data-line="1515">      <span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-type">GeometryNodesReferenceSet</span> *set : sets) {</span>
+<span class="code-line" data-line="1516">        <span class="syntax-keyword">if</span> (set-&gt;names) {</span>
+<span class="code-line" data-line="1517">          <span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> std::string &amp;name : *set-&gt;names) {</span>
+<span class="code-line" data-line="1518">            joined_set.names-&gt;<span class="syntax-function">add</span>(name);</span>
+<span class="code-line" data-line="1519">          }</span>
+<span class="code-line" data-line="1520">        }</span>
+<span class="code-line" data-line="1521">      }</span>
+<span class="code-line" data-line="1522">    }</span>
+<span class="code-line" data-line="1523">    params.<span class="syntax-function">set_output</span>(<span class="syntax-number">0</span>, std::<span class="syntax-function">move</span>(joined_set));</span>
+<span class="code-line" data-line="1524">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L1486</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">execute_impl</span>(lf::<span class="syntax-type">Params</span> &amp;params, <span class="syntax-keyword">const</span> lf::<span class="syntax-type">Context</span> &amp; <span class="syntax-comment">/*context*/</span>) <span class="syntax-keyword">const</span> override</code><p>这是条件引用集合合并的执行实现，输出一个 GeometryNodesReferenceSet。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1487</span><div><code>{</code><p>打开 void execute_impl(lf::Params &amp;params, const lf::Context &amp; /*context*/) const override 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1488</span><div><code><span class="syntax-type">Vector</span>&lt;<span class="syntax-type">GeometryNodesReferenceSet</span> *&gt; sets;</code><p>暂存已取得集合的地址；这些地址借用 Params 提供的有效输入存储。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1489</span><div><code><span class="syntax-keyword">bool</span> set_is_missing = <span class="syntax-keyword">false</span>;</code><p>记录是否有本次需要但尚未到达的集合。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1490</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> i : <span class="syntax-type">IndexRange</span>(amount_)) {</code><p>遍历所有候选集合编号。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1491</span><div><code><span class="syntax-keyword">if</span> (params.get_input&lt;<span class="syntax-keyword">bool</span>&gt;(<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">get_use_input</span>(i))) {</code><p>只有 Use 布尔为真时才需要对应集合；被禁用的输入无需计算。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1492</span><div><code><span class="syntax-keyword">if</span> (<span class="syntax-type">GeometryNodesReferenceSet</span> *set =</code><p>声明一个条件变量 set，准备取得实际集合地址。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1493</span><div><code>params.try_get_input_data_ptr_or_request&lt;<span class="syntax-type">GeometryNodesReferenceSet</span>&gt;(</code><p>请求按需输入；缺失时会把需求告诉执行器。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1494</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">get_reference_set_input</span>(i)))</code><p>把集合编号转换为实际参数编号，完成跨行调用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1495</span><div><code>{</code><p>打开 this-&gt;get_reference_set_input(i))) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1496</span><div><code>sets.<span class="syntax-function">append</span>(set);</code><p>取得地址就加入待合并数组。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1497</span><div><code>}</code><p>结束 this-&gt;get_reference_set_input(i))) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1498</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入前一个条件不成立时的路径；两条路径分别检查对象与存储状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1499</span><div><code>set_is_missing = <span class="syntax-keyword">true</span>;</code><p>缺失时标记本轮无法完成，不立刻返回是为了继续请求其他需要集合。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1500</span><div><code>}</code><p>结束 else { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1501</span><div><code>}</code><p>结束 if (params.get_input&lt;bool&gt;(this-&gt;get_use_input(i))) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1502</span><div><code>}</code><p>结束 for (const int i : IndexRange(amount_)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1503</span><div><code><span class="syntax-keyword">if</span> (set_is_missing) {</code><p>扫描结束后检查是否存在缺失输入。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1504</span><div><code><span class="syntax-keyword">return</span>;</code><p>有缺失则暂停。没有设置输出，后续输入到达可再次调用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1505</span><div><code>}</code><p>结束 if (set_is_missing) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1506</span><div><code><span class="syntax-type">GeometryNodesReferenceSet</span> joined_set;</code><p>所有必要输入到达后创建输出集合句柄。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1507</span><div><code><span class="syntax-keyword">if</span> (sets.<span class="syntax-function">is_empty</span>()) {</code><p>无启用集合时保留默认空集合；不需要创建空 Set 分配。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1508</span><div><code><span class="syntax-comment">/* Nothing to do. */</span></code><p>没有任何启用集合时，默认空引用集合已是正确结果，无需分配一个实体空 Set。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1509</span><div><code>}</code><p>结束 if (sets.is_empty()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1510</span><div><code><span class="syntax-keyword">else</span> <span class="syntax-keyword">if</span> (sets.<span class="syntax-function">size</span>() == <span class="syntax-number">1</span>) {</code><p>恰有一个集合时不需要逐名字并集。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1511</span><div><code>joined_set.names = std::<span class="syntax-function">move</span>(sets[<span class="syntax-number">0</span>]-&gt;names);</code><p>移动其 names 共享指针到输出，转移这份输入句柄持有关系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1512</span><div><code>}</code><p>结束 else if (sets.size() == 1) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1513</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入前一个条件不成立时的路径；两条路径分别检查对象与存储状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1514</span><div><code>joined_set.names = std::make_shared&lt;<span class="syntax-type">Set</span>&lt;std::string&gt;&gt;();</code><p>多集合时创建新的结果 Set，避免直接修改仍可能共享的输入集合。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1515</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-type">GeometryNodesReferenceSet</span> *set : sets) {</code><p>遍历已取得的集合。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1516</span><div><code><span class="syntax-keyword">if</span> (set-&gt;names) {</code><p>只处理非空名字句柄。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1517</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> std::string &amp;name : *set-&gt;names) {</code><p>遍历该集合每个名字。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1518</span><div><code>joined_set.names-&gt;<span class="syntax-function">add</span>(name);</code><p>加入 Set 自动去重，形成集合并集。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1519</span><div><code>}</code><p>结束 for (const std::string &amp;name : *set-&gt;names) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1520</span><div><code>}</code><p>结束 if (set-&gt;names) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1521</span><div><code>}</code><p>结束 for (const GeometryNodesReferenceSet *set : sets) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1522</span><div><code>}</code><p>结束 else { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1523</span><div><code>params.<span class="syntax-function">set_output</span>(<span class="syntax-number">0</span>, std::<span class="syntax-function">move</span>(joined_set));</code><p>把完整结果移动设置为输出 0，发布已构造值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1524</span><div><code>}</code><p>结束 void execute_impl(lf::Params &amp;params, const lf::Context &amp; /*context*/) const override 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>Use=[true,false,true]，集合为 {a,b}、{ignored}、{b,c}。只请求第 0 和第 2 集合，结果 {a,b,c}。若第 2 集合缺失，先登记请求并返回，不能发布 {a,b}。只有一个启用集合时移动句柄；多个时新建并集，不污染共享输入。</p>
+<h4>调用关系与设计判断</h4><p>这个函数把引用分析、按需执行和共享集合所有权连接起来。继续沿 get_use_input/get_reference_set_input 确认成对参数布局，再沿构建器追踪 Use 布尔值来自哪条需求边，不能只在集合层面证明正确。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenkernel/BKE_geometry_nodes_reference_set.hh">BKE_geometry_nodes_reference_set.hh</a></div><p>确认引用集合的表示，合并与传播逻辑需继续沿调用者阅读。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 21 行 · SHA-256 583192d4b5d3</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenkernel/BKE_geometry_nodes_reference_set.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenkernel/BKE_geometry_nodes_reference_set.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">18</span>,<span class="syntax-number">31</span> -- <span class="syntax-string">&quot;source/blender/blenkernel/BKE_geometry_nodes_reference_set.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenkernel/BKE_node_tree_reference_lifetimes.hh">BKE_node_tree_reference_lifetimes.hh</a></div><p>区分图级分析结果与单个运行期集合。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 61 行 · SHA-256 510f2fe73ef8</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenkernel/BKE_node_tree_reference_lifetimes.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenkernel/BKE_node_tree_reference_lifetimes.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">58</span>,<span class="syntax-number">89</span> -- <span class="syntax-string">&quot;source/blender/blenkernel/BKE_node_tree_reference_lifetimes.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/67c7485bfd95a60caa8d0c12edaaadb55d3519c0" target="_blank" rel="noopener">67c7485bfd9</a> <span>Jacques Lucke · 2024-10-07</span></div><h3>Refactor: Geometry Nodes: improve lifetime analysis for anonymous attributes</h3><p>将 field source、caller propagation 等旧路径映射到统一引用集合的目标。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This refactors the lifetime analysis of anonymous attributes in geometry nodes.
+The refactor has a couple of goals:
+* Use a better and simpler abstraction that can be used when building the
+  lazy-function graph. We currently have a bunch of duplicate code to handle
+  &quot;field source&quot; and &quot;caller propagation&quot; attributes. This is now unified so
+  that one only has to worry about one kind of &quot;reference sets&quot;.
+* Make the abstraction compatible with handling bundles and closures in case we
+  want to support them in the future. Both types can contain geometries and
+  fields so they need to be taken into account when determining lifetimes.
+* Make more parts independent of the concept of &quot;anonymous attributes&quot;. In
+  theory, there could be more kinds of referenced data whose lifetimes need to
+  be managed. I don&#x27;t have any concrete plans for adding any though.
+
+At its core, deterministic anonymous attributes still work the same they have
+been since they became deterministic [0]. Even the generated lazy-function graph
+is still pretty much or even exactly the same as before.
+
+The patch renames `AnonymousAttributeSet` to the more general
+`GeometryNodesReferenceSet` which is more. This also makes more places
+independent of the concept of anonymous attributes. Functionally, this still the
+same though. It&#x27;s only used in the internals of geometry nodes nowadays. Most
+code just gets an `AttributeFilter` that is based on it.
+
+[0]: https://archive.blender.org/developer/D16858
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/128667</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">.../blenkernel/<span class="syntax-type">BKE_anonymous_attribute_id</span>.hh       |  <span class="syntax-number">15</span> -</span>
+<span class="code-line" data-line="2"> .../blenkernel/<span class="syntax-type">BKE_geometry_nodes_reference_set</span>.hh |  <span class="syntax-number">28</span> +</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/<span class="syntax-type">BKE_node_runtime</span>.hh      |  <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="4"> .../<span class="syntax-type">BKE_node_tree_anonymous_attributes</span>.hh          |  <span class="syntax-number">83</span> --</span>
+<span class="code-line" data-line="5"> .../<span class="syntax-type">BKE_node_tree_reference_lifetimes</span>.hh           | <span class="syntax-number">101</span> +++</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/<span class="syntax-type">CMakeLists</span>.txt           |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="7"> source/blender/blenkernel/intern/cpp_types.cc      |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="8"> source/blender/blenkernel/intern/node.cc           |  <span class="syntax-number">28</span> +-</span>
+<span class="code-line" data-line="9"> .../intern/node_tree_anonymous_attributes.cc       | <span class="syntax-number">785</span> -------------------</span>
+<span class="code-line" data-line="10"> .../intern/node_tree_reference_lifetimes.cc        | <span class="syntax-number">833</span> +++++++++++++++++++++</span>
+<span class="code-line" data-line="11"> .../blender/blenkernel/intern/node_tree_update.cc  |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="12"> source/blender/blenlib/<span class="syntax-type">BLI_bit_span_ops</span>.hh         |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="13"> source/blender/nodes/<span class="syntax-type">NOD_geometry_exec</span>.hh          |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="14"> .../nodes/<span class="syntax-type">NOD_geometry_nodes_lazy_function</span>.hh      |  <span class="syntax-number">13</span> +-</span>
+<span class="code-line" data-line="15"> .../blender/nodes/intern/geometry_nodes_execute.cc |   <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="16"> ...geometry_nodes_foreach_geometry_element_zone.cc |  <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="17"> .../nodes/intern/geometry_nodes_lazy_function.cc   | <span class="syntax-number">632</span> ++++++----------</span>
+<span class="code-line" data-line="18"> .../nodes/intern/geometry_nodes_repeat_zone.cc     |  <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="19"> source/blender/nodes/intern/node_declaration.cc    |   <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="20"> <span class="syntax-number">19</span> files changed, <span class="syntax-number">1253</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">1350</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 67c7485bfd9</span>
+<span class="code-line" data-line="2">git show 67c7485bfd9</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 67c7485bfd9 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>为小图添加命名为 a、b 的抽象资源及引用集合，实现简单保守传播。</p>
+</li><li><strong>任务 02</strong><p>让下游只消费 a，检查 b 是否可以省略；保留正确性基准版本。</p>
+</li><li><strong>任务 03</strong><p>画出值边和引用需求边，用不同颜色解释它们的关系。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="10-01-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="10-01-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="10-01-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>Field 对象活着，属性就一定还在吗？</summary><p>不一定，几何数据的属性传播与 C++ 对象存活是不同层次。</p>
+</details><details class="question"><summary>为什么先做保守分析？</summary><p>保守保留能建立正确性基准，再逐步减少不必要传播。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="10-01" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../09-%E6%83%B0%E6%80%A7%E5%87%BD%E6%95%B0%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E5%99%A8/03-MenuSwitch%E4%BE%9D%E8%B5%96%E7%8E%AF%E4%BF%AE%E5%A4%8D.html">← 上一篇：拆分计算职责：从 Menu Switch 修复理解精确依赖</a><a href="../10-%E5%BC%95%E7%94%A8%E5%88%86%E6%9E%90%E4%B8%8E%E9%97%AD%E5%8C%85%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/02-Closure%E4%B8%8E%E6%8D%95%E8%8E%B7%E7%8E%AF%E5%A2%83.html">下一篇：Closure：函数作为值时，环境由谁保管 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

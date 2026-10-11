@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="从面角点的连续排列推导 OffsetIndices，再构建反向拓扑映射。学习 Hans 如何通过改变表示方式，减少内存、分配和不一致状态。">
+<title>几何存储与拓扑映射 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>GEOMETRY / DATA LAYOUT</div><h1>05 / 几何存储与拓扑映射</h1><p class="lede">从面角点的连续排列推导 OffsetIndices，再构建反向拓扑映射。学习 Hans 如何通过改变表示方式，减少内存、分配和不一致状态。</p><div class="chips"><span class="chip">3 篇专题</span><span class="chip">当前源码 + 历史提交</span><span class="chip">可离线阅读</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#start" class="lv1">学习目标</a><a href="#chapters" class="lv1">三篇专题</a><a href="#deliver" class="lv1">完成标准</a></nav><main id="main"><section id="start"><h2><span class="n">01</span>先建立模型，再走进源码</h2>
+<p>Span、数组、前缀和；知道顶点、边、面和角点的区别。</p>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>面到角点</strong></div><div class="flow-step"><span>02</span><strong>偏移数组</strong></div><div class="flow-step"><span>03</span><strong>角点到顶点</strong></div><div class="flow-step"><span>04</span><strong>反向分组</strong></div><div class="flow-step"><span>05</span><strong>缓存拓扑关系</strong></div></div><aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">建议的阅读节奏</div><p>每次完成一篇原理阅读和一个最小实验。读完三个专题后，回到自己的 Blender 改动，寻找同类数据、所有权或依赖问题。</p>
+</aside>
+</section>
+<section id="chapters"><h2><span class="n">02</span>这个方向的三次深入</h2>
+<div class="lesson-grid module-grid"><a class="lesson-card" data-course-id="05-01" href="01-OffsetIndices%E4%B8%8E%E5%87%A0%E4%BD%95%E8%A1%A8%E7%A4%BA.html"><div class="card-top"><span>05 / 01</span><span class="completion-label">待学习</span></div><h3>OffsetIndices：用相邻偏移表达一组变长区间</h3><p>理解一个简单的数据布局选择，如何影响整个网格系统。</p><div class="card-bottom"><span>1,840 字符 · 20 分钟研读建议</span><b aria-hidden="true">↗</b></div></a><a class="lesson-card" data-course-id="05-02" href="02-%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84%E4%B8%8E%E5%89%8D%E7%BC%80%E5%92%8C.html"><div class="card-top"><span>05 / 02</span><span class="completion-label">待学习</span></div><h3>拓扑映射：计数、前缀和、填充的三阶段构造</h3><p>从面到顶点的已有关系，构造顶点到相邻元素的反向查询。</p><div class="card-bottom"><span>1,860 字符 · 21 分钟研读建议</span><b aria-hidden="true">↗</b></div></a><a class="lesson-card" data-course-id="05-03" href="03-%E6%95%B0%E6%8D%AE%E5%B8%83%E5%B1%80%E8%BF%81%E7%A7%BB%E4%B8%8E%E6%8E%A5%E5%8F%A3%E6%BC%94%E5%8C%96.html"><div class="card-top"><span>05 / 03</span><span class="completion-label">待学习</span></div><h3>一次布局重构怎样安全穿过整个项目</h3><p>把 Hans 的网格迁移当成系统设计案例，理解存储改变如何传导到读写、属性和兼容。</p><div class="card-bottom"><span>1,693 字符 · 19 分钟研读建议</span><b aria-hidden="true">↗</b></div></a></div></section>
+<section id="deliver"><h2><span class="n">03</span>用这些成果验收</h2>
+<ul><li>计算旧结构与偏移表示的理论字节数，再记录实际分配量，解释两者差别。</li><li>记录分配次数、构造耗时和遍历所有邻接关系的耗时，而不只测查询一个顶点。</li><li>写迁移报告：前提、兼容策略、测试样本和未支持输入。</li></ul><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">继续前的自检</div><p>选择一个这里研究过的提交，只看提交说明就提出自己的方案，再用 diff 和后续修复校验你的推演。</p>
+</aside>
+</section>
+</main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

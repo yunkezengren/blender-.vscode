@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="从新接口的约束理解为什么构建方式与性能不能分开设计。">
+<title>KD-tree 的接口：谁拥有坐标，何时允许修改 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="12-01"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">KD树与综合设计实验</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>ALGORITHMS / MEASUREMENT / LESSON 12-01</div><h1>KD-tree 的接口：谁拥有坐标，何时允许修改</h1><p class="lede">从新接口的约束理解为什么构建方式与性能不能分开设计。</p><div class="chips"><span class="chip">方向 12 · KD树与综合设计实验</span><span class="chip">专题 1/3</span><span class="chip">正文 2,370 字符</span><span class="chip">建议研读 26 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-KDTree%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%B8%83%E5%B1%80.html">01 KD-tree 的接口：谁拥有坐标，何时允许修改</a><a href="02-%E6%9E%84%E5%BB%BA%E6%9F%A5%E8%AF%A2%E4%B8%8E%E5%89%AA%E6%9E%9D%E8%AF%81%E6%98%8E.html">02 KD-tree 查询：每一次剪枝都需要下界证明</a><a href="03-%E6%80%A7%E8%83%BD%E5%AE%9E%E9%AA%8C%E4%B8%8E%E6%AF%95%E4%B8%9A%E9%A1%B9%E7%9B%AE.html">03 把优化写成可以复核的工程结论</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>把容器、分配、视图、算法和实验设计结合到一个 KD-tree 项目。研究 Hans 与 Brecht 的改进，同时尊重其 nanoflann 来源与实际适配过程。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>向量距离、包围盒、递归或显式栈、前面模块中的数据与寿命概念。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>外部坐标数组</strong></div><div class="flow-step"><span>02</span><strong>批量构建</strong></div><div class="flow-step"><span>03</span><strong>划分与叶区间</strong></div><div class="flow-step"><span>04</span><strong>距离界限剪枝</strong></div><div class="flow-step"><span>05</span><strong>正确性及性能对照</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>构造树后改变坐标，使用对照测试展示为何必须重建或更新索引。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>先把查询问题写清楚</h3>
+<p>给定一组点和查询位置，最近邻寻找距离最小的点。暴力遍历是容易验证的基准；KD-tree 通过空间划分减少需要检查的候选。性能取决于维度、点分布、查询分布和构建成本，不存在对所有数据都同样优越的剪枝效果。</p>
+<p>d94ff69e386 的新实现由 Hans 提交并注明 Brecht 共同署名，其结构源自 nanoflann，再针对 Blender 做了较多修改。学习它应关注复用现有算法与适配数据接口的工程判断。</p>
+<h3>引用坐标数组是一项契约</h3>
+<p>KDTreeNew 引用调用者的坐标 Span，并可通过索引选择其中一部分。减少坐标复制有利于内存与构建成本，但要求原坐标存储在树使用期间存活且保持不变。若只保证地址不变而修改了坐标，划分界限也可能过期，查询仍然错误。</p>
+<p>这个 API 使用一次 build 取代分开 insert 与 balance。调用者先准备连续坐标，再构建空间索引。接口让批量布局成为显式前提，也减少中间状态。</p>
+<h3>节点布局服务访问模式</h3>
+<p>当前头文件中相邻分配两个孩子，叶节点保存索引区间，内部节点保存划分信息。理解这些字段时先跟踪一个查询如何读取它们，解释为什么相邻孩子或区间表示有利于缓存与减少分配。</p>
+<p>先写出可工作的简单版本，再做布局优化。正确性基准应保留暴力查询，即使树实现换了分配器或节点排列，也能比较返回距离。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<div class="demo" data-demo="kdtree"><div class="demo-heading"><span class="pill">INTERACTIVE LAB</span><strong>改变一个条件，观察模型</strong></div><div class="demo-controls"></div><div class="demo-result" aria-live="polite"></div><p class="demo-caption">教学简化模型，帮助推演状态；不等同于 Blender 完整实现，也不执行性能基准。</p><noscript>开启 JavaScript 可使用交互；正文和源码仍可离线阅读。</noscript></div><aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要只比较返回索引；等距点可能有多个正确答案，应比较距离和规定的 tie-breaking 语义。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>KD-tree 的索引视图：节点顺序与原点编号分离</h3><p>完整访问器交出构建后的索引数组视图。树可以重排索引而不移动外部坐标；这也是为什么坐标数组的稳定性成为接口前提。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_kdtree_new.hh · L508–L511。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_kdtree_new.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="508"><span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">T</span>&gt; <span class="syntax-type">Span</span>&lt;<span class="syntax-keyword">int</span>&gt; <span class="syntax-type">KDTreeNew</span>&lt;<span class="syntax-type">T</span>&gt;::<span class="syntax-function">tree_indices</span>() <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="509">{</span>
+<span class="code-line" data-line="510">  <span class="syntax-keyword">return</span> <span class="syntax-type">Span</span>&lt;<span class="syntax-keyword">int</span>&gt;(tree_indices_, size_);</span>
+<span class="code-line" data-line="511">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L508</span><div><code><span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">T</span>&gt; <span class="syntax-type">Span</span>&lt;<span class="syntax-keyword">int</span>&gt; <span class="syntax-type">KDTreeNew</span>&lt;<span class="syntax-type">T</span>&gt;::<span class="syntax-function">tree_indices</span>() <span class="syntax-keyword">const</span></code><p>函数属于模板 KDTreeNew&lt;T&gt;，返回索引数组的借用 Span。const 限定当前树对象，但具体可修改性仍需根据 Span&lt;int&gt; 的元素访问规则理解。</p>
+</div></div><div class="line-explanation"><span class="line-number">L509</span><div><code>{</code><p>打开 template&lt;typename T&gt; Span&lt;int&gt; KDTreeNew&lt;T&gt;::tree_indices() const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L510</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-type">Span</span>&lt;<span class="syntax-keyword">int</span>&gt;(tree_indices_, size_);</code><p>将 tree_indices_ 与 size_ 组成视图。没有复制数组，也不延长树的内部存储寿命。</p>
+</div></div><div class="line-explanation"><span class="line-number">L511</span><div><code>}</code><p>结束 template&lt;typename T&gt; Span&lt;int&gt; KDTreeNew&lt;T&gt;::tree_indices() const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>外部坐标编号 [0,1,2,3]，树内部可能存储索引排列 [2,0,3,1]。叶区间访问这个排列后，再用编号访问外部坐标；不能把叶区间的位置直接当成原点编号。</p>
+<h4>调用关系与设计判断</h4><p>继续阅读 build 的外部 Span 坐标保存方式与 Node 叶子 [start,end) 语义。坐标数组释放或重新分配会使树的借用失效；构建后修改点坐标还可能破坏分割与包围界，使查询剪枝不再正确。</p>
+</article><article class="deep-reading"><h3>KD-tree 完整构建入口：复制索引，借用坐标</h3><p>实现位于 intern/kdtree.cc，而不是全部在头文件中。完整函数明确坐标仅保存地址，选择索引则进入自己的构建存储；这个差别决定调用者可以释放什么。</p>
+<p>完整源码单元 · source/blender/blenlib/intern/kdtree.cc · L690–L724。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/intern/kdtree.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="690"><span class="syntax-keyword">void</span> <span class="syntax-type">KDTreeNew</span>&lt;<span class="syntax-type">T</span>&gt;::<span class="syntax-function">build</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">Span</span>&lt;<span class="syntax-type">T</span>&gt; points,</span>
+<span class="code-line" data-line="691">                         <span class="syntax-keyword">const</span> <span class="syntax-type">Span</span>&lt;<span class="syntax-keyword">int</span>&gt; indices,</span>
+<span class="code-line" data-line="692">                         <span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> *mask,</span>
+<span class="code-line" data-line="693">                         <span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> size,</span>
+<span class="code-line" data-line="694">                         <span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> leaf_size,</span>
+<span class="code-line" data-line="695">                         <span class="syntax-type">LinearAllocator</span>&lt;&gt; &amp;allocator)</span>
+<span class="code-line" data-line="696">{</span>
+<span class="code-line" data-line="697">  points_ = points.<span class="syntax-function">data</span>();</span>
+<span class="code-line" data-line="698">  <span class="syntax-keyword">if</span> (size == <span class="syntax-number">0</span>) {</span>
+<span class="code-line" data-line="699">    <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="700">  }</span>
+<span class="code-line" data-line="701">  <span class="syntax-keyword">const</span> <span class="syntax-type">MutableSpan</span>&lt;<span class="syntax-keyword">int</span>&gt; tree_indices = allocator.allocate_array&lt;<span class="syntax-keyword">int</span>&gt;(size);</span>
+<span class="code-line" data-line="702"></span>
+<span class="code-line" data-line="703">  <span class="syntax-type">Span</span>&lt;<span class="syntax-keyword">int</span>&gt; source;</span>
+<span class="code-line" data-line="704">  <span class="syntax-keyword">if</span> (mask) {</span>
+<span class="code-line" data-line="705">    mask-&gt;to_indices&lt;<span class="syntax-keyword">int</span>&gt;(tree_indices);</span>
+<span class="code-line" data-line="706">    source = tree_indices;</span>
+<span class="code-line" data-line="707">  }</span>
+<span class="code-line" data-line="708">  <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="709">    source = indices;</span>
+<span class="code-line" data-line="710">  }</span>
+<span class="code-line" data-line="711"></span>
+<span class="code-line" data-line="712">  <span class="syntax-type">TreeBuilder</span>&lt;<span class="syntax-type">T</span>&gt; <span class="syntax-function">builder</span>(points, tree_indices, leaf_size, allocator);</span>
+<span class="code-line" data-line="713">  root_ = builder.<span class="syntax-function">build</span>(source, bounds_);</span>
+<span class="code-line" data-line="714">  tree_indices_ = tree_indices.<span class="syntax-function">data</span>();</span>
+<span class="code-line" data-line="715">  size_ = size;</span>
+<span class="code-line" data-line="716"></span>
+<span class="code-line" data-line="717"><span class="syntax-preprocessor">#ifndef NDEBUG</span></span>
+<span class="code-line" data-line="718">  <span class="syntax-comment">/* Only the pointer to the points is kept, so nothing can check a search result against their</span></span>
+<span class="code-line" data-line="719"><span class="syntax-comment">   * number later. Everything the tree can return comes from here. */</span></span>
+<span class="code-line" data-line="720">  <span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> index : tree_indices) {</span>
+<span class="code-line" data-line="721">    <span class="syntax-type">BLI_assert</span>(index &gt;= <span class="syntax-number">0</span> &amp;&amp; index &lt; points.<span class="syntax-function">size</span>());</span>
+<span class="code-line" data-line="722">  }</span>
+<span class="code-line" data-line="723"><span class="syntax-preprocessor">#endif</span></span>
+<span class="code-line" data-line="724">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L690</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-type">KDTreeNew</span>&lt;<span class="syntax-type">T</span>&gt;::<span class="syntax-function">build</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">Span</span>&lt;<span class="syntax-type">T</span>&gt; points,</code><p>points 提供外部坐标，函数不会拥有它。</p>
+</div></div><div class="line-explanation"><span class="line-number">L691</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">Span</span>&lt;<span class="syntax-keyword">int</span>&gt; indices,</code><p>indices 是可选显式编号列表。</p>
+</div></div><div class="line-explanation"><span class="line-number">L692</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> *mask,</code><p>mask 是另一种选择输入，指针非空时优先转成索引。</p>
+</div></div><div class="line-explanation"><span class="line-number">L693</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> size,</code><p>size 是本次实际点数量，不必等于 points.size()。</p>
+</div></div><div class="line-explanation"><span class="line-number">L694</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> leaf_size,</code><p>leaf_size 控制叶内线性检查与树节点数量的权衡。</p>
+</div></div><div class="line-explanation"><span class="line-number">L695</span><div><code><span class="syntax-type">LinearAllocator</span>&lt;&gt; &amp;allocator)</code><p>allocator 持有构建结果的存储，它必须活到树查询结束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L696</span><div><code>{</code><p>打开 LinearAllocator&lt;&gt; &amp;allocator) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L697</span><div><code>points_ = points.<span class="syntax-function">data</span>();</code><p>只保存 points 的数据指针，坐标数组不能提前退出或迁移。</p>
+</div></div><div class="line-explanation"><span class="line-number">L698</span><div><code><span class="syntax-keyword">if</span> (size == <span class="syntax-number">0</span>) {</code><p>空选择不需要建立树。</p>
+</div></div><div class="line-explanation"><span class="line-number">L699</span><div><code><span class="syntax-keyword">return</span>;</code><p>直接返回，root_ 与 size_ 依赖类成员的初始空状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L700</span><div><code>}</code><p>结束 if (size == 0) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L701</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">MutableSpan</span>&lt;<span class="syntax-keyword">int</span>&gt; tree_indices = allocator.allocate_array&lt;<span class="syntax-keyword">int</span>&gt;(size);</code><p>为实际点数分配内部索引数组，不复制外部坐标。</p>
+</div></div><div class="line-explanation"><span class="line-number">L703</span><div><code><span class="syntax-type">Span</span>&lt;<span class="syntax-keyword">int</span>&gt; source;</code><p>声明构建时使用的源索引视图。</p>
+</div></div><div class="line-explanation"><span class="line-number">L704</span><div><code><span class="syntax-keyword">if</span> (mask) {</code><p>存在 mask 时走选择展开路径。</p>
+</div></div><div class="line-explanation"><span class="line-number">L705</span><div><code>mask-&gt;to_indices&lt;<span class="syntax-keyword">int</span>&gt;(tree_indices);</code><p>把 mask 的全局元素编号写入内部索引数组。</p>
+</div></div><div class="line-explanation"><span class="line-number">L706</span><div><code>source = tree_indices;</code><p>源视图指向这份已展开数组。</p>
+</div></div><div class="line-explanation"><span class="line-number">L707</span><div><code>}</code><p>结束 if (mask) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L708</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入前一个条件不成立时的路径；两条路径分别检查对象与存储状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L709</span><div><code>source = indices;</code><p>否则沿用传入显式 indices；空 indices 的含义由 TreeBuilder 接口约定解释。</p>
+</div></div><div class="line-explanation"><span class="line-number">L710</span><div><code>}</code><p>结束 else { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L712</span><div><code><span class="syntax-type">TreeBuilder</span>&lt;<span class="syntax-type">T</span>&gt; <span class="syntax-function">builder</span>(points, tree_indices, leaf_size, allocator);</code><p>构造 TreeBuilder，传入坐标、目标索引数组、叶大小和存储分配器。</p>
+</div></div><div class="line-explanation"><span class="line-number">L713</span><div><code>root_ = builder.<span class="syntax-function">build</span>(source, bounds_);</code><p>执行实际划分并得到根与总包围盒。节点构建细节还需要连续进入 TreeBuilder::build。</p>
+</div></div><div class="line-explanation"><span class="line-number">L714</span><div><code>tree_indices_ = tree_indices.<span class="syntax-function">data</span>();</code><p>保存完成后的内部索引存储地址。</p>
+</div></div><div class="line-explanation"><span class="line-number">L715</span><div><code>size_ = size;</code><p>发布实际点数，查询接口据此判断空树与视图长度。</p>
+</div></div><div class="line-explanation"><span class="line-number">L717</span><div><code><span class="syntax-preprocessor">#ifndef NDEBUG</span></code><p>以下检查仅在未定义 NDEBUG 时编译。</p>
+</div></div><div class="line-explanation"><span class="line-number">L718</span><div><code>/* <span class="syntax-type">Only</span> the pointer to the points is kept, so nothing can check a search result against their</code><p>树只保存点数组地址，查询阶段不再持有完整数组长度，因此构建时必须检查所有可能返回编号都有效。</p>
+</div></div><div class="line-explanation"><span class="line-number">L719</span><div><code>* number later. <span class="syntax-type">Everything</span> the tree can <span class="syntax-keyword">return</span> comes from here. */</code><p>续接 L718 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L720</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> index : tree_indices) {</code><p>逐个检查最终树可能返回的原点编号。</p>
+</div></div><div class="line-explanation"><span class="line-number">L721</span><div><code><span class="syntax-type">BLI_assert</span>(index &gt;= <span class="syntax-number">0</span> &amp;&amp; index &lt; points.<span class="syntax-function">size</span>());</code><p>所有编号都必须落在外部坐标范围内。查询阶段只保存点地址，不再保存完整 Span 长度用于检查。</p>
+</div></div><div class="line-explanation"><span class="line-number">L722</span><div><code>}</code><p>结束 for (const int index : tree_indices) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L723</span><div><code><span class="syntax-preprocessor">#endif</span></code><p>结束调试条件编译。</p>
+</div></div><div class="line-explanation"><span class="line-number">L724</span><div><code>}</code><p>结束 LinearAllocator&lt;&gt; &amp;allocator) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>外部坐标有 100 个，只选 mask=[2,8,90]，内部索引存储有 3 个条目，查询返回原编号 2、8 或 90，而不是 0、1、2。mask 可以在构建后退出，因为编号已展开；坐标不能，因为 points_ 仍借用它。</p>
+<h4>调用关系与设计判断</h4><p>沿构造器看 allocator 是外部借用还是 make_allocator 创建的拥有块，再沿析构看两者不同清理方式。布局与接口契约、构建性能、查询剪枝必须一起理解，不能只背 KD-tree 的中位数分割概念。</p>
+</article><article class="deep-reading"><h3>KD-tree 析构：只释放自己创建的 allocator</h3><p>完整析构函数与 build 的借用关系配对。外部坐标从来不由这里释放，外部 allocator 也不由树接管。</p>
+<p>完整源码单元 · source/blender/blenlib/intern/kdtree.cc · L747–L755。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/intern/kdtree.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="747"><span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">T</span>&gt; <span class="syntax-type">KDTreeNew</span>&lt;<span class="syntax-type">T</span>&gt;::~<span class="syntax-type">KDTreeNew</span>()</span>
+<span class="code-line" data-line="748">{</span>
+<span class="code-line" data-line="749">  <span class="syntax-comment">/* An allocator the caller passed is only borrowed, and outlives the tree. The tree&#x27;s own sits</span></span>
+<span class="code-line" data-line="750"><span class="syntax-comment">   * at the start of the buffer it was built in. */</span></span>
+<span class="code-line" data-line="751">  <span class="syntax-keyword">if</span> (owned_buffer_ != <span class="syntax-keyword">nullptr</span>) {</span>
+<span class="code-line" data-line="752">    std::<span class="syntax-function">destroy_at</span>(<span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-type">LinearAllocator</span>&lt;&gt; *&gt;(owned_buffer_));</span>
+<span class="code-line" data-line="753">    <span class="syntax-type">MEM_delete_void</span>(owned_buffer_);</span>
+<span class="code-line" data-line="754">  }</span>
+<span class="code-line" data-line="755">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L747</span><div><code><span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">T</span>&gt; <span class="syntax-type">KDTreeNew</span>&lt;<span class="syntax-type">T</span>&gt;::~<span class="syntax-type">KDTreeNew</span>()</code><p>树退出时清理自己的构建资源，不能再保留 tree_indices 视图使用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L748</span><div><code>{</code><p>打开 template&lt;typename T&gt; KDTreeNew&lt;T&gt;::~KDTreeNew() 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L749</span><div><code>/* <span class="syntax-type">An</span> allocator the caller passed is only borrowed, and outlives the tree. <span class="syntax-type">The</span> tree&#x27;s own sits</code><p>外部分配器只是借用；内部创建的分配器位于拥有缓冲开头，由树负责析构和释放。两条路径不能混用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L750</span><div><code>* at the start of the buffer it was built in. */</code><p>续接 L749 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L751</span><div><code><span class="syntax-keyword">if</span> (owned_buffer_ != <span class="syntax-keyword">nullptr</span>) {</code><p>owned_buffer_ 非空表示内部自己创建了 allocator 与缓冲；为空表示借用外部分配器。</p>
+</div></div><div class="line-explanation"><span class="line-number">L752</span><div><code>std::<span class="syntax-function">destroy_at</span>(<span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-type">LinearAllocator</span>&lt;&gt; *&gt;(owned_buffer_));</code><p>先析构位于缓冲开头的 LinearAllocator，使它释放附加管理的块。</p>
+</div></div><div class="line-explanation"><span class="line-number">L753</span><div><code><span class="syntax-type">MEM_delete_void</span>(owned_buffer_);</code><p>随后释放容纳 allocator 自身的原始缓冲，顺序不可倒置。</p>
+</div></div><div class="line-explanation"><span class="line-number">L754</span><div><code>}</code><p>结束 if (owned_buffer_ != nullptr) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L755</span><div><code>}</code><p>结束 template&lt;typename T&gt; KDTreeNew&lt;T&gt;::~KDTreeNew() 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>用外部 allocator 构造的树退出时，分配器继续存在；其内部索引与节点空间按 allocator 的整体生命周期释放。内部拥有路径则在这里结束 allocator 并释放首块。两个路径都不释放外部 points。</p>
+<h4>调用关系与设计判断</h4><p>测试分别创建外部分配器路径和内部路径，记录构造/销毁顺序。不要把“树对象析构后外部分配器仍在”理解为允许继续通过已析构树调用查询；那是另外一种对象生命周期错误。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_kdtree_new.hh">BLI_kdtree_new.hh</a></div><p>把叶区间与内部划分字段对应到访问路径。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 26 行 · SHA-256 b94b92497ea9</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_kdtree_new.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_kdtree_new.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">23</span>,<span class="syntax-number">54</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_kdtree_new.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_kdtree_new.hh">BLI_kdtree_new.hh</a></div><p>阅读外部坐标引用与不可移动约束。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 89 行 · SHA-256 b94b92497ea9</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_kdtree_new.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_kdtree_new.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">86</span>,<span class="syntax-number">117</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_kdtree_new.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/d94ff69e386aebe06ed536f363a9c7f3c3c36e8e" target="_blank" rel="noopener">d94ff69e386</a> <span>Hans Goudey · 2026-09-17</span></div><h3>BLI: New KDTree implementation with better performance</h3><p>先读 API 改变和代码来源，再看构建与查询优化。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This PR adds a new KD-tree implementation that is much faster to build
+and has much faster lookup performance. It&#x27;s a new implementation
+because the API is different, and the heritage of the code is completely
+separate. The code structure is derived from the nanoflann library [0],
+but heavily modified to work better with Blender code and to further
+improve performance, by a large amount in some cases.
+
+The provided API is a bit opinionated: it forgoes the separate &quot;insert&quot;
+and &quot;balance&quot; steps with a single &quot;build&quot; step, making the caller build
+their own coordinate array that can then be referenced by the caller.
+Optionally, a subset of the coordinates can be referenced by an index
+span or an IndexMask.
+
+A few bounding box calculation functions are also improved to use
+pipelining to reduce the cost of dependent writes. For some cases that
+can be a 3-5x performance improvement as well.
+
+Overall performance is a significant improvement. In a test of 1 million
+points on a Ryzen 7950X:
+
+|                   | BLI_kdtree | nanoflann |        |
+| ----------------- | ---------- | --------- | ------ |
+| Build (random)    |     204 ms |    5.5 ms |  37.2x |
+| Build (grid-like) |     168 ms |    4.4 ms |  38.2x |
+| Find nearest      |    4.49 us |    479 ns |   9.4x |
+| Find 8 nearest    |    8.27 us |   1.40 us |  5.91x |
+| Memory            |    26.7 MB |    6.5 MB |  0.24x |
+
+For more performance numbers, see the pull request.
+
+For this initial commit, I only changed usage in three Geometry Nodes
+files. After that, incrementally switching in separate commits should be
+a much better process.
+
+[0]: https://github.com/jlblancoc/nanoflann
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/163778
+
+---------
+
+Co-authored-by: Brecht Van Lommel &lt;brecht@blender.org&gt;</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenlib/<span class="syntax-type">BLI_bounds</span>.hh               |  <span class="syntax-number">88</span> +-</span>
+<span class="code-line" data-line="2"> source/blender/blenlib/<span class="syntax-type">BLI_kdtree_new</span>.hh           | <span class="syntax-number">686</span> ++++++++++++++++</span>
+<span class="code-line" data-line="3"> source/blender/blenlib/<span class="syntax-type">CMakeLists</span>.txt              |   <span class="syntax-number">3</span> +</span>
+<span class="code-line" data-line="4"> source/blender/blenlib/intern/kdtree.cc            | <span class="syntax-number">907</span> +++++++++++++++++++++</span>
+<span class="code-line" data-line="5"> source/blender/blenlib/tests/<span class="syntax-type">BLI_kdtree_test</span>.cc    | <span class="syntax-number">656</span> +++++++++++++++</span>
+<span class="code-line" data-line="6"> .../performance/<span class="syntax-type">BLI_kdtree_performance_test</span>.cc     | <span class="syntax-number">725</span> ++++++++++++++++</span>
+<span class="code-line" data-line="7"> .../blenlib/tests/performance/<span class="syntax-type">CMakeLists</span>.txt       |   <span class="syntax-number">6</span> +</span>
+<span class="code-line" data-line="8"> .../geometry/nodes/node_geo_cluster_by_distance.cc |  <span class="syntax-number">41</span> +-</span>
+<span class="code-line" data-line="9"> .../nodes/node_geo_distribute_points_on_faces.cc   |  <span class="syntax-number">34</span> +-</span>
+<span class="code-line" data-line="10"> .../geometry/nodes/node_geo_index_of_nearest.cc    |  <span class="syntax-number">37</span> +-</span>
+<span class="code-line" data-line="11"> <span class="syntax-number">10</span> files changed, <span class="syntax-number">3098</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">85</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat d94ff69e386</span>
+<span class="code-line" data-line="2">git show d94ff69e386</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show d94ff69e386 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>实现暴力最近邻，定义相同距离时允许哪些返回索引。</p>
+</li><li><strong>任务 02</strong><p>给简单 KD-tree 使用外部坐标视图，在文档中写清存活与不可变要求。</p>
+</li><li><strong>任务 03</strong><p>构造树后改变坐标，使用对照测试展示为何必须重建或更新索引。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="12-01-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="12-01-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="12-01-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>坐标地址没变，树就一定有效吗？</summary><p>不一定，坐标值变化也可能使划分和界限失效。</p>
+</details><details class="question"><summary>为什么先写暴力版本？</summary><p>它简单可靠，可作为后续算法、布局与并行优化的正确性参照。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="12-01" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../11-%E4%BE%9D%E8%B5%96%E5%9B%BE%E4%B8%8E%E5%B9%B6%E8%A1%8C%E8%B0%83%E5%BA%A6/03-%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E4%B8%8E%E5%B5%8C%E5%A5%97%E6%AD%BB%E9%94%81.html">← 上一篇：并行系统：工作窃取、任务粒度与锁边界</a><a href="../12-KD%E6%A0%91%E4%B8%8E%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E5%AE%9E%E9%AA%8C/02-%E6%9E%84%E5%BB%BA%E6%9F%A5%E8%AF%A2%E4%B8%8E%E5%89%AA%E6%9E%9D%E8%AF%81%E6%98%8E.html">下一篇：KD-tree 查询：每一次剪枝都需要下界证明 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

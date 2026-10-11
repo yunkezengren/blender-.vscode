@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="从二维例子理解分支遍历，再把正确性条件落实成测试。">
+<title>KD-tree 查询：每一次剪枝都需要下界证明 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="12-02"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">KD树与综合设计实验</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>ALGORITHMS / MEASUREMENT / LESSON 12-02</div><h1>KD-tree 查询：每一次剪枝都需要下界证明</h1><p class="lede">从二维例子理解分支遍历，再把正确性条件落实成测试。</p><div class="chips"><span class="chip">方向 12 · KD树与综合设计实验</span><span class="chip">专题 2/3</span><span class="chip">正文 3,108 字符</span><span class="chip">建议研读 35 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-KDTree%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%B8%83%E5%B1%80.html">01 KD-tree 的接口：谁拥有坐标，何时允许修改</a><a href="02-%E6%9E%84%E5%BB%BA%E6%9F%A5%E8%AF%A2%E4%B8%8E%E5%89%AA%E6%9E%9D%E8%AF%81%E6%98%8E.html">02 KD-tree 查询：每一次剪枝都需要下界证明</a><a href="03-%E6%80%A7%E8%83%BD%E5%AE%9E%E9%AA%8C%E4%B8%8E%E6%AF%95%E4%B8%9A%E9%A1%B9%E7%9B%AE.html">03 把优化写成可以复核的工程结论</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>把容器、分配、视图、算法和实验设计结合到一个 KD-tree 项目。研究 Hans 与 Brecht 的改进，同时尊重其 nanoflann 来源与实际适配过程。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>向量距离、包围盒、递归或显式栈、前面模块中的数据与寿命概念。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>外部坐标数组</strong></div><div class="flow-step"><span>02</span><strong>批量构建</strong></div><div class="flow-step"><span>03</span><strong>划分与叶区间</strong></div><div class="flow-step"><span>04</span><strong>距离界限剪枝</strong></div><div class="flow-step"><span>05</span><strong>正确性及性能对照</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>随机生成小规模输入，与暴力结果对照数千次，并保存失败随机种子。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>构建建立可用于证明的区域</h3>
+<p>教学 KD-tree 可沿某一维划分点集，递归建立子区域，叶节点保留少量点用于直接检查。划分策略影响树平衡、构建时间和区域紧密程度。数据全相同或一维退化时，构建必须保证终止，不能不断产生没有进展的分割。</p>
+<p>原地重排索引而非坐标可以保持外部属性与点索引关联。节点中的区间应说明它索引的是内部排列，还是原始坐标数组；两级索引混用会得到看似合理但错误的结果。</p>
+<h3>最近邻通过下界排除候选</h3>
+<p>当前最佳距离为 best。若某子区域到查询点的最小可能距离已经大于 best，就不可能找到更近的点，可以跳过该区域。平方距离避免不必要的平方根，但所有比较必须统一使用平方量。</p>
+<p>针对轴对齐包围盒，每维查询坐标在区间内贡献零，在区间外贡献到最近边界的距离平方，再相加得到下界。具体 KDTreeNew 还利用其划分表示组织搜索，不应把教学盒子算法当成其逐行实现。</p>
+<h3>边界相等影响查询语义</h3>
+<p>若下界恰好等于 best，是否剪枝取决于是否需要收集所有等距结果、包含边界以及 tie-breaking 约定。范围查询与最近邻查询可能有不同规则。读 QueryType、结果收集器与 inclusive 相关约束，可以理解通用搜索如何把这部分语义参数化。</p>
+<p>浮点比较需要明确输入有效性和容差策略；NaN 会破坏许多有序比较前提。先限制教学输入为有限数值，再决定如何拒绝或处理异常数据。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要把距离与平方距离混用；量纲不一致会让剪枝条件错误。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>search_node 完整递归：候选更新、远侧剪枝与状态恢复</h3><p>这是最近邻搜索的核心完整函数。bool 返回值表达是否继续遍历，距离比较决定是否值得进入子树；两个判断不能混为一谈。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_kdtree_new.hh · L618–L684。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_kdtree_new.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="618"><span class="syntax-keyword">bool</span> <span class="syntax-type">KDTreeNew</span>&lt;<span class="syntax-type">T</span>&gt;::<span class="syntax-function">search_node</span>(<span class="syntax-type">Query</span> &amp;query,</span>
+<span class="code-line" data-line="619">                               <span class="syntax-keyword">const</span> <span class="syntax-type">T</span> &amp;position,</span>
+<span class="code-line" data-line="620">                               <span class="syntax-keyword">const</span> <span class="syntax-type">Node</span> *node,</span>
+<span class="code-line" data-line="621">                               <span class="syntax-keyword">const</span> value_type distance_sq,</span>
+<span class="code-line" data-line="622">                               <span class="syntax-type">T</span> &amp;offsets) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="623">  requires kdtree::<span class="syntax-type">QueryType</span>&lt;<span class="syntax-type">Query</span>, value_type&gt;</span>
+<span class="code-line" data-line="624">{</span>
+<span class="code-line" data-line="625">  <span class="syntax-keyword">if</span> (node-&gt;children == <span class="syntax-keyword">nullptr</span>) {</span>
+<span class="code-line" data-line="626">    <span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> *indices = tree_indices_;</span>
+<span class="code-line" data-line="627">    <span class="syntax-keyword">const</span> <span class="syntax-type">T</span> *points = points_;</span>
+<span class="code-line" data-line="628">    <span class="syntax-keyword">for</span> (<span class="syntax-keyword">int</span> i = node-&gt;leaf.start; i &lt; node-&gt;leaf.end; i++) {</span>
+<span class="code-line" data-line="629">      <span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> index = indices[i];</span>
+<span class="code-line" data-line="630">      <span class="syntax-keyword">const</span> value_type point_distance_sq = math::<span class="syntax-function">distance_squared</span>(position, points[index]);</span>
+<span class="code-line" data-line="631">      <span class="syntax-keyword">if</span> (kdtree::keep_distance&lt;<span class="syntax-type">Query</span>&gt;(point_distance_sq, query.<span class="syntax-function">max_distance_sq</span>())) {</span>
+<span class="code-line" data-line="632">        <span class="syntax-keyword">if</span> (!query.<span class="syntax-function">add_point</span>(point_distance_sq, index)) {</span>
+<span class="code-line" data-line="633">          <span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="634">        }</span>
+<span class="code-line" data-line="635">      }</span>
+<span class="code-line" data-line="636">    }</span>
+<span class="code-line" data-line="637">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">true</span>;</span>
+<span class="code-line" data-line="638">  }</span>
+<span class="code-line" data-line="639"></span>
+<span class="code-line" data-line="640">  <span class="syntax-comment">/* Both children are loaded before it is known which one to visit, so that the loads do not</span></span>
+<span class="code-line" data-line="641"><span class="syntax-comment">   * wait on the comparison below. Picking one first makes the walk down the tree a chain of</span></span>
+<span class="code-line" data-line="642"><span class="syntax-comment">   * dependent loads. */</span></span>
+<span class="code-line" data-line="643">  <span class="syntax-keyword">const</span> <span class="syntax-type">Node</span> *low_child = &amp;node-&gt;children[<span class="syntax-number">0</span>];</span>
+<span class="code-line" data-line="644">  <span class="syntax-keyword">const</span> <span class="syntax-type">Node</span> *high_child = &amp;node-&gt;children[<span class="syntax-number">1</span>];</span>
+<span class="code-line" data-line="645"></span>
+<span class="code-line" data-line="646">  <span class="syntax-comment">/* Visit the side of the split the position is on first, since what it finds there is what</span></span>
+<span class="code-line" data-line="647"><span class="syntax-comment">   * lets the other side be skipped. */</span></span>
+<span class="code-line" data-line="648">  <span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> dim = node-&gt;dim;</span>
+<span class="code-line" data-line="649">  <span class="syntax-keyword">const</span> value_type value = position[dim];</span>
+<span class="code-line" data-line="650">  <span class="syntax-keyword">const</span> value_type to_low = value - node-&gt;split.low;</span>
+<span class="code-line" data-line="651">  <span class="syntax-keyword">const</span> value_type to_high = value - node-&gt;split.high;</span>
+<span class="code-line" data-line="652"></span>
+<span class="code-line" data-line="653">  <span class="syntax-comment">/* Written as a branch rather than as a choice between two pointers, so that the processor</span></span>
+<span class="code-line" data-line="654"><span class="syntax-comment">   * predicts which child comes next and starts loading it before the comparison has resolved.</span></span>
+<span class="code-line" data-line="655"><span class="syntax-comment">   * Selecting the pointer instead makes the walk down the tree wait at every level. */</span></span>
+<span class="code-line" data-line="656">  <span class="syntax-keyword">const</span> <span class="syntax-type">Node</span> *far_child;</span>
+<span class="code-line" data-line="657">  value_type far_offset;</span>
+<span class="code-line" data-line="658">  <span class="syntax-keyword">if</span> ((to_low + to_high) &lt; <span class="syntax-number">0</span>) {</span>
+<span class="code-line" data-line="659">    <span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">search_node</span>(query, position, low_child, distance_sq, offsets)) {</span>
+<span class="code-line" data-line="660">      <span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="661">    }</span>
+<span class="code-line" data-line="662">    far_child = high_child;</span>
+<span class="code-line" data-line="663">    far_offset = math::<span class="syntax-function">square</span>(to_high);</span>
+<span class="code-line" data-line="664">  }</span>
+<span class="code-line" data-line="665">  <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="666">    <span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">search_node</span>(query, position, high_child, distance_sq, offsets)) {</span>
+<span class="code-line" data-line="667">      <span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="668">    }</span>
+<span class="code-line" data-line="669">    far_child = low_child;</span>
+<span class="code-line" data-line="670">    far_offset = math::<span class="syntax-function">square</span>(to_low);</span>
+<span class="code-line" data-line="671">  }</span>
+<span class="code-line" data-line="672"></span>
+<span class="code-line" data-line="673">  <span class="syntax-comment">/* Swap in the distance to the far side for this dimension, keeping the others. */</span></span>
+<span class="code-line" data-line="674">  <span class="syntax-keyword">const</span> value_type previous = offsets[dim];</span>
+<span class="code-line" data-line="675">  <span class="syntax-keyword">const</span> value_type far_distance_sq = distance_sq + far_offset - previous;</span>
+<span class="code-line" data-line="676">  <span class="syntax-keyword">if</span> (!kdtree::keep_distance&lt;<span class="syntax-type">Query</span>&gt;(far_distance_sq, query.<span class="syntax-function">max_distance_sq</span>())) {</span>
+<span class="code-line" data-line="677">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">true</span>;</span>
+<span class="code-line" data-line="678">  }</span>
+<span class="code-line" data-line="679">  offsets[dim] = far_offset;</span>
+<span class="code-line" data-line="680">  <span class="syntax-keyword">const</span> <span class="syntax-keyword">bool</span> keep_searching = <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">search_node</span>(</span>
+<span class="code-line" data-line="681">      query, position, far_child, far_distance_sq, offsets);</span>
+<span class="code-line" data-line="682">  offsets[dim] = previous;</span>
+<span class="code-line" data-line="683">  <span class="syntax-keyword">return</span> keep_searching;</span>
+<span class="code-line" data-line="684">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L618</span><div><code><span class="syntax-keyword">bool</span> <span class="syntax-type">KDTreeNew</span>&lt;<span class="syntax-type">T</span>&gt;::<span class="syntax-function">search_node</span>(<span class="syntax-type">Query</span> &amp;query,</code><p>泛型搜索单个节点，Query 的类型决定候选保留与提前退出策略。</p>
+</div></div><div class="line-explanation"><span class="line-number">L619</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">T</span> &amp;position,</code><p>position 是不变的查询坐标。</p>
+</div></div><div class="line-explanation"><span class="line-number">L620</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">Node</span> *node,</code><p>node 是当前节点，必须属于当前有效树。</p>
+</div></div><div class="line-explanation"><span class="line-number">L621</span><div><code><span class="syntax-keyword">const</span> value_type distance_sq,</code><p>distance_sq 是到当前搜索范围的平方距离下界，不是某个实际点的距离。</p>
+</div></div><div class="line-explanation"><span class="line-number">L622</span><div><code><span class="syntax-type">T</span> &amp;offsets) <span class="syntax-keyword">const</span></code><p>offsets 按引用传递逐维贡献，因此递归修改后必须恢复。</p>
+</div></div><div class="line-explanation"><span class="line-number">L623</span><div><code>requires kdtree::<span class="syntax-type">QueryType</span>&lt;<span class="syntax-type">Query</span>, value_type&gt;</code><p>requires 检查 Query 满足距离查询协议。</p>
+</div></div><div class="line-explanation"><span class="line-number">L624</span><div><code>{</code><p>打开 requires kdtree::QueryType&lt;Query, value_type&gt; 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L625</span><div><code><span class="syntax-keyword">if</span> (node-&gt;children == <span class="syntax-keyword">nullptr</span>) {</code><p>children 为空说明当前节点是叶子，union 中此时读取 leaf 字段。</p>
+</div></div><div class="line-explanation"><span class="line-number">L626</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> *indices = tree_indices_;</code><p>缓存索引数组指针供叶内循环使用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L627</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">T</span> *points = points_;</code><p>缓存外部点数组指针，其寿命必须覆盖搜索。</p>
+</div></div><div class="line-explanation"><span class="line-number">L628</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-keyword">int</span> i = node-&gt;leaf.start; i &lt; node-&gt;leaf.end; i++) {</code><p>遍历叶子半开区间 [start,end)，区间下标属于树内部排列。</p>
+</div></div><div class="line-explanation"><span class="line-number">L629</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> index = indices[i];</code><p>从内部排列取得原点编号。</p>
+</div></div><div class="line-explanation"><span class="line-number">L630</span><div><code><span class="syntax-keyword">const</span> value_type point_distance_sq = math::<span class="syntax-function">distance_squared</span>(position, points[index]);</code><p>计算当前实际点到查询位置的平方距离。</p>
+</div></div><div class="line-explanation"><span class="line-number">L631</span><div><code><span class="syntax-keyword">if</span> (kdtree::keep_distance&lt;<span class="syntax-type">Query</span>&gt;(point_distance_sq, query.<span class="syntax-function">max_distance_sq</span>())) {</code><p>根据 Query 的 inclusive 策略与当前距离界决定是否保留候选。相等边界行为由 keep_distance 定义。</p>
+</div></div><div class="line-explanation"><span class="line-number">L632</span><div><code><span class="syntax-keyword">if</span> (!query.<span class="syntax-function">add_point</span>(point_distance_sq, index)) {</code><p>把合格点交给收集器；它可能更新距离上界，也可能要求终止整个搜索。</p>
+</div></div><div class="line-explanation"><span class="line-number">L633</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</code><p>收集器要求停止，向上传递 false。</p>
+</div></div><div class="line-explanation"><span class="line-number">L634</span><div><code>}</code><p>结束 if (!query.add_point(point_distance_sq, index)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L635</span><div><code>}</code><p>结束 if (kdtree::keep_distance&lt;Query&gt;(point_distance_sq, query.max_distance_sq())) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L636</span><div><code>}</code><p>结束 for (int i = node-&gt;leaf.start; i &lt; node-&gt;leaf.end; i++) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L637</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">true</span>;</code><p>叶子正常检查完毕，返回 true 允许继续其他分支。</p>
+</div></div><div class="line-explanation"><span class="line-number">L638</span><div><code>}</code><p>结束 if (node-&gt;children == nullptr) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L640</span><div><code>/* <span class="syntax-type">Both</span> children are loaded before it is known which one to visit, so that the loads do not</code><p>提前取得两个相邻孩子地址，减少必须等比较结果后才加载下一节点的串行依赖；这是性能组织，不改变剪枝条件。</p>
+</div></div><div class="line-explanation"><span class="line-number">L641</span><div><code>* wait on the comparison below. <span class="syntax-type">Picking</span> one first makes the walk down the tree a chain of</code><p>续接 L640 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L642</span><div><code>* dependent loads. */</code><p>续接 L640 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L643</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">Node</span> *low_child = &amp;node-&gt;children[<span class="syntax-number">0</span>];</code><p>预先取得低侧孩子指针，兄弟节点在 children 中相邻存放。</p>
+</div></div><div class="line-explanation"><span class="line-number">L644</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">Node</span> *high_child = &amp;node-&gt;children[<span class="syntax-number">1</span>];</code><p>预先取得高侧孩子指针。这种加载组织是实现层面的性能选择，不改变剪枝数学条件。</p>
+</div></div><div class="line-explanation"><span class="line-number">L646</span><div><code>/* <span class="syntax-type">Visit</span> the side of the split the position is on first, since what it finds there is what</code><p>先搜索更可能靠近查询点的一侧，尽早缩小最好距离上界，增加远侧剪枝机会。</p>
+</div></div><div class="line-explanation"><span class="line-number">L647</span><div><code>* lets the other side be skipped. */</code><p>续接 L646 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L648</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> dim = node-&gt;dim;</code><p>读取本节点分割维度。</p>
+</div></div><div class="line-explanation"><span class="line-number">L649</span><div><code><span class="syntax-keyword">const</span> value_type value = position[dim];</code><p>读取查询点在该维度的坐标。</p>
+</div></div><div class="line-explanation"><span class="line-number">L650</span><div><code><span class="syntax-keyword">const</span> value_type to_low = value - node-&gt;split.low;</code><p>计算相对低侧边界的有符号差。</p>
+</div></div><div class="line-explanation"><span class="line-number">L651</span><div><code><span class="syntax-keyword">const</span> value_type to_high = value - node-&gt;split.high;</code><p>计算相对高侧边界的有符号差。</p>
+</div></div><div class="line-explanation"><span class="line-number">L653</span><div><code>/* <span class="syntax-type">Written</span> as a branch rather than as a choice between two pointers, so that the processor</code><p>显式分支让处理器有机会预测下一孩子并提前加载；若仅先选指针，访问链可能每层都依赖前一次比较。效果仍需实际基准验证。</p>
+</div></div><div class="line-explanation"><span class="line-number">L654</span><div><code>* predicts which child comes next and starts loading it before the comparison has resolved.</code><p>续接 L653 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L655</span><div><code>* <span class="syntax-type">Selecting</span> the pointer instead makes the walk down the tree wait at every level. */</code><p>续接 L653 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L656</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">Node</span> *far_child;</code><p>声明稍后需要检查的远侧孩子。</p>
+</div></div><div class="line-explanation"><span class="line-number">L657</span><div><code>value_type far_offset;</code><p>声明远侧在本维度上的平方距离贡献。</p>
+</div></div><div class="line-explanation"><span class="line-number">L658</span><div><code><span class="syntax-keyword">if</span> ((to_low + to_high) &lt; <span class="syntax-number">0</span>) {</code><p>通过两个差的和判断先访问哪一侧，优先探索更有希望找到近点的一边。</p>
+</div></div><div class="line-explanation"><span class="line-number">L659</span><div><code><span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">search_node</span>(query, position, low_child, distance_sq, offsets)) {</code><p>先递归低侧。已有距离贡献继续传入近侧搜索。</p>
+</div></div><div class="line-explanation"><span class="line-number">L660</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</code><p>低侧要求停止时，立即向上传播停止。</p>
+</div></div><div class="line-explanation"><span class="line-number">L661</span><div><code>}</code><p>结束 if (!this-&gt;search_node(query, position, low_child, distance_sq, offsets)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L662</span><div><code>far_child = high_child;</code><p>随后把高侧作为远侧。</p>
+</div></div><div class="line-explanation"><span class="line-number">L663</span><div><code>far_offset = math::<span class="syntax-function">square</span>(to_high);</code><p>计算到高侧边界的平方差，作为远侧该维的新贡献。</p>
+</div></div><div class="line-explanation"><span class="line-number">L664</span><div><code>}</code><p>结束 if ((to_low + to_high) &lt; 0) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L665</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入前一个条件不成立时的路径；两条路径分别检查对象与存储状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L666</span><div><code><span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">search_node</span>(query, position, high_child, distance_sq, offsets)) {</code><p>另一分支先递归高侧。</p>
+</div></div><div class="line-explanation"><span class="line-number">L667</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</code><p>高侧要求停止时同样立即返回 false。</p>
+</div></div><div class="line-explanation"><span class="line-number">L668</span><div><code>}</code><p>结束 if (!this-&gt;search_node(query, position, high_child, distance_sq, offsets)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L669</span><div><code>far_child = low_child;</code><p>随后把低侧作为远侧。</p>
+</div></div><div class="line-explanation"><span class="line-number">L670</span><div><code>far_offset = math::<span class="syntax-function">square</span>(to_low);</code><p>计算到低侧边界的平方差。</p>
+</div></div><div class="line-explanation"><span class="line-number">L671</span><div><code>}</code><p>结束 else { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L673</span><div><code><span class="syntax-comment">/* Swap in the distance to the far side for this dimension, keeping the others. */</span></code><p>只替换当前分割维度的距离贡献，其他维保持；递归后必须恢复旧贡献。</p>
+</div></div><div class="line-explanation"><span class="line-number">L674</span><div><code><span class="syntax-keyword">const</span> value_type previous = offsets[dim];</code><p>保存当前维旧贡献，供替换与恢复。</p>
+</div></div><div class="line-explanation"><span class="line-number">L675</span><div><code><span class="syntax-keyword">const</span> value_type far_distance_sq = distance_sq + far_offset - previous;</code><p>将总下界中的旧维贡献换成远侧贡献，其他维度保持不变。</p>
+</div></div><div class="line-explanation"><span class="line-number">L676</span><div><code><span class="syntax-keyword">if</span> (!kdtree::keep_distance&lt;<span class="syntax-type">Query</span>&gt;(far_distance_sq, query.<span class="syntax-function">max_distance_sq</span>())) {</code><p>如果远侧下界已经超出 Query 当前可接受距离，就无需进入远子树。</p>
+</div></div><div class="line-explanation"><span class="line-number">L677</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">true</span>;</code><p>剪枝返回 true：表示本子树已正常处理，允许父层继续其他搜索，并不是找到点的布尔值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L678</span><div><code>}</code><p>结束 if (!kdtree::keep_distance&lt;Query&gt;(far_distance_sq, query.max_distance_sq())) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L679</span><div><code>offsets[dim] = far_offset;</code><p>进入远侧前把逐维状态改为远侧贡献。</p>
+</div></div><div class="line-explanation"><span class="line-number">L680</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">bool</span> keep_searching = <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">search_node</span>(</code><p>递归远侧，调用语句跨两行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L681</span><div><code>query, position, far_child, far_distance_sq, offsets);</code><p>传入更新后的下界与 offsets，接收是否继续搜索的结果。</p>
+</div></div><div class="line-explanation"><span class="line-number">L682</span><div><code>offsets[dim] = previous;</code><p>恢复旧贡献，防止兄弟路径使用错误的距离下界。</p>
+</div></div><div class="line-explanation"><span class="line-number">L683</span><div><code><span class="syntax-keyword">return</span> keep_searching;</code><p>把远侧是否要求停止的结果返回给上一层。</p>
+</div></div><div class="line-explanation"><span class="line-number">L684</span><div><code>}</code><p>结束 requires kdtree::QueryType&lt;Query, value_type&gt; 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>当前距离下界 5，其中分割维贡献 1；远侧该维贡献 9，则远侧下界为 5+9-1=13。若当前最好平方距离为 10，远侧可剪掉；若最好距离为 20，则必须继续。递归结束后要把该维贡献恢复为 1，否则父层的另一个分支会被错误估计。</p>
+<h4>调用关系与设计判断</h4><p>正确性证明分三步：叶内检查覆盖所有候选；子树下界不超过其中任何实际点距离；只在下界不可能改善结果时剪枝。性能取决于近侧先访问后多快缩小距离界，以及树形和点分布。用暴力距离扫描验证结果，再用访问节点数解释耗时差异。</p>
+</article><article class="deep-reading"><h3>剪枝下界的起点：查询点到包围盒的平方距离</h3><p>完整函数先计算到整树包围盒的距离下界，再交给节点递归。offsets 保存逐维贡献，以便下一层只替换分割维度的贡献。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_kdtree_new.hh · L596–L614。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_kdtree_new.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="596"><span class="syntax-keyword">void</span> <span class="syntax-type">KDTreeNew</span>&lt;<span class="syntax-type">T</span>&gt;::<span class="syntax-function">search</span>(<span class="syntax-type">Query</span> &amp;query, <span class="syntax-keyword">const</span> <span class="syntax-type">T</span> &amp;position) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="597">  requires kdtree::<span class="syntax-type">QueryType</span>&lt;<span class="syntax-type">Query</span>, value_type&gt;</span>
+<span class="code-line" data-line="598">{</span>
+<span class="code-line" data-line="599">  <span class="syntax-type">BLI_assert</span>(!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">is_empty</span>());</span>
+<span class="code-line" data-line="600">  <span class="syntax-comment">/* Squared distance to the bounds of the tree, per dimension, which the walk below replaces</span></span>
+<span class="code-line" data-line="601"><span class="syntax-comment">   * one dimension at a time rather than recomputing. */</span></span>
+<span class="code-line" data-line="602">  <span class="syntax-type">T</span> <span class="syntax-function">offsets</span>(<span class="syntax-function">value_type</span>(<span class="syntax-number">0</span>));</span>
+<span class="code-line" data-line="603">  value_type distance_sq = <span class="syntax-number">0</span>;</span>
+<span class="code-line" data-line="604">  <span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> dim : <span class="syntax-type">IndexRange</span>(dimensions)) {</span>
+<span class="code-line" data-line="605">    <span class="syntax-keyword">if</span> (position[dim] &lt; bounds_.min[dim]) {</span>
+<span class="code-line" data-line="606">      offsets[dim] = math::<span class="syntax-function">square</span>(bounds_.min[dim] - position[dim]);</span>
+<span class="code-line" data-line="607">    }</span>
+<span class="code-line" data-line="608">    <span class="syntax-keyword">else</span> <span class="syntax-keyword">if</span> (position[dim] &gt; bounds_.max[dim]) {</span>
+<span class="code-line" data-line="609">      offsets[dim] = math::<span class="syntax-function">square</span>(position[dim] - bounds_.max[dim]);</span>
+<span class="code-line" data-line="610">    }</span>
+<span class="code-line" data-line="611">    distance_sq += offsets[dim];</span>
+<span class="code-line" data-line="612">  }</span>
+<span class="code-line" data-line="613">  <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">search_node</span>(query, position, root_, distance_sq, offsets);</span>
+<span class="code-line" data-line="614">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L596</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-type">KDTreeNew</span>&lt;<span class="syntax-type">T</span>&gt;::<span class="syntax-function">search</span>(<span class="syntax-type">Query</span> &amp;query, <span class="syntax-keyword">const</span> <span class="syntax-type">T</span> &amp;position) <span class="syntax-keyword">const</span></code><p>泛型 Query 决定候选保存方式。模板声明位于函数之前，位置类型与树点类型一致。</p>
+</div></div><div class="line-explanation"><span class="line-number">L597</span><div><code>requires kdtree::<span class="syntax-type">QueryType</span>&lt;<span class="syntax-type">Query</span>, value_type&gt;</code><p>requires 要求 Query 满足距离界、接收点等协议，不满足时在编译期拒绝实例化。</p>
+</div></div><div class="line-explanation"><span class="line-number">L598</span><div><code>{</code><p>打开 requires kdtree::QueryType&lt;Query, value_type&gt; 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L599</span><div><code><span class="syntax-type">BLI_assert</span>(!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">is_empty</span>());</code><p>非空树是该内部函数的前提；外层 find_nearest 已处理空树。</p>
+</div></div><div class="line-explanation"><span class="line-number">L600</span><div><code>/* <span class="syntax-type">Squared</span> distance to the bounds of the tree, per dimension, which the walk below replaces</code><p>先保存查询点到包围盒的逐维平方距离，后续递归每次替换一个维度，避免重复计算所有维。</p>
+</div></div><div class="line-explanation"><span class="line-number">L601</span><div><code>* one dimension at a time rather than recomputing. */</code><p>续接 L600 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L602</span><div><code><span class="syntax-type">T</span> <span class="syntax-function">offsets</span>(<span class="syntax-function">value_type</span>(<span class="syntax-number">0</span>));</code><p>逐维距离贡献先置零，查询点位于某维区间内部时保持零。</p>
+</div></div><div class="line-explanation"><span class="line-number">L603</span><div><code>value_type distance_sq = <span class="syntax-number">0</span>;</code><p>总平方距离初始为零。</p>
+</div></div><div class="line-explanation"><span class="line-number">L604</span><div><code><span class="syntax-keyword">for</span> (<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> dim : <span class="syntax-type">IndexRange</span>(dimensions)) {</code><p>遍历所有维度。</p>
+</div></div><div class="line-explanation"><span class="line-number">L605</span><div><code><span class="syntax-keyword">if</span> (position[dim] &lt; bounds_.min[dim]) {</code><p>查询坐标低于包围盒最小时，该维需要向上移动才能进入盒内。</p>
+</div></div><div class="line-explanation"><span class="line-number">L606</span><div><code>offsets[dim] = math::<span class="syntax-function">square</span>(bounds_.min[dim] - position[dim]);</code><p>记录到最小边界的平方差。</p>
+</div></div><div class="line-explanation"><span class="line-number">L607</span><div><code>}</code><p>结束 if (position[dim] &lt; bounds_.min[dim]) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L608</span><div><code><span class="syntax-keyword">else</span> <span class="syntax-keyword">if</span> (position[dim] &gt; bounds_.max[dim]) {</code><p>查询坐标高于最大边界时，走另一个互斥分支。</p>
+</div></div><div class="line-explanation"><span class="line-number">L609</span><div><code>offsets[dim] = math::<span class="syntax-function">square</span>(position[dim] - bounds_.max[dim]);</code><p>记录到最大边界的平方差。</p>
+</div></div><div class="line-explanation"><span class="line-number">L610</span><div><code>}</code><p>结束 else if (position[dim] &gt; bounds_.max[dim]) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L611</span><div><code>distance_sq += offsets[dim];</code><p>累加该维贡献。盒内维度贡献零；盒外维度贡献最近边界的平方距离。</p>
+</div></div><div class="line-explanation"><span class="line-number">L612</span><div><code>}</code><p>结束 for (const int dim : IndexRange(dimensions)) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L613</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">search_node</span>(query, position, root_, distance_sq, offsets);</code><p>带着根节点、下界与逐维贡献开始递归搜索。这个下界不大于盒内任何实际点到查询的平方距离。</p>
+</div></div><div class="line-explanation"><span class="line-number">L614</span><div><code>}</code><p>结束 requires kdtree::QueryType&lt;Query, value_type&gt; 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>二维盒 min=(1,2)、max=(4,6)，查询点=(0,4)：x 方向贡献 1，y 在区间内贡献 0，总下界为 1。查询点=(0,8) 时贡献为 1+4=5。盒内实际点的平方距离至少为这个值，才能据此进行保守剪枝。</p>
+<h4>调用关系与设计判断</h4><p>继续进入 search_node：在访问远子树时，先保存 offsets[dim]，用 far_offset 替换该维，得到 distance_sq+far_offset-previous；递归返回后恢复 previous。遗漏恢复会污染兄弟分支的下界，是典型的递归状态错误。</p>
+</article><article class="deep-reading"><h3>最近邻完整入口：边界与查询状态</h3><p>这个完整入口把空树处理、结果收集器与树遍历分开。剪枝证明位于 search/search_recursive 等下一层，不在这个包装函数里。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_kdtree_new.hh · L514–L525。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_kdtree_new.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="514"><span class="syntax-keyword">int</span> <span class="syntax-type">KDTreeNew</span>&lt;<span class="syntax-type">T</span>&gt;::<span class="syntax-function">find_nearest</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">T</span> &amp;position, value_type *r_distance_sq) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="515">{</span>
+<span class="code-line" data-line="516">  <span class="syntax-keyword">if</span> (<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">is_empty</span>()) {</span>
+<span class="code-line" data-line="517">    <span class="syntax-keyword">return</span> -<span class="syntax-number">1</span>;</span>
+<span class="code-line" data-line="518">  }</span>
+<span class="code-line" data-line="519">  kdtree::<span class="syntax-type">NearestQuery</span>&lt;value_type&gt; query;</span>
+<span class="code-line" data-line="520">  <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">search</span>(query, position);</span>
+<span class="code-line" data-line="521">  <span class="syntax-keyword">if</span> (query.<span class="syntax-function">index</span>() != -<span class="syntax-number">1</span> &amp;&amp; r_distance_sq) {</span>
+<span class="code-line" data-line="522">    *r_distance_sq = query.<span class="syntax-function">distance_sq</span>();</span>
+<span class="code-line" data-line="523">  }</span>
+<span class="code-line" data-line="524">  <span class="syntax-keyword">return</span> query.<span class="syntax-function">index</span>();</span>
+<span class="code-line" data-line="525">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L514</span><div><code><span class="syntax-keyword">int</span> <span class="syntax-type">KDTreeNew</span>&lt;<span class="syntax-type">T</span>&gt;::<span class="syntax-function">find_nearest</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">T</span> &amp;position, value_type *r_distance_sq) <span class="syntax-keyword">const</span></code><p>查询位置 position，返回原点编号。可选输出是距离平方，不能误称距离。</p>
+</div></div><div class="line-explanation"><span class="line-number">L515</span><div><code>{</code><p>打开 int KDTreeNew&lt;T&gt;::find_nearest(const T &amp;position, value_type *r_distance_sq) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L516</span><div><code><span class="syntax-keyword">if</span> (<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">is_empty</span>()) {</code><p>先检查树是否为空。</p>
+</div></div><div class="line-explanation"><span class="line-number">L517</span><div><code><span class="syntax-keyword">return</span> -<span class="syntax-number">1</span>;</code><p>空树返回 -1；此路径没有为 r_distance_sq 写值，调用者应以返回编号判断结果是否存在。</p>
+</div></div><div class="line-explanation"><span class="line-number">L518</span><div><code>}</code><p>结束 if (this-&gt;is_empty()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L519</span><div><code>kdtree::<span class="syntax-type">NearestQuery</span>&lt;value_type&gt; query;</code><p>创建单最近邻收集器，初始编号 -1、距离平方上界为数值上限。</p>
+</div></div><div class="line-explanation"><span class="line-number">L520</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">search</span>(query, position);</code><p>运行搜索；遍历过程中收集器的当前距离上界会影响后续剪枝。</p>
+</div></div><div class="line-explanation"><span class="line-number">L521</span><div><code><span class="syntax-keyword">if</span> (query.<span class="syntax-function">index</span>() != -<span class="syntax-number">1</span> &amp;&amp; r_distance_sq) {</code><p>只有确实存在结果且调用者提供输出地址时才写距离。</p>
+</div></div><div class="line-explanation"><span class="line-number">L522</span><div><code>*r_distance_sq = query.<span class="syntax-function">distance_sq</span>();</code><p>写出平方距离，避免为了比较距离在循环中重复开方。</p>
+</div></div><div class="line-explanation"><span class="line-number">L523</span><div><code>}</code><p>结束 if (query.index() != -1 &amp;&amp; r_distance_sq) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L524</span><div><code><span class="syntax-keyword">return</span> query.<span class="syntax-function">index</span>();</code><p>返回选中点编号；与树内部排列中的位置应严格区分。</p>
+</div></div><div class="line-explanation"><span class="line-number">L525</span><div><code>}</code><p>结束 int KDTreeNew&lt;T&gt;::find_nearest(const T &amp;position, value_type *r_distance_sq) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>点 P=(3,4)，查询 Q=(0,0)，若 P 是最近点，则输出距离平方 25；显示距离时才开方为 5。空树返回 -1，原有输出变量不一定被改变。等距离点选哪一个需要继续检查 inclusive 与遍历顺序，不能无依据承诺稳定编号。</p>
+<h4>调用关系与设计判断</h4><p>下一层证明某子树的最小可能平方距离大于当前最好距离时才可剪枝。随机样本之外还需测试分割平面、重复点、所有点相同、空树和极端坐标。与暴力扫描比较距离时，注意多解场景允许不同编号但相同最短距离。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_kdtree_new.hh">BLI_kdtree_new.hh</a></div><p>观察结果收集器如何定义距离界限和包含边界语义。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 59 行 · SHA-256 b94b92497ea9</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_kdtree_new.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_kdtree_new.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">56</span>,<span class="syntax-number">87</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_kdtree_new.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/tests/BLI_kdtree_test.cc">BLI_kdtree_test.cc</a></div><p>从测试样例检查最近邻与边界行为。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 71 行 · SHA-256 8da6af416bd1</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/tests/BLI_kdtree_test.cc</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/tests/BLI_kdtree_test.cc&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">68</span>,<span class="syntax-number">99</span> -- <span class="syntax-string">&quot;source/blender/blenlib/tests/BLI_kdtree_test.cc&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/d94ff69e386aebe06ed536f363a9c7f3c3c36e8e" target="_blank" rel="noopener">d94ff69e386</a> <span>Hans Goudey · 2026-09-17</span></div><h3>BLI: New KDTree implementation with better performance</h3><p>将构建策略、节点布局和查询成本分开记录。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This PR adds a new KD-tree implementation that is much faster to build
+and has much faster lookup performance. It&#x27;s a new implementation
+because the API is different, and the heritage of the code is completely
+separate. The code structure is derived from the nanoflann library [0],
+but heavily modified to work better with Blender code and to further
+improve performance, by a large amount in some cases.
+
+The provided API is a bit opinionated: it forgoes the separate &quot;insert&quot;
+and &quot;balance&quot; steps with a single &quot;build&quot; step, making the caller build
+their own coordinate array that can then be referenced by the caller.
+Optionally, a subset of the coordinates can be referenced by an index
+span or an IndexMask.
+
+A few bounding box calculation functions are also improved to use
+pipelining to reduce the cost of dependent writes. For some cases that
+can be a 3-5x performance improvement as well.
+
+Overall performance is a significant improvement. In a test of 1 million
+points on a Ryzen 7950X:
+
+|                   | BLI_kdtree | nanoflann |        |
+| ----------------- | ---------- | --------- | ------ |
+| Build (random)    |     204 ms |    5.5 ms |  37.2x |
+| Build (grid-like) |     168 ms |    4.4 ms |  38.2x |
+| Find nearest      |    4.49 us |    479 ns |   9.4x |
+| Find 8 nearest    |    8.27 us |   1.40 us |  5.91x |
+| Memory            |    26.7 MB |    6.5 MB |  0.24x |
+
+For more performance numbers, see the pull request.
+
+For this initial commit, I only changed usage in three Geometry Nodes
+files. After that, incrementally switching in separate commits should be
+a much better process.
+
+[0]: https://github.com/jlblancoc/nanoflann
+
+Pull Request: https://projects.blender.org/blender/blender/pulls/163778
+
+---------
+
+Co-authored-by: Brecht Van Lommel &lt;brecht@blender.org&gt;</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenlib/<span class="syntax-type">BLI_bounds</span>.hh               |  <span class="syntax-number">88</span> +-</span>
+<span class="code-line" data-line="2"> source/blender/blenlib/<span class="syntax-type">BLI_kdtree_new</span>.hh           | <span class="syntax-number">686</span> ++++++++++++++++</span>
+<span class="code-line" data-line="3"> source/blender/blenlib/<span class="syntax-type">CMakeLists</span>.txt              |   <span class="syntax-number">3</span> +</span>
+<span class="code-line" data-line="4"> source/blender/blenlib/intern/kdtree.cc            | <span class="syntax-number">907</span> +++++++++++++++++++++</span>
+<span class="code-line" data-line="5"> source/blender/blenlib/tests/<span class="syntax-type">BLI_kdtree_test</span>.cc    | <span class="syntax-number">656</span> +++++++++++++++</span>
+<span class="code-line" data-line="6"> .../performance/<span class="syntax-type">BLI_kdtree_performance_test</span>.cc     | <span class="syntax-number">725</span> ++++++++++++++++</span>
+<span class="code-line" data-line="7"> .../blenlib/tests/performance/<span class="syntax-type">CMakeLists</span>.txt       |   <span class="syntax-number">6</span> +</span>
+<span class="code-line" data-line="8"> .../geometry/nodes/node_geo_cluster_by_distance.cc |  <span class="syntax-number">41</span> +-</span>
+<span class="code-line" data-line="9"> .../nodes/node_geo_distribute_points_on_faces.cc   |  <span class="syntax-number">34</span> +-</span>
+<span class="code-line" data-line="10"> .../geometry/nodes/node_geo_index_of_nearest.cc    |  <span class="syntax-number">37</span> +-</span>
+<span class="code-line" data-line="11"> <span class="syntax-number">10</span> files changed, <span class="syntax-number">3098</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">85</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat d94ff69e386</span>
+<span class="code-line" data-line="2">git show d94ff69e386</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show d94ff69e386 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>实现二维树与最近邻，逐次打印访问节点和剪枝理由。</p>
+</li><li><strong>任务 02</strong><p>测试重复点、共线点、空集、单点、落在划分边界上的查询。</p>
+</li><li><strong>任务 03</strong><p>随机生成小规模输入，与暴力结果对照数千次，并保存失败随机种子。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="12-02-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="12-02-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="12-02-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>为什么下界比估计距离更重要？</summary><p>剪枝需要保证被跳过区域不可能更优，普通估计无法提供正确性证明。</p>
+</details><details class="question"><summary>下界等于当前最优就一定能剪枝吗？</summary><p>取决于等距结果与边界语义，必须遵守查询接口的约定。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="12-02" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../12-KD%E6%A0%91%E4%B8%8E%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E5%AE%9E%E9%AA%8C/01-KDTree%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%B8%83%E5%B1%80.html">← 上一篇：KD-tree 的接口：谁拥有坐标，何时允许修改</a><a href="../12-KD%E6%A0%91%E4%B8%8E%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E5%AE%9E%E9%AA%8C/03-%E6%80%A7%E8%83%BD%E5%AE%9E%E9%AA%8C%E4%B8%8E%E6%AF%95%E4%B8%9A%E9%A1%B9%E7%9B%AE.html">下一篇：把优化写成可以复核的工程结论 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

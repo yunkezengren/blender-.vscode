@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="从表达式到执行步骤，理解临时变量、最后一次使用与内存复用。">
+<title>Procedure：把多个批量函数组成可执行过程 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="07-03"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">批量函数与执行过程</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>FUNCTIONS / BATCH EXECUTION / LESSON 07-03</div><h1>Procedure：把多个批量函数组成可执行过程</h1><p class="lede">从表达式到执行步骤，理解临时变量、最后一次使用与内存复用。</p><div class="chips"><span class="chip">方向 07 · 批量函数与执行过程</span><span class="chip">专题 3/3</span><span class="chip">正文 1,856 字符</span><span class="chip">建议研读 21 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-MultiFunction%E7%AD%BE%E5%90%8D%E4%B8%8E%E5%8F%82%E6%95%B0.html">01 MultiFunction：为一批元素设计调用约定</a><a href="02-%E9%80%89%E6%8B%A9%E5%88%87%E7%89%87%E4%B8%8E%E6%89%A7%E8%A1%8C%E7%B2%92%E5%BA%A6.html">02 批量执行策略：选择、切片与并行开销</a><a href="03-Procedure%E4%B8%8E%E4%B8%B4%E6%97%B6%E5%80%BC%E5%AF%BF%E5%91%BD.html">03 Procedure：把多个批量函数组成可执行过程</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>把 CPPType、VArray 与 IndexMask 接成一个批量调用接口，再理解多个计算步骤怎样组成 Procedure。重点是参数契约、临时值寿命和吞吐量。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>运行时类型、虚拟数组、选择集合和未初始化存储。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>函数签名</strong></div><div class="flow-step"><span>02</span><strong>参数绑定</strong></div><div class="flow-step"><span>03</span><strong>索引选择</strong></div><div class="flow-step"><span>04</span><strong>批量 call</strong></div><div class="flow-step"><span>05</span><strong>过程组合与临时值</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>加入复用前后峰值存储统计，确保优化与基准结果一致。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>一个函数不够表达整张计算图</h3>
+<p>表达式 (A+B)*C 包含多个计算步骤以及中间值。Procedure 提供把批量函数组合成执行过程的机制。它与后面的 LazyFunction 图有不同目标，不能因为都含有图结构，就把两套系统的调用语义混为一谈。</p>
+<p>先从 FN_multi_function_procedure.hh 的变量与指令表示入手，再查看 executor 如何管理变量状态。历史 Field 引入提交明确说明使用 multi-function procedure 进行求值，这为理解其实际用途提供了上下文。</p>
+<h3>最后一次使用决定回收机会</h3>
+<p>中间值 T 被两个下游共享，计算第一个下游后不能立刻释放它。若已知最后一个使用完成，就可以销毁或复用相应存储。活跃区间分析把表达式依赖转成内存寿命，这与容器模块中的存活对象模型一致，只是规模变成了一组变量。</p>
+<p>类型、元素数量、对齐和初始化状态限制哪些缓冲区可以复用。不能因为两个临时值字节数相同，就随意把一个对象数组解释成另一类型。复用存储时仍要完成必要析构和构造。</p>
+<h3>优化应保留可观察行为</h3>
+<p>常量传播、死输出省略和共享子表达式可以减少工作，但需要明确函数是否纯、是否有副作用，以及结果比较的语义。练习版本可先限定纯算术函数，避免在尚未定义效果模型时做激进优化。</p>
+<p>把执行日志写成变量产生、使用和销毁的序列。若能从日志重建每个临时值的生命周期，你就开始具备理解复杂执行器的工具。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>未使用输出的省略需要函数契约支持，不能自动推断任意函数都没有其他可观察效果。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>Procedure 持有函数：执行指令不能引用已销毁对象</h3><p>这是完整构造与登记函数。过程中的 CallInstruction 只引用 MultiFunction，因此过程需要另外保存函数对象的析构责任。</p>
+<p>完整源码单元 · source/blender/functions/FN_multi_function_procedure.hh · L526–L532。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/FN_multi_function_procedure.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="526"><span class="syntax-keyword">inline</span> <span class="syntax-keyword">const</span> <span class="syntax-type">MultiFunction</span> &amp;<span class="syntax-type">Procedure</span>::<span class="syntax-function">construct_function</span>(<span class="syntax-type">Args</span> &amp;&amp;...args)</span>
+<span class="code-line" data-line="527">{</span>
+<span class="code-line" data-line="528">  destruct_ptr&lt;<span class="syntax-type">T</span>&gt; fn = allocator_.construct&lt;<span class="syntax-type">T</span>&gt;(std::forward&lt;<span class="syntax-type">Args</span>&gt;(args)...);</span>
+<span class="code-line" data-line="529">  <span class="syntax-keyword">const</span> <span class="syntax-type">MultiFunction</span> &amp;fn_ref = *fn;</span>
+<span class="code-line" data-line="530">  owned_functions_.<span class="syntax-function">append</span>(std::<span class="syntax-function">move</span>(fn));</span>
+<span class="code-line" data-line="531">  <span class="syntax-keyword">return</span> fn_ref;</span>
+<span class="code-line" data-line="532">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L526</span><div><code><span class="syntax-keyword">inline</span> <span class="syntax-keyword">const</span> <span class="syntax-type">MultiFunction</span> &amp;<span class="syntax-type">Procedure</span>::<span class="syntax-function">construct_function</span>(<span class="syntax-type">Args</span> &amp;&amp;...args)</code><p>构造函数类型由模板 T 决定，返回基类 const MultiFunction&amp; 供指令使用；Args 在前一行模板声明中提供。</p>
+</div></div><div class="line-explanation"><span class="line-number">L527</span><div><code>{</code><p>打开 inline const MultiFunction &amp;Procedure::construct_function(Args &amp;&amp;...args) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L528</span><div><code>destruct_ptr&lt;<span class="syntax-type">T</span>&gt; fn = allocator_.construct&lt;<span class="syntax-type">T</span>&gt;(std::forward&lt;<span class="syntax-type">Args</span>&gt;(args)...);</code><p>在过程 allocator 中构造实际 T，destruct_ptr 暂时保存析构责任。完美转发保持构造参数的值类别。</p>
+</div></div><div class="line-explanation"><span class="line-number">L529</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">MultiFunction</span> &amp;fn_ref = *fn;</code><p>保存函数的基类引用。它没有复制实际函数对象，也没有独立所有权。</p>
+</div></div><div class="line-explanation"><span class="line-number">L530</span><div><code>owned_functions_.<span class="syntax-function">append</span>(std::<span class="syntax-function">move</span>(fn));</code><p>把析构责任转移到 owned_functions_，让函数对象随过程存活。</p>
+</div></div><div class="line-explanation"><span class="line-number">L531</span><div><code><span class="syntax-keyword">return</span> fn_ref;</code><p>返回稳定引用。过程销毁后不得继续用它构建或执行指令。</p>
+</div></div><div class="line-explanation"><span class="line-number">L532</span><div><code>}</code><p>结束 inline const MultiFunction &amp;Procedure::construct_function(Args &amp;&amp;...args) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>过程 P 构造函数 F，再让两个 CallInstruction 都引用 F；两个调用不需要复制 F，但 P 必须活到整个执行结束。若把 F 只放在构建辅助函数的局部栈上，返回后指令中保存的引用会悬空。</p>
+<h4>调用关系与设计判断</h4><p>继续查看 Procedure 的成员声明顺序与执行器对 Procedure 的借用方式，再追踪 DestructInstruction 如何结束运行期变量的寿命。函数对象生命周期和每次执行的临时值生命周期是两套责任，不能合成一个模糊的“过程内存”。</p>
+</article><article class="deep-reading"><h3>Procedure 的完整验证入口：控制流与值状态分层检查</h3><p>这个完整函数不执行过程，而是验证描述合法。每个子检查针对一种不同的不变量，失败短路返回，不应把 true 理解成已经证明所有外部函数都无副作用或线程安全。</p>
+<p>完整源码单元 · source/blender/functions/intern/multi_function_procedure.cc · L271–L292。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/intern/multi_function_procedure.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="271"><span class="syntax-keyword">bool</span> <span class="syntax-type">Procedure</span>::<span class="syntax-function">validate</span>() <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="272">{</span>
+<span class="code-line" data-line="273">  <span class="syntax-keyword">if</span> (entry_ == <span class="syntax-keyword">nullptr</span>) {</span>
+<span class="code-line" data-line="274">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="275">  }</span>
+<span class="code-line" data-line="276">  <span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">validate_all_instruction_pointers_set</span>()) {</span>
+<span class="code-line" data-line="277">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="278">  }</span>
+<span class="code-line" data-line="279">  <span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">validate_all_params_provided</span>()) {</span>
+<span class="code-line" data-line="280">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="281">  }</span>
+<span class="code-line" data-line="282">  <span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">validate_same_variables_in_one_call</span>()) {</span>
+<span class="code-line" data-line="283">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="284">  }</span>
+<span class="code-line" data-line="285">  <span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">validate_parameters</span>()) {</span>
+<span class="code-line" data-line="286">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="287">  }</span>
+<span class="code-line" data-line="288">  <span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">validate_initialization</span>()) {</span>
+<span class="code-line" data-line="289">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="290">  }</span>
+<span class="code-line" data-line="291">  <span class="syntax-keyword">return</span> <span class="syntax-keyword">true</span>;</span>
+<span class="code-line" data-line="292">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L271</span><div><code><span class="syntax-keyword">bool</span> <span class="syntax-type">Procedure</span>::<span class="syntax-function">validate</span>() <span class="syntax-keyword">const</span></code><p>返回过程结构是否通过现有验证器。</p>
+</div></div><div class="line-explanation"><span class="line-number">L272</span><div><code>{</code><p>打开 bool Procedure::validate() const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L273</span><div><code><span class="syntax-keyword">if</span> (entry_ == <span class="syntax-keyword">nullptr</span>) {</code><p>入口不能为空，否则无法开始执行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L274</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</code><p>缺少入口立即失败。</p>
+</div></div><div class="line-explanation"><span class="line-number">L275</span><div><code>}</code><p>结束 if (entry_ == nullptr) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L276</span><div><code><span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">validate_all_instruction_pointers_set</span>()) {</code><p>检查所有指令需要的后继指针已经设置，包括分支两侧。</p>
+</div></div><div class="line-explanation"><span class="line-number">L277</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</code><p>控制流连接不完整则失败。</p>
+</div></div><div class="line-explanation"><span class="line-number">L278</span><div><code>}</code><p>结束 if (!this-&gt;validate_all_instruction_pointers_set()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L279</span><div><code><span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">validate_all_params_provided</span>()) {</code><p>检查函数调用所需参数均已提供。</p>
+</div></div><div class="line-explanation"><span class="line-number">L280</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</code><p>缺参立即失败。</p>
+</div></div><div class="line-explanation"><span class="line-number">L281</span><div><code>}</code><p>结束 if (!this-&gt;validate_all_params_provided()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L282</span><div><code><span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">validate_same_variables_in_one_call</span>()) {</code><p>检查单次调用中重复变量是否符合参数使用约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L283</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</code><p>不合法别名组合失败。</p>
+</div></div><div class="line-explanation"><span class="line-number">L284</span><div><code>}</code><p>结束 if (!this-&gt;validate_same_variables_in_one_call()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L285</span><div><code><span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">validate_parameters</span>()) {</code><p>验证对外参数的类型与接口关系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L286</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</code><p>参数定义不一致失败。</p>
+</div></div><div class="line-explanation"><span class="line-number">L287</span><div><code>}</code><p>结束 if (!this-&gt;validate_parameters()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L288</span><div><code><span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">validate_initialization</span>()) {</code><p>沿控制流检查初始化与析构状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L289</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</code><p>可能读取未初始化值或破坏生命周期时失败。</p>
+</div></div><div class="line-explanation"><span class="line-number">L290</span><div><code>}</code><p>结束 if (!this-&gt;validate_initialization()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L291</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">true</span>;</code><p>所有现有检查通过才返回 true。</p>
+</div></div><div class="line-explanation"><span class="line-number">L292</span><div><code>}</code><p>结束 bool Procedure::validate() const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>创建 CallInstruction 但忘记 next，第一类结构检查即可发现；把变量作为输入但之前没有初始化，则需要初始化分析。两者都可能让执行出错，但应在不同检查层报告。</p>
+<h4>调用关系与设计判断</h4><p>继续逐个打开 validate_all_instruction_pointers_set、validate_same_variables_in_one_call 和 validate_initialization，找出分支汇合时状态是怎样合并的。构建验证与运行期资源清理互补，不能拿编译器类型检查替代。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_multi_function_procedure.hh">FN_multi_function_procedure.hh</a></div><p>先认出变量和指令如何归属于过程。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 239 行 · SHA-256 19df168c04c5</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_multi_function_procedure.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function_procedure.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">236</span>,<span class="syntax-number">267</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function_procedure.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_multi_function_procedure_executor.hh">FN_multi_function_procedure_executor.hh</a></div><p>观察执行器与过程描述的边界。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 16 行 · SHA-256 4091ed9ea707</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_multi_function_procedure_executor.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function_procedure_executor.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">13</span>,<span class="syntax-number">30</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function_procedure_executor.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/bf47fb40fd6f0ee9386e9936cf213a1049c55b61" target="_blank" rel="noopener">bf47fb40fd6</a> <span>Jacques Lucke · 2021-09-09</span></div><h3>Geometry Nodes: fields and anonymous attributes</h3><p>只聚焦 Procedure 及相关 Field 求值入口，避免一口气读完整个功能补丁。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This implements the initial core framework for fields and anonymous
+attributes (also see T91274).
+
+The new functionality is hidden behind the &quot;Geometry Nodes Fields&quot;
+feature flag. When enabled in the user preferences, the following
+new nodes become available: `Position`, `Index`, `Normal`,
+`Set Position` and `Attribute Capture`.
+
+Socket inspection has not been updated to work with fields yet.
+
+Besides these changes at the user level, this patch contains the
+ground work for:
+* building and evaluating fields at run-time (`FN_fields.hh`) and
+* creating and accessing anonymous attributes on geometry
+  (`BKE_anonymous_attribute.h`).
+
+For evaluating fields we use a new so called multi-function procedure
+(`FN_multi_function_procedure.hh`). It allows composing multi-functions
+in arbitrary ways and supports efficient evaluation as is required by
+fields. See `FN_multi_function_procedure.hh` for more details on how
+this evaluation mechanism can be used.
+
+A new `AttributeIDRef` has been added which allows handling named
+and anonymous attributes in the same way in many places.
+
+Hans and I worked on this patch together.
+
+Differential Revision: https://developer.blender.org/D12414</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">release/scripts/startup/bl_ui/space_userpref.py    |    <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="2"> release/scripts/startup/nodeitems_builtins.py      |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="3"> .../blender/blenkernel/<span class="syntax-type">BKE_anonymous_attribute</span>.h   |   <span class="syntax-number">43</span> +</span>
+<span class="code-line" data-line="4"> .../blender/blenkernel/<span class="syntax-type">BKE_anonymous_attribute</span>.hh  |  <span class="syntax-number">169</span> +++</span>
+<span class="code-line" data-line="5"> source/blender/blenkernel/<span class="syntax-type">BKE_attribute_access</span>.hh  |   <span class="syntax-number">98</span> +-</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/<span class="syntax-type">BKE_customdata</span>.h         |   <span class="syntax-number">12</span> +</span>
+<span class="code-line" data-line="7"> source/blender/blenkernel/<span class="syntax-type">BKE_geometry_set</span>.hh      |  <span class="syntax-number">114</span> +-</span>
+<span class="code-line" data-line="8"> .../blenkernel/<span class="syntax-type">BKE_geometry_set_instances</span>.hh       |    <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="9"> source/blender/blenkernel/<span class="syntax-type">BKE_node</span>.h               |    <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="10"> source/blender/blenkernel/<span class="syntax-type">CMakeLists</span>.txt           |    <span class="syntax-number">3</span> +</span>
+<span class="code-line" data-line="11"> .../blenkernel/intern/anonymous_attribute.cc       |  <span class="syntax-number">118</span> ++</span>
+<span class="code-line" data-line="12"> .../blender/blenkernel/intern/attribute_access.cc  |  <span class="syntax-number">422</span> ++++---</span>
+<span class="code-line" data-line="13"> .../blenkernel/intern/attribute_access_intern.hh   |   <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="14"> source/blender/blenkernel/intern/curve_eval.cc     |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="15"> source/blender/blenkernel/intern/customdata.c      |   <span class="syntax-number">53</span> +-</span>
+<span class="code-line" data-line="16"> .../blenkernel/intern/geometry_component_curve.cc  |   <span class="syntax-number">24</span> +-</span>
+<span class="code-line" data-line="17"> .../blenkernel/intern/geometry_component_mesh.cc   |   <span class="syntax-number">24</span> +-</span>
+<span class="code-line" data-line="18"> .../blenkernel/intern/geometry_set_instances.cc    |   <span class="syntax-number">53</span> +-</span>
+<span class="code-line" data-line="19"> source/blender/blenkernel/intern/node.cc           |    <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="20"> .../spreadsheet_data_source_geometry.cc            |   <span class="syntax-number">23</span> +-</span>
+<span class="code-line" data-line="21"> source/blender/functions/<span class="syntax-type">CMakeLists</span>.txt            |   <span class="syntax-number">11</span> +</span>
+<span class="code-line" data-line="22"> source/blender/functions/<span class="syntax-type">FN_field</span>.hh               |  <span class="syntax-number">456</span> ++++++++</span>
+<span class="code-line" data-line="23"> source/blender/functions/<span class="syntax-type">FN_field_cpp_type</span>.hh      |   <span class="syntax-number">72</span> ++</span>
+<span class="code-line" data-line="24"> .../blender/functions/<span class="syntax-type">FN_multi_function_builder</span>.hh |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="25"> .../blender/functions/<span class="syntax-type">FN_multi_function_params</span>.hh  |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="26"> .../functions/<span class="syntax-type">FN_multi_function_procedure</span>.hh       |  <span class="syntax-number">452</span> ++++++++</span>
+<span class="code-line" data-line="27"> .../<span class="syntax-type">FN_multi_function_procedure_builder</span>.hh         |  <span class="syntax-number">260</span> +++++</span>
+<span class="code-line" data-line="28"> .../<span class="syntax-type">FN_multi_function_procedure_executor</span>.hh        |   <span class="syntax-number">39</span> +</span>
+<span class="code-line" data-line="29"> source/blender/functions/intern/cpp_types.cc       |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="30"> source/blender/functions/intern/field.cc           |  <span class="syntax-number">569</span> +++++++++</span>
+<span class="code-line" data-line="31"> .../functions/intern/multi_function_builder.cc     |   <span class="syntax-number">28</span> +</span>
+<span class="code-line" data-line="32"> .../functions/intern/multi_function_procedure.cc   |  <span class="syntax-number">794</span> +++++++++++++</span>
+<span class="code-line" data-line="33"> .../intern/multi_function_procedure_builder.cc     |  <span class="syntax-number">175</span> +++</span>
+<span class="code-line" data-line="34"> .../intern/multi_function_procedure_executor.cc    | <span class="syntax-number">1212</span> ++++++++++++++++++++</span>
+<span class="code-line" data-line="35"> source/blender/functions/tests/<span class="syntax-type">FN_field_test</span>.cc    |  <span class="syntax-number">278</span> +++++</span>
+<span class="code-line" data-line="36"> .../tests/<span class="syntax-type">FN_multi_function_procedure_test</span>.cc      |  <span class="syntax-number">344</span> ++++++</span>
+<span class="code-line" data-line="37"> source/blender/makesdna/<span class="syntax-type">DNA_customdata_types</span>.h     |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="38"> source/blender/makesdna/<span class="syntax-type">DNA_node_types</span>.h           |    <span class="syntax-number">7</span> +</span>
+<span class="code-line" data-line="39"> source/blender/makesdna/<span class="syntax-type">DNA_userdef_types</span>.h        |    <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="40"> source/blender/makesrna/intern/rna_nodetree.c      |   <span class="syntax-number">20</span> +</span>
+<span class="code-line" data-line="41"> source/blender/makesrna/intern/rna_userdef.c       |    <span class="syntax-number">4</span> +</span>
+<span class="code-line" data-line="42"> source/blender/modifiers/intern/<span class="syntax-type">MOD_nodes</span>.cc       |   <span class="syntax-number">21</span> +-</span>
+<span class="code-line" data-line="43"> .../modifiers/intern/<span class="syntax-type">MOD_nodes_evaluator</span>.cc        |   <span class="syntax-number">63</span> +-</span>
+<span class="code-line" data-line="44"> source/blender/nodes/<span class="syntax-type">CMakeLists</span>.txt                |    <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="45"> source/blender/nodes/<span class="syntax-type">NOD_geometry</span>.h                |    <span class="syntax-number">5</span> +</span>
+<span class="code-line" data-line="46"> source/blender/nodes/<span class="syntax-type">NOD_geometry_exec</span>.hh          |   <span class="syntax-number">72</span> +-</span>
+<span class="code-line" data-line="47"> source/blender/nodes/<span class="syntax-type">NOD_static_types</span>.h            |    <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="48"> .../blender/nodes/geometry/node_geometry_util.hh   |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="49"> .../geometry/nodes/node_geo_attribute_capture.cc   |  <span class="syntax-number">210</span> ++++</span>
+<span class="code-line" data-line="50"> .../geometry/nodes/node_geo_curve_endpoints.cc     |   <span class="syntax-number">51</span> +-</span>
+<span class="code-line" data-line="51"> .../geometry/nodes/node_geo_curve_resample.cc      |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="52"> .../nodes/geometry/nodes/node_geo_curve_reverse.cc |    <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="53"> .../geometry/nodes/node_geo_curve_spline_type.cc   |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="54"> .../geometry/nodes/node_geo_curve_subdivide.cc     |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="55"> .../geometry/nodes/node_geo_curve_to_points.cc     |   <span class="syntax-number">82</span> +-</span>
+<span class="code-line" data-line="56"> .../nodes/geometry/nodes/node_geo_curve_trim.cc    |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="57"> .../geometry/nodes/node_geo_delete_geometry.cc     |    <span class="syntax-number">8</span> +-</span>
+<span class="code-line" data-line="58"> .../nodes/geometry/nodes/node_geo_input_index.cc   |   <span class="syntax-number">60</span> +</span>
+<span class="code-line" data-line="59"> .../nodes/geometry/nodes/node_geo_input_normal.cc  |  <span class="syntax-number">211</span> ++++</span>
+<span class="code-line" data-line="60"> .../geometry/nodes/node_geo_input_position.cc      |   <span class="syntax-number">43</span> +</span>
+<span class="code-line" data-line="61"> .../nodes/geometry/nodes/node_geo_join_geometry.cc |   <span class="syntax-number">90</span> +-</span>
+<span class="code-line" data-line="62"> .../nodes/geometry/nodes/node_geo_mesh_to_curve.cc |   <span class="syntax-number">21</span> +-</span>
+<span class="code-line" data-line="63"> .../geometry/nodes/node_geo_point_distribute.cc    |   <span class="syntax-number">16</span> +-</span>
+<span class="code-line" data-line="64"> .../geometry/nodes/node_geo_point_separate.cc      |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="65"> .../nodes/geometry/nodes/node_geo_set_position.cc  |   <span class="syntax-number">79</span> ++</span>
+<span class="code-line" data-line="66"> .../nodes/intern/geometry_nodes_eval_log.cc        |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="67"> source/blender/nodes/intern/node_socket.cc         |   <span class="syntax-number">63</span> +-</span>
+<span class="code-line" data-line="68"> <span class="syntax-number">67</span> files changed, <span class="syntax-number">6674</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">468</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat bf47fb40fd6</span>
+<span class="code-line" data-line="2">git show bf47fb40fd6</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show bf47fb40fd6 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>将算术 DAG 排成执行步骤，为每个中间值记录消费者数量。</p>
+</li><li><strong>任务 02</strong><p>在最后一次使用后回收，并验证菱形共享依赖不会提前释放。</p>
+</li><li><strong>任务 03</strong><p>加入复用前后峰值存储统计，确保优化与基准结果一致。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="07-03-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="07-03-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="07-03-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>第一个消费者执行完就能释放中间结果吗？</summary><p>只有不存在其他未完成使用时才可以；共享子图需要全局使用信息。</p>
+</details><details class="question"><summary>Procedure 与 LazyFunction 是同一抽象吗？</summary><p>不是，它们有不同的执行契约与优化目标，应分别研究后再看连接点。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="07-03" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../07-%E6%89%B9%E9%87%8F%E5%87%BD%E6%95%B0%E4%B8%8E%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B/02-%E9%80%89%E6%8B%A9%E5%88%87%E7%89%87%E4%B8%8E%E6%89%A7%E8%A1%8C%E7%B2%92%E5%BA%A6.html">← 上一篇：批量执行策略：选择、切片与并行开销</a><a href="../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E4%B8%8A%E4%B8%8B%E6%96%87/01-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E4%B8%8A%E4%B8%8B%E6%96%87.html">下一篇：Field：把表达式与求值位置分开 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

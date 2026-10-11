@@ -1,0 +1,478 @@
+{
+  "desktop_pages": 49,
+  "mobile_pages": 49,
+  "interactive_models": 12,
+  "search": true,
+  "completion_persistence": true,
+  "cross_page_progress": true,
+  "theme": true,
+  "font": true,
+  "print_sample": true,
+  "javascript_errors": [],
+  "checked": [
+    {
+      "page": "index.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 6891,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "01-容器与对象生命周期/index.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 956,
+      "codeHeight": 0,
+      "demos": []
+    },
+    {
+      "page": "02-哈希表与性能契约/index.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 919,
+      "codeHeight": 0,
+      "demos": []
+    },
+    {
+      "page": "03-内存分配与运行时类型/index.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 931,
+      "codeHeight": 0,
+      "demos": []
+    },
+    {
+      "page": "04-虚拟数组与索引选择/index.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 909,
+      "codeHeight": 0,
+      "demos": []
+    },
+    {
+      "page": "05-几何存储与拓扑映射/index.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 921,
+      "codeHeight": 0,
+      "demos": []
+    },
+    {
+      "page": "06-隐式共享与共享缓存/index.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 902,
+      "codeHeight": 0,
+      "demos": []
+    },
+    {
+      "page": "07-批量函数与执行过程/index.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 924,
+      "codeHeight": 0,
+      "demos": []
+    },
+    {
+      "page": "08-Field表达式与上下文/index.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 965,
+      "codeHeight": 0,
+      "demos": []
+    },
+    {
+      "page": "09-惰性函数与节点执行器/index.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 971,
+      "codeHeight": 0,
+      "demos": []
+    },
+    {
+      "page": "10-引用分析与闭包生命周期/index.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 893,
+      "codeHeight": 0,
+      "demos": []
+    },
+    {
+      "page": "11-依赖图与并行调度/index.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 931,
+      "codeHeight": 0,
+      "demos": []
+    },
+    {
+      "page": "12-KD树与综合设计实验/index.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 936,
+      "codeHeight": 0,
+      "demos": []
+    },
+    {
+      "page": "01-容器与对象生命周期/01-Span与借用边界.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 6035,
+      "codeHeight": 21.875,
+      "demos": [
+        {
+          "kind": "vector",
+          "controls": 1,
+          "result": 89
+        }
+      ]
+    },
+    {
+      "page": "01-容器与对象生命周期/02-Vector扩容与对象状态.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 15934,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "01-容器与对象生命周期/03-异常安全与容器实验.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 10682,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "02-哈希表与性能契约/01-相等关系与哈希契约.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 5382,
+      "codeHeight": 21.875,
+      "demos": [
+        {
+          "kind": "hash",
+          "controls": 1,
+          "result": 81
+        }
+      ]
+    },
+    {
+      "page": "02-哈希表与性能契约/02-开放寻址与删除状态.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 6086,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "02-哈希表与性能契约/03-重建策略与性能实验.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 8378,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "03-内存分配与运行时类型/01-LinearAllocator与对齐.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 6807,
+      "codeHeight": 21.875,
+      "demos": [
+        {
+          "kind": "allocator",
+          "controls": 1,
+          "result": 176
+        }
+      ]
+    },
+    {
+      "page": "03-内存分配与运行时类型/02-ResourceScope与逆序销毁.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 7728,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "03-内存分配与运行时类型/03-CPPType与类型擦除.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 6901,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "04-虚拟数组与索引选择/01-VArray的值语义.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 5388,
+      "codeHeight": 21.875,
+      "demos": [
+        {
+          "kind": "mask",
+          "controls": 1,
+          "result": 182
+        }
+      ]
+    },
+    {
+      "page": "04-虚拟数组与索引选择/02-IndexMask的分段设计.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 5764,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "04-虚拟数组与索引选择/03-去虚拟化与代价模型.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 6766,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "05-几何存储与拓扑映射/01-OffsetIndices与几何表示.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 5550,
+      "codeHeight": 21.875,
+      "demos": [
+        {
+          "kind": "offsets",
+          "controls": 1,
+          "result": 88
+        }
+      ]
+    },
+    {
+      "page": "05-几何存储与拓扑映射/02-拓扑映射与前缀和.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 5664,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "05-几何存储与拓扑映射/03-数据布局迁移与接口演化.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 4853,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "06-隐式共享与共享缓存/01-ImplicitSharing与写时分离.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 7386,
+      "codeHeight": 21.875,
+      "demos": [
+        {
+          "kind": "sharing",
+          "controls": 2,
+          "result": 57
+        }
+      ]
+    },
+    {
+      "page": "06-隐式共享与共享缓存/02-SharedCache与依赖矩阵.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 8645,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "06-隐式共享与共享缓存/03-共享缓存修复复盘.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 4785,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "07-批量函数与执行过程/01-MultiFunction签名与参数.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 5470,
+      "codeHeight": 21.875,
+      "demos": [
+        {
+          "kind": "batch",
+          "controls": 1,
+          "result": 139
+        }
+      ]
+    },
+    {
+      "page": "07-批量函数与执行过程/02-选择切片与执行粒度.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 10449,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "07-批量函数与执行过程/03-Procedure与临时值寿命.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 6017,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "08-Field表达式与上下文/01-Field表达式与上下文.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 5676,
+      "codeHeight": 21.875,
+      "demos": [
+        {
+          "kind": "field",
+          "controls": 2,
+          "result": 90
+        }
+      ]
+    },
+    {
+      "page": "08-Field表达式与上下文/02-FieldEvaluator与实际节点.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 8481,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "08-Field表达式与上下文/03-Field重构与深链析构.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 8792,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "09-惰性函数与节点执行器/01-LazyFunction状态机.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 5105,
+      "codeHeight": 21.875,
+      "demos": [
+        {
+          "kind": "lazy",
+          "controls": 3,
+          "result": 36
+        }
+      ]
+    },
+    {
+      "page": "09-惰性函数与节点执行器/02-图组合与节点降低.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 9784,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "09-惰性函数与节点执行器/03-MenuSwitch依赖环修复.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 8429,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "10-引用分析与闭包生命周期/01-引用集合与匿名属性.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 8467,
+      "codeHeight": 21.875,
+      "demos": [
+        {
+          "kind": "closure",
+          "controls": 3,
+          "result": 97
+        }
+      ]
+    },
+    {
+      "page": "10-引用分析与闭包生命周期/02-Closure与捕获环境.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 5846,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "10-引用分析与闭包生命周期/03-执行图与源节点树解耦.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 8001,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "11-依赖图与并行调度/01-Depsgraph的分层模型.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 10023,
+      "codeHeight": 21.875,
+      "demos": [
+        {
+          "kind": "deps",
+          "controls": 1,
+          "result": 143
+        }
+      ]
+    },
+    {
+      "page": "11-依赖图与并行调度/02-失效传播与条件依赖.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 8343,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "11-依赖图与并行调度/03-任务调度与嵌套死锁.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 10097,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "12-KD树与综合设计实验/01-KDTree接口与数据布局.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 8619,
+      "codeHeight": 21.875,
+      "demos": [
+        {
+          "kind": "kdtree",
+          "controls": 1,
+          "result": 132
+        }
+      ]
+    },
+    {
+      "page": "12-KD树与综合设计实验/02-构建查询与剪枝证明.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 14926,
+      "codeHeight": 21.875,
+      "demos": []
+    },
+    {
+      "page": "12-KD树与综合设计实验/03-性能实验与毕业项目.html",
+      "overflow": false,
+      "h1": 1,
+      "body": 8218,
+      "codeHeight": 21.875,
+      "demos": []
+    }
+  ]
+}

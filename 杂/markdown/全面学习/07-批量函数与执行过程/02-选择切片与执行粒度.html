@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="把选择密度、临时数组大小和任务粒度放进同一个成本模型。">
+<title>批量执行策略：选择、切片与并行开销 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="07-02"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">批量函数与执行过程</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>FUNCTIONS / BATCH EXECUTION / LESSON 07-02</div><h1>批量执行策略：选择、切片与并行开销</h1><p class="lede">把选择密度、临时数组大小和任务粒度放进同一个成本模型。</p><div class="chips"><span class="chip">方向 07 · 批量函数与执行过程</span><span class="chip">专题 2/3</span><span class="chip">正文 2,493 字符</span><span class="chip">建议研读 28 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-MultiFunction%E7%AD%BE%E5%90%8D%E4%B8%8E%E5%8F%82%E6%95%B0.html">01 MultiFunction：为一批元素设计调用约定</a><a href="02-%E9%80%89%E6%8B%A9%E5%88%87%E7%89%87%E4%B8%8E%E6%89%A7%E8%A1%8C%E7%B2%92%E5%BA%A6.html">02 批量执行策略：选择、切片与并行开销</a><a href="03-Procedure%E4%B8%8E%E4%B8%B4%E6%97%B6%E5%80%BC%E5%AF%BF%E5%91%BD.html">03 Procedure：把多个批量函数组成可执行过程</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>把 CPPType、VArray 与 IndexMask 接成一个批量调用接口，再理解多个计算步骤怎样组成 Procedure。重点是参数契约、临时值寿命和吞吐量。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>运行时类型、虚拟数组、选择集合和未初始化存储。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>函数签名</strong></div><div class="flow-step"><span>02</span><strong>参数绑定</strong></div><div class="flow-step"><span>03</span><strong>索引选择</strong></div><div class="flow-step"><span>04</span><strong>批量 call</strong></div><div class="flow-step"><span>05</span><strong>过程组合与临时值</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>给实验报告写出硬件、线程数、编译模式和是否包含准备时间。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>选择大小不等于最大索引</h3>
+<p>一个 mask 只包含索引 1000000 和 1000001，它的元素数量是二，但按最大索引分配临时数组可能非常昂贵。批量调用层可以通过偏移和切片减少空洞对应的浪费。读 call_auto 的注释时，把这种调整与数组视图语义联系起来。</p>
+<p>切片后必须明确函数看到的是局部索引还是原始索引。输入、输出和 mask 的映射要一起调整，否则正确的算术运算仍会写到错误位置。测试需要用非零起点暴露这个问题。</p>
+<h3>ExecutionHints 是协作信息</h3>
+<p>当前 MultiFunction 的 ExecutionHints 提供最小粒度、是否分配数组、各元素成本是否较均匀等信息。这些提示帮助调用者选择执行方式；它们并非某个硬件上的永恒最优参数。计算越便宜，调度开销越容易主导总时间。</p>
+<p>还要区分准备阶段与元素处理阶段。某些函数可以延迟建立内部数据，直到确定需要执行。prepare_for_execution 的线程安全要求提示我们：共享函数对象与每次调用状态必须分开管理。</p>
+<h3>用规模曲线定位拐点</h3>
+<p>对 1、100、10000、1000000 个元素分别测单线程与并行。记录总时间和每元素成本，寻找调度收益出现的区间。不要只用最大规模证明并行更快，再把同一策略用于所有节点。</p>
+<p>如果输入长度相同但每元素开销差异很大，均匀切分可能造成负载不平衡。这里可以先观察问题，不急于实现完整任务窃取系统；理解提示信息怎样服务执行策略才是本课目标。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>并行测试必须验证输出与串行基准相同，否则速度提升可能来自漏算。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>call_auto 全路径：切片、偏移与参数同步变换</h3><p>下面完整实现把粒度决策落到执行上。最关键的部分是同时移动 mask 的索引坐标系和参数视图；只移动其中一方，会读写错误元素。</p>
+<p>完整源码单元 · source/blender/functions/intern/multi_function.cc · L130–L175。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/intern/multi_function.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="130"><span class="syntax-keyword">void</span> <span class="syntax-type">MultiFunction</span>::<span class="syntax-function">call_auto</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> &amp;mask, <span class="syntax-type">Params</span> params, <span class="syntax-type">Context</span> context) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="131">{</span>
+<span class="code-line" data-line="132">  <span class="syntax-keyword">if</span> (mask.<span class="syntax-function">is_empty</span>()) {</span>
+<span class="code-line" data-line="133">    <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="134">  }</span>
+<span class="code-line" data-line="135">  <span class="syntax-keyword">const</span> <span class="syntax-type">ExecutionHints</span> hints = <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">execution_hints</span>();</span>
+<span class="code-line" data-line="136">  <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> grain_size = <span class="syntax-function">compute_grain_size</span>(hints, mask);</span>
+<span class="code-line" data-line="137"></span>
+<span class="code-line" data-line="138">  <span class="syntax-keyword">if</span> (mask.<span class="syntax-function">size</span>() &lt;= grain_size) {</span>
+<span class="code-line" data-line="139">    <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">call</span>(mask, params, context);</span>
+<span class="code-line" data-line="140">    <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="141">  }</span>
+<span class="code-line" data-line="142"></span>
+<span class="code-line" data-line="143">  <span class="syntax-keyword">const</span> <span class="syntax-keyword">bool</span> supports_threading = <span class="syntax-function">supports_threading_by_slicing_params</span>(*<span class="syntax-keyword">this</span>);</span>
+<span class="code-line" data-line="144">  <span class="syntax-keyword">if</span> (!supports_threading) {</span>
+<span class="code-line" data-line="145">    <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">call</span>(mask, params, context);</span>
+<span class="code-line" data-line="146">    <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="147">  }</span>
+<span class="code-line" data-line="148"></span>
+<span class="code-line" data-line="149">  <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> alignment = <span class="syntax-function">compute_alignment</span>(grain_size);</span>
+<span class="code-line" data-line="150">  threading::<span class="syntax-function">parallel_for_aligned</span>(</span>
+<span class="code-line" data-line="151">      mask.<span class="syntax-function">index_range</span>(), grain_size, alignment, [&amp;](<span class="syntax-keyword">const</span> <span class="syntax-type">IndexRange</span> sub_range) {</span>
+<span class="code-line" data-line="152">        <span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> sliced_mask = mask.<span class="syntax-function">slice</span>(sub_range);</span>
+<span class="code-line" data-line="153">        <span class="syntax-keyword">if</span> (!hints.allocates_array) {</span>
+<span class="code-line" data-line="154">          <span class="syntax-comment">/* There is no benefit to changing indices in this case. */</span></span>
+<span class="code-line" data-line="155">          <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">call</span>(sliced_mask, params, context);</span>
+<span class="code-line" data-line="156">          <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="157">        }</span>
+<span class="code-line" data-line="158">        <span class="syntax-keyword">if</span> (sliced_mask[<span class="syntax-number">0</span>] &lt; grain_size) {</span>
+<span class="code-line" data-line="159">          <span class="syntax-comment">/* The indices are low, no need to offset them. */</span></span>
+<span class="code-line" data-line="160">          <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">call</span>(sliced_mask, params, context);</span>
+<span class="code-line" data-line="161">          <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="162">        }</span>
+<span class="code-line" data-line="163">        <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> input_slice_start = sliced_mask[<span class="syntax-number">0</span>];</span>
+<span class="code-line" data-line="164">        <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> input_slice_size = sliced_mask.<span class="syntax-function">last</span>() - input_slice_start + <span class="syntax-number">1</span>;</span>
+<span class="code-line" data-line="165">        <span class="syntax-keyword">const</span> <span class="syntax-type">IndexRange</span> input_slice_range{input_slice_start, input_slice_size};</span>
+<span class="code-line" data-line="166"></span>
+<span class="code-line" data-line="167">        <span class="syntax-type">IndexMaskMemory</span> memory;</span>
+<span class="code-line" data-line="168">        <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> offset = -input_slice_start;</span>
+<span class="code-line" data-line="169">        <span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> shifted_mask = mask.<span class="syntax-function">slice_and_shift</span>(sub_range, offset, memory);</span>
+<span class="code-line" data-line="170"></span>
+<span class="code-line" data-line="171">        <span class="syntax-type">ParamsBuilder</span> sliced_params{*<span class="syntax-keyword">this</span>, &amp;shifted_mask};</span>
+<span class="code-line" data-line="172">        <span class="syntax-function">add_sliced_parameters</span>(*signature_ref_, params, input_slice_range, sliced_params);</span>
+<span class="code-line" data-line="173">        <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">call</span>(shifted_mask, sliced_params, context);</span>
+<span class="code-line" data-line="174">      });</span>
+<span class="code-line" data-line="175">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L130</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-type">MultiFunction</span>::<span class="syntax-function">call_auto</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> &amp;mask, <span class="syntax-type">Params</span> params, <span class="syntax-type">Context</span> context) <span class="syntax-keyword">const</span></code><p>以当前 mask、借用参数和上下文调用批量函数；const 约束函数描述对象，并不代表输出数组只读。</p>
+</div></div><div class="line-explanation"><span class="line-number">L131</span><div><code>{</code><p>打开 void MultiFunction::call_auto(const IndexMask &amp;mask, Params params, Context context) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L132</span><div><code><span class="syntax-keyword">if</span> (mask.<span class="syntax-function">is_empty</span>()) {</code><p>空 mask 没有需要执行的元素。</p>
+</div></div><div class="line-explanation"><span class="line-number">L133</span><div><code><span class="syntax-keyword">return</span>;</code><p>直接返回，不调用底层函数。</p>
+</div></div><div class="line-explanation"><span class="line-number">L134</span><div><code>}</code><p>结束 if (mask.is_empty()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L135</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">ExecutionHints</span> hints = <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">execution_hints</span>();</code><p>获取派生函数给出的执行提示。</p>
+</div></div><div class="line-explanation"><span class="line-number">L136</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> grain_size = <span class="syntax-function">compute_grain_size</span>(hints, mask);</code><p>计算粒度，具体公式在上一段完整函数中解释。</p>
+</div></div><div class="line-explanation"><span class="line-number">L138</span><div><code><span class="syntax-keyword">if</span> (mask.<span class="syntax-function">size</span>() &lt;= grain_size) {</code><p>工作量没有超过粒度时，避免额外切片与任务开销。</p>
+</div></div><div class="line-explanation"><span class="line-number">L139</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">call</span>(mask, params, context);</code><p>直接调用原始接口，保持原索引坐标系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L140</span><div><code><span class="syntax-keyword">return</span>;</code><p>结束小工作量路径。</p>
+</div></div><div class="line-explanation"><span class="line-number">L141</span><div><code>}</code><p>结束 if (mask.size() &lt;= grain_size) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L143</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">bool</span> supports_threading = <span class="syntax-function">supports_threading_by_slicing_params</span>(*<span class="syntax-keyword">this</span>);</code><p>检查参数接口是否支持按切片并行，不能仅凭函数名是 MultiFunction 就认为可任意拆分。</p>
+</div></div><div class="line-explanation"><span class="line-number">L144</span><div><code><span class="syntax-keyword">if</span> (!supports_threading) {</code><p>不支持时保持单次调用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L145</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">call</span>(mask, params, context);</code><p>直接调用完整 mask。</p>
+</div></div><div class="line-explanation"><span class="line-number">L146</span><div><code><span class="syntax-keyword">return</span>;</code><p>退出回退路径。</p>
+</div></div><div class="line-explanation"><span class="line-number">L147</span><div><code>}</code><p>结束 if (!supports_threading) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L149</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> alignment = <span class="syntax-function">compute_alignment</span>(grain_size);</code><p>为切片边界选择对齐，减少不合适的循环边界。</p>
+</div></div><div class="line-explanation"><span class="line-number">L150</span><div><code>threading::<span class="syntax-function">parallel_for_aligned</span>(</code><p>启动按对齐边界的并行循环。</p>
+</div></div><div class="line-explanation"><span class="line-number">L151</span><div><code>mask.<span class="syntax-function">index_range</span>(), grain_size, alignment, [&amp;](<span class="syntax-keyword">const</span> <span class="syntax-type">IndexRange</span> sub_range) {</code><p>这里切分的是 mask 中的选择序号范围，不是原几何元素下标区间。</p>
+</div></div><div class="line-explanation"><span class="line-number">L152</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> sliced_mask = mask.<span class="syntax-function">slice</span>(sub_range);</code><p>取出该批次 mask。它仍保存原始元素下标。</p>
+</div></div><div class="line-explanation"><span class="line-number">L153</span><div><code><span class="syntax-keyword">if</span> (!hints.allocates_array) {</code><p>不分配按索引范围大小的中间数组时，无须变换下标坐标系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L154</span><div><code><span class="syntax-comment">/* There is no benefit to changing indices in this case. */</span></code><p>此函数不按索引范围申请中间数组时，平移下标没有该项内存收益，可以直接用原参数和原下标。</p>
+</div></div><div class="line-explanation"><span class="line-number">L155</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">call</span>(sliced_mask, params, context);</code><p>直接把该 mask 与原参数一起交给 call。</p>
+</div></div><div class="line-explanation"><span class="line-number">L156</span><div><code><span class="syntax-keyword">return</span>;</code><p>结束当前任务 lambda 的这条路径，不是退出所有并行任务。</p>
+</div></div><div class="line-explanation"><span class="line-number">L157</span><div><code>}</code><p>结束 if (!hints.allocates_array) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L158</span><div><code><span class="syntax-keyword">if</span> (sliced_mask[<span class="syntax-number">0</span>] &lt; grain_size) {</code><p>如果当前批次下标本来就低，平移收益不大。</p>
+</div></div><div class="line-explanation"><span class="line-number">L159</span><div><code><span class="syntax-comment">/* The indices are low, no need to offset them. */</span></code><p>批次下标已经较低时省去平移与参数切片开销，直接调用原坐标系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L160</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">call</span>(sliced_mask, params, context);</code><p>直接调用该批次。</p>
+</div></div><div class="line-explanation"><span class="line-number">L161</span><div><code><span class="syntax-keyword">return</span>;</code><p>退出此任务的低下标路径。</p>
+</div></div><div class="line-explanation"><span class="line-number">L162</span><div><code>}</code><p>结束 if (sliced_mask[0] &lt; grain_size) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L163</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> input_slice_start = sliced_mask[<span class="syntax-number">0</span>];</code><p>记录当前批次的第一个实际元素下标，作为参数切片起点。</p>
+</div></div><div class="line-explanation"><span class="line-number">L164</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> input_slice_size = sliced_mask.<span class="syntax-function">last</span>() - input_slice_start + <span class="syntax-number">1</span>;</code><p>以最后下标减第一下标再加一求覆盖长度。稀疏 mask 的覆盖长度可能远大于选中数量。</p>
+</div></div><div class="line-explanation"><span class="line-number">L165</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">IndexRange</span> input_slice_range{input_slice_start, input_slice_size};</code><p>构造原数组中的连续覆盖区间，使用列表初始化避免歧义。</p>
+</div></div><div class="line-explanation"><span class="line-number">L167</span><div><code><span class="syntax-type">IndexMaskMemory</span> memory;</code><p>建立当前任务的 IndexMaskMemory，保活新 mask 的段存储。</p>
+</div></div><div class="line-explanation"><span class="line-number">L168</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> offset = -input_slice_start;</code><p>平移量取起点的相反数，使新 mask 的首个下标成为零。</p>
+</div></div><div class="line-explanation"><span class="line-number">L169</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> shifted_mask = mask.<span class="syntax-function">slice_and_shift</span>(sub_range, offset, memory);</code><p>对本批次选择做同样切片与平移，得到局部索引。</p>
+</div></div><div class="line-explanation"><span class="line-number">L171</span><div><code><span class="syntax-type">ParamsBuilder</span> sliced_params{*<span class="syntax-keyword">this</span>, &amp;shifted_mask};</code><p>用新 mask 建立参数构建器；它和 memory 必须覆盖本次 call 的生命周期。</p>
+</div></div><div class="line-explanation"><span class="line-number">L172</span><div><code><span class="syntax-function">add_sliced_parameters</span>(*signature_ref_, params, input_slice_range, sliced_params);</code><p>同步切片每个参数，使局部下标零映射到原数组 input_slice_start。</p>
+</div></div><div class="line-explanation"><span class="line-number">L173</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">call</span>(shifted_mask, sliced_params, context);</code><p>执行变换后的 mask 与参数。上下文保持同一逻辑计算环境。</p>
+</div></div><div class="line-explanation"><span class="line-number">L174</span><div><code>});</code><p>关闭并行调用；正常返回意味着本轮并行区域已经按该并行 API 的契约完成。</p>
+</div></div><div class="line-explanation"><span class="line-number">L175</span><div><code>}</code><p>结束 void MultiFunction::call_auto(const IndexMask &amp;mask, Params params, Context context) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>mask=[100000,100003,100009]，局部起点 100000，覆盖长度 10，shifted_mask=[0,3,9]。参数视图也从原数组 100000 起切出长度 10，因此局部 3 正确映射原数组 100003。若只平移 mask，局部 3 会错误访问原数组 3。</p>
+<h4>调用关系与设计判断</h4><p>验证稀疏与连续 mask、空选择、不可切片参数、需要临时数组与不需要临时数组四种路径。先用单次 call 的结果作独立对照，再测耗时；当实现中有外部共享写或锁时，参数可切片并不自动保证额外副作用安全。</p>
+</article><article class="deep-reading"><h3>批量执行粒度：调度成本与临时内存相互制约</h3><p>完整粒度函数展示提示如何转为数值决策。它是启发式，不保证对所有工作负载最优；读懂公式以后，应能解释每个分支改变的是哪一种成本。</p>
+<p>完整源码单元 · source/blender/functions/intern/multi_function.cc · L54–L70。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/intern/multi_function.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="54"><span class="syntax-keyword">static</span> <span class="syntax-keyword">int64_t</span> <span class="syntax-function">compute_grain_size</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">ExecutionHints</span> &amp;hints, <span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> &amp;mask)</span>
+<span class="code-line" data-line="55">{</span>
+<span class="code-line" data-line="56">  <span class="syntax-keyword">int64_t</span> grain_size = hints.min_grain_size;</span>
+<span class="code-line" data-line="57">  <span class="syntax-keyword">if</span> (hints.uniform_execution_time) {</span>
+<span class="code-line" data-line="58">    <span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> thread_count = <span class="syntax-type">BLI_system_thread_count</span>();</span>
+<span class="code-line" data-line="59">    <span class="syntax-comment">/* Avoid using a small grain size even if it is not necessary. */</span></span>
+<span class="code-line" data-line="60">    <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> thread_based_grain_size = mask.<span class="syntax-function">size</span>() / thread_count / <span class="syntax-number">4</span>;</span>
+<span class="code-line" data-line="61">    grain_size = std::<span class="syntax-function">max</span>(grain_size, thread_based_grain_size);</span>
+<span class="code-line" data-line="62">  }</span>
+<span class="code-line" data-line="63">  <span class="syntax-keyword">if</span> (hints.allocates_array) {</span>
+<span class="code-line" data-line="64">    <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> max_grain_size = <span class="syntax-number">10000</span>;</span>
+<span class="code-line" data-line="65">    <span class="syntax-comment">/* Avoid allocating many large intermediate arrays. Better process data in smaller chunks to</span></span>
+<span class="code-line" data-line="66"><span class="syntax-comment">     * keep peak memory usage lower. */</span></span>
+<span class="code-line" data-line="67">    grain_size = std::<span class="syntax-function">min</span>(grain_size, max_grain_size);</span>
+<span class="code-line" data-line="68">  }</span>
+<span class="code-line" data-line="69">  <span class="syntax-keyword">return</span> grain_size;</span>
+<span class="code-line" data-line="70">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L54</span><div><code><span class="syntax-keyword">static</span> <span class="syntax-keyword">int64_t</span> <span class="syntax-function">compute_grain_size</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">ExecutionHints</span> &amp;hints, <span class="syntax-keyword">const</span> <span class="syntax-type">IndexMask</span> &amp;mask)</code><p>输入执行提示和选中元素集合，返回粒度整数。它不直接创建任务。</p>
+</div></div><div class="line-explanation"><span class="line-number">L55</span><div><code>{</code><p>打开 static int64_t compute_grain_size(const ExecutionHints &amp;hints, const IndexMask &amp;mask) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L56</span><div><code><span class="syntax-keyword">int64_t</span> grain_size = hints.min_grain_size;</code><p>以函数声明的最低建议粒度作为初值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L57</span><div><code><span class="syntax-keyword">if</span> (hints.uniform_execution_time) {</code><p>只有每元素耗时大致相同时，才使用基于元素数量的线程估算。</p>
+</div></div><div class="line-explanation"><span class="line-number">L58</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> thread_count = <span class="syntax-type">BLI_system_thread_count</span>();</code><p>获取系统线程数量。此公式依赖它是正数。</p>
+</div></div><div class="line-explanation"><span class="line-number">L59</span><div><code><span class="syntax-comment">/* Avoid using a small grain size even if it is not necessary. */</span></code><p>元素耗时较均匀时，没有必要切出过多小任务；根据线程数量增大粒度，降低调度成本。</p>
+</div></div><div class="line-explanation"><span class="line-number">L60</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> thread_based_grain_size = mask.<span class="syntax-function">size</span>() / thread_count / <span class="syntax-number">4</span>;</code><p>按线程数再分成约四份计算候选粒度。这里用 mask.size()，不是最大元素下标。</p>
+</div></div><div class="line-explanation"><span class="line-number">L61</span><div><code>grain_size = std::<span class="syntax-function">max</span>(grain_size, thread_based_grain_size);</code><p>取较大值避免任务切得过碎，降低调度开销。</p>
+</div></div><div class="line-explanation"><span class="line-number">L62</span><div><code>}</code><p>结束 if (hints.uniform_execution_time) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L63</span><div><code><span class="syntax-keyword">if</span> (hints.allocates_array) {</code><p>如果实现会按索引范围分配数组，还要考虑中间存储峰值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L64</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> max_grain_size = <span class="syntax-number">10000</span>;</code><p>设置此路径的最大粒度为 10000；这是当前实现的经验值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L65</span><div><code>/* <span class="syntax-type">Avoid</span> allocating many large intermediate arrays. <span class="syntax-type">Better</span> process data in smaller chunks to</code><p>需要中间数组的函数按较小块处理，控制并行阶段同时存在的大临时数组峰值。</p>
+</div></div><div class="line-explanation"><span class="line-number">L66</span><div><code>* keep peak memory usage lower. */</code><p>续接 L65 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L67</span><div><code>grain_size = std::<span class="syntax-function">min</span>(grain_size, max_grain_size);</code><p>取较小值控制大块临时数组的风险。因此前一阶段的最低建议可能在这里被压低。</p>
+</div></div><div class="line-explanation"><span class="line-number">L68</span><div><code>}</code><p>结束 if (hints.allocates_array) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L69</span><div><code><span class="syntax-keyword">return</span> grain_size;</code><p>返回最后选择。后续切片与对齐逻辑才真正决定每个调用处理的范围。</p>
+</div></div><div class="line-explanation"><span class="line-number">L70</span><div><code>}</code><p>结束 static int64_t compute_grain_size(const ExecutionHints &amp;hints, const IndexMask &amp;mask) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>mask.size()=800000、线程数=8、min_grain_size=1000、uniform=true，则线程候选为 25000，先得到 25000。若 allocates_array=true，再被限制为 10000。若 false，则保留 25000。这些值不是本机性能实测结果。</p>
+<h4>调用关系与设计判断</h4><p>追踪 call_auto 如何使用 grain_size，及 add_sliced_parameters 怎样处理索引偏移。稀疏 mask 的元素数量与最大下标差异很大；使用临时数组的实现若按最大下标分配，就不能只看选中数量估算内存。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_multi_function.hh">FN_multi_function.hh</a></div><p>把三个提示字段分别对应到成本与内存问题。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 98 行 · SHA-256 def04d749803</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_multi_function.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">95</span>,<span class="syntax-number">126</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_multi_function.hh">FN_multi_function.hh</a></div><p>确认自动路径承担切片、偏移与并行等额外工作。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 56 行 · SHA-256 def04d749803</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_multi_function.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">53</span>,<span class="syntax-number">84</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/4365de38700ccc05f98f601efdde0963de4645c1" target="_blank" rel="noopener">4365de38700</a> <span>Jacques Lucke · 2020-06-16</span></div><h3>Functions: Multi Function</h3><p>与早期批量接口比较，区分稳定的调用模型和后来增长的执行策略。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This adds the `MultiFunction` type and some smallish utility types that it uses.
+A `MultiFunction` encapsulates a function that is optimized for throughput by
+always processing many elements at once.
+
+This is an important part of the new particle system, because it allows us to
+execute user generated node trees for many particles efficiently.
+
+Reviewers: brecht
+
+Differential Revision: https://developer.blender.org/D8030</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/functions/<span class="syntax-type">CMakeLists</span>.txt            |   <span class="syntax-number">8</span> +</span>
+<span class="code-line" data-line="2"> source/blender/functions/<span class="syntax-type">FN_array_spans</span>.hh         | <span class="syntax-number">220</span> ++++++++++++</span>
+<span class="code-line" data-line="3"> source/blender/functions/<span class="syntax-type">FN_cpp_type</span>.hh            |  <span class="syntax-number">64</span> ++--</span>
+<span class="code-line" data-line="4"> source/blender/functions/<span class="syntax-type">FN_cpp_types</span>.hh           |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="5"> .../blender/functions/<span class="syntax-type">FN_generic_vector_array</span>.hh   | <span class="syntax-number">181</span> ++++++++++</span>
+<span class="code-line" data-line="6"> source/blender/functions/<span class="syntax-type">FN_multi_function</span>.hh      | <span class="syntax-number">106</span> ++++++</span>
+<span class="code-line" data-line="7"> .../blender/functions/<span class="syntax-type">FN_multi_function_context</span>.hh |  <span class="syntax-number">49</span> +++</span>
+<span class="code-line" data-line="8"> .../functions/<span class="syntax-type">FN_multi_function_data_type</span>.hh       | <span class="syntax-number">125</span> +++++++</span>
+<span class="code-line" data-line="9"> .../functions/<span class="syntax-type">FN_multi_function_param_type</span>.hh      | <span class="syntax-number">155</span> ++++++++</span>
+<span class="code-line" data-line="10"> .../blender/functions/<span class="syntax-type">FN_multi_function_params</span>.hh  | <span class="syntax-number">236</span> +++++++++++++</span>
+<span class="code-line" data-line="11"> .../functions/<span class="syntax-type">FN_multi_function_signature</span>.hh       | <span class="syntax-number">161</span> +++++++++</span>
+<span class="code-line" data-line="12"> source/blender/functions/<span class="syntax-type">FN_spans</span>.hh               | <span class="syntax-number">391</span> +++++++++++++++++++++</span>
+<span class="code-line" data-line="13"> source/blender/functions/intern/cpp_types.cc       |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="14"> tests/gtests/functions/<span class="syntax-type">CMakeLists</span>.txt              |   <span class="syntax-number">4</span> +</span>
+<span class="code-line" data-line="15"> tests/gtests/functions/<span class="syntax-type">FN_array_spans_test</span>.cc      |  <span class="syntax-number">92</span> +++++</span>
+<span class="code-line" data-line="16"> tests/gtests/functions/<span class="syntax-type">FN_cpp_type_test</span>.cc         |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="17"> .../functions/<span class="syntax-type">FN_generic_vector_array_test</span>.cc      | <span class="syntax-number">101</span> ++++++</span>
+<span class="code-line" data-line="18"> tests/gtests/functions/<span class="syntax-type">FN_multi_function_test</span>.cc   | <span class="syntax-number">222</span> ++++++++++++</span>
+<span class="code-line" data-line="19"> tests/gtests/functions/<span class="syntax-type">FN_spans_test</span>.cc            | <span class="syntax-number">159</span> +++++++++</span>
+<span class="code-line" data-line="20"> <span class="syntax-number">19</span> files changed, <span class="syntax-number">2246</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">41</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 4365de38700</span>
+<span class="code-line" data-line="2">git show 4365de38700</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 4365de38700 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>为非零起点的两元素选择实现局部缓冲区映射，再恢复到原始目标位置。</p>
+</li><li><strong>任务 02</strong><p>测不同规模的加法与较昂贵函数，分别找出并行是否有收益。</p>
+</li><li><strong>任务 03</strong><p>给实验报告写出硬件、线程数、编译模式和是否包含准备时间。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="07-02-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="07-02-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="07-02-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>只有两个被选元素就一定只需两个槽的临时数组吗？</summary><p>取决于索引映射与接口，未经切片调整的实现可能按最大索引分配。</p>
+</details><details class="question"><summary>min_grain_size 是正确性规则吗？</summary><p>它主要是执行性能提示，不应替代真正的数据依赖或线程安全约束。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="07-02" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../07-%E6%89%B9%E9%87%8F%E5%87%BD%E6%95%B0%E4%B8%8E%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B/01-MultiFunction%E7%AD%BE%E5%90%8D%E4%B8%8E%E5%8F%82%E6%95%B0.html">← 上一篇：MultiFunction：为一批元素设计调用约定</a><a href="../07-%E6%89%B9%E9%87%8F%E5%87%BD%E6%95%B0%E4%B8%8E%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B/03-Procedure%E4%B8%8E%E4%B8%B4%E6%97%B6%E5%80%BC%E5%AF%BF%E5%91%BD.html">下一篇：Procedure：把多个批量函数组成可执行过程 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

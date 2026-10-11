@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="用 Switch 的三次推进理解输入需求在运行时才确定的计算。">
+<title>LazyFunction：计算可以暂停，等待真正需要的输入 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="09-01"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">惰性函数与节点执行器</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>LAZY EVALUATION / COMPOSITION / LESSON 09-01</div><h1>LazyFunction：计算可以暂停，等待真正需要的输入</h1><p class="lede">用 Switch 的三次推进理解输入需求在运行时才确定的计算。</p><div class="chips"><span class="chip">方向 09 · 惰性函数与节点执行器</span><span class="chip">专题 1/3</span><span class="chip">正文 1,637 字符</span><span class="chip">建议研读 18 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-LazyFunction%E7%8A%B6%E6%80%81%E6%9C%BA.html">01 LazyFunction：计算可以暂停，等待真正需要的输入</a><a href="02-%E5%9B%BE%E7%BB%84%E5%90%88%E4%B8%8E%E8%8A%82%E7%82%B9%E9%99%8D%E4%BD%8E.html">02 从节点树到执行图：构建、预处理与执行分层</a><a href="03-MenuSwitch%E4%BE%9D%E8%B5%96%E7%8E%AF%E4%BF%AE%E5%A4%8D.html">03 拆分计算职责：从 Menu Switch 修复理解精确依赖</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>从 Switch 的分阶段输入请求开始，理解 LazyFunction、Graph 与 GraphExecutor，再研究几何节点如何被转换成执行图。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>图遍历、状态机、Field 与批量函数；先做串行教学实现。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>输出需求</strong></div><div class="flow-step"><span>02</span><strong>请求条件</strong></div><div class="flow-step"><span>03</span><strong>判断输入需求</strong></div><div class="flow-step"><span>04</span><strong>调度依赖</strong></div><div class="flow-step"><span>05</span><strong>产出结果</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>分别测试条件立即可用、条件需计算、被选分支需计算三种情况。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>条件决定依赖</h3>
+<p>普通急切执行可能先把 A 与 B 都算出来，再计算 Switch(condition,A,B)。若 B 极其昂贵而条件始终选择 A，这会浪费大量工作。惰性函数先要求条件，得到条件后只要求被选择的值，最后产生输出。依赖因此不能全部在执行前静态展开为必需。</p>
+<p>FN_lazy_function.hh 顶部把这一过程解释成状态机：一次调用推进到当前输入允许的位置，缺少输入就请求并返回。这里的暂停通过执行协议表达，不必等同于语言级协程。</p>
+<h3>区分输入值与使用信息</h3>
+<p>Params 提供取得已有输入、请求输入、设置输出等通道；ValueUsage 区分确定使用、可能使用和不使用。一个值还没到达与一个值不需要，是不同状态。执行器若混淆它们，可能永远等待或提前结束。</p>
+<p>同一个 LazyFunction 可以被多次调用，因此实现不能假设第一次进入就拥有全部输入。还要区分函数描述对象和一次执行的 storage/context，避免把不同求值实例的进度互相污染。</p>
+<h3>把输出发布当成协议</h3>
+<p>输出应在对应对象已经正确构造、内容可读取时标记可用。重复设置或漏设输出会破坏下游状态。当前执行器提供日志接口来报告一些协议错误，这说明可观测性本身是架构组成部分。</p>
+<p>教学实现先采用单线程事件循环：请求缺少输入，将当前节点挂起；输入就绪后再次排队。使用清楚的状态表比一开始套入多线程队列更容易验证。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<div class="demo" data-demo="lazy"><div class="demo-heading"><span class="pill">INTERACTIVE LAB</span><strong>改变一个条件，观察模型</strong></div><div class="demo-controls"></div><div class="demo-result" aria-live="polite"></div><p class="demo-caption">教学简化模型，帮助推演状态；不等同于 Blender 完整实现，也不执行性能基准。</p><noscript>开启 JavaScript 可使用交互；正文和源码仍可离线阅读。</noscript></div><aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>练习中的状态必须属于一次执行；可复用函数对象不应随意保存所有调用共用的可变进度。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>请求输入：值尚未到达也会改变执行需求</h3><p>这个完整入口与只读 try_get_input_data_ptr 的关键差别是请求缺失输入。返回空指针不代表计算最终失败，常常意味着当前执行需要暂停并等待后续调度。</p>
+<p>完整源码单元 · source/blender/functions/FN_lazy_function.hh · L372–L377。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/FN_lazy_function.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="372"><span class="syntax-keyword">inline</span> <span class="syntax-keyword">void</span> *<span class="syntax-type">Params</span>::<span class="syntax-function">try_get_input_data_ptr_or_request</span>(<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> index)</span>
+<span class="code-line" data-line="373">{</span>
+<span class="code-line" data-line="374">  <span class="syntax-type">BLI_assert</span>(index &gt;= <span class="syntax-number">0</span> &amp;&amp; index &lt; fn_.<span class="syntax-function">inputs</span>().<span class="syntax-function">size</span>());</span>
+<span class="code-line" data-line="375">  <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">assert_valid_thread</span>();</span>
+<span class="code-line" data-line="376">  <span class="syntax-keyword">return</span> <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">try_get_input_data_ptr_or_request_impl</span>(index);</span>
+<span class="code-line" data-line="377">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L372</span><div><code><span class="syntax-keyword">inline</span> <span class="syntax-keyword">void</span> *<span class="syntax-type">Params</span>::<span class="syntax-function">try_get_input_data_ptr_or_request</span>(<span class="syntax-keyword">const</span> <span class="syntax-keyword">int</span> index)</code><p>返回输入原始地址，缺失时可以返回空。非 const 表达它会更新需求状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L373</span><div><code>{</code><p>打开 inline void *Params::try_get_input_data_ptr_or_request(const int index) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L374</span><div><code><span class="syntax-type">BLI_assert</span>(index &gt;= <span class="syntax-number">0</span> &amp;&amp; index &lt; fn_.<span class="syntax-function">inputs</span>().<span class="syntax-function">size</span>());</code><p>检查输入编号在当前 LazyFunction 签名范围内。</p>
+</div></div><div class="line-explanation"><span class="line-number">L375</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">assert_valid_thread</span>();</code><p>检查当前线程符合 Params 的访问约定；调度器支持并行不等于同一个参数对象可随意跨线程修改。</p>
+</div></div><div class="line-explanation"><span class="line-number">L376</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">try_get_input_data_ptr_or_request_impl</span>(index);</code><p>委托实现查询并在需要时登记输入需求。当前层不负责递归计算整个上游图。</p>
+</div></div><div class="line-explanation"><span class="line-number">L377</span><div><code>}</code><p>结束 inline void *Params::try_get_input_data_ptr_or_request(const int index) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>Switch 先请求条件，条件暂未到达时返回，调度器计算条件后再次执行 Switch；随后只请求被选中的分支。不能在第一次条件缺失时把两个分支都标为最终不需要。</p>
+<h4>调用关系与设计判断</h4><p>继续看 get_output_usage、output_set 与具体执行器的请求处理。每个输出要在构造完成后才标记已设置；需求状态 Used/Maybe/Unused 与值是否已经可读属于不同维度。</p>
+</article><article class="deep-reading"><h3>LazyFunction 执行入口：固定前提与可暂停实现</h3><p>完整公共入口统一处理分析记录与必要输入检查，再进入派生函数。必要输入可用并不意味着所有 Maybe 输入都已到达。</p>
+<p>完整源码单元 · source/blender/functions/FN_lazy_function.hh · L341–L347。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/FN_lazy_function.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="341"><span class="syntax-keyword">inline</span> <span class="syntax-keyword">void</span> <span class="syntax-type">LazyFunction</span>::<span class="syntax-function">execute</span>(<span class="syntax-type">Params</span> &amp;params, <span class="syntax-keyword">const</span> <span class="syntax-type">Context</span> &amp;context) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="342">{</span>
+<span class="code-line" data-line="343">  <span class="syntax-type">PRF_scope_with_name</span>(<span class="syntax-string">&quot;LazyFunction&quot;</span>, <span class="syntax-type">ProfileCategory</span>::<span class="syntax-type">Default</span>);</span>
+<span class="code-line" data-line="344">  <span class="syntax-type">PRF_scope_set_dynamic_name</span>(<span class="syntax-string">&quot;%s&quot;</span>, debug_name_);</span>
+<span class="code-line" data-line="345">  <span class="syntax-type">BLI_assert</span>(<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">always_used_inputs_available</span>(params));</span>
+<span class="code-line" data-line="346">  <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">execute_impl</span>(params, context);</span>
+<span class="code-line" data-line="347">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L341</span><div><code><span class="syntax-keyword">inline</span> <span class="syntax-keyword">void</span> <span class="syntax-type">LazyFunction</span>::<span class="syntax-function">execute</span>(<span class="syntax-type">Params</span> &amp;params, <span class="syntax-keyword">const</span> <span class="syntax-type">Context</span> &amp;context) <span class="syntax-keyword">const</span></code><p>接收运行期参数状态与上下文，当前函数描述对象保持逻辑只读。</p>
+</div></div><div class="line-explanation"><span class="line-number">L342</span><div><code>{</code><p>打开 inline void LazyFunction::execute(Params &amp;params, const Context &amp;context) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L343</span><div><code><span class="syntax-type">PRF_scope_with_name</span>(<span class="syntax-string">&quot;LazyFunction&quot;</span>, <span class="syntax-type">ProfileCategory</span>::<span class="syntax-type">Default</span>);</code><p>建立分析工具的作用域标记，便于观察该函数执行耗时。</p>
+</div></div><div class="line-explanation"><span class="line-number">L344</span><div><code><span class="syntax-type">PRF_scope_set_dynamic_name</span>(<span class="syntax-string">&quot;%s&quot;</span>, debug_name_);</code><p>把具体 debug_name_ 作为动态名称，区分不同 LazyFunction 实例。</p>
+</div></div><div class="line-explanation"><span class="line-number">L345</span><div><code><span class="syntax-type">BLI_assert</span>(<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">always_used_inputs_available</span>(params));</code><p>验证声明为始终需要的输入已经可用。可选按需输入仍可在 execute_impl 中请求。</p>
+</div></div><div class="line-explanation"><span class="line-number">L346</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">execute_impl</span>(params, context);</code><p>进入具体派生实现。它可以设置部分输出或因为缺失按需输入而返回，之后可能再次被调用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L347</span><div><code>}</code><p>结束 inline void LazyFunction::execute(Params &amp;params, const Context &amp;context) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>Switch 的条件作为始终需要输入先到达，但被选分支值尚未到达。入口断言成立，execute_impl 请求分支后返回。下一次调度进入同一函数，条件仍可用，分支这次也可读，才设置结果。</p>
+<h4>调用关系与设计判断</h4><p>派生实现需要幂等地检查哪些输出已经设置，避免重复构造输出对象。执行入口的 profiling 是每次调用记录，不应把一次调用等同于整个节点从第一次请求到完成的总延迟。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_lazy_function.hh">FN_lazy_function.hh</a></div><p>区分需求信息与值是否已经到达。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 61 行 · SHA-256 e9d3118bf1a4</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_lazy_function.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_lazy_function.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">58</span>,<span class="syntax-number">89</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_lazy_function.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_lazy_function.hh">FN_lazy_function.hh</a></div><p>观察调用协议如何承载请求、获取和输出。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 109 行 · SHA-256 e9d3118bf1a4</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_lazy_function.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_lazy_function.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">106</span>,<span class="syntax-number">137</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_lazy_function.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/4130f1e674f83fc3d53979d3061469af34e1f873" target="_blank" rel="noopener">4130f1e674f</a> <span>Jacques Lucke · 2022-09-13</span></div><h3>Geometry Nodes: new evaluation system</h3><p>先读新执行系统的设计目标，再进入最小 LazyFunction 接口。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This refactors the geometry nodes evaluation system. No changes for the
+user are expected. At a high level the goals are:
+* Support using geometry nodes outside of the geometry nodes modifier.
+* Support using the evaluator infrastructure for other purposes like field evaluation.
+* Support more nodes, especially when many of them are disabled behind switch nodes.
+* Support doing preprocessing on node groups.
+
+For more details see T98492.
+
+There are fairly detailed comments in the code, but here is a high level overview
+for how it works now:
+* There is a new &quot;lazy-function&quot; system. It is similar in spirit to the multi-function
+  system but with different goals. Instead of optimizing throughput for highly
+  parallelizable work, this system is designed to compute only the data that is actually
+  necessary. What data is necessary can be determined dynamically during evaluation.
+  Many lazy-functions can be composed in a graph to form a new lazy-function, which can
+  again be used in a graph etc.
+* Each geometry node group is converted into a lazy-function graph prior to evaluation.
+  To evaluate geometry nodes, one then just has to evaluate that graph. Node groups are
+  no longer inlined into their parents.
+
+Next steps for the evaluation system is to reduce the use of threads in some situations
+to avoid overhead. Many small node groups don&#x27;t benefit from multi-threading at all.
+This is much easier to do now because not everything has to be inlined in one huge
+node tree anymore.
+
+Differential Revision: https://developer.blender.org/D15914</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenkernel/<span class="syntax-type">BKE_compute_contexts</span>.hh  |   <span class="syntax-number">46</span> +</span>
+<span class="code-line" data-line="2"> source/blender/blenkernel/<span class="syntax-type">BKE_node_runtime</span>.hh      |   <span class="syntax-number">30</span> +-</span>
+<span class="code-line" data-line="3"> source/blender/blenkernel/<span class="syntax-type">CMakeLists</span>.txt           |    <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="4"> .../blender/blenkernel/intern/compute_contexts.cc  |   <span class="syntax-number">38</span> +</span>
+<span class="code-line" data-line="5"> source/blender/blenkernel/intern/node.cc           |    <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="6"> source/blender/blenkernel/intern/node_runtime.cc   |   <span class="syntax-number">18</span> +</span>
+<span class="code-line" data-line="7"> source/blender/blenlib/<span class="syntax-type">BLI_compute_context</span>.hh      |  <span class="syntax-number">173</span> ++</span>
+<span class="code-line" data-line="8"> source/blender/blenlib/<span class="syntax-type">BLI_multi_value_map</span>.hh      |    <span class="syntax-number">8</span> +</span>
+<span class="code-line" data-line="9"> source/blender/blenlib/<span class="syntax-type">CMakeLists</span>.txt              |    <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="10"> source/blender/blenlib/intern/compute_context.cc   |   <span class="syntax-number">48</span> +</span>
+<span class="code-line" data-line="11"> source/blender/blenlib/intern/cpp_type.cc          |    <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="12"> .../depsgraph/intern/builder/deg_builder_nodes.cc  |    <span class="syntax-number">9</span> +-</span>
+<span class="code-line" data-line="13"> source/blender/editors/include/<span class="syntax-type">UI_interface</span>.hh     |   <span class="syntax-number">13</span> +-</span>
+<span class="code-line" data-line="14"> .../interface_template_attribute_search.cc         |    <span class="syntax-number">6</span> +-</span>
+<span class="code-line" data-line="15"> source/blender/editors/space_node/node_draw.cc     |  <span class="syntax-number">451</span> ++---</span>
+<span class="code-line" data-line="16"> .../space_node/node_geometry_attribute_search.cc   |   <span class="syntax-number">65</span> +-</span>
+<span class="code-line" data-line="17"> .../spreadsheet_data_source_geometry.cc            |   <span class="syntax-number">49</span> +-</span>
+<span class="code-line" data-line="18"> source/blender/functions/<span class="syntax-type">CMakeLists</span>.txt            |    <span class="syntax-number">9</span> +</span>
+<span class="code-line" data-line="19"> source/blender/functions/<span class="syntax-type">FN_field</span>.hh               |   <span class="syntax-number">11</span> +</span>
+<span class="code-line" data-line="20"> source/blender/functions/<span class="syntax-type">FN_field_cpp_type</span>.hh      |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="21"> source/blender/functions/<span class="syntax-type">FN_lazy_function</span>.hh       |  <span class="syntax-number">384</span> ++++</span>
+<span class="code-line" data-line="22"> .../blender/functions/<span class="syntax-type">FN_lazy_function_execute</span>.hh  |  <span class="syntax-number">122</span> ++</span>
+<span class="code-line" data-line="23"> source/blender/functions/<span class="syntax-type">FN_lazy_function_graph</span>.hh |  <span class="syntax-number">421</span> +++++</span>
+<span class="code-line" data-line="24"> .../functions/<span class="syntax-type">FN_lazy_function_graph_executor</span>.hh   |   <span class="syntax-number">98</span> +</span>
+<span class="code-line" data-line="25"> source/blender/functions/<span class="syntax-type">FN_multi_function</span>.hh      |    <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="26"> source/blender/functions/intern/cpp_types.cc       |    <span class="syntax-number">3</span> +</span>
+<span class="code-line" data-line="27"> source/blender/functions/intern/lazy_function.cc   |   <span class="syntax-number">66</span> +</span>
+<span class="code-line" data-line="28"> .../functions/intern/lazy_function_execute.cc      |   <span class="syntax-number">65</span> +</span>
+<span class="code-line" data-line="29"> .../functions/intern/lazy_function_graph.cc        |  <span class="syntax-number">181</span> ++</span>
+<span class="code-line" data-line="30"> .../intern/lazy_function_graph_executor.cc         | <span class="syntax-number">1163</span> ++++++++++++</span>
+<span class="code-line" data-line="31"> .../functions/tests/<span class="syntax-type">FN_lazy_function_test</span>.cc       |  <span class="syntax-number">115</span> ++</span>
+<span class="code-line" data-line="32"> source/blender/makesdna/<span class="syntax-type">DNA_node_types</span>.h           |    <span class="syntax-number">3</span> +</span>
+<span class="code-line" data-line="33"> source/blender/modifiers/<span class="syntax-type">CMakeLists</span>.txt            |    <span class="syntax-number">2</span> -</span>
+<span class="code-line" data-line="34"> source/blender/modifiers/intern/<span class="syntax-type">MOD_nodes</span>.cc       |  <span class="syntax-number">428</span> +++--</span>
+<span class="code-line" data-line="35"> .../modifiers/intern/<span class="syntax-type">MOD_nodes_evaluator</span>.cc        | <span class="syntax-number">1929</span> --------------------</span>
+<span class="code-line" data-line="36"> .../modifiers/intern/<span class="syntax-type">MOD_nodes_evaluator</span>.hh        |   <span class="syntax-number">44</span> -</span>
+<span class="code-line" data-line="37"> source/blender/nodes/<span class="syntax-type">CMakeLists</span>.txt                |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="38"> source/blender/nodes/<span class="syntax-type">NOD_geometry_exec</span>.hh          |  <span class="syntax-number">205</span> +--</span>
+<span class="code-line" data-line="39"> .../blender/nodes/<span class="syntax-type">NOD_geometry_nodes_eval_log</span>.hh   |  <span class="syntax-number">411</span> -----</span>
+<span class="code-line" data-line="40"> .../nodes/<span class="syntax-type">NOD_geometry_nodes_lazy_function</span>.hh      |  <span class="syntax-number">178</span> ++</span>
+<span class="code-line" data-line="41"> source/blender/nodes/<span class="syntax-type">NOD_geometry_nodes_log</span>.hh     |  <span class="syntax-number">340</span> ++++</span>
+<span class="code-line" data-line="42"> source/blender/nodes/<span class="syntax-type">NOD_multi_function</span>.hh         |   <span class="syntax-number">10</span> +-</span>
+<span class="code-line" data-line="43"> .../blender/nodes/geometry/node_geometry_exec.cc   |    <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="44"> .../nodes/geometry/nodes/node_geo_boolean.cc       |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="45"> .../nodes/node_geo_geometry_to_instance.cc         |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="46"> .../nodes/node_geo_input_named_attribute.cc        |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="47"> .../nodes/geometry/nodes/node_geo_join_geometry.cc |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="48"> .../geometry/nodes/node_geo_remove_attribute.cc    |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="49"> .../nodes/node_geo_store_named_attribute.cc        |    <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="50"> .../nodes/geometry/nodes/node_geo_string_join.cc   |    <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="51"> .../nodes/intern/geometry_nodes_eval_log.cc        |  <span class="syntax-number">520</span> ------</span>
+<span class="code-line" data-line="52"> .../nodes/intern/geometry_nodes_lazy_function.cc   | <span class="syntax-number">1327</span> ++++++++++++++</span>
+<span class="code-line" data-line="53"> source/blender/nodes/intern/geometry_nodes_log.cc  |  <span class="syntax-number">607</span> ++++++</span>
+<span class="code-line" data-line="54"> source/blender/nodes/intern/node_geometry_exec.cc  |   <span class="syntax-number">45</span> +-</span>
+<span class="code-line" data-line="55"> source/blender/nodes/intern/node_multi_function.cc |   <span class="syntax-number">22</span> +-</span>
+<span class="code-line" data-line="56"> <span class="syntax-number">55</span> files changed, <span class="syntax-number">6141</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">3554</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 4130f1e674f</span>
+<span class="code-line" data-line="2">git show 4130f1e674f</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 4130f1e674f -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>给未选分支放一个会报错的函数，验证 Switch 不会触发它。</p>
+</li><li><strong>任务 02</strong><p>记录每次输入请求和再次执行，确认重复调用不会重复发布输出。</p>
+</li><li><strong>任务 03</strong><p>分别测试条件立即可用、条件需计算、被选分支需计算三种情况。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="09-01-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="09-01-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="09-01-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>调用多次说明函数重复算错了吗？</summary><p>不一定，惰性协议允许多次推进，每次处理当前可用输入。</p>
+</details><details class="question"><summary>未到达与不使用为什么不能合并？</summary><p>前者可能需要等待或调度，后者不应引发无谓计算，二者控制行为不同。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="09-01" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E4%B8%8A%E4%B8%8B%E6%96%87/03-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E6%9E%90%E6%9E%84.html">← 上一篇：Field 的演化：减少分配之后，还要考虑销毁</a><a href="../09-%E6%83%B0%E6%80%A7%E5%87%BD%E6%95%B0%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E5%99%A8/02-%E5%9B%BE%E7%BB%84%E5%90%88%E4%B8%8E%E8%8A%82%E7%82%B9%E9%99%8D%E4%BD%8E.html">下一篇：从节点树到执行图：构建、预处理与执行分层 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

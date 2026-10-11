@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="先定义图中的节点代表什么，再讨论如何更新。">
+<title>Depsgraph：数据块、组件、操作与关系 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="11-01"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">依赖图与并行调度</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>DEPENDENCIES / SCHEDULING / LESSON 11-01</div><h1>Depsgraph：数据块、组件、操作与关系</h1><p class="lede">先定义图中的节点代表什么，再讨论如何更新。</p><div class="chips"><span class="chip">方向 11 · 依赖图与并行调度</span><span class="chip">专题 1/3</span><span class="chip">正文 2,268 字符</span><span class="chip">建议研读 25 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-Depsgraph%E7%9A%84%E5%88%86%E5%B1%82%E6%A8%A1%E5%9E%8B.html">01 Depsgraph：数据块、组件、操作与关系</a><a href="02-%E5%A4%B1%E6%95%88%E4%BC%A0%E6%92%AD%E4%B8%8E%E6%9D%A1%E4%BB%B6%E4%BE%9D%E8%B5%96.html">02 需要更新、可以执行、实际执行：三个不同状态</a><a href="03-%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E4%B8%8E%E5%B5%8C%E5%A5%97%E6%AD%BB%E9%94%81.html">03 并行系统：工作窃取、任务粒度与锁边界</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>场景 Depsgraph 负责更新关系与调度。把构图、脏标记传播、就绪判断和线程执行分开，并通过 Sergey 与 Brecht 的提交理解真实系统中的条件依赖和死锁。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>图遍历、拓扑排序、状态机、基本锁与原子知识。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>场景数据变化</strong></div><div class="flow-step"><span>02</span><strong>标记与传播</strong></div><div class="flow-step"><span>03</span><strong>可见性和条件</strong></div><div class="flow-step"><span>04</span><strong>依赖满足</strong></div><div class="flow-step"><span>05</span><strong>任务执行</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>画出修改器内部惰性图的边界，说明两层分别拥有哪些状态。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>场景数据不等于可执行任务</h3>
+<p>一个对象包含变换、几何和其他计算方面。若依赖图只以整个对象为最小单位，就可能过于粗糙；若把所有底层计算完全扁平化，又会失去组织关系。IDNode、ComponentNode、OperationNode 提供不同层次的表达，让数据块、计算组件和具体操作分开。</p>
+<p>阅读这三个头文件时记录父子归属与输入输出关系，不要把层级包含关系误认为执行先后。执行顺序由依赖关系决定，组织层级则帮助构建、标记和查询。</p>
+<h3>构建节点与构建关系</h3>
+<p>DepsgraphNodeBuilder 负责建立需要的节点，DepsgraphRelationBuilder 负责补充计算约束。两者都要理解场景数据，但输出职责不同。一个节点存在，不代表它在本次更新中一定执行；还需要失效与可见性等判断。</p>
+<p>从一个对象受父对象变换影响的简单场景开始，标出读取源、写入目标和需要先完成的操作。先画十个以内的节点，再看真实 builder 如何把这种关系扩展到修改器、驱动和其他对象。</p>
+<h3>与几何节点图保持边界</h3>
+<p>场景 Depsgraph 决定场景层面的求值与更新；一个几何节点修改器内部又有自己的 LazyFunction 图和 Field 求值。三者可以嵌套参与工作，但有不同状态、粒度和缓存。不能把某层的优化直接假定存在于另一层。</p>
+<p>官方 Depsgraph 设计文档可帮助理解职责，其历史背景较早；当前类名和执行路径应以本地源码为准。本课程的源码卡片提供可直接继续阅读的当前入口。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<div class="demo" data-demo="deps"><div class="demo-heading"><span class="pill">INTERACTIVE LAB</span><strong>改变一个条件，观察模型</strong></div><div class="demo-controls"></div><div class="demo-result" aria-live="polite"></div><p class="demo-caption">教学简化模型，帮助推演状态；不等同于 Blender 完整实现，也不执行性能基准。</p><noscript>开启 JavaScript 可使用交互；正文和源码仍可离线阅读。</noscript></div><aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要只凭两个操作在源代码中的声明顺序推断运行顺序。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>Depsgraph 操作节点：真正的执行边界</h3><p>完整函数展示 OperationNode 的职责：调用操作回调、可选记录时间、清理求值标记。它不负责构建关系，也不在这里决定是否所有父节点已完成。</p>
+<p>完整源码单元 · source/blender/depsgraph/intern/eval/deg_eval.cc · L88–L109。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/depsgraph/intern/eval/deg_eval.cc</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="88"><span class="syntax-keyword">void</span> <span class="syntax-function">evaluate_node</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">DepsgraphEvalState</span> *state, <span class="syntax-type">OperationNode</span> *operation_node)</span>
+<span class="code-line" data-line="89">{</span>
+<span class="code-line" data-line="90">  blender::<span class="syntax-type">Depsgraph</span> *depsgraph = reinterpret_cast&lt;blender::<span class="syntax-type">Depsgraph</span> *&gt;(state-&gt;graph);</span>
+<span class="code-line" data-line="91"></span>
+<span class="code-line" data-line="92">  <span class="syntax-comment">/* Sanity checks. */</span></span>
+<span class="code-line" data-line="93">  <span class="syntax-type">BLI_assert_msg</span>(!operation_node-&gt;<span class="syntax-function">is_noop</span>(), <span class="syntax-string">&quot;NOOP nodes should not actually be scheduled&quot;</span>);</span>
+<span class="code-line" data-line="94">  <span class="syntax-comment">/* Perform operation. */</span></span>
+<span class="code-line" data-line="95">  <span class="syntax-keyword">if</span> (state-&gt;do_stats) {</span>
+<span class="code-line" data-line="96">    <span class="syntax-keyword">const</span> <span class="syntax-keyword">double</span> start_time = <span class="syntax-type">BLI_time_now_seconds</span>();</span>
+<span class="code-line" data-line="97">    operation_node-&gt;<span class="syntax-function">evaluate</span>(depsgraph);</span>
+<span class="code-line" data-line="98">    operation_node-&gt;stats.current_time += <span class="syntax-type">BLI_time_now_seconds</span>() - start_time;</span>
+<span class="code-line" data-line="99">  }</span>
+<span class="code-line" data-line="100">  <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="101">    operation_node-&gt;<span class="syntax-function">evaluate</span>(depsgraph);</span>
+<span class="code-line" data-line="102">  }</span>
+<span class="code-line" data-line="103"></span>
+<span class="code-line" data-line="104">  <span class="syntax-comment">/* Clear the flag early on, allowing partial updates without re-evaluating the same node multiple</span></span>
+<span class="code-line" data-line="105"><span class="syntax-comment">   * times.</span></span>
+<span class="code-line" data-line="106"><span class="syntax-comment">   * This is a thread-safe modification as the node&#x27;s flags are only read for a non-scheduled nodes</span></span>
+<span class="code-line" data-line="107"><span class="syntax-comment">   * and this node has been scheduled. */</span></span>
+<span class="code-line" data-line="108">  operation_node-&gt;flag &amp;= ~<span class="syntax-type">DEPSOP_FLAG_CLEAR_ON_EVAL</span>;</span>
+<span class="code-line" data-line="109">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L88</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">evaluate_node</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">DepsgraphEvalState</span> *state, <span class="syntax-type">OperationNode</span> *operation_node)</code><p>接收求值状态和已经调度的操作节点。调度前提由上游建立。</p>
+</div></div><div class="line-explanation"><span class="line-number">L89</span><div><code>{</code><p>打开 void evaluate_node(const DepsgraphEvalState *state, OperationNode *operation_node) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L90</span><div><code>blender::<span class="syntax-type">Depsgraph</span> *depsgraph = reinterpret_cast&lt;blender::<span class="syntax-type">Depsgraph</span> *&gt;(state-&gt;graph);</code><p>把内部图指针转换为回调需要的公开 Depsgraph 指针；这是代码架构中的接口桥接。</p>
+</div></div><div class="line-explanation"><span class="line-number">L92</span><div><code><span class="syntax-comment">/* Sanity checks. */</span></code><p>执行前检查调度器交来的操作满足基本前提，下面特别排除不应作为普通任务执行的 NOOP。</p>
+</div></div><div class="line-explanation"><span class="line-number">L93</span><div><code><span class="syntax-type">BLI_assert_msg</span>(!operation_node-&gt;<span class="syntax-function">is_noop</span>(), <span class="syntax-string">&quot;NOOP nodes should not actually be scheduled&quot;</span>);</code><p>检查不是 NOOP 节点。NOOP 参与依赖关系，但不应作为普通工作提交执行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L94</span><div><code><span class="syntax-comment">/* Perform operation. */</span></code><p>随后是真正调用 OperationNode 求值回调的位置，统计分支与普通分支应执行相同的操作语义。</p>
+</div></div><div class="line-explanation"><span class="line-number">L95</span><div><code><span class="syntax-keyword">if</span> (state-&gt;do_stats) {</code><p>启用统计时走计时路径。</p>
+</div></div><div class="line-explanation"><span class="line-number">L96</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">double</span> start_time = <span class="syntax-type">BLI_time_now_seconds</span>();</code><p>在回调前取开始时间。</p>
+</div></div><div class="line-explanation"><span class="line-number">L97</span><div><code>operation_node-&gt;<span class="syntax-function">evaluate</span>(depsgraph);</code><p>执行实际操作回调，数据修改发生在这里。</p>
+</div></div><div class="line-explanation"><span class="line-number">L98</span><div><code>operation_node-&gt;stats.current_time += <span class="syntax-type">BLI_time_now_seconds</span>() - start_time;</code><p>累计当前操作耗时；它不是完整图的墙钟时间，并行时不能简单相加当总时间。</p>
+</div></div><div class="line-explanation"><span class="line-number">L99</span><div><code>}</code><p>结束 if (state-&gt;do_stats) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L100</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入前一个条件不成立时的路径；两条路径分别检查对象与存储状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L101</span><div><code>operation_node-&gt;<span class="syntax-function">evaluate</span>(depsgraph);</code><p>未启用统计时同样执行回调，不增加计时开销。</p>
+</div></div><div class="line-explanation"><span class="line-number">L102</span><div><code>}</code><p>结束 else { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L104</span><div><code>/* <span class="syntax-type">Clear</span> the flag early on, allowing partial updates without re-evaluating the same node multiple</code><p>尽早清理本轮标记，允许局部更新避免重复求值。源码说明安全性依赖已调度节点的访问协议，不能独立推广为任意并发修改安全。</p>
+</div></div><div class="line-explanation"><span class="line-number">L105</span><div><code>* times.</code><p>续接 L104 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L106</span><div><code>* <span class="syntax-type">This</span> is a thread-safe modification as the node&#x27;s flags are only read <span class="syntax-keyword">for</span> a non-scheduled nodes</code><p>续接 L104 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L107</span><div><code>* and <span class="syntax-keyword">this</span> node has been scheduled. */</code><p>续接 L104 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L108</span><div><code>operation_node-&gt;flag &amp;= ~<span class="syntax-type">DEPSOP_FLAG_CLEAR_ON_EVAL</span>;</code><p>清除本次求值相关标记。这里依据已调度节点的访问协议进行修改；源码注释陈述的线程前提需要与调度器一起验证。</p>
+</div></div><div class="line-explanation"><span class="line-number">L109</span><div><code>}</code><p>结束 void evaluate_node(const DepsgraphEvalState *state, OperationNode *operation_node) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>同一节点两条路径都执行 evaluate，一条额外记录时间。NOOP 节点应在调度阶段直接推动孩子，而不是到这里执行空回调。测量图性能时区分节点累计 CPU 时间与从 refresh 开始到结束的实际耗时。</p>
+<h4>调用关系与设计判断</h4><p>沿 OperationNode → ComponentNode → IDNode 找到所属数据块，再回到 relation builder 看先后关系如何建立。结构层次解释“操作属于谁”，关系边解释“操作必须等待谁”，两个维度不能互相替代。</p>
+</article><article class="deep-reading"><h3>OperationNode 完整定义：结构归属与执行状态逐项拆开</h3><p>这个完整类型定义把执行回调、归属组件、调度状态和诊断标识集中到一个操作节点。每个字段的更新阶段不同，不能因为都在同一对象里就用同一个“是否完成”状态概括。</p>
+<p>完整源码单元 · source/blender/depsgraph/intern/node/deg_node_operation.hh · L257–L305。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/depsgraph/intern/node/deg_node_operation.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="257"><span class="syntax-keyword">struct</span> <span class="syntax-type">OperationNode</span> : <span class="syntax-keyword">public</span> <span class="syntax-type">Node</span> {</span>
+<span class="code-line" data-line="258">  <span class="syntax-type">OperationNode</span>();</span>
+<span class="code-line" data-line="259"></span>
+<span class="code-line" data-line="260">  std::string <span class="syntax-function">identifier</span>() <span class="syntax-keyword">const</span> override;</span>
+<span class="code-line" data-line="261">  <span class="syntax-comment">/**</span></span>
+<span class="code-line" data-line="262"><span class="syntax-comment">   * Full node identifier, including owner name.</span></span>
+<span class="code-line" data-line="263"><span class="syntax-comment">   * used for logging and debug prints.</span></span>
+<span class="code-line" data-line="264"><span class="syntax-comment">   */</span></span>
+<span class="code-line" data-line="265">  std::string <span class="syntax-function">full_identifier</span>() <span class="syntax-keyword">const</span>;</span>
+<span class="code-line" data-line="266"></span>
+<span class="code-line" data-line="267">  <span class="syntax-keyword">void</span> <span class="syntax-function">tag_update</span>(<span class="syntax-type">Depsgraph</span> *graph, eUpdateSource source) override;</span>
+<span class="code-line" data-line="268"></span>
+<span class="code-line" data-line="269">  <span class="syntax-keyword">bool</span> <span class="syntax-function">is_noop</span>() <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="270">  {</span>
+<span class="code-line" data-line="271">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">bool</span>(evaluate) == <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="272">  }</span>
+<span class="code-line" data-line="273"></span>
+<span class="code-line" data-line="274">  <span class="syntax-type">OperationNode</span> *<span class="syntax-function">get_entry_operation</span>() override</span>
+<span class="code-line" data-line="275">  {</span>
+<span class="code-line" data-line="276">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">this</span>;</span>
+<span class="code-line" data-line="277">  }</span>
+<span class="code-line" data-line="278">  <span class="syntax-type">OperationNode</span> *<span class="syntax-function">get_exit_operation</span>() override</span>
+<span class="code-line" data-line="279">  {</span>
+<span class="code-line" data-line="280">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">this</span>;</span>
+<span class="code-line" data-line="281">  }</span>
+<span class="code-line" data-line="282"></span>
+<span class="code-line" data-line="283">  <span class="syntax-comment">/* Set this operation as component&#x27;s entry/exit operation. */</span></span>
+<span class="code-line" data-line="284">  <span class="syntax-keyword">void</span> <span class="syntax-function">set_as_entry</span>();</span>
+<span class="code-line" data-line="285">  <span class="syntax-keyword">void</span> <span class="syntax-function">set_as_exit</span>();</span>
+<span class="code-line" data-line="286"></span>
+<span class="code-line" data-line="287">  <span class="syntax-comment">/* Component that contains the operation. */</span></span>
+<span class="code-line" data-line="288">  <span class="syntax-type">ComponentNode</span> *owner;</span>
+<span class="code-line" data-line="289"></span>
+<span class="code-line" data-line="290">  <span class="syntax-comment">/* Callback for operation. */</span></span>
+<span class="code-line" data-line="291">  <span class="syntax-type">DepsEvalOperationCb</span> evaluate;</span>
+<span class="code-line" data-line="292"></span>
+<span class="code-line" data-line="293">  <span class="syntax-comment">/* How many inlinks are we still waiting on before we can be evaluated. */</span></span>
+<span class="code-line" data-line="294">  uint32_t num_links_pending;</span>
+<span class="code-line" data-line="295">  <span class="syntax-keyword">bool</span> scheduled;</span>
+<span class="code-line" data-line="296"></span>
+<span class="code-line" data-line="297">  <span class="syntax-comment">/* Identifier for the operation being performed. */</span></span>
+<span class="code-line" data-line="298">  <span class="syntax-type">OperationCode</span> opcode;</span>
+<span class="code-line" data-line="299">  <span class="syntax-keyword">int</span> name_tag;</span>
+<span class="code-line" data-line="300"></span>
+<span class="code-line" data-line="301">  <span class="syntax-comment">/* (OperationFlag) extra settings affecting evaluation. */</span></span>
+<span class="code-line" data-line="302">  <span class="syntax-keyword">int</span> flag;</span>
+<span class="code-line" data-line="303"></span>
+<span class="code-line" data-line="304">  <span class="syntax-type">DEG_DEPSNODE_DECLARE</span>;</span>
+<span class="code-line" data-line="305">};</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L257</span><div><code><span class="syntax-keyword">struct</span> <span class="syntax-type">OperationNode</span> : <span class="syntax-keyword">public</span> <span class="syntax-type">Node</span> {</code><p>OperationNode 继承通用 Node，表示依赖图可执行的基本操作单元。</p>
+</div></div><div class="line-explanation"><span class="line-number">L258</span><div><code><span class="syntax-type">OperationNode</span>();</code><p>声明构造器；其字段初始化需要继续进入实现，不能假定所有原始成员自动清零。</p>
+</div></div><div class="line-explanation"><span class="line-number">L260</span><div><code>std::string <span class="syntax-function">identifier</span>() <span class="syntax-keyword">const</span> override;</code><p>提供当前操作的可读标识，覆盖 Node 接口。</p>
+</div></div><div class="line-explanation"><span class="line-number">L261</span><div><code>/**</code><p>完整标识包含所属对象信息，用于日志和诊断中区分同名或同类操作。</p>
+</div></div><div class="line-explanation"><span class="line-number">L262</span><div><code>* <span class="syntax-type">Full</span> node identifier, including owner name.</code><p>续接 L261 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L263</span><div><code>* used <span class="syntax-keyword">for</span> logging and debug prints.</code><p>续接 L261 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L264</span><div><code>*/</code><p>续接 L261 的同一注释块，完整译解见该行；这部分不生成可执行语句。</p>
+</div></div><div class="line-explanation"><span class="line-number">L265</span><div><code>std::string <span class="syntax-function">full_identifier</span>() <span class="syntax-keyword">const</span>;</code><p>完整标识包含拥有者信息，便于区分不同数据块上的同类操作。</p>
+</div></div><div class="line-explanation"><span class="line-number">L267</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">tag_update</span>(<span class="syntax-type">Depsgraph</span> *graph, eUpdateSource source) override;</code><p>更新标签入口接收图和来源；这里仅声明，传播实现位于其他文件。</p>
+</div></div><div class="line-explanation"><span class="line-number">L269</span><div><code><span class="syntax-keyword">bool</span> <span class="syntax-function">is_noop</span>() <span class="syntax-keyword">const</span></code><p>查询是否为纯依赖 NOOP。</p>
+</div></div><div class="line-explanation"><span class="line-number">L270</span><div><code>{</code><p>打开 bool is_noop() const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L271</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">bool</span>(evaluate) == <span class="syntax-keyword">false</span>;</code><p>没有实际 evaluate 回调时视为 NOOP，而不是根据名称或 opcode 猜测。</p>
+</div></div><div class="line-explanation"><span class="line-number">L272</span><div><code>}</code><p>结束 bool is_noop() const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L274</span><div><code><span class="syntax-type">OperationNode</span> *<span class="syntax-function">get_entry_operation</span>() override</code><p>作为一个操作节点，其入口操作就是自己。</p>
+</div></div><div class="line-explanation"><span class="line-number">L275</span><div><code>{</code><p>打开 OperationNode *get_entry_operation() override 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L276</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">this</span>;</code><p>返回 this，不创建新节点或拥有句柄。</p>
+</div></div><div class="line-explanation"><span class="line-number">L277</span><div><code>}</code><p>结束 OperationNode *get_entry_operation() override 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L278</span><div><code><span class="syntax-type">OperationNode</span> *<span class="syntax-function">get_exit_operation</span>() override</code><p>其出口操作也同样是自己。</p>
+</div></div><div class="line-explanation"><span class="line-number">L279</span><div><code>{</code><p>打开 OperationNode *get_exit_operation() override 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L280</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">this</span>;</code><p>返回相同对象，复合组件可有不同入口出口，而单操作节点无需再拆。</p>
+</div></div><div class="line-explanation"><span class="line-number">L281</span><div><code>}</code><p>结束 OperationNode *get_exit_operation() override 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L283</span><div><code><span class="syntax-comment">/* Set this operation as component&#x27;s entry/exit operation. */</span></code><p>把当前操作设为组件的入口或出口；组件可以聚合多个操作，而单操作节点自身就是自己的入口出口。</p>
+</div></div><div class="line-explanation"><span class="line-number">L284</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">set_as_entry</span>();</code><p>声明把自己设为组件入口的方法。</p>
+</div></div><div class="line-explanation"><span class="line-number">L285</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">set_as_exit</span>();</code><p>声明设为组件出口的方法。</p>
+</div></div><div class="line-explanation"><span class="line-number">L287</span><div><code><span class="syntax-comment">/* Component that contains the operation. */</span></code><p>owner 表达当前操作所属的组件层次，执行依赖则由 Relation 表达，两种关系不同。</p>
+</div></div><div class="line-explanation"><span class="line-number">L288</span><div><code><span class="syntax-type">ComponentNode</span> *owner;</code><p>owner 指向所属 ComponentNode，表达结构层次而非必须等待的关系边。</p>
+</div></div><div class="line-explanation"><span class="line-number">L290</span><div><code><span class="syntax-comment">/* Callback for operation. */</span></code><p>保存实际求值回调，任务执行阶段调用；回调缺失时该节点可以作为纯依赖 NOOP。</p>
+</div></div><div class="line-explanation"><span class="line-number">L291</span><div><code><span class="syntax-type">DepsEvalOperationCb</span> evaluate;</code><p>evaluate 保存真正工作回调，任务执行阶段调用它。</p>
+</div></div><div class="line-explanation"><span class="line-number">L293</span><div><code><span class="syntax-comment">/* How many inlinks are we still waiting on before we can be evaluated. */</span></code><p>记录本轮仍需等待的父操作关系数，初始化时应排除已最新或不参与本轮的关系。</p>
+</div></div><div class="line-explanation"><span class="line-number">L294</span><div><code>uint32_t num_links_pending;</code><p>num_links_pending 记录本轮尚未完成的父关系，不能直接等同于静态入度。</p>
+</div></div><div class="line-explanation"><span class="line-number">L295</span><div><code><span class="syntax-keyword">bool</span> scheduled;</code><p>scheduled 用于当前阶段去重调度；在初始化、flush 和实际求值中需要核对用途与重置时机。</p>
+</div></div><div class="line-explanation"><span class="line-number">L297</span><div><code><span class="syntax-comment">/* Identifier for the operation being performed. */</span></code><p>下面字段描述操作类型与附加识别信息，用于构图查找和诊断，不直接等于调度状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L298</span><div><code><span class="syntax-type">OperationCode</span> opcode;</code><p>opcode 描述操作种类，帮助构建、查找和诊断。</p>
+</div></div><div class="line-explanation"><span class="line-number">L299</span><div><code><span class="syntax-keyword">int</span> name_tag;</code><p>name_tag 进一步区分同类命名操作，不是对象所有权标志。</p>
+</div></div><div class="line-explanation"><span class="line-number">L301</span><div><code><span class="syntax-comment">/* (OperationFlag) extra settings affecting evaluation. */</span></code><p>flag 是多种求值相关状态位的组合，每个位需要分别追踪设置、传播、消费与清理时机。</p>
+</div></div><div class="line-explanation"><span class="line-number">L302</span><div><code><span class="syntax-keyword">int</span> flag;</code><p>flag 组合更新与求值等状态位，每个位各有自己的生产和消费阶段。</p>
+</div></div><div class="line-explanation"><span class="line-number">L304</span><div><code><span class="syntax-type">DEG_DEPSNODE_DECLARE</span>;</code><p>宏提供节点类型登记相关声明，实际展开与注册实现需继续追踪。</p>
+</div></div><div class="line-explanation"><span class="line-number">L305</span><div><code>};</code><p>结束 struct OperationNode : public Node { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>同一个 ID 的 Geometry 组件可以包含多个 OperationNode，它们都拥有同一类结构归属，却可能有不同前置关系。两节点 owner 相同不代表可任意并行；反之不同 ID 的操作也可以有依赖边。</p>
+<h4>调用关系与设计判断</h4><p>把 IDNode、ComponentNode、OperationNode 画成树，把 Relation 画成跨节点有向边，再分别记录 flag、pending、scheduled 的状态迁移。层次树解释管理归属，关系图解释执行先后，状态协议解释本轮更新，这三者一起构成 Depsgraph。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/depsgraph/intern/node/deg_node_operation.hh">deg_node_operation.hh</a></div><p>观察真正执行单元包含的状态和所属组件。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 257 行 · SHA-256 be806beb10f1</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/depsgraph/intern/node/deg_node_operation.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/depsgraph/intern/node/deg_node_operation.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">254</span>,<span class="syntax-number">285</span> -- <span class="syntax-string">&quot;source/blender/depsgraph/intern/node/deg_node_operation.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/depsgraph/intern/builder/deg_builder_relations.h">deg_builder_relations.h</a></div><p>区分关系构建与任务运行。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 84 行 · SHA-256 760ea163a9ca</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/depsgraph/intern/builder/deg_builder_relations.h</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/depsgraph/intern/builder/deg_builder_relations.h&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">81</span>,<span class="syntax-number">112</span> -- <span class="syntax-string">&quot;source/blender/depsgraph/intern/builder/deg_builder_relations.h&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/2280a71f900eb7907c243f76930a7e9779a90d7d" target="_blank" rel="noopener">2280a71f900</a> <span>Sergey Sharybin · 2022-07-19</span></div><h3>Depsgraph: Refactor evaluation into smaller reusable functions</h3><p>以执行流程重构为入口，学习如何把复杂步骤分成可命名的责任。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Should be no functional changes.</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/depsgraph/intern/eval/deg_eval.cc | <span class="syntax-number">52</span> +++++++++++++++++-------</span>
+<span class="code-line" data-line="2"> <span class="syntax-number">1</span> file changed, <span class="syntax-number">37</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">15</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 2280a71f900</span>
+<span class="code-line" data-line="2">git show 2280a71f900</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 2280a71f900 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>为两对象的父子变换和一个几何操作建立小图，区分包含边与依赖边。</p>
+</li><li><strong>任务 02</strong><p>为每条依赖边写一句具体理由：消费者读取了生产者的什么结果。</p>
+</li><li><strong>任务 03</strong><p>画出修改器内部惰性图的边界，说明两层分别拥有哪些状态。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="11-01-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="11-01-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="11-01-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>对象层级就是执行顺序吗？</summary><p>不是，组织层级与计算依赖不同，需要显式关系表达先后约束。</p>
+</details><details class="question"><summary>图中存在的节点每次都执行吗？</summary><p>不一定，还要考虑脏状态、可见性、条件和依赖是否需要更新。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="11-01" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../10-%E5%BC%95%E7%94%A8%E5%88%86%E6%9E%90%E4%B8%8E%E9%97%AD%E5%8C%85%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/03-%E6%89%A7%E8%A1%8C%E5%9B%BE%E4%B8%8E%E6%BA%90%E8%8A%82%E7%82%B9%E6%A0%91%E8%A7%A3%E8%80%A6.html">← 上一篇：当源节点树销毁后，计算为什么还要继续存在</a><a href="../11-%E4%BE%9D%E8%B5%96%E5%9B%BE%E4%B8%8E%E5%B9%B6%E8%A1%8C%E8%B0%83%E5%BA%A6/02-%E5%A4%B1%E6%95%88%E4%BC%A0%E6%92%AD%E4%B8%8E%E6%9D%A1%E4%BB%B6%E4%BE%9D%E8%B5%96.html">下一篇：需要更新、可以执行、实际执行：三个不同状态 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

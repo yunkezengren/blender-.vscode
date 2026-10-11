@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="逐步追踪一次扩容，弄清内存存在和对象存在之间的区别。">
+<title>Vector：容量、存活对象与迁移顺序 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="01-02"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">容器与对象生命周期</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>FOUNDATIONS / OWNERSHIP / LESSON 01-02</div><h1>Vector：容量、存活对象与迁移顺序</h1><p class="lede">逐步追踪一次扩容，弄清内存存在和对象存在之间的区别。</p><div class="chips"><span class="chip">方向 01 · 容器与对象生命周期</span><span class="chip">专题 2/3</span><span class="chip">正文 5,834 字符</span><span class="chip">建议研读 65 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-Span%E4%B8%8E%E5%80%9F%E7%94%A8%E8%BE%B9%E7%95%8C.html">01 Span：把连续数据与所有权分开</a><a href="02-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%AF%B9%E8%B1%A1%E7%8A%B6%E6%80%81.html">02 Vector：容量、存活对象与迁移顺序</a><a href="03-%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E5%AE%B9%E5%99%A8%E5%AE%9E%E9%AA%8C.html">03 容器失败路径：从异常安全到可验证的不变量</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>从 Span 的借用语义进入 Vector 的存储模型，再追踪扩容失败时的对象状态。基础容器的难点是把每一块内存、每一个存活对象和每一种失败路径都解释清楚。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>指针与引用、构造析构、模板基础；不要求已经会写容器。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>外部所有者</strong></div><div class="flow-step"><span>02</span><strong>Span 借用</strong></div><div class="flow-step"><span>03</span><strong>Vector 拥有</strong></div><div class="flow-step"><span>04</span><strong>扩容迁移</strong></div><div class="flow-step"><span>05</span><strong>销毁与释放</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>追加 1、10、10000 个元素，统计累计迁移次数，解释其增长趋势。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>三段区间构成容器模型</h3>
+<p>把缓冲区分成三部分：已经构造的元素、容量内尚未使用的存储、缓冲区以外的区域。size 描述第一部分，capacity 描述前两部分之和。reserve 扩大的是可用存储，不应该凭空增加逻辑元素。对于 std::string 这类非平凡类型，未构造存储不能作为正常对象读取或赋值。</p>
+<p>Vector 的小缓冲优化把少量元素直接放在容器对象内部，减少堆分配。它也引入两种存储状态：内嵌与堆上。移动一个使用内嵌存储的容器，通常不能只交换指针，因为目标不能继续引用源对象内部的内存。</p>
+<h3>扩容是一组有顺序的状态转换</h3>
+<p>一次扩容先取得足够且满足对齐的存储，再在其中构造新元素，之后销毁旧元素并释放旧缓冲区，最后让容器描述新状态。现实实现会针对平凡可复制类型使用更便宜的路径。学习时先画非平凡元素的路径，再理解快速路径为什么可以跳过某些操作。</p>
+<p>realloc_to_at_least 附近体现了增长策略。几何增长使长期追加的迁移总量保持线性量级；如果每次只多分配一个位置，持续追加会反复复制已有元素。性能分析应计算整个操作序列，而不是只看一次 append。</p>
+<h3>地址稳定性是接口的一部分</h3>
+<p>扩容以后，旧元素地址可能全部改变。一个外部对象保存了指向 Vector 元素的指针，就建立了与容器增长策略相关的隐藏依赖。reserve 可以减少重新分配次数，但不应被当作无限期地址稳定性的证明。</p>
+<p>如果系统需要稳定身份，可以保存索引或独立句柄，再通过容器查找。索引也会受到排序、删除和压缩影响，因此要继续说明哪些操作允许改变映射。容器选择最终会传播到上层系统的身份模型。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要把 memcpy 当作所有类型的移动构造。是否能按字节迁移必须有类型语义支持。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>Vector::reserve：容量与逻辑大小的分界</h3><p>reserve 的完整实现很短，却定义了容器最重要的一条契约：准备存储与增加元素是两件不同的事。不要因为它只有六行就跳过；后面迁移函数的调用条件由这里确定。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_vector.hh · L405–L410。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_vector.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="405">  <span class="syntax-keyword">void</span> <span class="syntax-function">reserve</span>(<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> min_capacity)</span>
+<span class="code-line" data-line="406">  {</span>
+<span class="code-line" data-line="407">    <span class="syntax-keyword">if</span> (min_capacity &gt; <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">capacity</span>()) {</span>
+<span class="code-line" data-line="408">      <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">realloc_to_at_least</span>(min_capacity);</span>
+<span class="code-line" data-line="409">    }</span>
+<span class="code-line" data-line="410">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L405</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">reserve</span>(<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> min_capacity)</code><p>参数是至少需要的元素容量，而不是需要新增的元素数。返回 void 表示不直接交出新存储地址；已有引用是否失效取决于是否发生迁移。</p>
+</div></div><div class="line-explanation"><span class="line-number">L406</span><div><code>{</code><p>进入函数，尚未改变 begin_、end_、capacity_end_。</p>
+</div></div><div class="line-explanation"><span class="line-number">L407</span><div><code><span class="syntax-keyword">if</span> (min_capacity &gt; <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">capacity</span>()) {</code><p>只有要求超过现有容量才进入慢路径。等于或小于现有容量时不缩容，也不重建已有元素。</p>
+</div></div><div class="line-explanation"><span class="line-number">L408</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">realloc_to_at_least</span>(min_capacity);</code><p>委托实际扩容。容量可能大于请求值，因此调用者只能依赖 capacity &gt;= min_capacity，不能依赖相等。</p>
+</div></div><div class="line-explanation"><span class="line-number">L409</span><div><code>}</code><p>结束条件分支。快速路径直接穿过这里，保持原来的数据与地址。</p>
+</div></div><div class="line-explanation"><span class="line-number">L410</span><div><code>}</code><p>结束 reserve。它没有构造额外逻辑元素，size 应保持调用前的值。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>调用前 size=3、capacity=4。reserve(4) 不迁移；reserve(5) 进入下一段函数，按当前实现得到 capacity=8、size=3。位置 [3,8) 是可供将来构造对象的存储，不能把其中每个位置都当成活着的 std::string。</p>
+<h4>调用关系与设计判断</h4><p>从 resize 和 ensure_space_for_one 追踪调用：前者随后构造或销毁对象，后者为追加操作准备至少一个空位置。reserve 自身只解决存储容量。评审代码时问清“这一行改变的是空间还是对象数量”，能发现很多未构造对象访问问题。</p>
+</article><article class="deep-reading"><h3>Vector::realloc_to_at_least：分配、迁移、释放、发布</h3><p>下面保留完整函数，不用固定行数截断。它分成检查、几何增长、新存储分配、对象迁移、旧存储释放、指针提交六个阶段。请把每一步的“谁拥有哪块内存”写在纸上，再阅读逐行说明。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_vector.hh · L1121–L1151。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_vector.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1121">  <span class="syntax-type">BLI_NOINLINE</span> <span class="syntax-keyword">void</span> <span class="syntax-function">realloc_to_at_least</span>(<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> min_capacity)</span>
+<span class="code-line" data-line="1122">  {</span>
+<span class="code-line" data-line="1123">    <span class="syntax-keyword">if</span> (<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">capacity</span>() &gt;= min_capacity) {</span>
+<span class="code-line" data-line="1124">      <span class="syntax-keyword">return</span>;</span>
+<span class="code-line" data-line="1125">    }</span>
+<span class="code-line" data-line="1126"></span>
+<span class="code-line" data-line="1127">    <span class="syntax-comment">/* At least double the size of the previous allocation. Otherwise consecutive calls to grow can</span></span>
+<span class="code-line" data-line="1128"><span class="syntax-comment">     * cause a reallocation every time even though min_capacity only increments. */</span></span>
+<span class="code-line" data-line="1129">    <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> min_new_capacity = <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">capacity</span>() * <span class="syntax-number">2</span>;</span>
+<span class="code-line" data-line="1130"></span>
+<span class="code-line" data-line="1131">    <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> new_capacity = std::<span class="syntax-function">max</span>(min_capacity, min_new_capacity);</span>
+<span class="code-line" data-line="1132">    <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> size = <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>();</span>
+<span class="code-line" data-line="1133"></span>
+<span class="code-line" data-line="1134">    <span class="syntax-type">T</span> *new_array = <span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-type">T</span> *&gt;(</span>
+<span class="code-line" data-line="1135">        allocator_.<span class="syntax-function">allocate</span>(<span class="syntax-function">size_t</span>(new_capacity) * <span class="syntax-keyword">sizeof</span>(<span class="syntax-type">T</span>), <span class="syntax-keyword">alignof</span>(<span class="syntax-type">T</span>), <span class="syntax-type">AT</span>));</span>
+<span class="code-line" data-line="1136">    <span class="syntax-keyword">try</span> {</span>
+<span class="code-line" data-line="1137">      <span class="syntax-function">uninitialized_relocate_n</span>(begin_, size, new_array);</span>
+<span class="code-line" data-line="1138">    }</span>
+<span class="code-line" data-line="1139">    <span class="syntax-keyword">catch</span> (...) {</span>
+<span class="code-line" data-line="1140">      allocator_.<span class="syntax-function">deallocate</span>(new_array);</span>
+<span class="code-line" data-line="1141">      <span class="syntax-keyword">throw</span>;</span>
+<span class="code-line" data-line="1142">    }</span>
+<span class="code-line" data-line="1143"></span>
+<span class="code-line" data-line="1144">    <span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">is_inline</span>()) {</span>
+<span class="code-line" data-line="1145">      allocator_.<span class="syntax-function">deallocate</span>(begin_);</span>
+<span class="code-line" data-line="1146">    }</span>
+<span class="code-line" data-line="1147"></span>
+<span class="code-line" data-line="1148">    begin_ = new_array;</span>
+<span class="code-line" data-line="1149">    end_ = begin_ + size;</span>
+<span class="code-line" data-line="1150">    capacity_end_ = begin_ + new_capacity;</span>
+<span class="code-line" data-line="1151">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L1121</span><div><code><span class="syntax-type">BLI_NOINLINE</span> <span class="syntax-keyword">void</span> <span class="syntax-function">realloc_to_at_least</span>(<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> min_capacity)</code><p>BLI_NOINLINE 把扩容慢路径留在独立函数中；它不改变函数的对象生命周期语义。参数是最低容量。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1122</span><div><code>{</code><p>进入扩容作用域。接下来需要同时考虑旧存储、新存储以及已构造对象。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1123</span><div><code><span class="syntax-keyword">if</span> (<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">capacity</span>() &gt;= min_capacity) {</code><p>再次检查容量是否已满足要求。即使调用者通常做过检查，这个内部函数仍有自己的快速返回条件。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1124</span><div><code><span class="syntax-keyword">return</span>;</code><p>容量足够时直接返回；没有分配、迁移或地址失效。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1125</span><div><code>}</code><p>结束快速返回分支。后面的路径意味着确实需要更大容量。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1127</span><div><code>/* <span class="syntax-type">At</span> least <span class="syntax-keyword">double</span> the size of the previous allocation. <span class="syntax-type">Otherwise</span> consecutive calls to grow can</code><p>注释第一行解释几何增长的原因：避免连续追加时每增加一个元素都重新分配。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1128</span><div><code>* cause a reallocation every time even though min_capacity only increments. */</code><p>注释第二行把问题定位到 min_capacity 逐次递增的调用模式，而不是单次扩容的耗时。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1129</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> min_new_capacity = <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">capacity</span>() * <span class="syntax-number">2</span>;</code><p>以旧容量的两倍作为增长候选。它是容量增长，并没有对每个元素进行复制两次。分析极大容量时，还需要沿调用链检查整数范围与分配器失败行为。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1131</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> new_capacity = std::<span class="syntax-function">max</span>(min_capacity, min_new_capacity);</code><p>实际新容量取请求值和翻倍候选中的较大者：既满足一次大请求，也保留连续追加的摊销效果。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1132</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> size = <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>();</code><p>保存旧的逻辑大小。后面指针改变后仍用这个数恢复 end_，避免把容量误当成元素数。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1134</span><div><code><span class="syntax-type">T</span> *new_array = <span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-type">T</span> *&gt;(</code><p>声明新存储地址，并把分配器给出的原始地址转换为 T*；这里尚未构造 T 对象。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1135</span><div><code>allocator_.<span class="syntax-function">allocate</span>(<span class="syntax-function">size_t</span>(new_capacity) * <span class="syntax-keyword">sizeof</span>(<span class="syntax-type">T</span>), <span class="syntax-keyword">alignof</span>(<span class="syntax-type">T</span>), <span class="syntax-type">AT</span>));</code><p>请求 new_capacity * sizeof(T) 字节，并提供 alignof(T) 对齐要求。AT 是分配位置相关信息。分配成功与对象构造成功是两个独立阶段。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1136</span><div><code><span class="syntax-keyword">try</span> {</code><p>开始捕获迁移阶段的异常。注意分配调用在 try 外部，不能把这里的 catch 描述成捕获所有分配异常。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1137</span><div><code><span class="syntax-function">uninitialized_relocate_n</span>(begin_, size, new_array);</code><p>迁移旧的 size 个对象到未初始化存储。必须继续阅读 BLI_memory_utils.hh：它先移动构造目标，再销毁源对象，绝非对任意 T 都安全的 memcpy。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1138</span><div><code>}</code><p>结束正常迁移语句块。成功路径此时新存储拥有 size 个活对象，旧对象已完成析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1139</span><div><code><span class="syntax-keyword">catch</span> (...) {</code><p>捕获迁移抛出的任意异常。目标中部分构造对象的清理由下层未初始化算法负责；本层负责原始新存储。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1140</span><div><code>allocator_.<span class="syntax-function">deallocate</span>(new_array);</code><p>释放新分配的原始存储，避免迁移失败后泄漏这块内存。不要再重复析构下层已经清理的目标对象。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1141</span><div><code><span class="syntax-keyword">throw</span>;</code><p>重新抛出原异常，保留失败信息。原地址仍在成员中，但源对象的值是否完全未变取决于 T 的移动行为，不能由这行推出强异常保证。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1142</span><div><code>}</code><p>结束异常处理分支。后续语句只在迁移成功后执行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1144</span><div><code><span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">is_inline</span>()) {</code><p>检查旧存储是否来自堆。内嵌缓冲区属于 Vector 对象本身，不是分配器独立返回的一块内存。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1145</span><div><code>allocator_.<span class="syntax-function">deallocate</span>(begin_);</code><p>只有堆存储才交还给分配器。这里释放的是原始空间，源元素的析构已由迁移函数完成。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1146</span><div><code>}</code><p>结束旧堆存储释放分支。若之前使用内嵌缓冲，跳过释放即可。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1148</span><div><code>begin_ = new_array;</code><p>发布新的首地址。旧的 Span、元素指针和引用不会自动指向新地址。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1149</span><div><code>end_ = begin_ + size;</code><p>恢复逻辑末尾：新首地址加旧 size。扩容不会凭空增加活对象。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1150</span><div><code>capacity_end_ = begin_ + new_capacity;</code><p>发布容量末尾：新首地址加 new_capacity。它与 end_ 之间是尚未作为元素使用的空间。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1151</span><div><code>}</code><p>函数结束，成员指针重新组成一致的容器状态。读者现在应能逐项证明 begin_ &lt;= end_ &lt;= capacity_end_。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>示例：旧 size=3、capacity=4，请求 5。增长候选是 8，新容量是 8；先分配容纳 8 个 T 的空间，仅迁移 3 个对象。成功后 end_=new_array+3，capacity_end_=new_array+8。若第 2 个目标对象构造失败，不能发布 new_array；异常路径释放新空间并重新抛出。旧元素中已经被移动过的值是否保持原样，需要根据元素类型另行证明。</p>
+<h4>调用关系与设计判断</h4><p>调用路径是 append 等追加入口 → ensure_space_for_one → realloc_to_at_least → uninitialized_relocate_n → uninitialized_move_n → 标准库未初始化构造算法。把这些层拆开后，能看见容器控制存储、算法控制对象构造、元素类型控制移动语义。训练目标是独立实现同样的责任边界，并用移动计数类型和可抛异常类型分别检查。</p>
+</article><article class="deep-reading"><h3>初始化：空容器已经有可用内嵌容量</h3><p>从初始化开始建立三个指针的含义，随后每一个追加、扩容和清空都回到同一不变量。默认空容器不必调用堆分配器；它先使用对象自身的内嵌缓冲。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_vector.hh · L140–L146。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_vector.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="140">  <span class="syntax-type">Vector</span>(<span class="syntax-type">Allocator</span> allocator = {}) <span class="syntax-keyword">noexcept</span> : <span class="syntax-function">allocator_</span>(allocator)</span>
+<span class="code-line" data-line="141">  {</span>
+<span class="code-line" data-line="142">    begin_ = inline_buffer_;</span>
+<span class="code-line" data-line="143">    end_ = begin_;</span>
+<span class="code-line" data-line="144">    capacity_end_ = begin_ + <span class="syntax-type">InlineBufferCapacity</span>;</span>
+<span class="code-line" data-line="145">    <span class="syntax-type">UPDATE_VECTOR_SIZE</span>(<span class="syntax-keyword">this</span>);</span>
+<span class="code-line" data-line="146">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L140</span><div><code><span class="syntax-type">Vector</span>(<span class="syntax-type">Allocator</span> allocator = {}) <span class="syntax-keyword">noexcept</span> : <span class="syntax-function">allocator_</span>(allocator)</code><p>接收分配器并初始化 allocator_。noexcept 是接口承诺，构造期不能把它当作会正常向调用者报告任意异常的路径。</p>
+</div></div><div class="line-explanation"><span class="line-number">L141</span><div><code>{</code><p>打开 Vector(Allocator allocator = {}) noexcept : allocator_(allocator) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L142</span><div><code>begin_ = inline_buffer_;</code><p>begin_ 指向内嵌缓冲起点。这里的存储尚未因为指针赋值就构造出任何 T。</p>
+</div></div><div class="line-explanation"><span class="line-number">L143</span><div><code>end_ = begin_;</code><p>end_ 等于 begin_，表示活对象区间为空。</p>
+</div></div><div class="line-explanation"><span class="line-number">L144</span><div><code>capacity_end_ = begin_ + <span class="syntax-type">InlineBufferCapacity</span>;</code><p>capacity_end_ 指向内嵌空间结束。容量可以非零，即使 size 为零。</p>
+</div></div><div class="line-explanation"><span class="line-number">L145</span><div><code><span class="syntax-type">UPDATE_VECTOR_SIZE</span>(<span class="syntax-keyword">this</span>);</code><p>同步调试用 size 镜像，便于调试器观察；正式的大小仍由指针差表达。</p>
+</div></div><div class="line-explanation"><span class="line-number">L146</span><div><code>}</code><p>结束 Vector(Allocator allocator = {}) noexcept : allocator_(allocator) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>InlineBufferCapacity=4 时，构造后 size=0、capacity=4，没有四个默认构造的 T。追加前四个对象可以复用内嵌存储；第 5 个才可能迁移到堆。默认容量与 sizeof(T) 有关，不能假设所有 T 都有四个内嵌位置。</p>
+<h4>调用关系与设计判断</h4><p>把 begin/end/capacity_end 画成同一块内存中的三个位置。后面的每个函数都要回答它结束后如何恢复这张图，以及哪段区间真正包含活对象。</p>
+</article><article class="deep-reading"><h3>追加入口：准备空间以后才构造元素</h3><p>完整追加模板把容量慢路径与元素构造分开。ForwardValue 可以是一组构造参数，不必先生成一个临时 T 再移动进去。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_vector.hh · L507–L511。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_vector.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="507">  <span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span>... <span class="syntax-type">ForwardValue</span>&gt; <span class="syntax-keyword">void</span> <span class="syntax-function">append_as</span>(<span class="syntax-type">ForwardValue</span> &amp;&amp;...value)</span>
+<span class="code-line" data-line="508">  {</span>
+<span class="code-line" data-line="509">    <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">ensure_space_for_one</span>();</span>
+<span class="code-line" data-line="510">    <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">append_unchecked_as</span>(std::forward&lt;<span class="syntax-type">ForwardValue</span>&gt;(value)...);</span>
+<span class="code-line" data-line="511">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L507</span><div><code><span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span>... <span class="syntax-type">ForwardValue</span>&gt; <span class="syntax-keyword">void</span> <span class="syntax-function">append_as</span>(<span class="syntax-type">ForwardValue</span> &amp;&amp;...value)</code><p>转发引用参数包保留调用者参数的值类别。append_as 可以直接提供 T 的构造参数。</p>
+</div></div><div class="line-explanation"><span class="line-number">L508</span><div><code>{</code><p>打开 template&lt;typename... ForwardValue&gt; void append_as(ForwardValue &amp;&amp;...value) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L509</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">ensure_space_for_one</span>();</code><p>先保证至少有一个尚未使用的元素位置。若已经满了，此处可能迁移全部现有元素。</p>
+</div></div><div class="line-explanation"><span class="line-number">L510</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">append_unchecked_as</span>(std::forward&lt;<span class="syntax-type">ForwardValue</span>&gt;(value)...);</code><p>在空间准备成功后调用 unchecked 构造入口。unchecked 的前置条件由上一行建立，并不意味着它永远不会因 T 构造而抛出。</p>
+</div></div><div class="line-explanation"><span class="line-number">L511</span><div><code>}</code><p>结束 template&lt;typename... ForwardValue&gt; void append_as(ForwardValue &amp;&amp;...value) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>Vector&lt;std::string&gt; 可以通过构造参数追加字符串；如果扩容发生，原数据地址可能先变化，然后才构造新元素。参数若引用容器自身的元素，需要沿具体操作契约检查扩容后的别名有效性，不能笼统认为所有 append 别名都安全。</p>
+<h4>调用关系与设计判断</h4><p>调用链连续读：append_as → ensure_space_for_one → realloc_to_at_least → append_unchecked_as。扩容和新元素构造是两个失败点；后一阶段失败时，容量可能已经改变，但逻辑 size 仍可保持未追加状态。</p>
+</article><article class="deep-reading"><h3>容量边界：罕见扩容分支</h3><p>这个完整内部函数只负责一个空位置。它不用先增长 size，也不在这里构造新元素。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_vector.hh · L1114–L1119。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_vector.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1114">  <span class="syntax-keyword">void</span> <span class="syntax-function">ensure_space_for_one</span>()</span>
+<span class="code-line" data-line="1115">  {</span>
+<span class="code-line" data-line="1116">    <span class="syntax-keyword">if</span> (end_ &gt;= capacity_end_) [[unlikely]] {</span>
+<span class="code-line" data-line="1117">      <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">realloc_to_at_least</span>(<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>() + <span class="syntax-number">1</span>);</span>
+<span class="code-line" data-line="1118">    }</span>
+<span class="code-line" data-line="1119">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L1114</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">ensure_space_for_one</span>()</code><p>准备至少一个可供构造对象的位置。调用者继续负责具体元素初始化。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1115</span><div><code>{</code><p>打开 void ensure_space_for_one() 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1116</span><div><code><span class="syntax-keyword">if</span> (end_ &gt;= capacity_end_) [[unlikely]] {</code><p>end_ 到达容量末尾就走扩容分支。unlikely 是概率提示，不能影响分支必须正确的要求。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1117</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">realloc_to_at_least</span>(<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>() + <span class="syntax-number">1</span>);</code><p>最低需求是现有 size 加一；实际容量由几何增长函数选择。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1118</span><div><code>}</code><p>结束 if (end_ &gt;= capacity_end_) [[unlikely]] { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1119</span><div><code>}</code><p>结束 void ensure_space_for_one() 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>size=3、capacity=4 时无需操作；size=4、capacity=4 时请求至少 5。快速路径不碰已有元素，慢路径必须处理全部已构造对象。</p>
+<h4>调用关系与设计判断</h4><p>为何用 end_ 与 capacity_end_ 直接比较？它使追加热路径少一次大小换算。这个微优化建立在三个指针始终指向同一合法存储模型的前提上；内部状态损坏时，比较本身就可能失去意义。</p>
+</article><article class="deep-reading"><h3>追加提交点：先成功构造，再推进 end_</h3><p>完整函数的四条操作顺序不能随意交换。end_ 不只是写游标，也是哪些对象在析构时应被当作活对象的边界。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_vector.hh · L557–L563。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_vector.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="557">  <span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span>... <span class="syntax-type">ForwardT</span>&gt; <span class="syntax-keyword">void</span> <span class="syntax-function">append_unchecked_as</span>(<span class="syntax-type">ForwardT</span> &amp;&amp;...value)</span>
+<span class="code-line" data-line="558">  {</span>
+<span class="code-line" data-line="559">    <span class="syntax-type">BLI_assert</span>(end_ &lt; capacity_end_);</span>
+<span class="code-line" data-line="560">    <span class="syntax-keyword">new</span> (end_) <span class="syntax-type">T</span>(std::forward&lt;<span class="syntax-type">ForwardT</span>&gt;(value)...);</span>
+<span class="code-line" data-line="561">    end_++;</span>
+<span class="code-line" data-line="562">    <span class="syntax-type">UPDATE_VECTOR_SIZE</span>(<span class="syntax-keyword">this</span>);</span>
+<span class="code-line" data-line="563">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L557</span><div><code><span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span>... <span class="syntax-type">ForwardT</span>&gt; <span class="syntax-keyword">void</span> <span class="syntax-function">append_unchecked_as</span>(<span class="syntax-type">ForwardT</span> &amp;&amp;...value)</code><p>接受 T 的构造参数，调用方必须已经保证剩余容量。</p>
+</div></div><div class="line-explanation"><span class="line-number">L558</span><div><code>{</code><p>打开 template&lt;typename... ForwardT&gt; void append_unchecked_as(ForwardT &amp;&amp;...value) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L559</span><div><code><span class="syntax-type">BLI_assert</span>(end_ &lt; capacity_end_);</code><p>检查 end_ 尚未到容量末尾。发布版本不能依赖这个断言替你分配空间。</p>
+</div></div><div class="line-explanation"><span class="line-number">L560</span><div><code><span class="syntax-keyword">new</span> (end_) <span class="syntax-type">T</span>(std::forward&lt;<span class="syntax-type">ForwardT</span>&gt;(value)...);</code><p>在 end_ 指向的原始存储 placement-new 一个 T。这里执行真实构造；如果抛出，后面推进语句不会运行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L561</span><div><code>end_++;</code><p>只有构造成功才将活对象区间扩大一格。</p>
+</div></div><div class="line-explanation"><span class="line-number">L562</span><div><code><span class="syntax-type">UPDATE_VECTOR_SIZE</span>(<span class="syntax-keyword">this</span>);</code><p>更新调试 size，使调试镜像与指针状态一致。</p>
+</div></div><div class="line-explanation"><span class="line-number">L563</span><div><code>}</code><p>结束 template&lt;typename... ForwardT&gt; void append_unchecked_as(ForwardT &amp;&amp;...value) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>原 size=2，end_ 指向第 2 个空位置。若 T 构造成功，size 变 3；若构造抛出，end_ 不变，容器析构不会把未完成构造的位置当作完整 T 再析构。扩容若先前成功，容量可能比调用前更大。</p>
+<h4>调用关系与设计判断</h4><p>写一个构造器按计数抛出的 T，记录构造、析构与存活对象。不要把 end_++ 放到 placement-new 前；否则异常时容器会认为多了一个活对象，后续清理可能调用不存在对象的析构。</p>
+</article><article class="deep-reading"><h3>resize：增加与减少都改变活对象区间</h3><p>完整函数与 reserve 对照阅读。reserve 不增加对象，resize 根据大小变化构造或析构对象，最后发布新的 end_。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_vector.hh · L418–L431。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_vector.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="418">  <span class="syntax-keyword">void</span> <span class="syntax-function">resize</span>(<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> new_size)</span>
+<span class="code-line" data-line="419">  {</span>
+<span class="code-line" data-line="420">    <span class="syntax-type">BLI_assert</span>(new_size &gt;= <span class="syntax-number">0</span>);</span>
+<span class="code-line" data-line="421">    <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> old_size = <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>();</span>
+<span class="code-line" data-line="422">    <span class="syntax-keyword">if</span> (new_size &gt; old_size) {</span>
+<span class="code-line" data-line="423">      <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">reserve</span>(new_size);</span>
+<span class="code-line" data-line="424">      <span class="syntax-function">default_construct_n</span>(begin_ + old_size, new_size - old_size);</span>
+<span class="code-line" data-line="425">    }</span>
+<span class="code-line" data-line="426">    <span class="syntax-keyword">else</span> {</span>
+<span class="code-line" data-line="427">      <span class="syntax-function">destruct_n</span>(begin_ + new_size, old_size - new_size);</span>
+<span class="code-line" data-line="428">    }</span>
+<span class="code-line" data-line="429">    end_ = begin_ + new_size;</span>
+<span class="code-line" data-line="430">    <span class="syntax-type">UPDATE_VECTOR_SIZE</span>(<span class="syntax-keyword">this</span>);</span>
+<span class="code-line" data-line="431">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L418</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">resize</span>(<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> new_size)</code><p>目标是 new_size 个逻辑元素，不是额外增加 new_size 个元素。</p>
+</div></div><div class="line-explanation"><span class="line-number">L419</span><div><code>{</code><p>打开 void resize(const int64_t new_size) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L420</span><div><code><span class="syntax-type">BLI_assert</span>(new_size &gt;= <span class="syntax-number">0</span>);</code><p>禁止负大小，后续指针运算依赖这个前提。</p>
+</div></div><div class="line-explanation"><span class="line-number">L421</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> old_size = <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>();</code><p>保存旧 size，为新增或销毁区间计算长度。</p>
+</div></div><div class="line-explanation"><span class="line-number">L422</span><div><code><span class="syntax-keyword">if</span> (new_size &gt; old_size) {</code><p>目标更大时进入构造路径。</p>
+</div></div><div class="line-explanation"><span class="line-number">L423</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">reserve</span>(new_size);</code><p>先保证容量，可能迁移现有对象。</p>
+</div></div><div class="line-explanation"><span class="line-number">L424</span><div><code><span class="syntax-function">default_construct_n</span>(begin_ + old_size, new_size - old_size);</code><p>只构造新增尾部 [old_size,new_size)。default_construct_n 使用默认初始化，不能对平凡标量无依据地承诺全部清零。</p>
+</div></div><div class="line-explanation"><span class="line-number">L425</span><div><code>}</code><p>结束 if (new_size &gt; old_size) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L426</span><div><code><span class="syntax-keyword">else</span> {</code><p>进入前一个条件不成立时的路径；两条路径分别检查对象与存储状态。</p>
+</div></div><div class="line-explanation"><span class="line-number">L427</span><div><code><span class="syntax-function">destruct_n</span>(begin_ + new_size, old_size - new_size);</code><p>缩小或等长时销毁 [new_size,old_size)。等长对应零个析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L428</span><div><code>}</code><p>结束 else { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L429</span><div><code>end_ = begin_ + new_size;</code><p>发布新的逻辑末尾。新增构造失败时不会到达这一行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L430</span><div><code><span class="syntax-type">UPDATE_VECTOR_SIZE</span>(<span class="syntax-keyword">this</span>);</code><p>同步调试 size。</p>
+</div></div><div class="line-explanation"><span class="line-number">L431</span><div><code>}</code><p>结束 void resize(const int64_t new_size) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>原 size=3、capacity=8。resize(5) 只在尾部构造两个对象，容量可保持 8；resize(2) 析构原下标 2、3、4 三个对象，仍可保留容量 8；reserve(5) 则始终保持原 size。</p>
+<h4>调用关系与设计判断</h4><p>测试同时记录 size、capacity、默认构造次数和析构次数。对 int 的默认初始化值不要做未定义读取；使用有明确初始化行为的计数类型，才能合法观察构造语义。</p>
+</article><article class="deep-reading"><h3>clear：对象全部销毁，空间继续保留</h3><p>完整 clear 展示“清空元素”与“释放容量”的区别。原对象的资源会被释放，但原始存储可能留给下一轮追加复用。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_vector.hh · L468–L473。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_vector.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="468">  <span class="syntax-keyword">void</span> <span class="syntax-function">clear</span>()</span>
+<span class="code-line" data-line="469">  {</span>
+<span class="code-line" data-line="470">    <span class="syntax-function">destruct_n</span>(begin_, <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>());</span>
+<span class="code-line" data-line="471">    end_ = begin_;</span>
+<span class="code-line" data-line="472">    <span class="syntax-type">UPDATE_VECTOR_SIZE</span>(<span class="syntax-keyword">this</span>);</span>
+<span class="code-line" data-line="473">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L468</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">clear</span>()</code><p>清空所有逻辑元素，接口没有要求缩小容量。</p>
+</div></div><div class="line-explanation"><span class="line-number">L469</span><div><code>{</code><p>打开 void clear() 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L470</span><div><code><span class="syntax-function">destruct_n</span>(begin_, <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>());</code><p>销毁当前活对象区间，非平凡元素在此释放其内部资源。</p>
+</div></div><div class="line-explanation"><span class="line-number">L471</span><div><code>end_ = begin_;</code><p>令 end_ 回到 begin_，size 变零。</p>
+</div></div><div class="line-explanation"><span class="line-number">L472</span><div><code><span class="syntax-type">UPDATE_VECTOR_SIZE</span>(<span class="syntax-keyword">this</span>);</code><p>同步调试镜像；capacity_end_ 没有改变。</p>
+</div></div><div class="line-explanation"><span class="line-number">L473</span><div><code>}</code><p>结束 void clear() 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>一个堆容量为 100、size 为 70 的 Vector，clear 后 size=0，容量仍为 100。元素内部的字符串等资源已经析构，但 Vector 的数组存储还可以复用。</p>
+<h4>调用关系与设计判断</h4><p>观察常见逐帧循环：反复 clear 再填充可以复用空间；反复清空并释放则可能每帧重新分配。是否需要释放容量要根据长期峰值、内存约束与复用模式判断。</p>
+</article><article class="deep-reading"><h3>clear_and_shrink：回到内嵌空状态</h3><p>完整函数把销毁对象、释放堆块、重建内嵌状态按顺序排列。它不是简单把三个指针写成 nullptr。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_vector.hh · L479–L490。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_vector.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="479">  <span class="syntax-keyword">void</span> <span class="syntax-function">clear_and_shrink</span>()</span>
+<span class="code-line" data-line="480">  {</span>
+<span class="code-line" data-line="481">    <span class="syntax-function">destruct_n</span>(begin_, <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>());</span>
+<span class="code-line" data-line="482">    <span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">is_inline</span>()) {</span>
+<span class="code-line" data-line="483">      allocator_.<span class="syntax-function">deallocate</span>(begin_);</span>
+<span class="code-line" data-line="484">    }</span>
+<span class="code-line" data-line="485"></span>
+<span class="code-line" data-line="486">    begin_ = inline_buffer_;</span>
+<span class="code-line" data-line="487">    end_ = begin_;</span>
+<span class="code-line" data-line="488">    capacity_end_ = begin_ + <span class="syntax-type">InlineBufferCapacity</span>;</span>
+<span class="code-line" data-line="489">    <span class="syntax-type">UPDATE_VECTOR_SIZE</span>(<span class="syntax-keyword">this</span>);</span>
+<span class="code-line" data-line="490">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L479</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">clear_and_shrink</span>()</code><p>清空并收回额外堆容量，最终保留内嵌缓冲的基本容量。</p>
+</div></div><div class="line-explanation"><span class="line-number">L480</span><div><code>{</code><p>打开 void clear_and_shrink() 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L481</span><div><code><span class="syntax-function">destruct_n</span>(begin_, <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>());</code><p>先析构当前所有活对象，原始内存必须在对象析构后才释放。</p>
+</div></div><div class="line-explanation"><span class="line-number">L482</span><div><code><span class="syntax-keyword">if</span> (!<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">is_inline</span>()) {</code><p>只有堆路径才可调用分配器释放；内嵌缓冲属于 Vector 对象本身。</p>
+</div></div><div class="line-explanation"><span class="line-number">L483</span><div><code>allocator_.<span class="syntax-function">deallocate</span>(begin_);</code><p>释放旧堆存储，旧元素指针与视图全部失效。</p>
+</div></div><div class="line-explanation"><span class="line-number">L484</span><div><code>}</code><p>结束 if (!this-&gt;is_inline()) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L486</span><div><code>begin_ = inline_buffer_;</code><p>把首指针重新指向自身内嵌缓冲。</p>
+</div></div><div class="line-explanation"><span class="line-number">L487</span><div><code>end_ = begin_;</code><p>恢复空活对象区间。</p>
+</div></div><div class="line-explanation"><span class="line-number">L488</span><div><code>capacity_end_ = begin_ + <span class="syntax-type">InlineBufferCapacity</span>;</code><p>恢复内嵌容量边界，因此 shrink 后的容量不一定为零。</p>
+</div></div><div class="line-explanation"><span class="line-number">L489</span><div><code><span class="syntax-type">UPDATE_VECTOR_SIZE</span>(<span class="syntax-keyword">this</span>);</code><p>更新调试镜像。</p>
+</div></div><div class="line-explanation"><span class="line-number">L490</span><div><code>}</code><p>结束 void clear_and_shrink() 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>原来堆容量 100、内嵌容量 4，操作后 size=0、capacity=4。若原来已经使用内嵌缓冲，只析构元素并恢复指针，不把对象内部那块存储交给堆分配器。</p>
+<h4>调用关系与设计判断</h4><p>与 clear 对照验证分配计数。销毁 T 与释放数组是两个可观测事件；只看进程总内存可能受分配器缓存干扰，不能准确判断函数是否调用了 deallocate。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_vector.hh">BLI_vector.hh</a></div><p>观察增长策略和非平凡对象的迁移路径。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 1121 行 · SHA-256 6867b6ba3420</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_vector.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_vector.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">1118</span>,<span class="syntax-number">1149</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_vector.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_vector.hh">BLI_vector.hh</a></div><p>检查容量增长与逻辑元素数量的分离。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 405 行 · SHA-256 6867b6ba3420</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_vector.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_vector.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">402</span>,<span class="syntax-number">433</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_vector.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/369d5e8ad2bb7c249c6b941779066b6aa99f9ea0" target="_blank" rel="noopener">369d5e8ad2b</a> <span>Jacques Lucke · 2019-09-12</span></div><h3>BLI: new C++ ArrayRef, Vector, Stack, ... data structures</h3><p>关注 Vector 与 Stack 的内嵌存储设计，不必第一遍读完所有新增容器。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Many generic C++ data structures have been developed in the
+functions branch. This commit merges a first chunk of them into
+master. The following new data structures are included:
+
+Array: Owns a memory buffer with a fixed size. It is different
+  from std::array in that the size is not part of the type.
+
+ArrayRef: References an array owned by someone else. All elements
+  in the referenced array are considered to be const. This should
+  be the preferred parameter type for functions that take arrays
+  as input.
+
+MutableArrayRef: References an array owned by someone else. The
+  elements in the referenced array can be changed.
+
+IndexRange: Specifies a continuous range of integers with a start
+  and end index.
+
+IntrusiveListBaseWrapper: A utility class that allows iterating
+  over ListBase instances where the prev and next pointer are
+  stored in the objects directly.
+
+Stack: A stack implemented on top of a vector.
+
+Vector: An array that can grow dynamically.
+
+Allocators: Three allocator types are included that can be used
+  by the container types to support different use cases.
+
+The Stack and Vector support small object optimization. So when
+the amount of elements in them is below a certain threshold, no
+memory allocation is performed.
+
+Additionally, most methods have unit tests.
+
+I&#x27;m merging this without normal code review, after I checked the
+code roughly with Sergey, and after we talked about it with Brecht.</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/blenlib/<span class="syntax-type">BLI_allocator</span>.h             | <span class="syntax-number">127</span> +++++</span>
+<span class="code-line" data-line="2"> source/blender/blenlib/<span class="syntax-type">BLI_array_cxx</span>.h             | <span class="syntax-number">195</span> +++++++</span>
+<span class="code-line" data-line="3"> source/blender/blenlib/<span class="syntax-type">BLI_array_ref</span>.h             | <span class="syntax-number">423</span> +++++++++++++++</span>
+<span class="code-line" data-line="4"> source/blender/blenlib/<span class="syntax-type">BLI_index_range</span>.h           | <span class="syntax-number">193</span> +++++++</span>
+<span class="code-line" data-line="5"> source/blender/blenlib/<span class="syntax-type">BLI_listbase_wrapper</span>.h      |  <span class="syntax-number">97</span> ++++</span>
+<span class="code-line" data-line="6"> source/blender/blenlib/<span class="syntax-type">BLI_memory_utils_cxx</span>.h      |  <span class="syntax-number">81</span> +++</span>
+<span class="code-line" data-line="7"> source/blender/blenlib/<span class="syntax-type">BLI_stack_cxx</span>.h             | <span class="syntax-number">142</span> +++++</span>
+<span class="code-line" data-line="8"> source/blender/blenlib/<span class="syntax-type">BLI_temporary_allocator</span>.h   |  <span class="syntax-number">64</span> +++</span>
+<span class="code-line" data-line="9"> .../blender/blenlib/<span class="syntax-type">BLI_temporary_allocator_cxx</span>.h  |  <span class="syntax-number">35</span> ++</span>
+<span class="code-line" data-line="10"> source/blender/blenlib/<span class="syntax-type">BLI_vector</span>.h                | <span class="syntax-number">601</span> +++++++++++++++++++++</span>
+<span class="code-line" data-line="11"> source/blender/blenlib/<span class="syntax-type">CMakeLists</span>.txt              |  <span class="syntax-number">14</span> +</span>
+<span class="code-line" data-line="12"> source/blender/blenlib/intern/<span class="syntax-type">BLI_index_range</span>.cc   |  <span class="syntax-number">59</span> ++</span>
+<span class="code-line" data-line="13"> .../blenlib/intern/<span class="syntax-type">BLI_temporary_allocator</span>.cc      | <span class="syntax-number">115</span> ++++</span>
+<span class="code-line" data-line="14"> tests/gtests/blenlib/<span class="syntax-type">BLI_array_ref_test</span>.cc         | <span class="syntax-number">266</span> +++++++++</span>
+<span class="code-line" data-line="15"> tests/gtests/blenlib/<span class="syntax-type">BLI_array_test</span>.cc             | <span class="syntax-number">103</span> ++++</span>
+<span class="code-line" data-line="16"> tests/gtests/blenlib/<span class="syntax-type">BLI_index_range_test</span>.cc       | <span class="syntax-number">131</span> +++++</span>
+<span class="code-line" data-line="17"> tests/gtests/blenlib/<span class="syntax-type">BLI_stack_cxx_test</span>.cc         |  <span class="syntax-number">52</span> ++</span>
+<span class="code-line" data-line="18"> tests/gtests/blenlib/<span class="syntax-type">BLI_vector_test</span>.cc            | <span class="syntax-number">400</span> ++++++++++++++</span>
+<span class="code-line" data-line="19"> tests/gtests/blenlib/<span class="syntax-type">CMakeLists</span>.txt                |   <span class="syntax-number">7</span> +-</span>
+<span class="code-line" data-line="20"> <span class="syntax-number">19</span> files changed, <span class="syntax-number">3104</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">1</span> <span class="syntax-function">deletion</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 369d5e8ad2b</span>
+<span class="code-line" data-line="2">git show 369d5e8ad2b</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 369d5e8ad2b -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>实现只包含 append、reserve、move 和析构的 SmallVector&lt;T,4&gt;，先不支持中间插入。</p>
+</li><li><strong>任务 02</strong><p>使用带唯一编号的 Trace 类型记录每次构造、移动、析构，覆盖内嵌到堆上和堆上到更大堆上。</p>
+</li><li><strong>任务 03</strong><p>追加 1、10、10000 个元素，统计累计迁移次数，解释其增长趋势。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="01-02-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="01-02-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="01-02-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>reserve(100) 会得到 100 个对象吗？</summary><p>不会；它保证一定容量，逻辑 size 不应因此增加。</p>
+</details><details class="question"><summary>小缓冲为什么让移动更复杂？</summary><p>内嵌数据属于源对象自身，不能像独立堆缓冲区一样简单转移所有权。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="01-02" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../01-%E5%AE%B9%E5%99%A8%E4%B8%8E%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/01-Span%E4%B8%8E%E5%80%9F%E7%94%A8%E8%BE%B9%E7%95%8C.html">← 上一篇：Span：把连续数据与所有权分开</a><a href="../01-%E5%AE%B9%E5%99%A8%E4%B8%8E%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/03-%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E5%AE%B9%E5%99%A8%E5%AE%9E%E9%AA%8C.html">下一篇：容器失败路径：从异常安全到可验证的不变量 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

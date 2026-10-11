@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="让函数明确表达输入、输出和可变参数，而不把内存责任藏在调用内部。">
+<title>MultiFunction：为一批元素设计调用约定 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="07-01"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">批量函数与执行过程</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>FUNCTIONS / BATCH EXECUTION / LESSON 07-01</div><h1>MultiFunction：为一批元素设计调用约定</h1><p class="lede">让函数明确表达输入、输出和可变参数，而不把内存责任藏在调用内部。</p><div class="chips"><span class="chip">方向 07 · 批量函数与执行过程</span><span class="chip">专题 1/3</span><span class="chip">正文 1,698 字符</span><span class="chip">建议研读 19 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-MultiFunction%E7%AD%BE%E5%90%8D%E4%B8%8E%E5%8F%82%E6%95%B0.html">01 MultiFunction：为一批元素设计调用约定</a><a href="02-%E9%80%89%E6%8B%A9%E5%88%87%E7%89%87%E4%B8%8E%E6%89%A7%E8%A1%8C%E7%B2%92%E5%BA%A6.html">02 批量执行策略：选择、切片与并行开销</a><a href="03-Procedure%E4%B8%8E%E4%B8%B4%E6%97%B6%E5%80%BC%E5%AF%BF%E5%91%BD.html">03 Procedure：把多个批量函数组成可执行过程</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>把 CPPType、VArray 与 IndexMask 接成一个批量调用接口，再理解多个计算步骤怎样组成 Procedure。重点是参数契约、临时值寿命和吞吐量。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>运行时类型、虚拟数组、选择集合和未初始化存储。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>函数签名</strong></div><div class="flow-step"><span>02</span><strong>参数绑定</strong></div><div class="flow-step"><span>03</span><strong>索引选择</strong></div><div class="flow-step"><span>04</span><strong>批量 call</strong></div><div class="flow-step"><span>05</span><strong>过程组合与临时值</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>把签名故意与绑定参数类型不匹配，设计清楚的拒绝路径。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>批量调用为什么有价值</h3>
+<p>普通标量函数计算一个元素，一百万个元素就调用一百万次。批量函数把选择和数组一次传入，内部循环可减少重复准备，也让编译器看见更大的优化范围。其目标偏向吞吐量；小规模调用的延迟仍需测量。</p>
+<p>MultiFunction 文件顶部列出调用所需的 Params、IndexMask 和 Context。Params 引用数组而不拥有它们；mask 决定哪些索引需要处理；context 提供额外执行信息。这三个职责分开后，函数本体可以专注于计算。</p>
+<h3>签名也是资源契约</h3>
+<p>输入、输出、mutable 参数具有不同读写前提。输出是否已经构造、是否允许不被使用、与输入是否别名，都不能靠猜。阅读 Signature 和 Params 时，找到这些条件在哪里声明、检查或由调用者保证。</p>
+<p>MultiFunction 持有签名引用。当前代码明确提醒设置签名时不复制它，因此签名的存活期需要覆盖函数使用期。即使只是元数据，同样存在借用边界。</p>
+<h3>从最小函数认识框架</h3>
+<p>先找测试中的简单算术函数，追踪构造签名、绑定数组和 call 的完整链。一次只读一个输入和一个输出的情况，随后增加两个输入，再看可变参数。不要第一遍陷入所有 builder 模板。</p>
+<p>4365de38700 引入 MultiFunction 时已经配套签名、参数和测试。这说明一个基础接口的学习单位不是单个类，而是声明、调用和验证之间形成的闭环。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<div class="demo" data-demo="batch"><div class="demo-heading"><span class="pill">INTERACTIVE LAB</span><strong>改变一个条件，观察模型</strong></div><div class="demo-controls"></div><div class="demo-result" aria-live="polite"></div><p class="demo-caption">教学简化模型，帮助推演状态；不等同于 Blender 完整实现，也不执行性能基准。</p><noscript>开启 JavaScript 可使用交互；正文和源码仍可离线阅读。</noscript></div><aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>不要把所有输出都当成普通赋值目标；先核对其初始化契约。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>MultiFunction 签名：借用的元数据需要稳定寿命</h3><p>完整 setter 用指针显式表达没有复制签名。批量函数的参数检索依赖这个签名，因此签名寿命是调用协议的一部分。</p>
+<p>完整源码单元 · source/blender/functions/FN_multi_function.hh · L133–L138。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/FN_multi_function.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="133">  <span class="syntax-keyword">void</span> <span class="syntax-function">set_signature</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">Signature</span> *signature)</span>
+<span class="code-line" data-line="134">  {</span>
+<span class="code-line" data-line="135">    <span class="syntax-comment">/* Take a pointer as argument, so that it is more obvious that no copy is created. */</span></span>
+<span class="code-line" data-line="136">    <span class="syntax-type">BLI_assert</span>(signature != <span class="syntax-keyword">nullptr</span>);</span>
+<span class="code-line" data-line="137">    signature_ref_ = signature;</span>
+<span class="code-line" data-line="138">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L133</span><div><code><span class="syntax-keyword">void</span> <span class="syntax-function">set_signature</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">Signature</span> *signature)</code><p>接收一个 Signature 指针。此方法位于 protected，通常由派生函数在构造期间设置一次。</p>
+</div></div><div class="line-explanation"><span class="line-number">L134</span><div><code>{</code><p>打开 void set_signature(const Signature *signature) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L135</span><div><code><span class="syntax-comment">/* Take a pointer as argument, so that it is more obvious that no copy is created. */</span></code><p>用指针参数显式提醒调用者，签名没有被复制，必须保持其对象存活。</p>
+</div></div><div class="line-explanation"><span class="line-number">L136</span><div><code><span class="syntax-type">BLI_assert</span>(signature != <span class="syntax-keyword">nullptr</span>);</code><p>要求非空签名。断言不能延长对象寿命，也无法检测已经悬空但数值非零的指针。</p>
+</div></div><div class="line-explanation"><span class="line-number">L137</span><div><code>signature_ref_ = signature;</code><p>保存指针而非复制签名。若签名是构造函数中的局部变量，构造返回后便会悬空。</p>
+</div></div><div class="line-explanation"><span class="line-number">L138</span><div><code>}</code><p>结束 void set_signature(const Signature *signature) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>把 Signature 作为派生函数的成员，与函数对象一起存活，可以满足常见使用方式。反例是构造函数创建局部 Signature s，set_signature(&amp;s) 后返回；之后调用 signature() 的解引用就不合法。</p>
+<h4>调用关系与设计判断</h4><p>继续阅读 ParamsBuilder 与 Params 的参数顺序和类型检查。签名描述输入、输出、可变参数的契约，数据存储属于参数缓冲区；签名存活不等于各个数组也自动存活。</p>
+</article><article class="deep-reading"><h3>参数登记：单值引用不是实体数组</h3><p>完整模板展示参数值表示与签名类别如何关联。这里借用 value，不会因为批量长度很大而生成一份大数组。</p>
+<p>完整源码单元 · source/blender/functions/FN_multi_function_params.hh · L157–L165。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/functions/FN_multi_function_params.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="157"><span class="syntax-keyword">inline</span> <span class="syntax-keyword">void</span> <span class="syntax-type">ParamsBuilder</span>::<span class="syntax-function">add_readonly_single_input</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">T</span> *value, <span class="syntax-type">StringRef</span> expected_name)</span>
+<span class="code-line" data-line="158">{</span>
+<span class="code-line" data-line="159">  <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">assert_current_param_type</span>(<span class="syntax-type">ParamType</span>::<span class="syntax-type">ForSingleInput</span>(<span class="syntax-type">CPPType</span>::get&lt;<span class="syntax-type">T</span>&gt;()), expected_name);</span>
+<span class="code-line" data-line="160">  actual_params_.<span class="syntax-function">append_unchecked_as</span>(std::in_place_type&lt;<span class="syntax-type">GVArray</span>&gt;,</span>
+<span class="code-line" data-line="161">                                     varray_tag::single_ref{},</span>
+<span class="code-line" data-line="162">                                     <span class="syntax-type">CPPType</span>::get&lt;<span class="syntax-type">T</span>&gt;(),</span>
+<span class="code-line" data-line="163">                                     min_array_size_,</span>
+<span class="code-line" data-line="164">                                     value);</span>
+<span class="code-line" data-line="165">}</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L157</span><div><code><span class="syntax-keyword">inline</span> <span class="syntax-keyword">void</span> <span class="syntax-type">ParamsBuilder</span>::<span class="syntax-function">add_readonly_single_input</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">T</span> *value, <span class="syntax-type">StringRef</span> expected_name)</code><p>静态 T 用于获取 CPPType，expected_name 辅助检查参数顺序和含义。</p>
+</div></div><div class="line-explanation"><span class="line-number">L158</span><div><code>{</code><p>打开 inline void ParamsBuilder::add_readonly_single_input(const T *value, StringRef expected_name) 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L159</span><div><code><span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">assert_current_param_type</span>(<span class="syntax-type">ParamType</span>::<span class="syntax-type">ForSingleInput</span>(<span class="syntax-type">CPPType</span>::get&lt;<span class="syntax-type">T</span>&gt;()), expected_name);</code><p>校验当前参数符合单输入类别与实际 T。只看指针类型无法知道它应对应第几个参数。</p>
+</div></div><div class="line-explanation"><span class="line-number">L160</span><div><code>actual_params_.<span class="syntax-function">append_unchecked_as</span>(std::in_place_type&lt;<span class="syntax-type">GVArray</span>&gt;,</code><p>在参数 variant 中构造 GVArray 分支，调用跨多行。</p>
+</div></div><div class="line-explanation"><span class="line-number">L161</span><div><code>varray_tag::single_ref{},</code><p>single_ref 标签明确表示借用一个统一值，而不是拥有该值的副本。</p>
+</div></div><div class="line-explanation"><span class="line-number">L162</span><div><code><span class="syntax-type">CPPType</span>::get&lt;<span class="syntax-type">T</span>&gt;(),</code><p>传入 T 的运行时类型，保证类型擦除以后仍能执行正确访问。</p>
+</div></div><div class="line-explanation"><span class="line-number">L163</span><div><code>min_array_size_,</code><p>逻辑长度满足 mask 的最小数组范围。常量的物理存储仍只有一个 T。</p>
+</div></div><div class="line-explanation"><span class="line-number">L164</span><div><code>value);</code><p>传入借用值地址。value 对象必须覆盖实际调用期间。</p>
+</div></div><div class="line-explanation"><span class="line-number">L165</span><div><code>}</code><p>结束 inline void ParamsBuilder::add_readonly_single_input(const T *value, StringRef expected_name) 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>mask 选中下标 [2,100]，逻辑数组最小长度至少 101。统一值 7 仍只保存一个地址，读取两个下标都得到 7。如果 value 指向参数构建辅助函数内的局部变量，而真正调用发生在它返回后，就会悬空。</p>
+<h4>调用关系与设计判断</h4><p>与 add_readonly_single_input_value 对照后者如何复制值；再与 GSpan 输入对照实体数组长度检查。批量调用协议的“Single”表示每个元素一个标量，与“所有元素同值”的 VArray Single 表示不是同一层命名含义，必须按实际接口区分。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_multi_function.hh">FN_multi_function.hh</a></div><p>读 call、call_auto 与 signature 的契约。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 43 行 · SHA-256 def04d749803</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_multi_function.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">40</span>,<span class="syntax-number">71</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_multi_function_params.hh">FN_multi_function_params.hh</a></div><p>追踪参数取出时的类型和状态要求。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 27 行 · SHA-256 321225ecebcc</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_multi_function_params.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function_params.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">24</span>,<span class="syntax-number">55</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function_params.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/4365de38700ccc05f98f601efdde0963de4645c1" target="_blank" rel="noopener">4365de38700</a> <span>Jacques Lucke · 2020-06-16</span></div><h3>Functions: Multi Function</h3><p>优先读新增测试与最小接口，再扩展到辅助类型。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>This adds the `MultiFunction` type and some smallish utility types that it uses.
+A `MultiFunction` encapsulates a function that is optimized for throughput by
+always processing many elements at once.
+
+This is an important part of the new particle system, because it allows us to
+execute user generated node trees for many particles efficiently.
+
+Reviewers: brecht
+
+Differential Revision: https://developer.blender.org/D8030</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">source/blender/functions/<span class="syntax-type">CMakeLists</span>.txt            |   <span class="syntax-number">8</span> +</span>
+<span class="code-line" data-line="2"> source/blender/functions/<span class="syntax-type">FN_array_spans</span>.hh         | <span class="syntax-number">220</span> ++++++++++++</span>
+<span class="code-line" data-line="3"> source/blender/functions/<span class="syntax-type">FN_cpp_type</span>.hh            |  <span class="syntax-number">64</span> ++--</span>
+<span class="code-line" data-line="4"> source/blender/functions/<span class="syntax-type">FN_cpp_types</span>.hh           |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="5"> .../blender/functions/<span class="syntax-type">FN_generic_vector_array</span>.hh   | <span class="syntax-number">181</span> ++++++++++</span>
+<span class="code-line" data-line="6"> source/blender/functions/<span class="syntax-type">FN_multi_function</span>.hh      | <span class="syntax-number">106</span> ++++++</span>
+<span class="code-line" data-line="7"> .../blender/functions/<span class="syntax-type">FN_multi_function_context</span>.hh |  <span class="syntax-number">49</span> +++</span>
+<span class="code-line" data-line="8"> .../functions/<span class="syntax-type">FN_multi_function_data_type</span>.hh       | <span class="syntax-number">125</span> +++++++</span>
+<span class="code-line" data-line="9"> .../functions/<span class="syntax-type">FN_multi_function_param_type</span>.hh      | <span class="syntax-number">155</span> ++++++++</span>
+<span class="code-line" data-line="10"> .../blender/functions/<span class="syntax-type">FN_multi_function_params</span>.hh  | <span class="syntax-number">236</span> +++++++++++++</span>
+<span class="code-line" data-line="11"> .../functions/<span class="syntax-type">FN_multi_function_signature</span>.hh       | <span class="syntax-number">161</span> +++++++++</span>
+<span class="code-line" data-line="12"> source/blender/functions/<span class="syntax-type">FN_spans</span>.hh               | <span class="syntax-number">391</span> +++++++++++++++++++++</span>
+<span class="code-line" data-line="13"> source/blender/functions/intern/cpp_types.cc       |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="14"> tests/gtests/functions/<span class="syntax-type">CMakeLists</span>.txt              |   <span class="syntax-number">4</span> +</span>
+<span class="code-line" data-line="15"> tests/gtests/functions/<span class="syntax-type">FN_array_spans_test</span>.cc      |  <span class="syntax-number">92</span> +++++</span>
+<span class="code-line" data-line="16"> tests/gtests/functions/<span class="syntax-type">FN_cpp_type_test</span>.cc         |   <span class="syntax-number">5</span> +-</span>
+<span class="code-line" data-line="17"> .../functions/<span class="syntax-type">FN_generic_vector_array_test</span>.cc      | <span class="syntax-number">101</span> ++++++</span>
+<span class="code-line" data-line="18"> tests/gtests/functions/<span class="syntax-type">FN_multi_function_test</span>.cc   | <span class="syntax-number">222</span> ++++++++++++</span>
+<span class="code-line" data-line="19"> tests/gtests/functions/<span class="syntax-type">FN_spans_test</span>.cc            | <span class="syntax-number">159</span> +++++++++</span>
+<span class="code-line" data-line="20"> <span class="syntax-number">19</span> files changed, <span class="syntax-number">2246</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">41</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat 4365de38700</span>
+<span class="code-line" data-line="2">git show 4365de38700</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show 4365de38700 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>用自己的类型描述实现批量加法，明确输出是未构造存储还是已存在对象。</p>
+</li><li><strong>任务 02</strong><p>传入非连续选择，确认未选元素不会被误读或误写。</p>
+</li><li><strong>任务 03</strong><p>把签名故意与绑定参数类型不匹配，设计清楚的拒绝路径。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="07-01-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="07-01-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="07-01-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>Params 负责释放输入数组吗？</summary><p>当前接口描述是引用而不拥有数组，所有者必须在调用期间保持有效。</p>
+</details><details class="question"><summary>批量函数的主要目标是什么？</summary><p>提升处理大量元素的吞吐量，同时为循环优化与执行分析提供清楚边界。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="07-01" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98/03-%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98%E4%BF%AE%E5%A4%8D%E5%A4%8D%E7%9B%98.html">← 上一篇：一个修复暴露的抽象边界：失效不总等于丢弃</a><a href="../07-%E6%89%B9%E9%87%8F%E5%87%BD%E6%95%B0%E4%B8%8E%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B/02-%E9%80%89%E6%8B%A9%E5%88%87%E7%89%87%E4%B8%8E%E6%89%A7%E8%A1%8C%E7%B2%92%E5%BA%A6.html">下一篇：批量执行策略：选择、切片与并行开销 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>

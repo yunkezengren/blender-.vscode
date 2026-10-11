@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="解释为什么简单数学节点对接口开销格外敏感，并建立可复现的比较方式。">
+<title>去虚拟化：把一次分派换成一个更好的循环 · Blender 全面学习</title>
+<link rel="stylesheet" href="../course.css">
+<script src="../course-index.js" defer></script>
+<script src="../course.js" defer></script>
+</head>
+<body data-lesson-id="04-03"><a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar"><div class="topbar-inner"><a class="wordmark" href="../index.html"><span class="brand-mark">B</span> BLENDER <span class="wordmark-soft">/ 全面学习</span></a><span class="crumb"> / <a href="index.html">虚拟数组与索引选择</a></span><div class="toolbar"><button type="button" id="theme-toggle" aria-label="切换配色主题">切换主题</button><button type="button" id="font-toggle" aria-label="切换大字阅读">大字</button><button type="button" id="print-page">打印</button></div></div></header><div class="hero"><div class="hero-inner"><div class="eyebrow"><span class="dot"></span>REPRESENTATION / THROUGHPUT / LESSON 04-03</div><h1>去虚拟化：把一次分派换成一个更好的循环</h1><p class="lede">解释为什么简单数学节点对接口开销格外敏感，并建立可复现的比较方式。</p><div class="chips"><span class="chip">方向 04 · 虚拟数组与索引选择</span><span class="chip">专题 3/3</span><span class="chip">正文 2,183 字符</span><span class="chip">建议研读 24 分钟 + 独立练习</span></div></div></div><div class="wrap"><nav class="toc" aria-label="文档目录"><div class="toc-title">ON THIS PAGE / 本页</div><a href="#overview" class="lv1">01 学习目标与前置知识</a><a href="#model" class="lv1">02 原理与推演</a><a href="#source" class="lv1">03 当前源码精读</a><a href="#history" class="lv1">04 提交与设计演化</a><a href="#experiment" class="lv1">05 实验与验收</a><a href="#quiz" class="lv1">06 自测与参考答案</a><div class="toc-title spaced">本方向 · 三篇课程</div><a href="01-VArray%E7%9A%84%E5%80%BC%E8%AF%AD%E4%B9%89.html">01 VArray：一百万个相同值不必分配一百万次</a><a href="02-IndexMask%E7%9A%84%E5%88%86%E6%AE%B5%E8%AE%BE%E8%AE%A1.html">02 IndexMask：为稀疏、连续与并行同时设计</a><a href="03-%E5%8E%BB%E8%99%9A%E6%8B%9F%E5%8C%96%E4%B8%8E%E4%BB%A3%E4%BB%B7%E6%A8%A1%E5%9E%8B.html">03 去虚拟化：把一次分派换成一个更好的循环</a><div class="toc-title spaced">学习建议</div><p class="toc-note">先推演，再读源码；先复现，再做优化。完成标记建议以练习验收为准。</p></nav><main id="main"><section id="overview"><h2><span class="n">01</span>这一课要建立的能力</h2>
+<p>同一个逻辑数组可以是连续存储、重复单值或按需计算。通过 VArray、IndexMask 和去虚拟化，学习表达力与执行成本怎样共同设计。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">开始前需要掌握</div><p>Span、模板、多态、连续内存和基本性能测量。</p>
+</aside>
+<div class="flow" aria-label="本模块的概念关系"><div class="flow-step"><span>01</span><strong>逻辑数组</strong></div><div class="flow-step"><span>02</span><strong>具体表示</strong></div><div class="flow-step"><span>03</span><strong>选择范围</strong></div><div class="flow-step"><span>04</span><strong>表示分派</strong></div><div class="flow-step"><span>05</span><strong>批量内核</strong></div></div><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">这一课的完成证据</div><p>记录构建时间和程序体积，说明增加一种特化是否值得。</p>
+</aside>
+</section>
+<section id="model"><h2><span class="n">02</span>原理、状态与设计取舍</h2>
+<h3>元素级间接调用的成本</h3>
+<p>如果每个元素只做一次加法，那么每次取值的虚函数调用就可能占据显著成本，还可能阻碍自动向量化与循环展开。若每个元素执行很昂贵的几何查询，同样的间接调用成本可能相对不重要。优化优先级需要由内核工作量决定。</p>
+<p>去虚拟化的一种做法是在循环外判断数组表示，再调用针对 Single 或 Span 特化的循环。这样分派次数从每元素变为每批次，同时编译器获得更明确的访问模式。它不意味着所有多态都应该删除。</p>
+<h3>特化组合会增长</h3>
+<p>两个输入各有三种表示，就可能产生九种组合；更多输入会扩大生成代码的数量。执行速度、编译时间和二进制体积之间存在真实取舍。ae94e36cfb2 的目标之一就是把去虚拟化的控制权放到更合适的层级。</p>
+<p>选择只优化最常见组合也是有效方案。可以保留一个通用 fallback，再给 Span+Span、Span+Single 等热路径专门实现。测量时不仅看最快情况，也记录 fallback 仍然正确且性能可接受。</p>
+<h3>实验报告要区分来源</h3>
+<p>设定数组长度、选择分布、循环次数、编译优化级别和是否包含物化时间。结果至少包含中位耗时与波动范围，并保存编译命令。公开提交中的倍数只属于其对应场景，本课程不将那些数字当作你本地重现的结果。</p>
+<p>在源码中追踪执行预设或分派入口，再回到最小数学函数。把“在哪里选择表示”和“在哪里循环”标到调用图上，会比只读模板展开更容易理解整体架构。</p>
+<aside class="note "><span class="ico" aria-hidden="true">i</span><div class="t">原理模型与实际实现</div><p>下面的源码精读使用真实实现。请把原理中的数据、状态和不变量逐项映射到源码，不要用教学伪代码替代实际的对象生命周期或并发协议。</p>
+</aside>
+<aside class="note warn"><span class="ico" aria-hidden="true">i</span><div class="t">容易误判的边界</div><p>防止编译器消除整个基准结果：将输出校验值作为可观察结果，并与正确性基准比较。</p>
+</aside>
+</section>
+<section id="source"><h2><span class="n">03</span>从真实源码进入实现</h2>
+<p>本篇的逐行精读范围是下面明确列出的完整函数或类型定义。源码直接读取当前工作区，说明使用真实文件行号。先读代码，再对照解释，最后独立复述状态推演。</p>
+<article class="deep-reading"><h3>VArray 读取边界：动态分派究竟在哪里</h3><p>先逐行定位普通元素读取的动态边界，再判断去虚拟化能消除什么。它不会让整个算法自动向量化，也不会改变输出需要的工作量。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_virtual_array.hh · L548–L554。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_virtual_array.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="548">  <span class="syntax-type">T</span> <span class="syntax-keyword">operator</span>[](<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> index) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="549">  {</span>
+<span class="code-line" data-line="550">    <span class="syntax-type">BLI_assert</span>(*<span class="syntax-keyword">this</span>);</span>
+<span class="code-line" data-line="551">    <span class="syntax-type">BLI_assert</span>(index &gt;= <span class="syntax-number">0</span>);</span>
+<span class="code-line" data-line="552">    <span class="syntax-type">BLI_assert</span>(index &lt; <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>());</span>
+<span class="code-line" data-line="553">    <span class="syntax-keyword">return</span> impl_-&gt;<span class="syntax-function">get</span>(index);</span>
+<span class="code-line" data-line="554">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L548</span><div><code><span class="syntax-type">T</span> <span class="syntax-keyword">operator</span>[](<span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> index) <span class="syntax-keyword">const</span></code><p>以值返回第 index 个元素，当前函数不修改外层 VArray。</p>
+</div></div><div class="line-explanation"><span class="line-number">L549</span><div><code>{</code><p>打开 T operator[](const int64_t index) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L550</span><div><code><span class="syntax-type">BLI_assert</span>(*<span class="syntax-keyword">this</span>);</code><p>要求内部实现存在。空句柄与长度为零的有效表示需要分别理解。</p>
+</div></div><div class="line-explanation"><span class="line-number">L551</span><div><code><span class="syntax-type">BLI_assert</span>(index &gt;= <span class="syntax-number">0</span>);</code><p>索引必须非负。</p>
+</div></div><div class="line-explanation"><span class="line-number">L552</span><div><code><span class="syntax-type">BLI_assert</span>(index &lt; <span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">size</span>());</code><p>索引必须小于逻辑长度；不要用某种表示碰巧不读取 index 的行为代替这个契约。</p>
+</div></div><div class="line-explanation"><span class="line-number">L553</span><div><code><span class="syntax-keyword">return</span> impl_-&gt;<span class="syntax-function">get</span>(index);</code><p>调用内部实现的 get。因为 impl_ 指向虚拟接口，普通路径在这里根据具体表示分派。</p>
+</div></div><div class="line-explanation"><span class="line-number">L554</span><div><code>}</code><p>结束 T operator[](const int64_t index) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>对实体跨度表示，get 读取地址 index；对单值表示，get 返回唯一值。若循环一百万次都走这一入口，动态读取可能重复；先分派表示再在具体循环中读取，可以把分派次数从按元素降低到按批次。</p>
+<h4>调用关系与设计判断</h4><p>继续对照 FN_multi_function_builder.hh 中的去虚拟化工具。性能实验需要固定同一输入表示和相同输出工作，分别测直接 Span、普通 VArray 和去虚拟化路径；不能把不同算法的耗时差全归因于虚函数。</p>
+</article><article class="deep-reading"><h3>表示分派以后：提取单值到循环之外</h3><p>完整函数说明去虚拟化如何得到单值。它仍需先查询内部表示，但调用者可以只做一次，然后在具体算法里复用该值。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_virtual_array.hh · L639–L644。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_virtual_array.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="639">  <span class="syntax-type">T</span> <span class="syntax-function">get_internal_single</span>() <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="640">  {</span>
+<span class="code-line" data-line="641">    <span class="syntax-type">BLI_assert</span>(<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">is_single</span>());</span>
+<span class="code-line" data-line="642">    <span class="syntax-keyword">const</span> <span class="syntax-type">CommonVArrayInfo</span> info = impl_-&gt;<span class="syntax-function">common_info</span>();</span>
+<span class="code-line" data-line="643">    <span class="syntax-keyword">return</span> *<span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-keyword">const</span> <span class="syntax-type">T</span> *&gt;(info.data);</span>
+<span class="code-line" data-line="644">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L639</span><div><code><span class="syntax-type">T</span> <span class="syntax-function">get_internal_single</span>() <span class="syntax-keyword">const</span></code><p>按值返回内部单值，前提是该 VArray 逻辑上每个元素相同。</p>
+</div></div><div class="line-explanation"><span class="line-number">L640</span><div><code>{</code><p>打开 T get_internal_single() const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L641</span><div><code><span class="syntax-type">BLI_assert</span>(<span class="syntax-keyword">this</span>-&gt;<span class="syntax-function">is_single</span>());</code><p>检查 Single 表示契约。不能因为若干采样点相同就假设整个数组是 Single。</p>
+</div></div><div class="line-explanation"><span class="line-number">L642</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">CommonVArrayInfo</span> info = impl_-&gt;<span class="syntax-function">common_info</span>();</code><p>获取表示描述，包含类型与数据地址。</p>
+</div></div><div class="line-explanation"><span class="line-number">L643</span><div><code><span class="syntax-keyword">return</span> *<span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-keyword">const</span> <span class="syntax-type">T</span> *&gt;(info.data);</code><p>把描述中的数据转回 const T* 并复制读出值；表示类型、T 与地址必须一致。</p>
+</div></div><div class="line-explanation"><span class="line-number">L644</span><div><code>}</code><p>结束 T get_internal_single() const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>若算法计算 out[i]=a[i]+b[i]，而 b 是单值 3，可以先取 b_single=3，再遍历 a 的实体跨度，避免每个 i 都对 b 做虚拟读取。若 b 是一般函数表示，即使样本都为 3，也不能未经证明使用此入口。</p>
+<h4>调用关系与设计判断</h4><p>去虚拟化收益取决于循环体：当每个元素已经很昂贵，少一次动态调用可能不显著。编译体积、分支数量与组合爆炸也是真实代价，应在同输入同输出的实验中一起报告。</p>
+</article><article class="deep-reading"><h3>具体表示分派：去虚拟化发生在调用哪一份循环之前</h3><p>这里指定 VArrayDevirtualizer 中的完整实现。UseSingle 与 UseSpan 是编译期策略，info.type 则是运行期表示，两层分支决定允许生成及实际选择哪些专门版本。</p>
+<p>完整源码单元 · source/blender/blenlib/BLI_virtual_array.hh · L1157–L1172。空行仅用于分段；下表逐条覆盖所有非空源码行，包括边界与注释。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">source/blender/blenlib/BLI_virtual_array.hh</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1157">  <span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">Fn</span>&gt; <span class="syntax-keyword">bool</span> <span class="syntax-function">devirtualize</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">Fn</span> &amp;fn) <span class="syntax-keyword">const</span></span>
+<span class="code-line" data-line="1158">  {</span>
+<span class="code-line" data-line="1159">    <span class="syntax-keyword">const</span> <span class="syntax-type">CommonVArrayInfo</span> info = <span class="syntax-keyword">this</span>-&gt;varray.<span class="syntax-function">common_info</span>();</span>
+<span class="code-line" data-line="1160">    <span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> size = <span class="syntax-keyword">this</span>-&gt;varray.<span class="syntax-function">size</span>();</span>
+<span class="code-line" data-line="1161">    <span class="syntax-keyword">if</span> <span class="syntax-keyword">constexpr</span> (<span class="syntax-type">UseSingle</span>) {</span>
+<span class="code-line" data-line="1162">      <span class="syntax-keyword">if</span> (info.type == <span class="syntax-type">CommonVArrayInfo</span>::<span class="syntax-type">Type</span>::<span class="syntax-type">Single</span>) {</span>
+<span class="code-line" data-line="1163">        <span class="syntax-keyword">return</span> <span class="syntax-function">fn</span>(<span class="syntax-type">SingleAsSpan</span>&lt;<span class="syntax-type">T</span>&gt;(*<span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-keyword">const</span> <span class="syntax-type">T</span> *&gt;(info.data), size));</span>
+<span class="code-line" data-line="1164">      }</span>
+<span class="code-line" data-line="1165">    }</span>
+<span class="code-line" data-line="1166">    <span class="syntax-keyword">if</span> <span class="syntax-keyword">constexpr</span> (<span class="syntax-type">UseSpan</span>) {</span>
+<span class="code-line" data-line="1167">      <span class="syntax-keyword">if</span> (info.type == <span class="syntax-type">CommonVArrayInfo</span>::<span class="syntax-type">Type</span>::<span class="syntax-type">Span</span>) {</span>
+<span class="code-line" data-line="1168">        <span class="syntax-keyword">return</span> <span class="syntax-function">fn</span>(<span class="syntax-type">Span</span>&lt;<span class="syntax-type">T</span>&gt;(<span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-keyword">const</span> <span class="syntax-type">T</span> *&gt;(info.data), size));</span>
+<span class="code-line" data-line="1169">      }</span>
+<span class="code-line" data-line="1170">    }</span>
+<span class="code-line" data-line="1171">    <span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</span>
+<span class="code-line" data-line="1172">  }</span></code></pre></div>
+<div class="line-explanations"><div class="line-explanation"><span class="line-number">L1157</span><div><code><span class="syntax-keyword">template</span>&lt;<span class="syntax-keyword">typename</span> <span class="syntax-type">Fn</span>&gt; <span class="syntax-keyword">bool</span> <span class="syntax-function">devirtualize</span>(<span class="syntax-keyword">const</span> <span class="syntax-type">Fn</span> &amp;fn) <span class="syntax-keyword">const</span></code><p>Fn 是接收具体数组表示的可调用对象；bool 表达本次是否成功调用，不是计算结果本身。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1158</span><div><code>{</code><p>打开 template&lt;typename Fn&gt; bool devirtualize(const Fn &amp;fn) const 的语句体；后续构造的局部对象受此作用域约束。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1159</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-type">CommonVArrayInfo</span> info = <span class="syntax-keyword">this</span>-&gt;varray.<span class="syntax-function">common_info</span>();</code><p>读取 VArray 的通用表示描述。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1160</span><div><code><span class="syntax-keyword">const</span> <span class="syntax-keyword">int64_t</span> size = <span class="syntax-keyword">this</span>-&gt;varray.<span class="syntax-function">size</span>();</code><p>读取逻辑长度，供后面构造同等长度的具体视图。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1161</span><div><code><span class="syntax-keyword">if</span> <span class="syntax-keyword">constexpr</span> (<span class="syntax-type">UseSingle</span>) {</code><p>编译期开关决定是否生成单值专门路径，关闭时这段不参与实例化。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1162</span><div><code><span class="syntax-keyword">if</span> (info.type == <span class="syntax-type">CommonVArrayInfo</span>::<span class="syntax-type">Type</span>::<span class="syntax-type">Single</span>) {</code><p>运行期判断输入当前确实是 Single。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1163</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-function">fn</span>(<span class="syntax-type">SingleAsSpan</span>&lt;<span class="syntax-type">T</span>&gt;(*<span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-keyword">const</span> <span class="syntax-type">T</span> *&gt;(info.data), size));</code><p>构造 SingleAsSpan 并调用具体 Fn 版本，返回 Fn 的分派成功状态。单值被恢复为 T，后续循环可以直接复用。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1164</span><div><code>}</code><p>结束 if (info.type == CommonVArrayInfo::Type::Single) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1165</span><div><code>}</code><p>结束 if constexpr (UseSingle) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1166</span><div><code><span class="syntax-keyword">if</span> <span class="syntax-keyword">constexpr</span> (<span class="syntax-type">UseSpan</span>) {</code><p>编译期开关决定是否生成实体 Span 路径。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1167</span><div><code><span class="syntax-keyword">if</span> (info.type == <span class="syntax-type">CommonVArrayInfo</span>::<span class="syntax-type">Type</span>::<span class="syntax-type">Span</span>) {</code><p>运行期判断当前表示是 Span。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1168</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-function">fn</span>(<span class="syntax-type">Span</span>&lt;<span class="syntax-type">T</span>&gt;(<span class="syntax-keyword">static_cast</span>&lt;<span class="syntax-keyword">const</span> <span class="syntax-type">T</span> *&gt;(info.data), size));</code><p>构造借用 Span&lt;T&gt; 并调用对应具体 Fn 版本，避免每个元素走虚拟 get。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1169</span><div><code>}</code><p>结束 if (info.type == CommonVArrayInfo::Type::Span) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1170</span><div><code>}</code><p>结束 if constexpr (UseSpan) { 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1171</span><div><code><span class="syntax-keyword">return</span> <span class="syntax-keyword">false</span>;</code><p>不支持当前表示则返回 false；上层必须提供通用回退，不能静默漏算。</p>
+</div></div><div class="line-explanation"><span class="line-number">L1172</span><div><code>}</code><p>结束 template&lt;typename Fn&gt; bool devirtualize(const Fn &amp;fn) const 的作用域。局部拥有者在此按其类型执行析构。</p>
+</div></div></div><h4>用具体输入推演状态</h4><p>若 UseSingle=true、UseSpan=false，而当前表示为 Span，函数返回 false；它不是把实体数组错误当作单值。若两者都开启，可分别为两种输入生成具体循环。两个输入各两种表示时组合增到四种，更多参数会增加编译体积。</p>
+<h4>调用关系与设计判断</h4><p>下一层读取 devirtualize_varray 的 false 回退：它调用 VArrayRef 通用路径。验证时要让同一算法经过 Single、Span 和一般函数实现三种表示，确认专门版本与回退版本结果一致。</p>
+</article><details><summary>补充源码入口与本地文件链接</summary><article class="source-card" id="source-1"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/blenlib/BLI_virtual_array.hh">BLI_virtual_array.hh</a></div><p>辨认元素访问的动态接口。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 77 行 · SHA-256 0dad9ae24591</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/blenlib/BLI_virtual_array.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_virtual_array.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">74</span>,<span class="syntax-number">105</span> -- <span class="syntax-string">&quot;source/blender/blenlib/BLI_virtual_array.hh&quot;</span></span></code></pre></div>
+</details></article>
+<article class="source-card" id="source-2"><div class="source-title"><span class="pill">CURRENT SOURCE</span><a href="file:///E:/blender-git/blender/source/blender/functions/FN_multi_function_builder.hh">FN_multi_function_builder.hh</a></div><p>观察函数构造工具如何组织表示分派；完整行为需继续沿调用阅读。</p>
+<p class="source-meta">源码定位入口 · 符号位于第 25 行 · SHA-256 49d48048b137</p><details><summary>完整路径与继续阅读方法</summary><p><code>source/blender/functions/FN_multi_function_builder.hh</code></p><p>这里仅提供进一步追踪的源码入口，不再放入没有逐行讲解的截断代码窗口。正文所展示的真实实现均在上面的精读单元中逐行解释。点击文件名可查看本地完整文件。</p>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 在仓库根目录执行</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git log --oneline -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function_builder.hh&quot;</span></span>
+<span class="code-line" data-line="2">git blame -<span class="syntax-type">L</span> <span class="syntax-number">22</span>,<span class="syntax-number">53</span> -- <span class="syntax-string">&quot;source/blender/functions/FN_multi_function_builder.hh&quot;</span></span></code></pre></div>
+</details></article>
+</details></section>
+<section id="history"><h2><span class="n">04</span>设计是怎样演化出来的</h2>
+<p>按“原问题 → 不变量 → 方案 → 代价 → 验证”阅读。提交中的性能数字与行为描述属于当时的实现；本页不宣称已在本机复现实验。</p>
+<article class="commit-card"><div class="commit-kicker"><span class="pill">HISTORY</span> <a href="https://projects.blender.org/blender/blender/commit/ae94e36cfb2f3bc9a99b638782092d9c71d4b3c7" target="_blank" rel="noopener">ae94e36cfb2</a> <span>Jacques Lucke · 2022-04-26</span></div><h3>Geometry Nodes: refactor array devirtualization</h3><p>比较性能目标与代码体积目标，理解为什么只在有价值的位置特化。</p>
+<details><summary>展开提交原文、变更规模与阅读命令</summary><div class="commit-body"><pre>Goals:
+* Better high level control over where devirtualization occurs. There is always
+  a trade-off between performance and compile-time/binary-size.
+* Simplify using array devirtualization.
+* Better performance for cases where devirtualization wasn&#x27;t used before.
+
+Many geometry nodes accept fields as inputs. Internally, that means that the
+execution functions have to accept so called &quot;virtual arrays&quot; as inputs. Those
+ can be e.g. actual arrays, just single values, or lazily computed arrays.
+Due to these different possible virtual arrays implementations, access to
+individual elements is slower than it would be if everything was just a normal
+array (access does through a virtual function call). For more complex execution
+functions, this overhead does not matter, but for small functions (like a simple
+addition) it very much does. The virtual function call also prevents the compiler
+from doing some optimizations (e.g. loop unrolling and inserting simd instructions).
+
+The solution is to &quot;devirtualize&quot; the virtual arrays for small functions where the
+overhead is measurable. Essentially, the function is generated many times with
+different array types as input. Then there is a run-time dispatch that calls the
+best implementation. We have been doing devirtualization in e.g. math nodes
+for a long time already. This patch just generalizes the concept and makes it
+easier to control. It also makes it easier to investigate the different trade-offs
+when it comes to devirtualization.
+
+Nodes that we&#x27;ve optimized using devirtualization before didn&#x27;t get a speedup.
+However, a couple of nodes are using devirtualization now, that didn&#x27;t before.
+Those got a 2-4x speedup in common cases.
+* Map Range
+* Random Value
+* Switch
+* Combine XYZ
+
+Differential Revision: https://developer.blender.org/D14628</pre></div><div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">真实 Git 变更统计</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">.../blenkernel/intern/curve_to_mesh_convert.cc     |   <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="2"> .../blender/blenkernel/intern/type_conversions.cc  |   <span class="syntax-number">3</span> +-</span>
+<span class="code-line" data-line="3"> .../blender/blenlib/<span class="syntax-type">BLI_devirtualize_parameters</span>.hh | <span class="syntax-number">309</span> +++++++++</span>
+<span class="code-line" data-line="4"> source/blender/blenlib/<span class="syntax-type">BLI_parameter_pack_utils</span>.hh | <span class="syntax-number">122</span> ++++</span>
+<span class="code-line" data-line="5"> source/blender/blenlib/<span class="syntax-type">BLI_virtual_array</span>.hh        |  <span class="syntax-number">71</span> +--</span>
+<span class="code-line" data-line="6"> source/blender/blenlib/<span class="syntax-type">CMakeLists</span>.txt              |   <span class="syntax-number">2</span> +</span>
+<span class="code-line" data-line="7"> .../blender/functions/<span class="syntax-type">FN_multi_function_builder</span>.hh | <span class="syntax-number">700</span> +++++++++++++--------</span>
+<span class="code-line" data-line="8"> .../functions/<span class="syntax-type">FN_multi_function_param_type</span>.hh      |  <span class="syntax-number">44</span> +-</span>
+<span class="code-line" data-line="9"> .../blender/functions/<span class="syntax-type">FN_multi_function_params</span>.hh  |  <span class="syntax-number">28</span> +-</span>
+<span class="code-line" data-line="10"> .../functions/<span class="syntax-type">FN_multi_function_signature</span>.hh       |  <span class="syntax-number">26</span> +</span>
+<span class="code-line" data-line="11"> source/blender/functions/intern/multi_function.cc  |  <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="12"> .../functions/intern/multi_function_procedure.cc   |   <span class="syntax-number">2</span> +-</span>
+<span class="code-line" data-line="13"> .../intern/multi_function_procedure_executor.cc    |  <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="14"> .../geometry/intern/mesh_to_curve_convert.cc       |   <span class="syntax-number">1</span> +</span>
+<span class="code-line" data-line="15"> source/blender/nodes/<span class="syntax-type">NOD_math_functions</span>.hh         | <span class="syntax-number">251</span> ++++----</span>
+<span class="code-line" data-line="16"> .../nodes/function/nodes/node_fn_boolean_math.cc   |  <span class="syntax-number">35</span> +-</span>
+<span class="code-line" data-line="17"> .../nodes/function/nodes/node_fn_compare.cc        | <span class="syntax-number">186</span> ++++--</span>
+<span class="code-line" data-line="18"> .../nodes/function/nodes/node_fn_float_to_int.cc   |  <span class="syntax-number">15</span> +-</span>
+<span class="code-line" data-line="19"> .../nodes/function/nodes/node_fn_random_value.cc   | <span class="syntax-number">206</span> ++----</span>
+<span class="code-line" data-line="20"> .../geometry/nodes/node_geo_curve_resample.cc      |  <span class="syntax-number">18</span> +-</span>
+<span class="code-line" data-line="21"> .../nodes/geometry/nodes/node_geo_curve_sample.cc  |  <span class="syntax-number">12</span> +-</span>
+<span class="code-line" data-line="22"> .../nodes/geometry/nodes/node_geo_extrude_mesh.cc  |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="23"> .../geometry/nodes/node_geo_mesh_to_points.cc      |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="24"> .../nodes/geometry/nodes/node_geo_switch.cc        |  <span class="syntax-number">35</span> +-</span>
+<span class="code-line" data-line="25"> .../nodes/shader/nodes/node_shader_map_range.cc    | <span class="syntax-number">527</span> ++++++----------</span>
+<span class="code-line" data-line="26"> .../blender/nodes/shader/nodes/node_shader_math.cc |  <span class="syntax-number">26</span> +-</span>
+<span class="code-line" data-line="27"> .../nodes/shader/nodes/node_shader_sepcomb_xyz.cc  |   <span class="syntax-number">4</span> +-</span>
+<span class="code-line" data-line="28"> .../nodes/shader/nodes/node_shader_vector_math.cc  |  <span class="syntax-number">54</span> +-</span>
+<span class="code-line" data-line="29"> <span class="syntax-number">28</span> files changed, <span class="syntax-number">1552</span> <span class="syntax-function">insertions</span>(+), <span class="syntax-number">1158</span> <span class="syntax-function">deletions</span>(-)</span></code></pre></div>
+<div class="code"><div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="path">PowerShell · 只读查看</span><button class="copy-code" type="button">复制代码</button></div><pre><code><span class="code-line" data-line="1">git show --stat ae94e36cfb2</span>
+<span class="code-line" data-line="2">git show ae94e36cfb2</span>
+<span class="code-line" data-line="3"><span class="syntax-preprocessor"># 聚焦单个文件：git show ae94e36cfb2 -- source/blender/…</span></span></code></pre></div>
+</details></article>
+</section>
+<section id="experiment"><h2><span class="n">05</span>独立实验与验收</h2>
+<ol class="lab-steps"><li><strong>任务 01</strong><p>实现通用 get 循环和循环外分派版本，保持运算完全一致。</p>
+</li><li><strong>任务 02</strong><p>分别测轻量加法和较重内核，比较间接调用在总成本中的比例。</p>
+</li><li><strong>任务 03</strong><p>记录构建时间和程序体积，说明增加一种特化是否值得。</p>
+</li></ol><aside class="note ok"><span class="ico" aria-hidden="true">i</span><div class="t">提交你的学习结果</div><p>保留问题模型、最小实现、失败样例和验证记录。凡是伪代码中省略的类型、溢出、异常或并发处理，都应在自己的实现说明中列出。</p>
+</aside>
+<div class="checklist"><label><input type="checkbox" data-check="04-03-0"><span>我能不看源码解释核心不变量。</span></label><label><input type="checkbox" data-check="04-03-1"><span>我构造过至少一个边界或失败输入。</span></label><label><input type="checkbox" data-check="04-03-2"><span>我的结果与独立基准对照过。</span></label></div></section>
+<section id="quiz"><h2><span class="n">06</span>自测：先回答，再展开</h2>
+<details class="question"><summary>去虚拟化收益来自少一次调用吗？</summary><p>还可能来自编译器能看清访问与运算，从而展开、向量化和传播常量。</p>
+</details><details class="question"><summary>所有表示组合都特化最好吗？</summary><p>不一定，组合数会增加编译和体积成本，需要按真实工作负载选择。</p>
+</details><div class="completion-panel"><div><strong>把理解变成可验证的能力</strong><p>建议完成练习后再标记；进度保存在当前浏览器。</p></div><button type="button" id="mark-complete" data-id="04-03" aria-pressed="false">标记本篇完成</button></div></section>
+<nav class="page-nav" aria-label="前后课程"><a href="../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/02-IndexMask%E7%9A%84%E5%88%86%E6%AE%B5%E8%AE%BE%E8%AE%A1.html">← 上一篇：IndexMask：为稀疏、连续与并行同时设计</a><a href="../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/01-OffsetIndices%E4%B8%8E%E5%87%A0%E4%BD%95%E8%A1%A8%E7%A4%BA.html">下一篇：OffsetIndices：用相邻偏移表达一组变长区间 →</a></nav></main></div><footer class="site-footer"><p>Blender 全面学习 · 本地源码研读手册 · 2026-10-11</p><p>源码基线 HEAD <code>a3eb4589cc8</code>；摘录来自生成时工作区。教学伪代码与历史提交已分别标识。</p><p><a href="../index.html">返回课程总览</a> · <a href="../evidence.json">查看源码与提交证据清单</a></p></footer><div id="toast" role="status" aria-live="polite"></div></body></html>
