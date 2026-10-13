@@ -1,0 +1,19 @@
+# generic files to ignore
+.*
+# .history/
+
+# python temp paths
+__pycache__/
+*.py[cod]
+
+# editors
+*~
+*#
+Desktop.ini
+# local patches
+/*.patch
+/*.diff
+临时.py
+
+/杂/markdown/全面学习-codex/_tools/
+/杂/markdown/全面学习-codex/_evidence/
