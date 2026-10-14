@@ -1,40 +1,40 @@
 # 11-07 任务池与TBB接入
 
-[方向导航](README.md) · [总目录](../README.md) · [覆盖索引](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
 
-> 阅读顺序：问题与数据模型 → 语法与类型 → 源码逐行 → 调用线索 → 历史与取舍 → 推演和练习。
-
-- 基准 HEAD：`cbda6b96c26c0dee3c3b5cbb93960c4ac06a6b30`。
-- 记录日期：2026-10-14。
-- 教学示例状态：正文中的推演不是本机性能实测；已运行练习见验收报告。
-
-## 一、从问题到设计
+## 从问题到实现
 
 上层任务接口怎样隐藏调度器细节？
 
 任务提交、等待与隔离表达不同能力；并行成本包含分割、同步和调度，不只有线程数。
 
-本篇把语法、数据语义和系统取舍连接起来。标记更新、判断需求、依赖满足和任务执行是分开的阶段。
-
-### 本篇独立模型与设计推理
+**数据模型**
 
 任务池抽象把提交与等待映射到底层调度，等待可能执行其他任务。
 
-设计取舍：并行吞吐与任务开销取舍取决于工作粒度，不能只看核心数。
+**设计取舍**
 
-最小反例：100个极短任务比单循环慢，却据此断言多线程永远无用。
+并行吞吐与任务开销取舍取决于工作粒度，不能只看核心数。
 
-推导与处理：分别测试短任务与重任务，记录分割、同步和总耗时。
+**最小反例**
+
+100个极短任务比单循环慢，却据此断言多线程永远无用。
+
+**推导**
+
+分别测试短任务与重任务，记录分割、同步和总耗时。
+
+## 阅读地图与执行推演
 
 ```mermaid
 flowchart TB
-  M["任务池抽象把提交与等待映射到底层调度，等<br/>待可能执行其他任务。"]:::data
-  T["并行吞吐与任务开销取舍取决于工作粒度，不<br/>能只看核心数。"]:::abstraction
-  X["100个极短任务比单循环慢，却据此断言多线<br/>程永远无用。"]:::error
-  A["分别测试短任务与重任务，记录分割、同步和<br/>总耗时。"]:::result
-  M -->|"建立约束"| T
-  T -->|"构造反例"| X
-  X -->|"恢复不变量"| A
+  M["任务池抽象把提交与等待映射到底层调度，等待<br/>可能执行其他任务。"]:::data
+  C["并行吞吐与任务开销取舍取决于工作粒度，不能<br/>只看核心数。"]:::abstraction
+  B["100个极短任务比单循环慢，却据此断言多线程<br/>永远无用。"]:::error
+  R["分别测试短任务与重任务，记录分割、同步和总<br/>耗时。"]:::result
+  M -->|"明确约束"| C
+  C -->|"检验边界"| B
+  B -->|"恢复正确性"| R
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -42,59 +42,21 @@ flowchart TB
   classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
-
-### 源码范围与相邻篇章
-
-| 文件 | 本篇逐行范围 | 基准SHA-256 |
-|---|---|---|
-| [source/blender/blenlib/BLI_task.hh](../../../../../source/blender/blenlib/BLI_task.hh) | L1—L267 | `acc7e83bc7c92bd9a02d82c1d3ab2f7c8f92e303245110b02a2381de3e4f459c` |
-| [source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) | L1—L465 | `d4207625ca4bf21db7d926110b5980f9a4d31a15ca410565710a63a1ccccc40b` |
-| [source/blender/blenlib/intern/task_scheduler.cc](../../../../../source/blender/blenlib/intern/task_scheduler.cc) | L1—L125 | `31eafef1822006357a2b20434e9cfda871a73614516c2a92c32cd668b6a77de7` |
-
-同一主讲文件可能分多篇覆盖；超出本篇范围的符号通过覆盖索引定位。空行与纯注释保留在源码摘录中，逐行表解释有效语句与语法边界；许可证头统一保留。
-
-前篇：[可见性与求值调度](06-%E5%8F%AF%E8%A7%81%E6%80%A7%E4%B8%8E%E6%B1%82%E5%80%BC%E8%B0%83%E5%BA%A6.md).
-
-后篇：[任务隔离死锁与实战](08-%E4%BB%BB%E5%8A%A1%E9%9A%94%E7%A6%BB%E6%AD%BB%E9%94%81%E4%B8%8E%E5%AE%9E%E6%88%98.md).
-
-## 二、类型、数据与阅读地图
-
-```mermaid
-flowchart TB
-  Q["上层任务接口怎样隐藏调度器细节？"]:::input
-  C0["变化源"]:::abstraction
-  C1["受影响操作"]:::data
-  C2["就绪关系"]:::data
-  C3["并行调度"]:::data
-  R["任务池与TBB接入"]:::result
-  Q -->|"建立模型"| C0
-  C0 -->|"区分职责"| C1
-  C1 -->|"区分职责"| C2
-  C2 -->|"区分职责"| C3
-  C3 -->|"回到源码"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
-
-这是概念依赖图，边表示阅读关系，不声称是运行时调用顺序。
-
-### 直接编译依赖
 
 ```mermaid
 flowchart LR
-  S["BLI_task.hh"]:::abstraction
-  I0["BLI_function_ref.hh"]:::data
-  I1["BLI_index_range.hh"]:::data
-  I2["BLI_lazy_threading.hh"]:::data
-  I3["BLI_task_size_hints.hh"]:::data
-  S -->|"直接include"| I0
-  S -->|"直接include"| I1
-  S -->|"直接include"| I2
-  S -->|"直接include"| I3
+  F0["blender::threading::parallel_for_each"]:::input
+  F1["blender::threading::parallel_for"]:::compute
+  F2["blender::threading::align_sub_range"]:::compute
+  F3["blender::threading::parallel_for_aligned"]:::compute
+  F4["blender::threading::parallel_reduce"]:::compute
+  F5["blender::threading::parallel_reduce_aligned"]:::compute
+  F6["blender::threading::parallel_deterministic_reduce"]:::compute
+  F7["blender::threading::parallel_invoke"]:::compute
+  F3 -->|"实现调用"| F1
+  F3 -->|"实现调用"| F2
+  F5 -->|"实现调用"| F4
+  F5 -->|"实现调用"| F2
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -103,101 +65,53 @@ flowchart LR
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-箭头只表示头文件包含关系；完整调用线索见后面的符号定位表。
+```mermaid
+flowchart LR
+  P0["变化源"]:::input
+  P1["受影响操作"]:::data
+  P2["就绪关系"]:::data
+  P3["并行调度"]:::result
+  P0 -->|"分析关系"| P1
+  P1 -->|"分析关系"| P2
+  P2 -->|"分析关系"| P3
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-## 三、关键词、语法与类型角色
+```mermaid
+flowchart TB
+  S0["父对象变换修改"]:::input
+  S1["子对象变换受影响"]:::compute
+  S2["修改器开关由驱动决定"]:::compute
+  S3["前置结果均完成"]:::compute
+  S4["任务池处理独立操作"]:::compute
+  S5["可能发生任务窃取"]:::result
+  S0 -->|"传播"| S1
+  S1 -->|"控制依赖"| S2
+  S2 -->|"就绪"| S3
+  S3 -->|"执行"| S4
+  S4 -->|"等待"| S5
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-### 模板 template
+图中的数值推演是本方向的教学模型；实际函数之间的调用边与概念分析边分别标注，不能把概念关系当作运行时调度顺序。
 
-模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
+## 完整源码单元与就地讲解
 
-具体检查：把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
+中文讲解直接放在相关代码旁，复杂机制在代码下展开。原文折叠区保留基准行号；不需要在行号表和函数之间来回查找。类布局可分段展示，函数实现不按固定行数切开。
 
-### 依赖名称 typename
+### 类型布局、声明与编译条件 · BLI_task.hh L1—L29
 
-typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
-
-具体检查：区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
-
-### 只读限定 const
-
-const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
-
-具体检查：分别写T* const、const T*与const T* const，并画出不可修改的层次。
-
-### 移动转换 std::move
-
-std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
-
-具体检查：记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
-
-### 完美转发 std::forward
-
-std::forward在转发引用模板中恢复调用者原来的值类别。它依赖推导出的模板实参；无条件move会改变左值调用者的语义。
-
-具体检查：对同一接口分别传入左值、临时对象和const左值，记录实际重载。
-
-### 异常边界 try与catch
-
-try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
-
-具体检查：在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
-
-### 显式静态转换 static_cast
-
-static_cast表达编译期允许的转换，不会自动验证运行时真实类型、指针寿命或索引边界。由void指针恢复T指针时，调用者仍须保证实际存储中确有合法T对象。
-
-具体检查：标出转换前后的类型以及正确性依据来自哪里。
-
-### 覆写检查 override
-
-override要求函数确实覆盖基类虚函数，可捕获参数类型和const限定不匹配。它不改变基类规定的生命周期或线程约束。
-
-具体检查：故意改变一个参数或const，观察编译器如何拒绝误写的新函数。
-
-### 原子操作 atomic
-
-原子性保护相应原子对象的访问；发布其他普通数据还要分析内存序。多个原子字段分别安全不等于复合不变量整体原子。
-
-具体检查：画出写数据、发布ready与读ready、读数据的顺序关系。
-
-### 构造与new表达式
-
-普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
-
-具体检查：追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
-
-### 内部断言 assert
-
-断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
-
-具体检查：对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
-
-### 独占拥有 unique_ptr
-
-unique_ptr通过移动转移拥有关系，默认删除策略必须与资源来源匹配。get返回借用指针，release交出责任而不销毁。
-
-具体检查：区分move、get、release和reset后谁负责销毁。
-
-### 类型别名 using
-
-类型别名为已有类型建立名字，不创建运行期对象。它常把模板内部使用的类型统一暴露给泛型调用者。
-
-具体检查：展开别名直到基础类型，区分类型别名和变量声明。
-
-### 枚举与状态模型 enum
-
-枚举把有限状态命名；enum class避免许多隐式整数转换。状态机正确性还依赖允许的转移，不能只看有哪些枚举项。
-
-具体检查：列出每个状态的进入条件和离开条件，检查终止状态是否仍可能被调度。
-
-## 四、真实源码与逐行讲解
-
-源码块保持原行内容，原始行号由小节标题及逐行表给出。表中的调用定位是静态阅读辅助；重载、模板实例化、宏展开和虚调用需结合完整声明，不能仅凭词法出现证明动态调用。
-
-### BLI_task.hh：L1—L48
-
-<!-- source:source/blender/blenlib/BLI_task.hh:1:48 -->
+<!-- annotated:48d5023b028738 -->
 
 ```cpp
 /* SPDX-FileCopyrightText: 2023 Blender Authors
@@ -229,6 +143,63 @@ namespace blender {
 
 namespace threading {
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L1—L29</summary>
+
+<!-- original:48d5023b028738:source/blender/blenlib/BLI_task.hh:1:29 -->
+
+```cpp
+/* SPDX-FileCopyrightText: 2023 Blender Authors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
+#pragma once
+
+/** \file
+ * \ingroup bli
+ */
+
+#ifdef WITH_TBB
+/* Quiet top level deprecation message, unrelated to API usage here. */
+#  include <tbb/blocked_range.h>
+#  include <tbb/parallel_for.h>
+#  include <tbb/parallel_for_each.h>
+#  include <tbb/parallel_invoke.h>
+#  include <tbb/parallel_reduce.h>
+#  include <tbb/task_arena.h>
+#endif
+
+#include "BLI_function_ref.hh"
+#include "BLI_index_range.hh"
+#include "BLI_lazy_threading.hh"
+#include "BLI_task_size_hints.hh"
+
+namespace blender {
+
+namespace threading {
+
+```
+
+</details>
+
+<a id="f-d5604027445ef0f5"></a>
+
+### `blender::threading::parallel_for_each`
+
+实现位置：[source/blender/blenlib/BLI_task.hh](../../../../../source/blender/blenlib/BLI_task.hh) · L30—L40。
+
+接口参数：
+
+- `Range &&range`
+- `const Function &function`
+
+**教学注释版**
+
+<!-- annotated:6ff4d34338df7c -->
+
+```cpp
 template<typename Range, typename Function>
 inline void parallel_for_each(Range &&range, const Function &function)
 {
@@ -240,6 +211,39 @@ inline void parallel_for_each(Range &&range, const Function &function)
   }
 #endif
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L30—L40</summary>
+
+<!-- original:6ff4d34338df7c:source/blender/blenlib/BLI_task.hh:30:40 -->
+
+```cpp
+template<typename Range, typename Function>
+inline void parallel_for_each(Range &&range, const Function &function)
+{
+#ifdef WITH_TBB
+  tbb::parallel_for_each(range, function);
+#else
+  for (auto &&value : range) {
+    function(value);
+  }
+#endif
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `tbb::parallel_for_each` → [外部契约](https://uxlfoundation.github.io/oneTBB/)：任务调度属于第三方运行时；检查任务寿命、等待与隔离规则，不能把并行等待当作普通同步函数调用。
+- `function` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L37。
+
+### 类型布局、声明与编译条件 · BLI_task.hh L41—L67
+
+<!-- annotated:60dc63c21078f1 -->
+
+```cpp
 
 namespace detail {
 void parallel_for_impl(IndexRange range,
@@ -248,49 +252,6 @@ void parallel_for_impl(IndexRange range,
                        const TaskSizeHints &size_hints);
 void memory_bandwidth_bound_task_impl(FunctionRef<void()> function);
 void max_threads_task_impl(int max_threads, FunctionRef<void()> function);
-```
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L5 | 防止同一头文件在一个翻译单元中重复展开；不控制多个源文件之间的链接或对象寿命。 |
-| L11 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L13 | 本行是连续声明或表达式的一部分：`#  include <tbb/blocked_range.h>`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L14 | 本行是连续声明或表达式的一部分：`#  include <tbb/parallel_for.h>`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L15 | 本行是连续声明或表达式的一部分：`#  include <tbb/parallel_for_each.h>`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L16 | 本行是连续声明或表达式的一部分：`#  include <tbb/parallel_invoke.h>`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L17 | 本行是连续声明或表达式的一部分：`#  include <tbb/parallel_reduce.h>`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L18 | 本行是连续声明或表达式的一部分：`#  include <tbb/task_arena.h>`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L19 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L21 | 引入编译依赖 "BLI_function_ref.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L22 | 引入编译依赖 "BLI_index_range.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L23 | 引入编译依赖 "BLI_lazy_threading.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L24 | 引入编译依赖 "BLI_task_size_hints.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L26 | 把后续声明放入 blender 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L28 | 把后续声明放入 threading 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L30 | 声明模板参数 `template<typename Range, typename Function>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L31 | 出现调用或函数声明 `parallel_for_each`，对应表达式为 `inline void parallel_for_each(Range &&range, const Function &function)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L32 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L33 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L34 | 出现调用或函数声明 `tbb::parallel_for_each`，对应表达式为 `tbb::parallel_for_each(range, function);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L35 | 预处理阶段处理 #else。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L36 | 按 `for (auto &&value : range)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L37 | 出现调用或函数声明 `function`，对应表达式为 `function(value);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L38 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L39 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L40 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L42 | 把后续声明放入 detail 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L43 | 出现调用或函数声明 `parallel_for_impl`，对应表达式为 `void parallel_for_impl(IndexRange range,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L44 | 本行是连续声明或表达式的一部分：`int64_t grain_size,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L45 | 出现调用或函数声明 `void`，对应表达式为 `FunctionRef<void(IndexRange)> function,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L46 | 声明成员、局部对象或完成语句 `const TaskSizeHints &size_hints)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L47 | 声明接口 `void memory_bandwidth_bound_task_impl(FunctionRef<void()> function)`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L48 | 声明接口 `void max_threads_task_impl(int max_threads, FunctionRef<void()> function)`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-
-### BLI_task.hh：L49—L105
-
-<!-- source:source/blender/blenlib/BLI_task.hh:49:105 -->
-
-```cpp
 }  // namespace detail
 
 /**
@@ -310,6 +271,88 @@ void max_threads_task_impl(int max_threads, FunctionRef<void()> function);
  *   If the grain size is e.g. 200 and each task has the size 100, then only two tasks will be
  *   scheduled at once.
  */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L41—L67</summary>
+
+<!-- original:60dc63c21078f1:source/blender/blenlib/BLI_task.hh:41:67 -->
+
+```cpp
+
+namespace detail {
+void parallel_for_impl(IndexRange range,
+                       int64_t grain_size,
+                       FunctionRef<void(IndexRange)> function,
+                       const TaskSizeHints &size_hints);
+void memory_bandwidth_bound_task_impl(FunctionRef<void()> function);
+void max_threads_task_impl(int max_threads, FunctionRef<void()> function);
+}  // namespace detail
+
+/**
+ * Executes the given function for sub-ranges of the given range, potentially in parallel.
+ * This is the main primitive for parallelizing code.
+ *
+ * \param range: The indices that should be iterated over in parallel.
+ * \param grain_size: The approximate amount of work that should be scheduled at once.
+ *   For example of the range is [0 - 1000] and the grain size is 200, then the function will be
+ *   called 5 times with [0 - 200], [201 - 400], ... (approximately). The `size_hints` parameter
+ *   can be used to adjust how the work is split up if the tasks have different sizes.
+ * \param function: A callback that actually does the work in parallel. It should have one
+ *   #IndexRange parameter.
+ * \param size_hints: Can be used to specify the size of the tasks *relative to* each other and the
+ *   grain size. If all tasks have approximately the same size, this can be ignored. Otherwise, one
+ *   can use `threading::individual_task_sizes(...)` or `threading::accumulated_task_sizes(...)`.
+ *   If the grain size is e.g. 200 and each task has the size 100, then only two tasks will be
+ *   scheduled at once.
+ */
+```
+
+</details>
+
+<a id="f-838294754c24426c"></a>
+
+### `blender::threading::parallel_for`
+
+实现位置：[source/blender/blenlib/BLI_task.hh](../../../../../source/blender/blenlib/BLI_task.hh) · L68—L83。
+
+接口参数：
+
+- `const IndexRange range`
+- `const int64_t grain_size`
+- `const Function &function`
+- `const TaskSizeHints &size_hints = detail::TaskSizeHints_Static(1)`
+
+**教学注释版**
+
+<!-- annotated:866f1b3a6fdfe7 -->
+
+```cpp
+template<typename Function>
+inline void parallel_for(const IndexRange range,
+                         const int64_t grain_size,
+                         const Function &function,
+                         const TaskSizeHints &size_hints = detail::TaskSizeHints_Static(1))
+{
+  // [讲解] range.is_empty：读取连续区间或分组的边界信息。
+  if (range.is_empty()) {
+    return;
+  }
+  /* Invoking tbb for small workloads has a large overhead. */
+  if (use_single_thread(size_hints, range, grain_size)) {
+    function(range);
+    return;
+  }
+  detail::parallel_for_impl(range, grain_size, function, size_hints);
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L68—L83</summary>
+
+<!-- original:866f1b3a6fdfe7:source/blender/blenlib/BLI_task.hh:68:83 -->
+
+```cpp
 template<typename Function>
 inline void parallel_for(const IndexRange range,
                          const int64_t grain_size,
@@ -326,11 +369,89 @@ inline void parallel_for(const IndexRange range,
   }
   detail::parallel_for_impl(range, grain_size, function, size_hints);
 }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `range.is_empty` → [blender::IndexRange::is_empty · L169](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-9501e070be01ff71)。
+- `use_single_thread` → [blender::threading::use_single_thread · L110](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_task_size_hints-5d752d.md#f-312425a5f9a68a41)。
+- `function` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L79。
+- `detail::parallel_for_impl` → [blender::threading::detail::parallel_for_impl · L251](08-%E4%BB%BB%E5%8A%A1%E9%9A%94%E7%A6%BB%E6%AD%BB%E9%94%81%E4%B8%8E%E5%AE%9E%E6%88%98.md#f-238230997dc52c53)。
+
+### 类型布局、声明与编译条件 · BLI_task.hh L84—L88
+
+<!-- annotated:10cfd565632b69 -->
+
+```cpp
 
 /**
  * Move the sub-range boundaries down to the next aligned index. The "global" begin and end
  * remain fixed though.
  */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L84—L88</summary>
+
+<!-- original:10cfd565632b69:source/blender/blenlib/BLI_task.hh:84:88 -->
+
+```cpp
+
+/**
+ * Move the sub-range boundaries down to the next aligned index. The "global" begin and end
+ * remain fixed though.
+ */
+```
+
+</details>
+
+<a id="f-09ad8ee7b1041e00"></a>
+
+### `blender::threading::align_sub_range`
+
+实现位置：[source/blender/blenlib/BLI_task.hh](../../../../../source/blender/blenlib/BLI_task.hh) · L89—L105。
+
+接口参数：
+
+- `const IndexRange unaligned_range`
+- `const int64_t alignment`
+- `const IndexRange global_range`
+
+**教学注释版**
+
+<!-- annotated:177afe1a508e56 -->
+
+```cpp
+inline IndexRange align_sub_range(const IndexRange unaligned_range,
+                                  const int64_t alignment,
+                                  const IndexRange global_range)
+{
+  // [讲解] global_range.start：读取连续区间或分组的边界信息。
+  const int64_t global_begin = global_range.start();
+  // [讲解] global_range.one_after_last：读取连续区间或分组的边界信息。
+  const int64_t global_end = global_range.one_after_last();
+  const int64_t alignment_mask = ~(alignment - 1);
+
+  const int64_t unaligned_begin = unaligned_range.start();
+  const int64_t unaligned_end = unaligned_range.one_after_last();
+  // [讲解] std::max：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+  const int64_t aligned_begin = std::max(global_begin, unaligned_begin & alignment_mask);
+  const int64_t aligned_end = unaligned_end == global_end ?
+                                  unaligned_end :
+                                  std::max(global_begin, unaligned_end & alignment_mask);
+  const IndexRange aligned_range = IndexRange::from_begin_end(aligned_begin, aligned_end);
+  return aligned_range;
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L89—L105</summary>
+
+<!-- original:177afe1a508e56:source/blender/blenlib/BLI_task.hh:89:105 -->
+
+```cpp
 inline IndexRange align_sub_range(const IndexRange unaligned_range,
                                   const int64_t alignment,
                                   const IndexRange global_range)
@@ -350,48 +471,24 @@ inline IndexRange align_sub_range(const IndexRange unaligned_range,
 }
 ```
 
-本段语义重点：
+</details>
 
-- `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。
+**结果出口**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L49 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L68 | 声明模板参数 `template<typename Function>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L69 | 出现调用或函数声明 `parallel_for`，对应表达式为 `inline void parallel_for(const IndexRange range,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L70 | 本行是连续声明或表达式的一部分：`const int64_t grain_size,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L71 | 本行是连续声明或表达式的一部分：`const Function &function,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L72 | 把右侧 `detail::TaskSizeHints_Static(1))` 用于初始化或更新左侧 `const TaskSizeHints &size_hints`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L73 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L74 | 判断 `range.is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L75 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L76 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L78 | 判断 `use_single_thread(size_hints, range, grain_size)`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L79 | 出现调用或函数声明 `function`，对应表达式为 `function(range);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L80 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L81 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L82 | 出现调用或函数声明 `detail::parallel_for_impl`，对应表达式为 `detail::parallel_for_impl(range, grain_size, function, size_hints);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L83 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L89 | 出现调用或函数声明 `align_sub_range`，对应表达式为 `inline IndexRange align_sub_range(const IndexRange unaligned_range,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L90 | 本行是连续声明或表达式的一部分：`const int64_t alignment,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L91 | 本行是连续声明或表达式的一部分：`const IndexRange global_range)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L92 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L93 | 把右侧 `global_range.start()` 用于初始化或更新左侧 `const int64_t global_begin`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L94 | 把右侧 `global_range.one_after_last()` 用于初始化或更新左侧 `const int64_t global_end`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L95 | 涉及析构接口或显式析构：`const int64_t alignment_mask = ~(alignment - 1);`。检查目标对象已成功构造，且资源不会在另一条清理路径再次销毁。 |
-| L97 | 把右侧 `unaligned_range.start()` 用于初始化或更新左侧 `const int64_t unaligned_begin`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L98 | 把右侧 `unaligned_range.one_after_last()` 用于初始化或更新左侧 `const int64_t unaligned_end`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L99 | 本行使用 `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。 |
-| L100 | 把右侧 `unaligned_end == global_end ?` 用于初始化或更新左侧 `const int64_t aligned_end`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L101 | 本行是连续声明或表达式的一部分：`unaligned_end :`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L102 | 本行使用 `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。 |
-| L103 | 把右侧 `IndexRange::from_begin_end(aligned_begin, aligned_end)` 用于初始化或更新左侧 `const IndexRange aligned_range`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L104 | 返回表达式 `aligned_range`。 |
-| L105 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `return aligned_range;`
 
-### BLI_task.hh：L106—L148
+**继续追踪实现**
 
-<!-- source:source/blender/blenlib/BLI_task.hh:106:148 -->
+- `global_range.start` → [blender::IndexRange::start · L243](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
+- `global_range.one_after_last` → [blender::IndexRange::one_after_last · L235](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-ed04bec9c731fc86)。
+- `unaligned_range.start` → [blender::IndexRange::start · L243](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
+- `unaligned_range.one_after_last` → [blender::IndexRange::one_after_last · L235](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-ed04bec9c731fc86)。
+- `std::max` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+- `IndexRange::from_begin_end` → [blender::IndexRange::from_begin_end · L78](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-a523839fb9650253)。
+
+### 类型布局、声明与编译条件 · BLI_task.hh L106—L113
+
+<!-- annotated:4edd83b9191937 -->
 
 ```cpp
 
@@ -402,6 +499,44 @@ inline IndexRange align_sub_range(const IndexRange unaligned_range,
  * using this instead of #parallel_for is that the size differences between sub-ranges can be
  * larger, which means that work is distributed less evenly.
  */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L106—L113</summary>
+
+<!-- original:4edd83b9191937:source/blender/blenlib/BLI_task.hh:106:113 -->
+
+```cpp
+
+/**
+ * Same as #parallel_for but tries to make the sub-range sizes multiples of the given alignment.
+ * This can improve performance when the range is processed using vectorized and/or unrolled loops,
+ * because the fallback loop that processes remaining values is used less often. A disadvantage of
+ * using this instead of #parallel_for is that the size differences between sub-ranges can be
+ * larger, which means that work is distributed less evenly.
+ */
+```
+
+</details>
+
+<a id="f-247ed9610f9d2b09"></a>
+
+### `blender::threading::parallel_for_aligned`
+
+实现位置：[source/blender/blenlib/BLI_task.hh](../../../../../source/blender/blenlib/BLI_task.hh) · L114—L124。
+
+接口参数：
+
+- `const IndexRange range`
+- `const int64_t grain_size`
+- `const int64_t alignment`
+- `const Function &function`
+
+**教学注释版**
+
+<!-- annotated:8b2f0c7c1b831b -->
+
+```cpp
 template<typename Function>
 inline void parallel_for_aligned(const IndexRange range,
                                  const int64_t grain_size,
@@ -413,7 +548,104 @@ inline void parallel_for_aligned(const IndexRange range,
     function(aligned_range);
   });
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L114—L124</summary>
+
+<!-- original:8b2f0c7c1b831b:source/blender/blenlib/BLI_task.hh:114:124 -->
+
+```cpp
+template<typename Function>
+inline void parallel_for_aligned(const IndexRange range,
+                                 const int64_t grain_size,
+                                 const int64_t alignment,
+                                 const Function &function)
+{
+  parallel_for(range, grain_size, [&](const IndexRange unaligned_range) {
+    const IndexRange aligned_range = align_sub_range(unaligned_range, alignment, range);
+    function(aligned_range);
+  });
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `parallel_for` → [blender::threading::parallel_for · L68](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-838294754c24426c)。
+- `align_sub_range` → [blender::threading::align_sub_range · L89](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-09ad8ee7b1041e00)。
+- `function` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L122。
+
+<!-- annotated:a45d41b78fa352 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L125—L125</summary>
+
+<!-- original:a45d41b78fa352:source/blender/blenlib/BLI_task.hh:125:125 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9225ddb5efb97fcc"></a>
+
+### `blender::threading::parallel_reduce`
+
+实现位置：[source/blender/blenlib/BLI_task.hh](../../../../../source/blender/blenlib/BLI_task.hh) · L126—L148。
+
+接口参数：
+
+- `IndexRange range`
+- `int64_t grain_size`
+- `const Value &identity`
+- `const Function &function`
+- `const Reduction &reduction`
+
+**教学注释版**
+
+<!-- annotated:907608a6d260c3 -->
+
+```cpp
+template<typename Value, typename Function, typename Reduction>
+inline Value parallel_reduce(IndexRange range,
+                             int64_t grain_size,
+                             const Value &identity,
+                             const Function &function,
+                             const Reduction &reduction)
+{
+#ifdef WITH_TBB
+  // [讲解] range.size：读取连续区间或分组的边界信息。
+  if (range.size() >= grain_size) {
+    lazy_threading::send_hint();
+    return tbb::parallel_reduce(
+        // [讲解] range.first：读取范围两端的有效索引或值。
+        tbb::blocked_range<int64_t>(range.first(), range.one_after_last(), grain_size),
+        identity,
+        [&](const tbb::blocked_range<int64_t> &subrange, const Value &ident) {
+          return function(IndexRange(subrange.begin(), subrange.size()), ident);
+        },
+        reduction);
+  }
+#else
+  UNUSED_VARS(grain_size, reduction);
+#endif
+  return function(range, identity);
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L126—L148</summary>
+
+<!-- original:907608a6d260c3:source/blender/blenlib/BLI_task.hh:126:148 -->
+
+```cpp
 template<typename Value, typename Function, typename Reduction>
 inline Value parallel_reduce(IndexRange range,
                              int64_t grain_size,
@@ -439,53 +671,65 @@ inline Value parallel_reduce(IndexRange range,
 }
 ```
 
-本段语义重点：
+</details>
 
-- 分支证据 `range.size() >= grain_size)`：分别推演条件成立与不成立，核对相同出口处的状态。
+**结果出口**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L114 | 声明模板参数 `template<typename Function>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L115 | 出现调用或函数声明 `parallel_for_aligned`，对应表达式为 `inline void parallel_for_aligned(const IndexRange range,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L116 | 本行是连续声明或表达式的一部分：`const int64_t grain_size,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L117 | 本行是连续声明或表达式的一部分：`const int64_t alignment,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L118 | 本行是连续声明或表达式的一部分：`const Function &function)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L119 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L120 | 出现调用或函数声明 `parallel_for`，对应表达式为 `parallel_for(range, grain_size, [&](const IndexRange unaligned_range) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L121 | 把右侧 `align_sub_range(unaligned_range, alignment, range)` 用于初始化或更新左侧 `const IndexRange aligned_range`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L122 | 出现调用或函数声明 `function`，对应表达式为 `function(aligned_range);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L123 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L124 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L126 | 声明模板参数 `template<typename Value, typename Function, typename Reduction>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L127 | 出现调用或函数声明 `parallel_reduce`，对应表达式为 `inline Value parallel_reduce(IndexRange range,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L128 | 本行是连续声明或表达式的一部分：`int64_t grain_size,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L129 | 本行是连续声明或表达式的一部分：`const Value &identity,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L130 | 本行是连续声明或表达式的一部分：`const Function &function,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L131 | 本行是连续声明或表达式的一部分：`const Reduction &reduction)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L132 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L133 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L134 | 判断 `range.size() >= grain_size`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L135 | 出现调用或函数声明 `lazy_threading::send_hint`，对应表达式为 `lazy_threading::send_hint();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L136 | 返回表达式 `tbb::parallel_reduce(`。 |
-| L137 | 出现调用或函数声明 `tbb::blocked_range`，对应表达式为 `tbb::blocked_range<int64_t>(range.first(), range.one_after_last(), grain_size),`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L138 | 本行是连续声明或表达式的一部分：`identity,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L139 | 本行是连续声明或表达式的一部分：`[&](const tbb::blocked_range<int64_t> &subrange, const Value &ident) {`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L140 | 返回表达式 `function(IndexRange(subrange.begin(), subrange.size()), ident)`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L141 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L142 | 声明成员、局部对象或完成语句 `reduction)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L143 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L144 | 预处理阶段处理 #else。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L145 | 出现调用或函数声明 `UNUSED_VARS`，对应表达式为 `UNUSED_VARS(grain_size, reduction);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L146 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L147 | 返回表达式 `function(range, identity)`。 |
-| L148 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `return tbb::parallel_reduce(`
+- `return function(IndexRange(subrange.begin(), subrange.size()), ident);`
+- `return function(range, identity);`
 
-### BLI_task.hh：L149—L191
+**继续追踪实现**
 
-<!-- source:source/blender/blenlib/BLI_task.hh:149:191 -->
+- `range.size` → [blender::IndexRange::size · L156](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `lazy_threading::send_hint` → [blender::lazy_threading::send_hint · L28](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-lazy_threading-faad44.md#f-5f17245e2a06695e)。
+- `tbb::parallel_reduce` → [外部契约](https://uxlfoundation.github.io/oneTBB/)：任务调度属于第三方运行时；检查任务寿命、等待与隔离规则，不能把并行等待当作普通同步函数调用。
+- `tbb::blocked_range<int64_t>` → [外部契约](https://uxlfoundation.github.io/oneTBB/)：任务调度属于第三方运行时；检查任务寿命、等待与隔离规则，不能把并行等待当作普通同步函数调用。
+- `range.first` → [blender::IndexRange::first · L204](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-ab443c94e531befa)。
+- `range.one_after_last` → [blender::IndexRange::one_after_last · L235](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-ed04bec9c731fc86)。
+- `function` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L140。
+- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+- `subrange.begin` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
+- `subrange.size` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
+- `UNUSED_VARS` → [UNUSED_VARS · L522](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-013582537634)；[UNUSED_VARS · L41](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GPU_shader_shared_utils-0adda3.md#m-05d9d7a33da0)；[UNUSED_VARS · L62](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GPU_shader_shared_utils-0adda3.md#m-e12c683a4aca)。宏定义由构建条件选择。
+
+<!-- annotated:997309c7e78393 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L149—L149</summary>
+
+<!-- original:997309c7e78393:source/blender/blenlib/BLI_task.hh:149:149 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b7bcaba57aab9b5f"></a>
+
+### `blender::threading::parallel_reduce_aligned`
+
+实现位置：[source/blender/blenlib/BLI_task.hh](../../../../../source/blender/blenlib/BLI_task.hh) · L150—L167。
+
+接口参数：
+
+- `const IndexRange range`
+- `const int64_t grain_size`
+- `const int64_t alignment`
+- `const Value &identity`
+- `const Function &function`
+- `const Reduction &reduction`
+
+**教学注释版**
+
+<!-- annotated:18ead7202ee6c6 -->
+
+```cpp
 template<typename Value, typename Function, typename Reduction>
 inline Value parallel_reduce_aligned(const IndexRange range,
                                      const int64_t grain_size,
@@ -504,7 +748,111 @@ inline Value parallel_reduce_aligned(const IndexRange range,
       },
       reduction);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L150—L167</summary>
+
+<!-- original:18ead7202ee6c6:source/blender/blenlib/BLI_task.hh:150:167 -->
+
+```cpp
+template<typename Value, typename Function, typename Reduction>
+inline Value parallel_reduce_aligned(const IndexRange range,
+                                     const int64_t grain_size,
+                                     const int64_t alignment,
+                                     const Value &identity,
+                                     const Function &function,
+                                     const Reduction &reduction)
+{
+  parallel_reduce(
+      range,
+      grain_size,
+      identity,
+      [&](const IndexRange unaligned_range, const Value &ident) {
+        const IndexRange aligned_range = align_sub_range(unaligned_range, alignment, range);
+        function(aligned_range, ident);
+      },
+      reduction);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `parallel_reduce` → [blender::threading::parallel_reduce · L126](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-9225ddb5efb97fcc)。
+- `align_sub_range` → [blender::threading::align_sub_range · L89](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-09ad8ee7b1041e00)。
+- `function` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L164。
+
+<!-- annotated:08150ef8a901a3 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L168—L168</summary>
+
+<!-- original:08150ef8a901a3:source/blender/blenlib/BLI_task.hh:168:168 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a0f79812a52b6a46"></a>
+
+### `blender::threading::parallel_deterministic_reduce`
+
+实现位置：[source/blender/blenlib/BLI_task.hh](../../../../../source/blender/blenlib/BLI_task.hh) · L169—L191。
+
+接口参数：
+
+- `IndexRange range`
+- `int64_t grain_size`
+- `const Value &identity`
+- `const Function &function`
+- `const Reduction &reduction`
+
+**教学注释版**
+
+<!-- annotated:4838aecc0f9cbe -->
+
+```cpp
+template<typename Value, typename Function, typename Reduction>
+inline Value parallel_deterministic_reduce(IndexRange range,
+                                           int64_t grain_size,
+                                           const Value &identity,
+                                           const Function &function,
+                                           const Reduction &reduction)
+{
+#ifdef WITH_TBB
+  // [讲解] range.size：读取连续区间或分组的边界信息。
+  if (range.size() >= grain_size) {
+    lazy_threading::send_hint();
+    return tbb::parallel_deterministic_reduce(
+        // [讲解] range.first：读取范围两端的有效索引或值。
+        tbb::blocked_range<int64_t>(range.first(), range.one_after_last(), grain_size),
+        identity,
+        [&](const tbb::blocked_range<int64_t> &subrange, const Value &ident) {
+          return function(IndexRange(subrange.begin(), subrange.size()), ident);
+        },
+        reduction);
+  }
+#else
+  UNUSED_VARS(grain_size, reduction);
+#endif
+  return function(range, identity);
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L169—L191</summary>
+
+<!-- original:4838aecc0f9cbe:source/blender/blenlib/BLI_task.hh:169:191 -->
+
+```cpp
 template<typename Value, typename Function, typename Reduction>
 inline Value parallel_deterministic_reduce(IndexRange range,
                                            int64_t grain_size,
@@ -530,57 +878,31 @@ inline Value parallel_deterministic_reduce(IndexRange range,
 }
 ```
 
-本段语义重点：
+</details>
 
-- 分支证据 `range.size() >= grain_size)`：分别推演条件成立与不成立，核对相同出口处的状态。
+**结果出口**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L150 | 声明模板参数 `template<typename Value, typename Function, typename Reduction>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L151 | 出现调用或函数声明 `parallel_reduce_aligned`，对应表达式为 `inline Value parallel_reduce_aligned(const IndexRange range,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L152 | 本行是连续声明或表达式的一部分：`const int64_t grain_size,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L153 | 本行是连续声明或表达式的一部分：`const int64_t alignment,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L154 | 本行是连续声明或表达式的一部分：`const Value &identity,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L155 | 本行是连续声明或表达式的一部分：`const Function &function,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L156 | 本行是连续声明或表达式的一部分：`const Reduction &reduction)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L157 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L158 | 出现调用或函数声明 `parallel_reduce`，对应表达式为 `parallel_reduce(`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L159 | 本行是连续声明或表达式的一部分：`range,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L160 | 本行是连续声明或表达式的一部分：`grain_size,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L161 | 本行是连续声明或表达式的一部分：`identity,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L162 | 本行是连续声明或表达式的一部分：`[&](const IndexRange unaligned_range, const Value &ident) {`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L163 | 把右侧 `align_sub_range(unaligned_range, alignment, range)` 用于初始化或更新左侧 `const IndexRange aligned_range`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L164 | 出现调用或函数声明 `function`，对应表达式为 `function(aligned_range, ident);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L165 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L166 | 声明成员、局部对象或完成语句 `reduction)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L167 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L169 | 声明模板参数 `template<typename Value, typename Function, typename Reduction>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L170 | 出现调用或函数声明 `parallel_deterministic_reduce`，对应表达式为 `inline Value parallel_deterministic_reduce(IndexRange range,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L171 | 本行是连续声明或表达式的一部分：`int64_t grain_size,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L172 | 本行是连续声明或表达式的一部分：`const Value &identity,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L173 | 本行是连续声明或表达式的一部分：`const Function &function,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L174 | 本行是连续声明或表达式的一部分：`const Reduction &reduction)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L175 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L176 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L177 | 判断 `range.size() >= grain_size`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L178 | 出现调用或函数声明 `lazy_threading::send_hint`，对应表达式为 `lazy_threading::send_hint();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L179 | 返回表达式 `tbb::parallel_deterministic_reduce(`。 |
-| L180 | 出现调用或函数声明 `tbb::blocked_range`，对应表达式为 `tbb::blocked_range<int64_t>(range.first(), range.one_after_last(), grain_size),`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L181 | 本行是连续声明或表达式的一部分：`identity,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L182 | 本行是连续声明或表达式的一部分：`[&](const tbb::blocked_range<int64_t> &subrange, const Value &ident) {`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L183 | 返回表达式 `function(IndexRange(subrange.begin(), subrange.size()), ident)`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L184 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L185 | 声明成员、局部对象或完成语句 `reduction)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L186 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L187 | 预处理阶段处理 #else。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L188 | 出现调用或函数声明 `UNUSED_VARS`，对应表达式为 `UNUSED_VARS(grain_size, reduction);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L189 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L190 | 返回表达式 `function(range, identity)`。 |
-| L191 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `return tbb::parallel_deterministic_reduce(`
+- `return function(IndexRange(subrange.begin(), subrange.size()), ident);`
+- `return function(range, identity);`
 
-### BLI_task.hh：L192—L242
+**继续追踪实现**
 
-<!-- source:source/blender/blenlib/BLI_task.hh:192:242 -->
+- `range.size` → [blender::IndexRange::size · L156](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `lazy_threading::send_hint` → [blender::lazy_threading::send_hint · L28](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-lazy_threading-faad44.md#f-5f17245e2a06695e)。
+- `tbb::parallel_deterministic_reduce` → [外部契约](https://uxlfoundation.github.io/oneTBB/)：任务调度属于第三方运行时；检查任务寿命、等待与隔离规则，不能把并行等待当作普通同步函数调用。
+- `tbb::blocked_range<int64_t>` → [外部契约](https://uxlfoundation.github.io/oneTBB/)：任务调度属于第三方运行时；检查任务寿命、等待与隔离规则，不能把并行等待当作普通同步函数调用。
+- `range.first` → [blender::IndexRange::first · L204](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-ab443c94e531befa)。
+- `range.one_after_last` → [blender::IndexRange::one_after_last · L235](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-ed04bec9c731fc86)。
+- `function` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L183。
+- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+- `subrange.begin` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
+- `subrange.size` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
+- `UNUSED_VARS` → [UNUSED_VARS · L522](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-013582537634)；[UNUSED_VARS · L41](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GPU_shader_shared_utils-0adda3.md#m-05d9d7a33da0)；[UNUSED_VARS · L62](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GPU_shader_shared_utils-0adda3.md#m-e12c683a4aca)。宏定义由构建条件选择。
+
+### 类型布局、声明与编译条件 · BLI_task.hh L192—L196
+
+<!-- annotated:f719b072d0f84d -->
 
 ```cpp
 
@@ -588,6 +910,51 @@ inline Value parallel_deterministic_reduce(IndexRange range,
  * Execute all of the provided functions. The functions might be executed in parallel or in serial
  * or some combination of both.
  */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L192—L196</summary>
+
+<!-- original:f719b072d0f84d:source/blender/blenlib/BLI_task.hh:192:196 -->
+
+```cpp
+
+/**
+ * Execute all of the provided functions. The functions might be executed in parallel or in serial
+ * or some combination of both.
+ */
+```
+
+</details>
+
+<a id="f-82fe32e383788161"></a>
+
+### `blender::threading::parallel_invoke`
+
+实现位置：[source/blender/blenlib/BLI_task.hh](../../../../../source/blender/blenlib/BLI_task.hh) · L197—L204。
+
+**教学注释版**
+
+<!-- annotated:0c930900768855 -->
+
+```cpp
+template<typename... Functions> inline void parallel_invoke(Functions &&...functions)
+{
+#ifdef WITH_TBB
+  // [讲解] std::forward<Functions>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+  tbb::parallel_invoke(std::forward<Functions>(functions)...);
+#else
+  (functions(), ...);
+#endif
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L197—L204</summary>
+
+<!-- original:0c930900768855:source/blender/blenlib/BLI_task.hh:197:204 -->
+
+```cpp
 template<typename... Functions> inline void parallel_invoke(Functions &&...functions)
 {
 #ifdef WITH_TBB
@@ -596,12 +963,80 @@ template<typename... Functions> inline void parallel_invoke(Functions &&...funct
   (functions(), ...);
 #endif
 }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `tbb::parallel_invoke` → [外部契约](https://uxlfoundation.github.io/oneTBB/)：任务调度属于第三方运行时；检查任务寿命、等待与隔离规则，不能把并行等待当作普通同步函数调用。
+- `std::forward<Functions>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `functions` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L202。
+
+### 类型布局、声明与编译条件 · BLI_task.hh L205—L210
+
+<!-- annotated:89581e7b9ba5c3 -->
+
+```cpp
 
 /**
  * Same #parallel_invoke, but allows disabling threading dynamically. This is useful because when
  * the individual functions do very little work, there is a lot of overhead from starting parallel
  * tasks.
  */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L205—L210</summary>
+
+<!-- original:89581e7b9ba5c3:source/blender/blenlib/BLI_task.hh:205:210 -->
+
+```cpp
+
+/**
+ * Same #parallel_invoke, but allows disabling threading dynamically. This is useful because when
+ * the individual functions do very little work, there is a lot of overhead from starting parallel
+ * tasks.
+ */
+```
+
+</details>
+
+<a id="f-8600ab96e862d7e4"></a>
+
+### `blender::threading::parallel_invoke`
+
+实现位置：[source/blender/blenlib/BLI_task.hh](../../../../../source/blender/blenlib/BLI_task.hh) · L211—L221。
+
+接口参数：
+
+- `const bool use_threading`
+
+**教学注释版**
+
+<!-- annotated:83b9f2c29676af -->
+
+```cpp
+template<typename... Functions>
+inline void parallel_invoke(const bool use_threading, Functions &&...functions)
+{
+  if (use_threading) {
+    lazy_threading::send_hint();
+    // [讲解] std::forward<Functions>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+    parallel_invoke(std::forward<Functions>(functions)...);
+  }
+  else {
+    (functions(), ...);
+  }
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L211—L221</summary>
+
+<!-- original:83b9f2c29676af:source/blender/blenlib/BLI_task.hh:211:221 -->
+
+```cpp
 template<typename... Functions>
 inline void parallel_invoke(const bool use_threading, Functions &&...functions)
 {
@@ -613,8 +1048,53 @@ inline void parallel_invoke(const bool use_threading, Functions &&...functions)
     (functions(), ...);
   }
 }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `lazy_threading::send_hint` → [blender::lazy_threading::send_hint · L28](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-lazy_threading-faad44.md#f-5f17245e2a06695e)。
+- `parallel_invoke` → [blender::threading::parallel_invoke · L197](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-82fe32e383788161)；[blender::threading::parallel_invoke · L211](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-8600ab96e862d7e4)。同名重载需按实参类型选择。
+- `std::forward<Functions>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `functions` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L219。
+
+### 类型布局、声明与编译条件 · BLI_task.hh L222—L223
+
+<!-- annotated:e28d6d1107df7e -->
+
+```cpp
 
 /** See #BLI_task_isolate for a description of what isolating a task means. */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L222—L223</summary>
+
+<!-- original:e28d6d1107df7e:source/blender/blenlib/BLI_task.hh:222:223 -->
+
+```cpp
+
+/** See #BLI_task_isolate for a description of what isolating a task means. */
+```
+
+</details>
+
+<a id="f-c13dd3df595aa4f8"></a>
+
+### `blender::threading::isolate_task`
+
+实现位置：[source/blender/blenlib/BLI_task.hh](../../../../../source/blender/blenlib/BLI_task.hh) · L224—L232。
+
+接口参数：
+
+- `const Function &function`
+
+**教学注释版**
+
+<!-- annotated:29f6ade78bf6b4 -->
+
+```cpp
 template<typename Function> inline auto isolate_task(const Function &function)
 {
 #ifdef WITH_TBB
@@ -624,11 +1104,80 @@ template<typename Function> inline auto isolate_task(const Function &function)
   return function();
 #endif
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L224—L232</summary>
+
+<!-- original:29f6ade78bf6b4:source/blender/blenlib/BLI_task.hh:224:232 -->
+
+```cpp
+template<typename Function> inline auto isolate_task(const Function &function)
+{
+#ifdef WITH_TBB
+  lazy_threading::ReceiverIsolation isolation;
+  return tbb::this_task_arena::isolate(function);
+#else
+  return function();
+#endif
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return tbb::this_task_arena::isolate(function);`
+- `return function();`
+
+**继续追踪实现**
+
+- `tbb::this_task_arena::isolate` → [外部契约](https://uxlfoundation.github.io/oneTBB/)：任务调度属于第三方运行时；检查任务寿命、等待与隔离规则，不能把并行等待当作普通同步函数调用。
+- `function` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L230。
+
+### 类型布局、声明与编译条件 · BLI_task.hh L233—L237
+
+<!-- annotated:47d11900054b0d -->
+
+```cpp
 
 /**
  * Runs the function with at most #max_threads threads participating in parallel work,
  * including the calling thread.
  */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L233—L237</summary>
+
+<!-- original:47d11900054b0d:source/blender/blenlib/BLI_task.hh:233:237 -->
+
+```cpp
+
+/**
+ * Runs the function with at most #max_threads threads participating in parallel work,
+ * including the calling thread.
+ */
+```
+
+</details>
+
+<a id="f-caf66416559a5d62"></a>
+
+### `blender::threading::max_threads_task`
+
+实现位置：[source/blender/blenlib/BLI_task.hh](../../../../../source/blender/blenlib/BLI_task.hh) · L238—L242。
+
+接口参数：
+
+- `const int max_threads`
+- `const Function &function`
+
+**教学注释版**
+
+<!-- annotated:7cb4b76a182833 -->
+
+```cpp
 template<typename Function>
 inline void max_threads_task(const int max_threads, const Function &function)
 {
@@ -636,49 +1185,28 @@ inline void max_threads_task(const int max_threads, const Function &function)
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L238—L242</summary>
 
-- 分支证据 `use_threading)`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:7cb4b76a182833:source/blender/blenlib/BLI_task.hh:238:242 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L197 | 声明模板参数 `template<typename... Functions> inline void parallel_invoke(Functions &&...functions)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L198 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L199 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L200 | 出现调用或函数声明 `tbb::parallel_invoke`，对应表达式为 `tbb::parallel_invoke(std::forward<Functions>(functions)...);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L201 | 预处理阶段处理 #else。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L202 | 出现调用或函数声明 `functions`，对应表达式为 `(functions(), ...);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L203 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L204 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L211 | 声明模板参数 `template<typename... Functions>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L212 | 出现调用或函数声明 `parallel_invoke`，对应表达式为 `inline void parallel_invoke(const bool use_threading, Functions &&...functions)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L213 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L214 | 判断 `use_threading`，成立时进入本分支，否则继续后续路径。 |
-| L215 | 出现调用或函数声明 `lazy_threading::send_hint`，对应表达式为 `lazy_threading::send_hint();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L216 | 出现调用或函数声明 `parallel_invoke`，对应表达式为 `parallel_invoke(std::forward<Functions>(functions)...);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L217 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L218 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L219 | 出现调用或函数声明 `functions`，对应表达式为 `(functions(), ...);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L220 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L221 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L224 | 声明模板参数 `template<typename Function> inline auto isolate_task(const Function &function)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L225 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L226 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L227 | 声明成员、局部对象或完成语句 `lazy_threading::ReceiverIsolation isolation`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L228 | 返回表达式 `tbb::this_task_arena::isolate(function)`。 |
-| L229 | 预处理阶段处理 #else。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L230 | 返回表达式 `function()`。 |
-| L231 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L232 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L238 | 声明模板参数 `template<typename Function>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L239 | 出现调用或函数声明 `max_threads_task`，对应表达式为 `inline void max_threads_task(const int max_threads, const Function &function)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L240 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L241 | 出现调用或函数声明 `detail::max_threads_task_impl`，对应表达式为 `detail::max_threads_task_impl(max_threads, function);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L242 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+template<typename Function>
+inline void max_threads_task(const int max_threads, const Function &function)
+{
+  detail::max_threads_task_impl(max_threads, function);
+}
+```
 
-### BLI_task.hh：L243—L267
+</details>
 
-<!-- source:source/blender/blenlib/BLI_task.hh:243:267 -->
+**继续追踪实现**
+
+- `detail::max_threads_task_impl` → [blender::threading::detail::max_threads_task_impl · L319](08-%E4%BB%BB%E5%8A%A1%E9%9A%94%E7%A6%BB%E6%AD%BB%E9%94%81%E4%B8%8E%E5%AE%9E%E6%88%98.md#f-9f107d09692b64f8)。
+
+### 类型布局、声明与编译条件 · BLI_task.hh L243—L249
+
+<!-- annotated:ff4626a1d4b9c0 -->
 
 ```cpp
 
@@ -688,6 +1216,41 @@ inline void max_threads_task(const int max_threads, const Function &function)
  * the number of threads doing the work because that just creates more overhead on the hardware
  * level and doesn't provide a notable performance benefit beyond a certain point.
  */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L243—L249</summary>
+
+<!-- original:ff4626a1d4b9c0:source/blender/blenlib/BLI_task.hh:243:249 -->
+
+```cpp
+
+/**
+ * Should surround parallel code that is highly bandwidth intensive, e.g. it just fills a buffer
+ * with no or just few additional operations. If the buffers are large, it's beneficial to limit
+ * the number of threads doing the work because that just creates more overhead on the hardware
+ * level and doesn't provide a notable performance benefit beyond a certain point.
+ */
+```
+
+</details>
+
+<a id="f-aa412ccec656928d"></a>
+
+### `blender::threading::memory_bandwidth_bound_task`
+
+实现位置：[source/blender/blenlib/BLI_task.hh](../../../../../source/blender/blenlib/BLI_task.hh) · L250—L264。
+
+接口参数：
+
+- `const int64_t approximate_bytes_touched`
+- `const Function &function`
+
+**教学注释版**
+
+<!-- annotated:6c17b55f047677 -->
+
+```cpp
 template<typename Function>
 inline void memory_bandwidth_bound_task(const int64_t approximate_bytes_touched,
                                         const Function &function)
@@ -703,33 +1266,76 @@ inline void memory_bandwidth_bound_task(const int64_t approximate_bytes_touched,
   }
   detail::memory_bandwidth_bound_task_impl(function);
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L250—L264</summary>
+
+<!-- original:6c17b55f047677:source/blender/blenlib/BLI_task.hh:250:264 -->
+
+```cpp
+template<typename Function>
+inline void memory_bandwidth_bound_task(const int64_t approximate_bytes_touched,
+                                        const Function &function)
+{
+  /* Don't limit threading when all touched memory can stay in the CPU cache, because there a much
+   * higher memory bandwidth is available compared to accessing RAM. This value is supposed to be
+   * on the order of the L3 cache size. Accessing that value is not quite straight forward and even
+   * if it was, it's not clear if using the exact cache size would be beneficial because there is
+   * often more stuff going on the CPU at the same time. */
+  if (approximate_bytes_touched <= 8 * 1024 * 1024) {
+    function();
+    return;
+  }
+  detail::memory_bandwidth_bound_task_impl(function);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `function` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L260。
+- `detail::memory_bandwidth_bound_task_impl` → [blender::threading::detail::memory_bandwidth_bound_task_impl · L291](08-%E4%BB%BB%E5%8A%A1%E9%9A%94%E7%A6%BB%E6%AD%BB%E9%94%81%E4%B8%8E%E5%AE%9E%E6%88%98.md#f-1a3c280ff004f38d)。
+
+### 类型布局、声明与编译条件 · BLI_task.hh L265—L267
+
+<!-- annotated:c344ed9ed76d98 -->
+
+```cpp
 
 }  // namespace threading
 }  // namespace blender
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_task.hh · L265—L267</summary>
 
-- 分支证据 `approximate_bytes_touched <= 8 * 1024 * 1024)`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:c344ed9ed76d98:source/blender/blenlib/BLI_task.hh:265:267 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L250 | 声明模板参数 `template<typename Function>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L251 | 出现调用或函数声明 `memory_bandwidth_bound_task`，对应表达式为 `inline void memory_bandwidth_bound_task(const int64_t approximate_bytes_touched,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L252 | 本行是连续声明或表达式的一部分：`const Function &function)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L253 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L259 | 判断 `approximate_bytes_touched <= 8 * 1024 * 1024`，成立时进入本分支，否则继续后续路径。 |
-| L260 | 出现调用或函数声明 `function`，对应表达式为 `function();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L261 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L262 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L263 | 出现调用或函数声明 `detail::memory_bandwidth_bound_task_impl`，对应表达式为 `detail::memory_bandwidth_bound_task_impl(function);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L264 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L266 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L267 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
 
-### task_pool.cc：L1—L47
+}  // namespace threading
+}  // namespace blender
+```
 
-<!-- source:source/blender/blenlib/intern/task_pool.cc:1:47 -->
+</details>
+
+### 类型布局、声明与编译条件 · task_pool.cc L1—L48
+
+<a id="t-b3e532c43c2c"></a>
+
+<a id="t-340ad5e36815"></a>
+
+`Task`在这里声明的数据成员：
+
+- `TaskPool pool`
+- `TaskRunFunction run`
+- `void taskdata`
+- `bool free_taskdata`
+- `TaskFreeFunction freedata`
+
+<!-- annotated:366a1f6a0657c7 -->
 
 ```cpp
 /* SPDX-FileCopyrightText: 2023 Blender Authors
@@ -779,42 +1385,86 @@ class Task {
   void *taskdata;
   bool free_taskdata;
   TaskFreeFunction freedata;
+
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L11 | 引入编译依赖 <atomic>；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L12 | 引入编译依赖 <cstdlib>；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L13 | 引入编译依赖 <memory>；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L14 | 引入编译依赖 <utility>；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L16 | 引入编译依赖 "MEM_guardedalloc.h"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L18 | 引入编译依赖 "DNA_listBase.h"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L20 | 引入编译依赖 "BLI_assert.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L21 | 引入编译依赖 "BLI_mempool.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L22 | 引入编译依赖 "BLI_task_c.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L23 | 引入编译依赖 "BLI_threads.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L24 | 引入编译依赖 "BLI_vector.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L26 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L27 | 本行是连续声明或表达式的一部分：`#  include <tbb/blocked_range.h>`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L28 | 本行是连续声明或表达式的一部分：`#  include <tbb/task_arena.h>`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L29 | 本行是连续声明或表达式的一部分：`#  include <tbb/task_group.h>`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L30 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L32 | 把后续声明放入 blender 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L34 | 声明或定义类型 `struct ThreadSlot`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L41 | 声明或定义类型 `class Task`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L42 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L43 | 声明成员、局部对象或完成语句 `TaskPool *pool`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L44 | 声明成员、局部对象或完成语句 `TaskRunFunction run`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L45 | 声明成员、局部对象或完成语句 `void *taskdata`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L46 | 声明成员、局部对象或完成语句 `bool free_taskdata`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L47 | 声明成员、局部对象或完成语句 `TaskFreeFunction freedata`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L1—L48</summary>
 
-### task_pool.cc：L48—L92
-
-<!-- source:source/blender/blenlib/intern/task_pool.cc:48:92 -->
+<!-- original:366a1f6a0657c7:source/blender/blenlib/intern/task_pool.cc:1:48 -->
 
 ```cpp
+/* SPDX-FileCopyrightText: 2023 Blender Authors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later */
 
+/** \file
+ * \ingroup bli
+ *
+ * Task pool to run tasks in parallel.
+ */
+
+#include <atomic>
+#include <cstdlib>
+#include <memory>
+#include <utility>
+
+#include "MEM_guardedalloc.h"
+
+#include "DNA_listBase.h"
+
+#include "BLI_assert.hh"
+#include "BLI_mempool.hh"
+#include "BLI_task_c.hh"
+#include "BLI_threads.hh"
+#include "BLI_vector.hh"
+
+#ifdef WITH_TBB
+#  include <tbb/blocked_range.h>
+#  include <tbb/task_arena.h>
+#  include <tbb/task_group.h>
+#endif
+
+namespace blender {
+
+struct ThreadSlot;
+
+/**
+ * Task
+ *
+ * Unit of work to execute. This is a C++ class to work with TBB.
+ */
+class Task {
+ public:
+  TaskPool *pool;
+  TaskRunFunction run;
+  void *taskdata;
+  bool free_taskdata;
+  TaskFreeFunction freedata;
+
+```
+
+</details>
+
+<a id="f-be2ba00170b3cb29"></a>
+
+### `blender::Task::Task`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L49—L56。
+
+接口参数：
+
+- `TaskPool *pool`
+- `TaskRunFunction run`
+- `void *taskdata`
+- `bool free_taskdata`
+- `TaskFreeFunction freedata`
+
+**教学注释版**
+
+<!-- annotated:e001d3f966809a -->
+
+```cpp
   Task(TaskPool *pool,
        TaskRunFunction run,
        void *taskdata,
@@ -823,7 +1473,78 @@ class Task {
       : pool(pool), run(run), taskdata(taskdata), free_taskdata(free_taskdata), freedata(freedata)
   {
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L49—L56</summary>
+
+<!-- original:e001d3f966809a:source/blender/blenlib/intern/task_pool.cc:49:56 -->
+
+```cpp
+  Task(TaskPool *pool,
+       TaskRunFunction run,
+       void *taskdata,
+       bool free_taskdata,
+       TaskFreeFunction freedata)
+      : pool(pool), run(run), taskdata(taskdata), free_taskdata(free_taskdata), freedata(freedata)
+  {
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:e1ffc7d5f7d507 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L57—L57</summary>
+
+<!-- original:e1ffc7d5f7d507:source/blender/blenlib/intern/task_pool.cc:57:57 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-dde30cb5cd141b36"></a>
+
+### `blender::Task::~Task`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L58—L68。
+
+**教学注释版**
+
+<!-- annotated:9531122137bcf3 -->
+
+```cpp
+  ~Task()
+  {
+    if (free_taskdata) {
+      if (freedata) {
+        freedata(pool, taskdata);
+      }
+      else {
+        // [讲解] MEM_delete_void：以原始存储释放约定调用当前后端。
+        MEM_delete_void(taskdata);
+      }
+    }
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L58—L68</summary>
+
+<!-- original:9531122137bcf3:source/blender/blenlib/intern/task_pool.cc:58:68 -->
+
+```cpp
   ~Task()
   {
     if (free_taskdata) {
@@ -835,11 +1556,57 @@ class Task {
       }
     }
   }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `freedata` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L62。
+- `MEM_delete_void` → [MEM_delete_void · L647](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-642896c7c62ff8b9)；[MEM_delete_void · L109](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9a07b26421f2bee6)。同名重载需按实参类型选择。
+
+### 类型布局、声明与编译条件 · task_pool.cc L69—L73
+
+<!-- annotated:17da44918958b0 -->
+
+```cpp
 
   /* Move constructor.
    * For performance, ensure we never copy the task and only move it.
    * For TBB version 2017 and earlier we apply a workaround to make up for
    * the lack of move constructor support. */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L69—L73</summary>
+
+<!-- original:17da44918958b0:source/blender/blenlib/intern/task_pool.cc:69:73 -->
+
+```cpp
+
+  /* Move constructor.
+   * For performance, ensure we never copy the task and only move it.
+   * For TBB version 2017 and earlier we apply a workaround to make up for
+   * the lack of move constructor support. */
+```
+
+</details>
+
+<a id="f-a6f9145b4862e84a"></a>
+
+### `blender::Task::Task`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L74—L86。
+
+接口参数：
+
+- `Task &&other`
+
+**教学注释版**
+
+<!-- annotated:56634e4bdef150 -->
+
+```cpp
   Task(Task &&other)
       : pool(other.pool),
         run(other.run),
@@ -853,61 +1620,89 @@ class Task {
     other.free_taskdata = false;
     other.freedata = nullptr;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L74—L86</summary>
+
+<!-- original:56634e4bdef150:source/blender/blenlib/intern/task_pool.cc:74:86 -->
+
+```cpp
+  Task(Task &&other)
+      : pool(other.pool),
+        run(other.run),
+        taskdata(other.taskdata),
+        free_taskdata(other.free_taskdata),
+        freedata(other.freedata)
+  {
+    other.pool = nullptr;
+    other.run = nullptr;
+    other.taskdata = nullptr;
+    other.free_taskdata = false;
+    other.freedata = nullptr;
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `other.pool = nullptr;`
+- `other.run = nullptr;`
+- `other.taskdata = nullptr;`
+- `other.free_taskdata = false;`
+- `other.freedata = nullptr;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · task_pool.cc L87—L93
+
+<!-- annotated:92e5eba9118a39 -->
+
+```cpp
 
 /* TBB has a check in `tbb/include/task_group.h` where `__TBB_CPP11_RVALUE_REF_PRESENT` should
  * evaluate to true as with the other MSVC build. However, because of the clang compiler
  * it does not and we attempt to call a deleted constructor in the tbb_task_pool_run function.
  * This check fixes this issue and keeps our Task constructor valid. */
 #if (defined(WITH_TBB) && TBB_INTERFACE_VERSION_MAJOR < 10) || \
+    (defined(_MSC_VER) && defined(__clang__) && TBB_INTERFACE_VERSION_MAJOR < 12)
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L87—L93</summary>
 
-- 分支证据 `free_taskdata)`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `freedata)`：分别推演条件成立与不成立，核对相同出口处的状态。
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L49 | 出现调用或函数声明 `Task`，对应表达式为 `Task(TaskPool *pool,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L50 | 本行是连续声明或表达式的一部分：`TaskRunFunction run,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L51 | 本行是连续声明或表达式的一部分：`void *taskdata,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L52 | 本行是连续声明或表达式的一部分：`bool free_taskdata,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L53 | 本行是连续声明或表达式的一部分：`TaskFreeFunction freedata)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L54 | 出现调用或函数声明 `pool`，对应表达式为 `: pool(pool), run(run), taskdata(taskdata), free_taskdata(free_taskdata), freedata(freedata)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L55 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L56 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L58 | 涉及析构接口或显式析构：`~Task()`。检查目标对象已成功构造，且资源不会在另一条清理路径再次销毁。 |
-| L59 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L60 | 判断 `free_taskdata`，成立时进入本分支，否则继续后续路径。 |
-| L61 | 判断 `freedata`，成立时进入本分支，否则继续后续路径。 |
-| L62 | 出现调用或函数声明 `freedata`，对应表达式为 `freedata(pool, taskdata);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L63 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L64 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L65 | 出现调用或函数声明 `MEM_delete_void`，对应表达式为 `MEM_delete_void(taskdata);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L66 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L67 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L68 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L74 | 出现调用或函数声明 `Task`，对应表达式为 `Task(Task &&other)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L75 | 出现调用或函数声明 `pool`，对应表达式为 `: pool(other.pool),`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L76 | 出现调用或函数声明 `run`，对应表达式为 `run(other.run),`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L77 | 出现调用或函数声明 `taskdata`，对应表达式为 `taskdata(other.taskdata),`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L78 | 出现调用或函数声明 `free_taskdata`，对应表达式为 `free_taskdata(other.free_taskdata),`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L79 | 出现调用或函数声明 `freedata`，对应表达式为 `freedata(other.freedata)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L80 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L81 | 把右侧 `nullptr` 用于初始化或更新左侧 `other.pool`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L82 | 把右侧 `nullptr` 用于初始化或更新左侧 `other.run`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L83 | 把右侧 `nullptr` 用于初始化或更新左侧 `other.taskdata`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L84 | 把右侧 `false` 用于初始化或更新左侧 `other.free_taskdata`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L85 | 把右侧 `nullptr` 用于初始化或更新左侧 `other.freedata`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L86 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L92 | 预处理阶段处理 #if (defined(WITH_TBB) && TBB_INTERFACE_VERSION_MAJOR < 10) &#124;&#124; \。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-
-### task_pool.cc：L93—L147
-
-<!-- source:source/blender/blenlib/intern/task_pool.cc:93:147 -->
+<!-- original:92e5eba9118a39:source/blender/blenlib/intern/task_pool.cc:87:93 -->
 
 ```cpp
+
+/* TBB has a check in `tbb/include/task_group.h` where `__TBB_CPP11_RVALUE_REF_PRESENT` should
+ * evaluate to true as with the other MSVC build. However, because of the clang compiler
+ * it does not and we attempt to call a deleted constructor in the tbb_task_pool_run function.
+ * This check fixes this issue and keeps our Task constructor valid. */
+#if (defined(WITH_TBB) && TBB_INTERFACE_VERSION_MAJOR < 10) || \
     (defined(_MSC_VER) && defined(__clang__) && TBB_INTERFACE_VERSION_MAJOR < 12)
+```
+
+</details>
+
+<a id="f-e2eab17b9c04f0e9"></a>
+
+### `blender::Task::Task`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L94—L106。
+
+接口参数：
+
+- `const Task &other`
+
+**教学注释版**
+
+<!-- annotated:5750897848073a -->
+
+```cpp
   Task(const Task &other)
       : pool(other.pool),
         run(other.run),
@@ -921,21 +1716,243 @@ class Task {
     ((Task &)other).free_taskdata = false;
     ((Task &)other).freedata = nullptr;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L94—L106</summary>
+
+<!-- original:5750897848073a:source/blender/blenlib/intern/task_pool.cc:94:106 -->
+
+```cpp
+  Task(const Task &other)
+      : pool(other.pool),
+        run(other.run),
+        taskdata(other.taskdata),
+        free_taskdata(other.free_taskdata),
+        freedata(other.freedata)
+  {
+    ((Task &)other).pool = nullptr;
+    ((Task &)other).run = nullptr;
+    ((Task &)other).taskdata = nullptr;
+    ((Task &)other).free_taskdata = false;
+    ((Task &)other).freedata = nullptr;
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · task_pool.cc L107—L107
+
+<!-- annotated:f31065428231c4 -->
+
+```cpp
 #else
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L107—L107</summary>
+
+<!-- original:f31065428231c4:source/blender/blenlib/intern/task_pool.cc:107:107 -->
+
+```cpp
+#else
+```
+
+</details>
+
+<a id="f-cf8f82f313f854d2"></a>
+
+### `blender::Task::Task`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L108—L108。
+
+接口参数：
+
+- `const Task &other`
+
+**教学注释版**
+
+<!-- annotated:4349573ee525eb -->
+
+```cpp
   Task(const Task &other) = delete;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L108—L108</summary>
+
+<!-- original:4349573ee525eb:source/blender/blenlib/intern/task_pool.cc:108:108 -->
+
+```cpp
+  Task(const Task &other) = delete;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · task_pool.cc L109—L110
+
+<!-- annotated:570d0111c6ce67 -->
+
+```cpp
 #endif
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L109—L110</summary>
+
+<!-- original:570d0111c6ce67:source/blender/blenlib/intern/task_pool.cc:109:110 -->
+
+```cpp
+#endif
+
+```
+
+</details>
+
+<a id="f-ef40f0da690eb9a3"></a>
+
+### `blender::Task::operator=`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L111—L111。
+
+接口参数：
+
+- `const Task &other`
+
+**教学注释版**
+
+<!-- annotated:633e72d48e615d -->
+
+```cpp
   Task &operator=(const Task &other) = delete;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L111—L111</summary>
+
+<!-- original:633e72d48e615d:source/blender/blenlib/intern/task_pool.cc:111:111 -->
+
+```cpp
+  Task &operator=(const Task &other) = delete;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<a id="f-e6b387c21603e2f2"></a>
+
+### `blender::Task::operator=`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L112—L112。
+
+接口参数：
+
+- `Task &&other`
+
+**教学注释版**
+
+<!-- annotated:461f5237dfb35c -->
+
+```cpp
   Task &operator=(Task &&other) = delete;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L112—L112</summary>
+
+<!-- original:461f5237dfb35c:source/blender/blenlib/intern/task_pool.cc:112:112 -->
+
+```cpp
+  Task &operator=(Task &&other) = delete;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · task_pool.cc L113—L117
+
+<!-- annotated:66c179c307b3ad -->
+
+```cpp
 
   void operator()() const;
 };
 
 /* Execute task. */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L113—L117</summary>
+
+<!-- original:66c179c307b3ad:source/blender/blenlib/intern/task_pool.cc:113:117 -->
+
+```cpp
+
+  void operator()() const;
+};
+
+/* Execute task. */
+```
+
+</details>
+
+<a id="f-c05b54195be0238f"></a>
+
+### `blender::Task::operator()`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L118—L121。
+
+**教学注释版**
+
+<!-- annotated:f92cf8628703de -->
+
+```cpp
 void Task::operator()() const
 {
   run(pool, taskdata);
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L118—L121</summary>
+
+<!-- original:f92cf8628703de:source/blender/blenlib/intern/task_pool.cc:118:121 -->
+
+```cpp
+void Task::operator()() const
+{
+  run(pool, taskdata);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `run` → [blender::run · L80](08-%E4%BB%BB%E5%8A%A1%E9%9A%94%E7%A6%BB%E6%AD%BB%E9%94%81%E4%B8%8E%E5%AE%9E%E6%88%98.md#f-e0a9311a21289c7b)。
+
+### 类型布局、声明与编译条件 · task_pool.cc L122—L129
+
+<a id="t-6ca7f415b1e6"></a>
+
+<!-- annotated:c6f3ab776b0603 -->
+
+```cpp
 
 /* TBB Task Group.
  *
@@ -944,6 +1961,41 @@ void Task::operator()() const
 #ifdef WITH_TBB
 class TBBTaskGroup : public tbb::task_group {
  public:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L122—L129</summary>
+
+<!-- original:c6f3ab776b0603:source/blender/blenlib/intern/task_pool.cc:122:129 -->
+
+```cpp
+
+/* TBB Task Group.
+ *
+ * Subclass since there seems to be no other way to set priority. */
+
+#ifdef WITH_TBB
+class TBBTaskGroup : public tbb::task_group {
+ public:
+```
+
+</details>
+
+<a id="f-0e4272814046168f"></a>
+
+### `blender::TBBTaskGroup::TBBTaskGroup`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L130—L147。
+
+接口参数：
+
+- `eTaskPriority priority`
+
+**教学注释版**
+
+<!-- annotated:b382dbb4009e24 -->
+
+```cpp
   TBBTaskGroup(eTaskPriority priority)
   {
 #  if TBB_INTERFACE_VERSION_MAJOR >= 12
@@ -964,55 +2016,58 @@ class TBBTaskGroup : public tbb::task_group {
   }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L93 | 出现调用或函数声明 `defined`，对应表达式为 `(defined(_MSC_VER) && defined(__clang__) && TBB_INTERFACE_VERSION_MAJOR < 12)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L94 | 出现调用或函数声明 `Task`，对应表达式为 `Task(const Task &other)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L95 | 出现调用或函数声明 `pool`，对应表达式为 `: pool(other.pool),`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L96 | 出现调用或函数声明 `run`，对应表达式为 `run(other.run),`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L97 | 出现调用或函数声明 `taskdata`，对应表达式为 `taskdata(other.taskdata),`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L98 | 出现调用或函数声明 `free_taskdata`，对应表达式为 `free_taskdata(other.free_taskdata),`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L99 | 出现调用或函数声明 `freedata`，对应表达式为 `freedata(other.freedata)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L100 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L101 | 把右侧 `nullptr` 用于初始化或更新左侧 `((Task &)other).pool`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L102 | 把右侧 `nullptr` 用于初始化或更新左侧 `((Task &)other).run`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L103 | 把右侧 `nullptr` 用于初始化或更新左侧 `((Task &)other).taskdata`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L104 | 把右侧 `false` 用于初始化或更新左侧 `((Task &)other).free_taskdata`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L105 | 把右侧 `nullptr` 用于初始化或更新左侧 `((Task &)other).freedata`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L106 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L107 | 预处理阶段处理 #else。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L108 | 显式禁止接口：`Task(const Task &other) = delete;`。调用会在编译期被拒绝，常用于禁止复制或移动；这里没有释放对象或删除文件的运行时动作。 |
-| L109 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L111 | 显式禁止接口：`Task &operator=(const Task &other) = delete;`。调用会在编译期被拒绝，常用于禁止复制或移动；这里没有释放对象或删除文件的运行时动作。 |
-| L112 | 显式禁止接口：`Task &operator=(Task &&other) = delete;`。调用会在编译期被拒绝，常用于禁止复制或移动；这里没有释放对象或删除文件的运行时动作。 |
-| L114 | 运算符重载声明、定义或显式调用：`void operator()() const;`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L115 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L118 | 运算符重载声明、定义或显式调用：`void Task::operator()() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L119 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L120 | 出现调用或函数声明 `run`，对应表达式为 `run(pool, taskdata);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L121 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L127 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L128 | 声明或定义类型 `class TBBTaskGroup : public tbb::task_group`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L129 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L130 | 出现调用或函数声明 `TBBTaskGroup`，对应表达式为 `TBBTaskGroup(eTaskPriority priority)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L131 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L132 | 本行是连续声明或表达式的一部分：`#  if TBB_INTERFACE_VERSION_MAJOR >= 12`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L136 | 出现调用或函数声明 `UNUSED_VARS`，对应表达式为 `UNUSED_VARS(priority);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L137 | 本行是连续声明或表达式的一部分：`#  else`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L138 | 按 switch (priority) 选择状态处理路径；每个case的break、return或贯穿行为决定下一步。 |
-| L139 | 进入枚举或判别值对应分支 case TASK_PRIORITY_LOW:；结合状态定义和后续更新判断允许的转移。 |
-| L140 | 出现调用或函数声明 `set_priority`，对应表达式为 `my_context.set_priority(tbb::priority_low);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L141 | 离开最近的循环或switch；不是离开整个函数，后续清理和提交代码可能仍会执行。 |
-| L142 | 进入枚举或判别值对应分支 case TASK_PRIORITY_HIGH:；结合状态定义和后续更新判断允许的转移。 |
-| L143 | 出现调用或函数声明 `set_priority`，对应表达式为 `my_context.set_priority(tbb::priority_normal);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L144 | 离开最近的循环或switch；不是离开整个函数，后续清理和提交代码可能仍会执行。 |
-| L145 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L146 | 本行是连续声明或表达式的一部分：`#  endif`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L147 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L130—L147</summary>
 
-### task_pool.cc：L148—L178
+<!-- original:b382dbb4009e24:source/blender/blenlib/intern/task_pool.cc:130:147 -->
 
-<!-- source:source/blender/blenlib/intern/task_pool.cc:148:178 -->
+```cpp
+  TBBTaskGroup(eTaskPriority priority)
+  {
+#  if TBB_INTERFACE_VERSION_MAJOR >= 12
+    /* TODO: support priorities in TBB 2021, where they are only available as
+     * part of task arenas, no longer for task groups. Or remove support for
+     * task priorities if they are no longer useful. */
+    UNUSED_VARS(priority);
+#  else
+    switch (priority) {
+      case TASK_PRIORITY_LOW:
+        my_context.set_priority(tbb::priority_low);
+        break;
+      case TASK_PRIORITY_HIGH:
+        my_context.set_priority(tbb::priority_normal);
+        break;
+    }
+#  endif
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `UNUSED_VARS` → [UNUSED_VARS · L522](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-013582537634)；[UNUSED_VARS · L41](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GPU_shader_shared_utils-0adda3.md#m-05d9d7a33da0)；[UNUSED_VARS · L62](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GPU_shader_shared_utils-0adda3.md#m-e12c683a4aca)。宏定义由构建条件选择。
+- `my_context.set_priority` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L140。
+
+### 类型布局、声明与编译条件 · task_pool.cc L148—L179
+
+<a id="t-c81ed3f263e8"></a>
+
+<a id="t-f673c7364ef9"></a>
+
+`TaskPool`在这里声明的数据成员：
+
+- `TaskPoolType type`
+- `bool use_threads`
+- `void userdata`
+- `std::unique_ptr<TBBTaskGroup> tbb_group`
+- `bool is_suspended`
+- `Vector<Task> suspended_tasks`
+- `ListBaseT<ThreadSlot> background_threads`
+- `ThreadQueue background_queue`
+- `eTaskPriority priority`
+
+<!-- annotated:045f9ea365a2a0 -->
 
 ```cpp
 };
@@ -1046,38 +2101,112 @@ struct TaskPool {
   ThreadQueue *background_queue;
 
   eTaskPriority priority;
+
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L148 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L149 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L153 | 声明或定义类型 `enum TaskPoolType`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L154 | 本行是连续声明或表达式的一部分：`TASK_POOL_TBB,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L155 | 本行是连续声明或表达式的一部分：`TASK_POOL_TBB_SUSPENDED,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L156 | 本行是连续声明或表达式的一部分：`TASK_POOL_NO_THREADS,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L157 | 本行是连续声明或表达式的一部分：`TASK_POOL_BACKGROUND,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L158 | 本行是连续声明或表达式的一部分：`TASK_POOL_BACKGROUND_SERIAL,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L159 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L161 | 声明或定义类型 `struct TaskPool`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L162 | 声明成员、局部对象或完成语句 `TaskPoolType type`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L163 | 声明成员、局部对象或完成语句 `bool use_threads`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L165 | 声明成员、局部对象或完成语句 `void *userdata`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L167 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L169 | 声明成员、局部对象或完成语句 `std::unique_ptr<TBBTaskGroup> tbb_group`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L170 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L171 | 把右侧 `false` 用于初始化或更新左侧 `volatile bool is_suspended`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L172 | 声明成员、局部对象或完成语句 `Vector<Task> suspended_tasks`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L175 | 声明成员、局部对象或完成语句 `ListBaseT<ThreadSlot> background_threads`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L176 | 声明成员、局部对象或完成语句 `ThreadQueue *background_queue`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L178 | 声明成员、局部对象或完成语句 `eTaskPriority priority`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L148—L179</summary>
 
-### task_pool.cc：L179—L232
-
-<!-- source:source/blender/blenlib/intern/task_pool.cc:179:232 -->
+<!-- original:045f9ea365a2a0:source/blender/blenlib/intern/task_pool.cc:148:179 -->
 
 ```cpp
+};
+#endif
 
+/* Task Pool */
+
+enum TaskPoolType {
+  TASK_POOL_TBB,
+  TASK_POOL_TBB_SUSPENDED,
+  TASK_POOL_NO_THREADS,
+  TASK_POOL_BACKGROUND,
+  TASK_POOL_BACKGROUND_SERIAL,
+};
+
+struct TaskPool {
+  TaskPoolType type;
+  bool use_threads;
+
+  void *userdata;
+
+#ifdef WITH_TBB
+  /* TBB task pool. */
+  std::unique_ptr<TBBTaskGroup> tbb_group;
+#endif
+  volatile bool is_suspended = false;
+  Vector<Task> suspended_tasks;
+
+  /* Background task pool. */
+  ListBaseT<ThreadSlot> background_threads;
+  ThreadQueue *background_queue;
+
+  eTaskPriority priority;
+
+```
+
+</details>
+
+<a id="f-a6ea13407110dd69"></a>
+
+### `blender::TaskPool::TaskPool`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L180—L214。
+
+接口参数：
+
+- `const TaskPoolType type`
+- `const eTaskPriority priority`
+- `void *userdata`
+
+**教学注释版**
+
+<!-- annotated:fa80347beb9089 -->
+
+```cpp
+  TaskPool(const TaskPoolType type, const eTaskPriority priority, void *userdata)
+      : type(type), userdata(userdata), priority(priority)
+  {
+    this->use_threads = BLI_task_scheduler_num_threads() > 1 && type != TASK_POOL_NO_THREADS;
+
+    /* Background task pool uses regular TBB scheduling if available. Only when
+     * building without TBB or running with -t 1 do we need to ensure these tasks
+     * do not block the main thread. */
+    if (this->type == TASK_POOL_BACKGROUND && this->use_threads) {
+      this->type = TASK_POOL_TBB;
+    }
+
+    switch (this->type) {
+      case TASK_POOL_TBB:
+      case TASK_POOL_TBB_SUSPENDED:
+      case TASK_POOL_NO_THREADS: {
+        if (type == TASK_POOL_TBB_SUSPENDED) {
+          this->is_suspended = true;
+        }
+
+#ifdef WITH_TBB
+        if (use_threads) {
+          // [讲解] std::make_unique<TBBTaskGroup>：创建独占拥有的对象，拥有关系可移动，get返回的借用指针不自动延长寿命。
+          this->tbb_group = std::make_unique<TBBTaskGroup>(priority);
+        }
+#endif
+        break;
+      }
+      case TASK_POOL_BACKGROUND:
+      case TASK_POOL_BACKGROUND_SERIAL: {
+        this->background_queue = BLI_thread_queue_init();
+        BLI_threadpool_init(&this->background_threads, this->background_task_run, 1);
+        break;
+      }
+    }
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L180—L214</summary>
+
+<!-- original:fa80347beb9089:source/blender/blenlib/intern/task_pool.cc:180:214 -->
+
+```cpp
   TaskPool(const TaskPoolType type, const eTaskPriority priority, void *userdata)
       : type(type), userdata(userdata), priority(priority)
   {
@@ -1113,7 +2242,53 @@ struct TaskPool {
       }
     }
   }
+```
 
+</details>
+
+**沿实际写入检查状态**
+
+- `this->use_threads = BLI_task_scheduler_num_threads() > 1 && type != TASK_POOL_NO_THREADS;`
+- `this->type = TASK_POOL_TBB;`
+- `this->is_suspended = true;`
+- `this->tbb_group = std::make_unique<TBBTaskGroup>(priority);`
+- `this->background_queue = BLI_thread_queue_init();`
+
+**继续追踪实现**
+
+- `BLI_task_scheduler_num_threads` → [blender::BLI_task_scheduler_num_threads · L110](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-3c1a5dc8137998ab)。
+- `std::make_unique<TBBTaskGroup>` → [外部契约](https://eel.is/c++draft/unique.ptr.create)：创建独占拥有的对象，拥有关系可移动，get返回的借用指针不自动延长寿命。
+- `BLI_thread_queue_init` → [BLI_thread_queue_init · L627](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-threads-a036bf.md#f-898f4610019583c0)。
+- `BLI_threadpool_init` → [BLI_threadpool_init · L123](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-threads-a036bf.md#f-8cd7d1cb805be904)。
+
+<!-- annotated:13a45fd1ed3c68 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L215—L215</summary>
+
+<!-- original:13a45fd1ed3c68:source/blender/blenlib/intern/task_pool.cc:215:215 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-378035ed03998e66"></a>
+
+### `blender::TaskPool::~TaskPool`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L216—L232。
+
+**教学注释版**
+
+<!-- annotated:5120d2772b3c74 -->
+
+```cpp
   ~TaskPool()
   {
     switch (type) {
@@ -1133,66 +2308,94 @@ struct TaskPool {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L216—L232</summary>
 
-- 分支证据 `this->type == TASK_POOL_BACKGROUND && this->use_threads)`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `type == TASK_POOL_TBB_SUSPENDED)`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:5120d2772b3c74:source/blender/blenlib/intern/task_pool.cc:216:232 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L180 | 出现调用或函数声明 `TaskPool`，对应表达式为 `TaskPool(const TaskPoolType type, const eTaskPriority priority, void *userdata)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L181 | 出现调用或函数声明 `type`，对应表达式为 `: type(type), userdata(userdata), priority(priority)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L182 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L183 | 把右侧 `BLI_task_scheduler_num_threads() > 1 && type != TASK_POOL_NO_THREADS` 用于初始化或更新左侧 `this->use_threads`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L188 | 判断 `this->type == TASK_POOL_BACKGROUND && this->use_threads`，成立时进入本分支，否则继续后续路径。 |
-| L189 | 把右侧 `TASK_POOL_TBB` 用于初始化或更新左侧 `this->type`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L190 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L192 | 按 switch (this->type) 选择状态处理路径；每个case的break、return或贯穿行为决定下一步。 |
-| L193 | 进入枚举或判别值对应分支 case TASK_POOL_TBB:；结合状态定义和后续更新判断允许的转移。 |
-| L194 | 进入枚举或判别值对应分支 case TASK_POOL_TBB_SUSPENDED:；结合状态定义和后续更新判断允许的转移。 |
-| L195 | 进入枚举或判别值对应分支 case TASK_POOL_NO_THREADS: {；结合状态定义和后续更新判断允许的转移。 |
-| L196 | 判断 `type == TASK_POOL_TBB_SUSPENDED`，成立时进入本分支，否则继续后续路径。 |
-| L197 | 把右侧 `true` 用于初始化或更新左侧 `this->is_suspended`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L198 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L200 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L201 | 判断 `use_threads`，成立时进入本分支，否则继续后续路径。 |
-| L202 | 把右侧 `std::make_unique<TBBTaskGroup>(priority)` 用于初始化或更新左侧 `this->tbb_group`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L203 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L204 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L205 | 离开最近的循环或switch；不是离开整个函数，后续清理和提交代码可能仍会执行。 |
-| L206 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L207 | 进入枚举或判别值对应分支 case TASK_POOL_BACKGROUND:；结合状态定义和后续更新判断允许的转移。 |
-| L208 | 进入枚举或判别值对应分支 case TASK_POOL_BACKGROUND_SERIAL: {；结合状态定义和后续更新判断允许的转移。 |
-| L209 | 把右侧 `BLI_thread_queue_init()` 用于初始化或更新左侧 `this->background_queue`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L210 | 出现调用或函数声明 `BLI_threadpool_init`，对应表达式为 `BLI_threadpool_init(&this->background_threads, this->background_task_run, 1);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L211 | 离开最近的循环或switch；不是离开整个函数，后续清理和提交代码可能仍会执行。 |
-| L212 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L213 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L214 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L216 | 涉及析构接口或显式析构：`~TaskPool()`。检查目标对象已成功构造，且资源不会在另一条清理路径再次销毁。 |
-| L217 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L218 | 按 switch (type) 选择状态处理路径；每个case的break、return或贯穿行为决定下一步。 |
-| L219 | 进入枚举或判别值对应分支 case TASK_POOL_TBB:；结合状态定义和后续更新判断允许的转移。 |
-| L220 | 进入枚举或判别值对应分支 case TASK_POOL_TBB_SUSPENDED:；结合状态定义和后续更新判断允许的转移。 |
-| L221 | 进入枚举或判别值对应分支 case TASK_POOL_NO_THREADS:；结合状态定义和后续更新判断允许的转移。 |
-| L222 | 离开最近的循环或switch；不是离开整个函数，后续清理和提交代码可能仍会执行。 |
-| L223 | 进入枚举或判别值对应分支 case TASK_POOL_BACKGROUND:；结合状态定义和后续更新判断允许的转移。 |
-| L224 | 进入枚举或判别值对应分支 case TASK_POOL_BACKGROUND_SERIAL: {；结合状态定义和后续更新判断允许的转移。 |
-| L225 | 出现调用或函数声明 `background_task_pool_work_and_wait`，对应表达式为 `this->background_task_pool_work_and_wait();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L227 | 出现调用或函数声明 `BLI_threadpool_end`，对应表达式为 `BLI_threadpool_end(&this->background_threads);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L228 | 出现调用或函数声明 `BLI_thread_queue_free`，对应表达式为 `BLI_thread_queue_free(this->background_queue);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L229 | 离开最近的循环或switch；不是离开整个函数，后续清理和提交代码可能仍会执行。 |
-| L230 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L231 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L232 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  ~TaskPool()
+  {
+    switch (type) {
+      case TASK_POOL_TBB:
+      case TASK_POOL_TBB_SUSPENDED:
+      case TASK_POOL_NO_THREADS:
+        break;
+      case TASK_POOL_BACKGROUND:
+      case TASK_POOL_BACKGROUND_SERIAL: {
+        this->background_task_pool_work_and_wait();
 
-### task_pool.cc：L233—L288
+        BLI_threadpool_end(&this->background_threads);
+        BLI_thread_queue_free(this->background_queue);
+        break;
+      }
+    }
+  }
+```
 
-<!-- source:source/blender/blenlib/intern/task_pool.cc:233:288 -->
+</details>
+
+**继续追踪实现**
+
+- `this->background_task_pool_work_and_wait` → [TaskPool::background_task_pool_work_and_wait · L381](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-911240bda2553ebe)。
+- `BLI_threadpool_end` → [BLI_threadpool_end · L239](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-threads-a036bf.md#f-e4be8f92ee41d794)。
+- `BLI_thread_queue_free` → [BLI_thread_queue_free · L638](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-threads-a036bf.md#f-dbd52ce351a51b00)。
+
+<!-- annotated:6fc39d0f23ea74 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L233—L233</summary>
+
+<!-- original:6fc39d0f23ea74:source/blender/blenlib/intern/task_pool.cc:233:233 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b787fb68aba043f5"></a>
+
+### `blender::TaskPool::TaskPool`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L234—L234。
+
+接口参数：
+
+- `TaskPool &&other`
+
+**教学注释版**
+
+<!-- annotated:de0662db5861a5 -->
+
+```cpp
   TaskPool(TaskPool &&other) = delete;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L234—L234</summary>
+
+<!-- original:de0662db5861a5:source/blender/blenlib/intern/task_pool.cc:234:234 -->
+
+```cpp
+  TaskPool(TaskPool &&other) = delete;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · task_pool.cc L235—L245
+
+<!-- annotated:1830f51800565a -->
+
+```cpp
 #if 0
         : type(other.type), use_threads(other.use_threads), userdata(other.userdata)
     {
@@ -1204,14 +2407,188 @@ struct TaskPool {
     }
 #endif
 
-  TaskPool(const TaskPool &other) = delete;
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L235—L245</summary>
+
+<!-- original:1830f51800565a:source/blender/blenlib/intern/task_pool.cc:235:245 -->
+
+```cpp
+#if 0
+        : type(other.type), use_threads(other.use_threads), userdata(other.userdata)
+    {
+      other.pool = nullptr;
+      other.run = nullptr;
+      other.taskdata = nullptr;
+      other.free_taskdata = false;
+      other.freedata = nullptr;
+    }
+#endif
+
+```
+
+</details>
+
+<a id="f-7953f179d10cd6e6"></a>
+
+### `blender::TaskPool::TaskPool`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L246—L246。
+
+接口参数：
+
+- `const TaskPool &other`
+
+**教学注释版**
+
+<!-- annotated:7f79e05e24d26b -->
+
+```cpp
+  TaskPool(const TaskPool &other) = delete;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L246—L246</summary>
+
+<!-- original:7f79e05e24d26b:source/blender/blenlib/intern/task_pool.cc:246:246 -->
+
+```cpp
+  TaskPool(const TaskPool &other) = delete;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:d1954c181ecd8b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L247—L247</summary>
+
+<!-- original:d1954c181ecd8b:source/blender/blenlib/intern/task_pool.cc:247:247 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8389733365aae239"></a>
+
+### `blender::TaskPool::operator=`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L248—L248。
+
+接口参数：
+
+- `const TaskPool &other`
+
+**教学注释版**
+
+<!-- annotated:fd24a27c98388d -->
+
+```cpp
   TaskPool &operator=(const TaskPool &other) = delete;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L248—L248</summary>
+
+<!-- original:fd24a27c98388d:source/blender/blenlib/intern/task_pool.cc:248:248 -->
+
+```cpp
+  TaskPool &operator=(const TaskPool &other) = delete;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<a id="f-db8826e2b315a517"></a>
+
+### `blender::TaskPool::operator=`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L249—L249。
+
+接口参数：
+
+- `TaskPool &&other`
+
+**教学注释版**
+
+<!-- annotated:1af5839e0e3989 -->
+
+```cpp
   TaskPool &operator=(TaskPool &&other) = delete;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L249—L249</summary>
+
+<!-- original:1af5839e0e3989:source/blender/blenlib/intern/task_pool.cc:249:249 -->
+
+```cpp
+  TaskPool &operator=(TaskPool &&other) = delete;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · task_pool.cc L250—L253
+
+<!-- annotated:32148daa44b2cb -->
+
+```cpp
 
   /**
    * Create and add a new task to the pool.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L250—L253</summary>
+
+<!-- original:32148daa44b2cb:source/blender/blenlib/intern/task_pool.cc:250:253 -->
+
+```cpp
+
+  /**
+   * Create and add a new task to the pool.
+   */
+```
+
+</details>
+
+<a id="f-39285aac5009c990"></a>
+
+### `blender::TaskPool::task_push`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L254—L270。
+
+接口参数：
+
+- `TaskRunFunction run`
+- `void *taskdata`
+- `bool free_taskdata`
+- `TaskFreeFunction freedata`
+
+**教学注释版**
+
+<!-- annotated:476d696c9e9f6c -->
+
+```cpp
   void task_push(TaskRunFunction run,
                  void *taskdata,
                  bool free_taskdata,
@@ -1229,10 +2606,76 @@ struct TaskPool {
         break;
     }
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L254—L270</summary>
+
+<!-- original:476d696c9e9f6c:source/blender/blenlib/intern/task_pool.cc:254:270 -->
+
+```cpp
+  void task_push(TaskRunFunction run,
+                 void *taskdata,
+                 bool free_taskdata,
+                 TaskFreeFunction freedata)
+  {
+    switch (this->type) {
+      case TASK_POOL_TBB:
+      case TASK_POOL_TBB_SUSPENDED:
+      case TASK_POOL_NO_THREADS:
+        this->tbb_task_pool_run({this, run, taskdata, free_taskdata, freedata});
+        break;
+      case TASK_POOL_BACKGROUND:
+      case TASK_POOL_BACKGROUND_SERIAL:
+        this->background_task_pool_run({this, run, taskdata, free_taskdata, freedata});
+        break;
+    }
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->tbb_task_pool_run` → [blender::TaskPool::tbb_task_pool_run · L309](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-7b69247b35fb765b)。
+- `this->background_task_pool_run` → [TaskPool::background_task_pool_run · L365](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-40fa7f10bbd71e15)。
+
+### 类型布局、声明与编译条件 · task_pool.cc L271—L274
+
+<!-- annotated:48f29523301fd5 -->
+
+```cpp
 
   /**
    * Work and wait until all tasks are done.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L271—L274</summary>
+
+<!-- original:48f29523301fd5:source/blender/blenlib/intern/task_pool.cc:271:274 -->
+
+```cpp
+
+  /**
+   * Work and wait until all tasks are done.
+   */
+```
+
+</details>
+
+<a id="f-1312bba9b3d56019"></a>
+
+### `blender::TaskPool::work_and_wait`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L275—L288。
+
+**教学注释版**
+
+<!-- annotated:924730e50a4194 -->
+
+```cpp
   void work_and_wait()
   {
     switch (this->type) {
@@ -1249,57 +2692,38 @@ struct TaskPool {
   }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L234 | 显式禁止接口：`TaskPool(TaskPool &&other) = delete;`。调用会在编译期被拒绝，常用于禁止复制或移动；这里没有释放对象或删除文件的运行时动作。 |
-| L235 | 预处理阶段处理 #if 0。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L236 | 出现调用或函数声明 `type`，对应表达式为 `: type(other.type), use_threads(other.use_threads), userdata(other.userdata)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L237 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L238 | 把右侧 `nullptr` 用于初始化或更新左侧 `other.pool`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L239 | 把右侧 `nullptr` 用于初始化或更新左侧 `other.run`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L240 | 把右侧 `nullptr` 用于初始化或更新左侧 `other.taskdata`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L241 | 把右侧 `false` 用于初始化或更新左侧 `other.free_taskdata`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L242 | 把右侧 `nullptr` 用于初始化或更新左侧 `other.freedata`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L243 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L244 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L246 | 显式禁止接口：`TaskPool(const TaskPool &other) = delete;`。调用会在编译期被拒绝，常用于禁止复制或移动；这里没有释放对象或删除文件的运行时动作。 |
-| L248 | 显式禁止接口：`TaskPool &operator=(const TaskPool &other) = delete;`。调用会在编译期被拒绝，常用于禁止复制或移动；这里没有释放对象或删除文件的运行时动作。 |
-| L249 | 显式禁止接口：`TaskPool &operator=(TaskPool &&other) = delete;`。调用会在编译期被拒绝，常用于禁止复制或移动；这里没有释放对象或删除文件的运行时动作。 |
-| L254 | 出现调用或函数声明 `task_push`，对应表达式为 `void task_push(TaskRunFunction run,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L255 | 本行是连续声明或表达式的一部分：`void *taskdata,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L256 | 本行是连续声明或表达式的一部分：`bool free_taskdata,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L257 | 本行是连续声明或表达式的一部分：`TaskFreeFunction freedata)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L258 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L259 | 按 switch (this->type) 选择状态处理路径；每个case的break、return或贯穿行为决定下一步。 |
-| L260 | 进入枚举或判别值对应分支 case TASK_POOL_TBB:；结合状态定义和后续更新判断允许的转移。 |
-| L261 | 进入枚举或判别值对应分支 case TASK_POOL_TBB_SUSPENDED:；结合状态定义和后续更新判断允许的转移。 |
-| L262 | 进入枚举或判别值对应分支 case TASK_POOL_NO_THREADS:；结合状态定义和后续更新判断允许的转移。 |
-| L263 | 出现调用或函数声明 `tbb_task_pool_run`，对应表达式为 `this->tbb_task_pool_run({this, run, taskdata, free_taskdata, freedata});`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L264 | 离开最近的循环或switch；不是离开整个函数，后续清理和提交代码可能仍会执行。 |
-| L265 | 进入枚举或判别值对应分支 case TASK_POOL_BACKGROUND:；结合状态定义和后续更新判断允许的转移。 |
-| L266 | 进入枚举或判别值对应分支 case TASK_POOL_BACKGROUND_SERIAL:；结合状态定义和后续更新判断允许的转移。 |
-| L267 | 出现调用或函数声明 `background_task_pool_run`，对应表达式为 `this->background_task_pool_run({this, run, taskdata, free_taskdata, freedata});`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L268 | 离开最近的循环或switch；不是离开整个函数，后续清理和提交代码可能仍会执行。 |
-| L269 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L270 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L275 | 出现调用或函数声明 `work_and_wait`，对应表达式为 `void work_and_wait()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L276 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L277 | 按 switch (this->type) 选择状态处理路径；每个case的break、return或贯穿行为决定下一步。 |
-| L278 | 进入枚举或判别值对应分支 case TASK_POOL_TBB:；结合状态定义和后续更新判断允许的转移。 |
-| L279 | 进入枚举或判别值对应分支 case TASK_POOL_TBB_SUSPENDED:；结合状态定义和后续更新判断允许的转移。 |
-| L280 | 进入枚举或判别值对应分支 case TASK_POOL_NO_THREADS:；结合状态定义和后续更新判断允许的转移。 |
-| L281 | 出现调用或函数声明 `tbb_task_pool_work_and_wait`，对应表达式为 `this->tbb_task_pool_work_and_wait();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L282 | 离开最近的循环或switch；不是离开整个函数，后续清理和提交代码可能仍会执行。 |
-| L283 | 进入枚举或判别值对应分支 case TASK_POOL_BACKGROUND:；结合状态定义和后续更新判断允许的转移。 |
-| L284 | 进入枚举或判别值对应分支 case TASK_POOL_BACKGROUND_SERIAL:；结合状态定义和后续更新判断允许的转移。 |
-| L285 | 出现调用或函数声明 `background_task_pool_work_and_wait`，对应表达式为 `this->background_task_pool_work_and_wait();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L286 | 离开最近的循环或switch；不是离开整个函数，后续清理和提交代码可能仍会执行。 |
-| L287 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L288 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L275—L288</summary>
 
-### task_pool.cc：L289—L339
+<!-- original:924730e50a4194:source/blender/blenlib/intern/task_pool.cc:275:288 -->
 
-<!-- source:source/blender/blenlib/intern/task_pool.cc:289:339 -->
+```cpp
+  void work_and_wait()
+  {
+    switch (this->type) {
+      case TASK_POOL_TBB:
+      case TASK_POOL_TBB_SUSPENDED:
+      case TASK_POOL_NO_THREADS:
+        this->tbb_task_pool_work_and_wait();
+        break;
+      case TASK_POOL_BACKGROUND:
+      case TASK_POOL_BACKGROUND_SERIAL:
+        this->background_task_pool_work_and_wait();
+        break;
+    }
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->tbb_task_pool_work_and_wait` → [TaskPool::tbb_task_pool_work_and_wait · L341](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-8727a9f0e91d4cac)。
+- `this->background_task_pool_work_and_wait` → [TaskPool::background_task_pool_work_and_wait · L381](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-911240bda2553ebe)。
+
+### 类型布局、声明与编译条件 · task_pool.cc L289—L308
+
+<!-- annotated:f8f666ce1c4c7e -->
 
 ```cpp
 
@@ -1322,6 +2746,92 @@ struct TaskPool {
   static void *background_task_run(void *userdata);
 };
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L289—L308</summary>
+
+<!-- original:f8f666ce1c4c7e:source/blender/blenlib/intern/task_pool.cc:289:308 -->
+
+```cpp
+
+ private:
+  /* TBB Task Pool.
+   *
+   * Task pool using the TBB scheduler for tasks. When building without TBB
+   * support or running Blender with -t 1, this reverts to single threaded.
+   *
+   * Tasks may be suspended until in all are created, to make it possible to
+   * initialize data structures and create tasks in a single pass. */
+  void tbb_task_pool_run(Task &&task);
+  void tbb_task_pool_work_and_wait();
+
+  /* Background Task Pool.
+   *
+   * Fallback for running background tasks when building without TBB. */
+  void background_task_pool_run(Task &&task);
+  void background_task_pool_work_and_wait();
+  static void *background_task_run(void *userdata);
+};
+
+```
+
+</details>
+
+<a id="f-7b69247b35fb765b"></a>
+
+### `blender::TaskPool::tbb_task_pool_run`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L309—L338。
+
+接口参数：
+
+- `Task &&task`
+
+**教学注释版**
+
+<!-- annotated:67308083e01e87 -->
+
+```cpp
+void TaskPool::tbb_task_pool_run(Task &&task)
+{
+  BLI_assert(ELEM(this->type, TASK_POOL_TBB, TASK_POOL_TBB_SUSPENDED, TASK_POOL_NO_THREADS));
+  if (this->is_suspended) {
+    /* Suspended task that will be executed in work_and_wait(). */
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    this->suspended_tasks.append(std::move(task));
+
+    /* Added as part of original 'use TBB' commit (d8a3f3595af0fb). Unclear whether this is still
+     * needed, tests are passing on linux buildbot, but not sure if any would trigger the issue
+     * addressed by this code. So keeping around for now. */
+#if 0
+#  ifdef __GNUC__
+    /* Work around apparent compiler bug where task is not properly copied
+     * to task_mem. This appears unrelated to the use of placement new or
+     * move semantics, happens even writing to a plain C struct. Rather the
+     * call into TBB seems to have some indirect effect. */
+    std::atomic_thread_fence(std::memory_order_release);
+#  endif
+#endif
+  }
+#ifdef WITH_TBB
+  else if (this->use_threads) {
+    /* Execute in TBB task group. */
+    this->tbb_group->run(std::move(task));
+  }
+#endif
+  else {
+    /* Execute immediately. */
+    task();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L309—L338</summary>
+
+<!-- original:67308083e01e87:source/blender/blenlib/intern/task_pool.cc:309:338 -->
+
+```cpp
 void TaskPool::tbb_task_pool_run(Task &&task)
 {
   BLI_assert(ELEM(this->type, TASK_POOL_TBB, TASK_POOL_TBB_SUSPENDED, TASK_POOL_NO_THREADS));
@@ -1352,50 +2862,84 @@ void TaskPool::tbb_task_pool_run(Task &&task)
     /* Execute immediately. */
     task();
   }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `this->suspended_tasks.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L314。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+- `std::atomic_thread_fence` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
+- `this->tbb_group->run` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L332。
+- `task` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L337。
+
+### 类型布局、声明与编译条件 · task_pool.cc L339—L340
+
+<!-- annotated:8dcf9b6f21b922 -->
+
+```cpp
+}
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L339—L340</summary>
+
+<!-- original:8dcf9b6f21b922:source/blender/blenlib/intern/task_pool.cc:339:340 -->
+
+```cpp
+}
+
+```
+
+</details>
+
+<a id="f-8727a9f0e91d4cac"></a>
+
+### `TaskPool::tbb_task_pool_work_and_wait`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L341—L363。
+
+**教学注释版**
+
+<!-- annotated:695e66758e165c -->
+
+```cpp
+void TaskPool::tbb_task_pool_work_and_wait()
+{
+  BLI_assert(ELEM(this->type, TASK_POOL_TBB, TASK_POOL_TBB_SUSPENDED, TASK_POOL_NO_THREADS));
+  /* Start any suspended task now. */
+  if (!this->suspended_tasks.is_empty()) {
+    BLI_assert(this->is_suspended);
+    this->is_suspended = false;
+
+    for (Task &task : this->suspended_tasks) {
+      // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+      this->tbb_task_pool_run(std::move(task));
+    }
+    this->suspended_tasks.clear();
+  }
+
+#ifdef WITH_TBB
+  if (this->use_threads) {
+    /* This is called wait(), but internally it can actually do work. This
+     * matters because we don't want recursive usage of task pools to run
+     * out of threads and get stuck. */
+    this->tbb_group->wait();
+  }
+#endif
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L341—L363</summary>
 
-- 分支证据 `this->is_suspended)`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `this->use_threads)`：分别推演条件成立与不成立，核对相同出口处的状态。
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L290 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L298 | 声明接口 `void tbb_task_pool_run(Task &&task)`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L299 | 声明接口 `void tbb_task_pool_work_and_wait()`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L304 | 声明接口 `void background_task_pool_run(Task &&task)`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L305 | 声明接口 `void background_task_pool_work_and_wait()`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L306 | 声明接口 `static void *background_task_run(void *userdata)`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L307 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L309 | 出现调用或函数声明 `TaskPool::tbb_task_pool_run`，对应表达式为 `void TaskPool::tbb_task_pool_run(Task &&task)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L310 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L311 | 断言约束 `BLI_assert(ELEM(this->type, TASK_POOL_TBB, TASK_POOL_TBB_SUSPENDED, TASK_POOL_NO_THREADS));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L312 | 判断 `this->is_suspended`，成立时进入本分支，否则继续后续路径。 |
-| L314 | 出现调用或函数声明 `append`，对应表达式为 `this->suspended_tasks.append(std::move(task));`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L319 | 预处理阶段处理 #if 0。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L320 | 本行是连续声明或表达式的一部分：`#  ifdef __GNUC__`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L325 | 出现调用或函数声明 `std::atomic_thread_fence`，对应表达式为 `std::atomic_thread_fence(std::memory_order_release);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L326 | 本行是连续声明或表达式的一部分：`#  endif`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L327 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L328 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L329 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L330 | 判断 `this->use_threads`，成立时进入本分支，否则继续后续路径。 |
-| L332 | 出现调用或函数声明 `run`，对应表达式为 `this->tbb_group->run(std::move(task));`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L333 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L334 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L335 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L337 | 出现调用或函数声明 `task`，对应表达式为 `task();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L338 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L339 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-
-### task_pool.cc：L340—L390
-
-<!-- source:source/blender/blenlib/intern/task_pool.cc:340:390 -->
+<!-- original:695e66758e165c:source/blender/blenlib/intern/task_pool.cc:341:363 -->
 
 ```cpp
-
 void TaskPool::tbb_task_pool_work_and_wait()
 {
   BLI_assert(ELEM(this->type, TASK_POOL_TBB, TASK_POOL_TBB_SUSPENDED, TASK_POOL_NO_THREADS));
@@ -1419,7 +2963,80 @@ void TaskPool::tbb_task_pool_work_and_wait()
   }
 #endif
 }
+```
 
+</details>
+
+**沿实际写入检查状态**
+
+- `this->is_suspended = false;`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `this->suspended_tasks.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L345。
+- `this->tbb_task_pool_run` → [blender::TaskPool::tbb_task_pool_run · L309](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-7b69247b35fb765b)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+- `this->suspended_tasks.clear` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L352。
+- `this->tbb_group->wait` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L360。
+
+<!-- annotated:81363aff6356c2 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L364—L364</summary>
+
+<!-- original:81363aff6356c2:source/blender/blenlib/intern/task_pool.cc:364:364 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-40fa7f10bbd71e15"></a>
+
+### `TaskPool::background_task_pool_run`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L365—L379。
+
+接口参数：
+
+- `Task &&task`
+
+**教学注释版**
+
+<!-- annotated:003a7d09f86747 -->
+
+```cpp
+void TaskPool::background_task_pool_run(Task &&task)
+{
+  BLI_assert(ELEM(this->type, TASK_POOL_BACKGROUND, TASK_POOL_BACKGROUND_SERIAL));
+
+  // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+  Task *task_mem = MEM_new<Task>(__func__, std::move(task));
+  BLI_thread_queue_push(this->background_queue,
+                        task_mem,
+                        this->priority == TASK_PRIORITY_HIGH ?
+                            BLI_THREAD_QUEUE_WORK_PRIORITY_HIGH :
+                            BLI_THREAD_QUEUE_WORK_PRIORITY_NORMAL);
+
+  if (BLI_available_threads(&this->background_threads)) {
+    BLI_threadpool_insert(&this->background_threads, this);
+  }
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L365—L379</summary>
+
+<!-- original:003a7d09f86747:source/blender/blenlib/intern/task_pool.cc:365:379 -->
+
+```cpp
 void TaskPool::background_task_pool_run(Task &&task)
 {
   BLI_assert(ELEM(this->type, TASK_POOL_BACKGROUND, TASK_POOL_BACKGROUND_SERIAL));
@@ -1435,7 +3052,48 @@ void TaskPool::background_task_pool_run(Task &&task)
     BLI_threadpool_insert(&this->background_threads, this);
   }
 }
+```
 
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `MEM_new<Task>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+- `BLI_thread_queue_push` → [BLI_thread_queue_push · L648](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-threads-a036bf.md#f-07282fc3aa368002)。
+- `BLI_available_threads` → [BLI_available_threads · L148](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-threads-a036bf.md#f-3be0fe91623a6b7d)。
+- `BLI_threadpool_insert` → [BLI_threadpool_insert · L189](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-threads-a036bf.md#f-e28be3630192cc51)。
+
+<!-- annotated:7af42cc3ec4be4 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L380—L380</summary>
+
+<!-- original:7af42cc3ec4be4:source/blender/blenlib/intern/task_pool.cc:380:380 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-911240bda2553ebe"></a>
+
+### `TaskPool::background_task_pool_work_and_wait`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L381—L390。
+
+**教学注释版**
+
+<!-- annotated:8c0dc531450399 -->
+
+```cpp
 void TaskPool::background_task_pool_work_and_wait()
 {
   BLI_assert(ELEM(this->type, TASK_POOL_BACKGROUND, TASK_POOL_BACKGROUND_SERIAL));
@@ -1448,57 +3106,66 @@ void TaskPool::background_task_pool_work_and_wait()
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L381—L390</summary>
 
-- 分支证据 `!this->suspended_tasks.is_empty())`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `this->use_threads)`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:8c0dc531450399:source/blender/blenlib/intern/task_pool.cc:381:390 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L341 | 出现调用或函数声明 `TaskPool::tbb_task_pool_work_and_wait`，对应表达式为 `void TaskPool::tbb_task_pool_work_and_wait()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L342 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L343 | 断言约束 `BLI_assert(ELEM(this->type, TASK_POOL_TBB, TASK_POOL_TBB_SUSPENDED, TASK_POOL_NO_THREADS));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L345 | 判断 `!this->suspended_tasks.is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L346 | 断言约束 `BLI_assert(this->is_suspended);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L347 | 把右侧 `false` 用于初始化或更新左侧 `this->is_suspended`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L349 | 按 `for (Task &task : this->suspended_tasks)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L350 | 出现调用或函数声明 `tbb_task_pool_run`，对应表达式为 `this->tbb_task_pool_run(std::move(task));`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L351 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L352 | 出现调用或函数声明 `clear`，对应表达式为 `this->suspended_tasks.clear();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L353 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L355 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L356 | 判断 `this->use_threads`，成立时进入本分支，否则继续后续路径。 |
-| L360 | 出现调用或函数声明 `wait`，对应表达式为 `this->tbb_group->wait();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L361 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L362 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L363 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L365 | 出现调用或函数声明 `TaskPool::background_task_pool_run`，对应表达式为 `void TaskPool::background_task_pool_run(Task &&task)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L366 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L367 | 断言约束 `BLI_assert(ELEM(this->type, TASK_POOL_BACKGROUND, TASK_POOL_BACKGROUND_SERIAL));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L369 | 把右侧 `MEM_new<Task>(__func__, std::move(task))` 用于初始化或更新左侧 `Task *task_mem`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L370 | 出现调用或函数声明 `BLI_thread_queue_push`，对应表达式为 `BLI_thread_queue_push(this->background_queue,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L371 | 本行是连续声明或表达式的一部分：`task_mem,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L372 | 本行是连续声明或表达式的一部分：`this->priority == TASK_PRIORITY_HIGH ?`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L373 | 本行是连续声明或表达式的一部分：`BLI_THREAD_QUEUE_WORK_PRIORITY_HIGH :`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L374 | 声明成员、局部对象或完成语句 `BLI_THREAD_QUEUE_WORK_PRIORITY_NORMAL)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L376 | 判断 `BLI_available_threads(&this->background_threads)`，成立时进入本分支，否则继续后续路径。 |
-| L377 | 出现调用或函数声明 `BLI_threadpool_insert`，对应表达式为 `BLI_threadpool_insert(&this->background_threads, this);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L378 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L379 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L381 | 出现调用或函数声明 `TaskPool::background_task_pool_work_and_wait`，对应表达式为 `void TaskPool::background_task_pool_work_and_wait()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L382 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L383 | 断言约束 `BLI_assert(ELEM(this->type, TASK_POOL_BACKGROUND, TASK_POOL_BACKGROUND_SERIAL));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L387 | 出现调用或函数声明 `BLI_thread_queue_nowait`，对应表达式为 `BLI_thread_queue_nowait(this->background_queue);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L388 | 出现调用或函数声明 `BLI_thread_queue_wait_finish`，对应表达式为 `BLI_thread_queue_wait_finish(this->background_queue);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L389 | 出现调用或函数声明 `BLI_threadpool_clear`，对应表达式为 `BLI_threadpool_clear(&this->background_threads);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L390 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+void TaskPool::background_task_pool_work_and_wait()
+{
+  BLI_assert(ELEM(this->type, TASK_POOL_BACKGROUND, TASK_POOL_BACKGROUND_SERIAL));
 
-### task_pool.cc：L391—L439
+  /* Signal background thread to stop waiting for new tasks if none are
+   * left, and wait for tasks and thread to finish. */
+  BLI_thread_queue_nowait(this->background_queue);
+  BLI_thread_queue_wait_finish(this->background_queue);
+  BLI_threadpool_clear(&this->background_threads);
+}
+```
 
-<!-- source:source/blender/blenlib/intern/task_pool.cc:391:439 -->
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `BLI_thread_queue_nowait` → [BLI_thread_queue_nowait · L856](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-threads-a036bf.md#f-3291008250d7df5a)。
+- `BLI_thread_queue_wait_finish` → [BLI_thread_queue_wait_finish · L867](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-threads-a036bf.md#f-42cdeb752361f274)。
+- `BLI_threadpool_clear` → [BLI_threadpool_clear · L228](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-threads-a036bf.md#f-97161668e0bb7165)。
+
+<!-- annotated:7f9c729d41520e -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L391—L391</summary>
+
+<!-- original:7f9c729d41520e:source/blender/blenlib/intern/task_pool.cc:391:391 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-54f2b8e439ce0935"></a>
+
+### `TaskPool::background_task_run`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L392—L400。
+
+接口参数：
+
+- `void *userdata`
+
+**教学注释版**
+
+<!-- annotated:a4f795ec9c5f11 -->
+
+```cpp
 void *TaskPool::background_task_run(void *userdata)
 {
   TaskPool *pool = static_cast<TaskPool *>(userdata);
@@ -1508,14 +3175,137 @@ void *TaskPool::background_task_run(void *userdata)
   }
   return nullptr;
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L392—L400</summary>
+
+<!-- original:a4f795ec9c5f11:source/blender/blenlib/intern/task_pool.cc:392:400 -->
+
+```cpp
+void *TaskPool::background_task_run(void *userdata)
+{
+  TaskPool *pool = static_cast<TaskPool *>(userdata);
+  while (Task *task = static_cast<Task *>(BLI_thread_queue_pop(pool->background_queue))) {
+    (*task)();
+    MEM_delete(task);
+  }
+  return nullptr;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return nullptr;`
+
+**继续追踪实现**
+
+- `BLI_thread_queue_pop` → [BLI_thread_queue_pop · L717](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-threads-a036bf.md#f-6378c352bb86ccd7)。
+- `(*task)` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L396。
+- `MEM_delete` → [MEM_delete · L400](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-9049ffdd1682887c)。
+
+### 类型布局、声明与编译条件 · task_pool.cc L401—L403
+
+<!-- annotated:d44a7bb63cd5fc -->
+
+```cpp
 
 /* Task Pool public API. */
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L401—L403</summary>
+
+<!-- original:d44a7bb63cd5fc:source/blender/blenlib/intern/task_pool.cc:401:403 -->
+
+```cpp
+
+/* Task Pool public API. */
+
+```
+
+</details>
+
+<a id="f-1bbb9c0703fd163c"></a>
+
+### `BLI_task_pool_create`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L404—L407。
+
+接口参数：
+
+- `void *userdata`
+- `eTaskPriority priority`
+
+**教学注释版**
+
+<!-- annotated:35431de0223d90 -->
+
+```cpp
 TaskPool *BLI_task_pool_create(void *userdata, eTaskPriority priority)
 {
   return MEM_new<TaskPool>(__func__, TASK_POOL_TBB, priority, userdata);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L404—L407</summary>
+
+<!-- original:35431de0223d90:source/blender/blenlib/intern/task_pool.cc:404:407 -->
+
+```cpp
+TaskPool *BLI_task_pool_create(void *userdata, eTaskPriority priority)
+{
+  return MEM_new<TaskPool>(__func__, TASK_POOL_TBB, priority, userdata);
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return MEM_new<TaskPool>(__func__, TASK_POOL_TBB, priority, userdata);`
+
+**继续追踪实现**
+
+- `MEM_new<TaskPool>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
+
+<!-- annotated:a2ef130ea56624 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L408—L408</summary>
+
+<!-- original:a2ef130ea56624:source/blender/blenlib/intern/task_pool.cc:408:408 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-abf2820e6cdcaec7"></a>
+
+### `BLI_task_pool_create_background`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L409—L421。
+
+接口参数：
+
+- `void *userdata`
+- `eTaskPriority priority`
+
+**教学注释版**
+
+<!-- annotated:6581a8165bc8eb -->
+
+```cpp
 TaskPool *BLI_task_pool_create_background(void *userdata, eTaskPriority priority)
 {
   /* NOTE: In multi-threaded context, there is no differences with #BLI_task_pool_create(),
@@ -1529,7 +3319,72 @@ TaskPool *BLI_task_pool_create_background(void *userdata, eTaskPriority priority
    * busy with parent task in single-threaded context). */
   return MEM_new<TaskPool>(__func__, TASK_POOL_BACKGROUND, priority, userdata);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L409—L421</summary>
+
+<!-- original:6581a8165bc8eb:source/blender/blenlib/intern/task_pool.cc:409:421 -->
+
+```cpp
+TaskPool *BLI_task_pool_create_background(void *userdata, eTaskPriority priority)
+{
+  /* NOTE: In multi-threaded context, there is no differences with #BLI_task_pool_create(),
+   * but in single-threaded case it is ensured to have at least one worker thread to run on
+   * (i.e. you don't have to call #BLI_task_pool_work_and_wait
+   * on it to be sure it will be processed).
+   *
+   * NOTE: Background pools are non-recursive
+   * (that is, you should not create other background pools in tasks assigned to a background pool,
+   * they could end never being executed, since the 'fallback' background thread is already
+   * busy with parent task in single-threaded context). */
+  return MEM_new<TaskPool>(__func__, TASK_POOL_BACKGROUND, priority, userdata);
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return MEM_new<TaskPool>(__func__, TASK_POOL_BACKGROUND, priority, userdata);`
+
+**继续追踪实现**
+
+- `MEM_new<TaskPool>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
+
+<!-- annotated:4b6e80b3e3391e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L422—L422</summary>
+
+<!-- original:4b6e80b3e3391e:source/blender/blenlib/intern/task_pool.cc:422:422 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-4a09a2e3e7e6d25d"></a>
+
+### `BLI_task_pool_create_suspended`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L423—L429。
+
+接口参数：
+
+- `void *userdata`
+- `eTaskPriority priority`
+
+**教学注释版**
+
+<!-- annotated:c5de7e02caa376 -->
+
+```cpp
 TaskPool *BLI_task_pool_create_suspended(void *userdata, eTaskPriority priority)
 {
   /* NOTE: Similar to #BLI_task_pool_create() but does not schedule any tasks for execution
@@ -1537,65 +3392,246 @@ TaskPool *BLI_task_pool_create_suspended(void *userdata, eTaskPriority priority)
    * overhead when pushing huge amount of small initial tasks from the main thread. */
   return MEM_new<TaskPool>(__func__, TASK_POOL_TBB_SUSPENDED, priority, userdata);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L423—L429</summary>
+
+<!-- original:c5de7e02caa376:source/blender/blenlib/intern/task_pool.cc:423:429 -->
+
+```cpp
+TaskPool *BLI_task_pool_create_suspended(void *userdata, eTaskPriority priority)
+{
+  /* NOTE: Similar to #BLI_task_pool_create() but does not schedule any tasks for execution
+   * for until BLI_task_pool_work_and_wait() is called. This helps reducing threading
+   * overhead when pushing huge amount of small initial tasks from the main thread. */
+  return MEM_new<TaskPool>(__func__, TASK_POOL_TBB_SUSPENDED, priority, userdata);
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return MEM_new<TaskPool>(__func__, TASK_POOL_TBB_SUSPENDED, priority, userdata);`
+
+**继续追踪实现**
+
+- `MEM_new<TaskPool>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
+
+<!-- annotated:651b7f51375342 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L430—L430</summary>
+
+<!-- original:651b7f51375342:source/blender/blenlib/intern/task_pool.cc:430:430 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-924b86e55e2c790d"></a>
+
+### `BLI_task_pool_create_no_threads`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L431—L434。
+
+接口参数：
+
+- `void *userdata`
+
+**教学注释版**
+
+<!-- annotated:a07a6ab29d01bd -->
+
+```cpp
 TaskPool *BLI_task_pool_create_no_threads(void *userdata)
 {
   return MEM_new<TaskPool>(__func__, TASK_POOL_NO_THREADS, TASK_PRIORITY_HIGH, userdata);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L431—L434</summary>
+
+<!-- original:a07a6ab29d01bd:source/blender/blenlib/intern/task_pool.cc:431:434 -->
+
+```cpp
+TaskPool *BLI_task_pool_create_no_threads(void *userdata)
+{
+  return MEM_new<TaskPool>(__func__, TASK_POOL_NO_THREADS, TASK_PRIORITY_HIGH, userdata);
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return MEM_new<TaskPool>(__func__, TASK_POOL_NO_THREADS, TASK_PRIORITY_HIGH, userdata);`
+
+**继续追踪实现**
+
+- `MEM_new<TaskPool>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
+
+<!-- annotated:99c8e425ba7e63 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L435—L435</summary>
+
+<!-- original:99c8e425ba7e63:source/blender/blenlib/intern/task_pool.cc:435:435 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-26abbc160f60386d"></a>
+
+### `BLI_task_pool_create_background_serial`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L436—L439。
+
+接口参数：
+
+- `void *userdata`
+- `eTaskPriority priority`
+
+**教学注释版**
+
+<!-- annotated:b2c48d7745121a -->
+
+```cpp
 TaskPool *BLI_task_pool_create_background_serial(void *userdata, eTaskPriority priority)
 {
   return MEM_new<TaskPool>(__func__, TASK_POOL_BACKGROUND_SERIAL, priority, userdata);
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L436—L439</summary>
 
-- 分支证据 `Task *task = static_cast<Task *>(BLI_thread_queue_pop(pool->background_queue)))`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:b2c48d7745121a:source/blender/blenlib/intern/task_pool.cc:436:439 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L392 | 出现调用或函数声明 `TaskPool::background_task_run`，对应表达式为 `void *TaskPool::background_task_run(void *userdata)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L393 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L394 | 把右侧 `static_cast<TaskPool *>(userdata)` 用于初始化或更新左侧 `TaskPool *pool`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L395 | 按 `while (Task *task = static_cast<Task *>(BLI_thread_queue_pop(pool->background_queue)))` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L396 | 声明成员、局部对象或完成语句 `(*task)()`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L397 | 出现调用或函数声明 `MEM_delete`，对应表达式为 `MEM_delete(task);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L398 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L399 | 返回表达式 `nullptr`。 |
-| L400 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L404 | 出现调用或函数声明 `BLI_task_pool_create`，对应表达式为 `TaskPool *BLI_task_pool_create(void *userdata, eTaskPriority priority)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L405 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L406 | 返回表达式 `MEM_new<TaskPool>(__func__, TASK_POOL_TBB, priority, userdata)`。 |
-| L407 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L409 | 出现调用或函数声明 `BLI_task_pool_create_background`，对应表达式为 `TaskPool *BLI_task_pool_create_background(void *userdata, eTaskPriority priority)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L410 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L420 | 返回表达式 `MEM_new<TaskPool>(__func__, TASK_POOL_BACKGROUND, priority, userdata)`。 |
-| L421 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L423 | 出现调用或函数声明 `BLI_task_pool_create_suspended`，对应表达式为 `TaskPool *BLI_task_pool_create_suspended(void *userdata, eTaskPriority priority)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L424 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L428 | 返回表达式 `MEM_new<TaskPool>(__func__, TASK_POOL_TBB_SUSPENDED, priority, userdata)`。 |
-| L429 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L431 | 出现调用或函数声明 `BLI_task_pool_create_no_threads`，对应表达式为 `TaskPool *BLI_task_pool_create_no_threads(void *userdata)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L432 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L433 | 返回表达式 `MEM_new<TaskPool>(__func__, TASK_POOL_NO_THREADS, TASK_PRIORITY_HIGH, userdata)`。 |
-| L434 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L436 | 出现调用或函数声明 `BLI_task_pool_create_background_serial`，对应表达式为 `TaskPool *BLI_task_pool_create_background_serial(void *userdata, eTaskPriority priority)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L437 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L438 | 返回表达式 `MEM_new<TaskPool>(__func__, TASK_POOL_BACKGROUND_SERIAL, priority, userdata)`。 |
-| L439 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+TaskPool *BLI_task_pool_create_background_serial(void *userdata, eTaskPriority priority)
+{
+  return MEM_new<TaskPool>(__func__, TASK_POOL_BACKGROUND_SERIAL, priority, userdata);
+}
+```
 
-### task_pool.cc：L440—L465
+</details>
 
-<!-- source:source/blender/blenlib/intern/task_pool.cc:440:465 -->
+**结果出口**
+
+- `return MEM_new<TaskPool>(__func__, TASK_POOL_BACKGROUND_SERIAL, priority, userdata);`
+
+**继续追踪实现**
+
+- `MEM_new<TaskPool>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
+
+<!-- annotated:7a67186af00bc2 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L440—L440</summary>
+
+<!-- original:7a67186af00bc2:source/blender/blenlib/intern/task_pool.cc:440:440 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b9af08e8b1362aaa"></a>
+
+### `BLI_task_pool_free`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L441—L444。
+
+接口参数：
+
+- `TaskPool *pool`
+
+**教学注释版**
+
+<!-- annotated:61ef70c62f4386 -->
+
+```cpp
 void BLI_task_pool_free(TaskPool *pool)
 {
   MEM_delete(pool);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L441—L444</summary>
+
+<!-- original:61ef70c62f4386:source/blender/blenlib/intern/task_pool.cc:441:444 -->
+
+```cpp
+void BLI_task_pool_free(TaskPool *pool)
+{
+  MEM_delete(pool);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `MEM_delete` → [MEM_delete · L400](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-9049ffdd1682887c)。
+
+<!-- annotated:f657b52683f5e1 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L445—L445</summary>
+
+<!-- original:f657b52683f5e1:source/blender/blenlib/intern/task_pool.cc:445:445 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-16c248b3ea6653d2"></a>
+
+### `BLI_task_pool_push`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L446—L453。
+
+接口参数：
+
+- `TaskPool *pool`
+- `TaskRunFunction run`
+- `void *taskdata`
+- `bool free_taskdata`
+- `TaskFreeFunction freedata`
+
+**教学注释版**
+
+<!-- annotated:c74c2be52180b7 -->
+
+```cpp
 void BLI_task_pool_push(TaskPool *pool,
                         TaskRunFunction run,
                         void *taskdata,
@@ -1604,47 +3640,172 @@ void BLI_task_pool_push(TaskPool *pool,
 {
   pool->task_push(run, taskdata, free_taskdata, freedata);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L446—L453</summary>
+
+<!-- original:c74c2be52180b7:source/blender/blenlib/intern/task_pool.cc:446:453 -->
+
+```cpp
+void BLI_task_pool_push(TaskPool *pool,
+                        TaskRunFunction run,
+                        void *taskdata,
+                        bool free_taskdata,
+                        TaskFreeFunction freedata)
+{
+  pool->task_push(run, taskdata, free_taskdata, freedata);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `pool->task_push` → [blender::TaskPool::task_push · L254](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-39285aac5009c990)。
+
+<!-- annotated:93d446782e466c -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L454—L454</summary>
+
+<!-- original:93d446782e466c:source/blender/blenlib/intern/task_pool.cc:454:454 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-cece9e6aa22a9121"></a>
+
+### `BLI_task_pool_work_and_wait`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L455—L458。
+
+接口参数：
+
+- `TaskPool *pool`
+
+**教学注释版**
+
+<!-- annotated:3a4d906f84cb98 -->
+
+```cpp
 void BLI_task_pool_work_and_wait(TaskPool *pool)
 {
   pool->work_and_wait();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L455—L458</summary>
+
+<!-- original:3a4d906f84cb98:source/blender/blenlib/intern/task_pool.cc:455:458 -->
+
+```cpp
+void BLI_task_pool_work_and_wait(TaskPool *pool)
+{
+  pool->work_and_wait();
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `pool->work_and_wait` → [blender::TaskPool::work_and_wait · L275](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-1312bba9b3d56019)。
+
+<!-- annotated:869d948c362ba1 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L459—L459</summary>
+
+<!-- original:869d948c362ba1:source/blender/blenlib/intern/task_pool.cc:459:459 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-f4e86036a25f60c7"></a>
+
+### `BLI_task_pool_user_data`
+
+实现位置：[source/blender/blenlib/intern/task_pool.cc](../../../../../source/blender/blenlib/intern/task_pool.cc) · L460—L463。
+
+接口参数：
+
+- `TaskPool *pool`
+
+**教学注释版**
+
+<!-- annotated:8baba064ff2fe0 -->
+
+```cpp
 void *BLI_task_pool_user_data(TaskPool *pool)
 {
   return pool->userdata;
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L460—L463</summary>
+
+<!-- original:8baba064ff2fe0:source/blender/blenlib/intern/task_pool.cc:460:463 -->
+
+```cpp
+void *BLI_task_pool_user_data(TaskPool *pool)
+{
+  return pool->userdata;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return pool->userdata;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · task_pool.cc L464—L465
+
+<!-- annotated:257d0452827154 -->
+
+```cpp
 
 }  // namespace blender
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L441 | 出现调用或函数声明 `BLI_task_pool_free`，对应表达式为 `void BLI_task_pool_free(TaskPool *pool)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L442 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L443 | 出现调用或函数声明 `MEM_delete`，对应表达式为 `MEM_delete(pool);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L444 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L446 | 出现调用或函数声明 `BLI_task_pool_push`，对应表达式为 `void BLI_task_pool_push(TaskPool *pool,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L447 | 本行是连续声明或表达式的一部分：`TaskRunFunction run,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L448 | 本行是连续声明或表达式的一部分：`void *taskdata,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L449 | 本行是连续声明或表达式的一部分：`bool free_taskdata,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L450 | 本行是连续声明或表达式的一部分：`TaskFreeFunction freedata)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L451 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L452 | 出现调用或函数声明 `task_push`，对应表达式为 `pool->task_push(run, taskdata, free_taskdata, freedata);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L453 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L455 | 出现调用或函数声明 `BLI_task_pool_work_and_wait`，对应表达式为 `void BLI_task_pool_work_and_wait(TaskPool *pool)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L456 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L457 | 出现调用或函数声明 `work_and_wait`，对应表达式为 `pool->work_and_wait();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L458 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L460 | 出现调用或函数声明 `BLI_task_pool_user_data`，对应表达式为 `void *BLI_task_pool_user_data(TaskPool *pool)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L461 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L462 | 返回表达式 `pool->userdata`。 |
-| L463 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L465 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_pool.cc · L464—L465</summary>
 
-### task_scheduler.cc：L1—L47
+<!-- original:257d0452827154:source/blender/blenlib/intern/task_pool.cc:464:465 -->
 
-<!-- source:source/blender/blenlib/intern/task_scheduler.cc:1:47 -->
+```cpp
+
+}  // namespace blender
+```
+
+</details>
+
+### 类型布局、声明与编译条件 · task_scheduler.cc L1—L47
+
+<a id="t-5d757178782d"></a>
+
+<!-- annotated:42dc7e441f112a -->
 
 ```cpp
 /* SPDX-FileCopyrightText: 2023 Blender Authors
@@ -1696,58 +3857,298 @@ class FlushDenormalsObserver : public tbb::task_scheduler_observer {
  public:
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L11 | 引入编译依赖 "MEM_guardedalloc.h"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L13 | 引入编译依赖 "BLI_lazy_threading.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L14 | 引入编译依赖 "BLI_simd.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L15 | 引入编译依赖 "BLI_task_c.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L16 | 引入编译依赖 "BLI_threads.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L18 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L20 | 本行是连续声明或表达式的一部分：`#  include <tbb/blocked_range.h>`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L21 | 本行是连续声明或表达式的一部分：`#  include <tbb/task_arena.h>`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L22 | 本行是连续声明或表达式的一部分：`#  include <tbb/task_scheduler_observer.h>`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L23 | 本行是连续声明或表达式的一部分：`#  if TBB_INTERFACE_VERSION_MAJOR >= 10`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L24 | 本行是连续声明或表达式的一部分：`#    include <tbb/global_control.h>`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L25 | 本行是连续声明或表达式的一部分：`#    define WITH_TBB_GLOBAL_CONTROL`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L26 | 本行是连续声明或表达式的一部分：`#  endif`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L27 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L29 | 把后续声明放入 blender 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L33 | 把右侧 `1` 用于初始化或更新左侧 `static int task_scheduler_num_threads`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L34 | 预处理阶段处理 #ifdef WITH_TBB_GLOBAL_CONTROL。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L35 | 把右侧 `nullptr` 用于初始化或更新左侧 `static tbb::global_control *task_scheduler_global_control`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L36 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L38 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L46 | 声明或定义类型 `class FlushDenormalsObserver : public tbb::task_scheduler_observer`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L47 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L1—L47</summary>
 
-### task_scheduler.cc：L48—L101
+<!-- original:42dc7e441f112a:source/blender/blenlib/intern/task_scheduler.cc:1:47 -->
 
-<!-- source:source/blender/blenlib/intern/task_scheduler.cc:48:101 -->
+```cpp
+/* SPDX-FileCopyrightText: 2023 Blender Authors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
+/** \file
+ * \ingroup bli
+ *
+ * Task scheduler initialization.
+ */
+
+#include "MEM_guardedalloc.h"
+
+#include "BLI_lazy_threading.hh"
+#include "BLI_simd.hh"
+#include "BLI_task_c.hh"
+#include "BLI_threads.hh"
+
+#ifdef WITH_TBB
+/* Need to include at least one header to get the version define. */
+#  include <tbb/blocked_range.h>
+#  include <tbb/task_arena.h>
+#  include <tbb/task_scheduler_observer.h>
+#  if TBB_INTERFACE_VERSION_MAJOR >= 10
+#    include <tbb/global_control.h>
+#    define WITH_TBB_GLOBAL_CONTROL
+#  endif
+#endif
+
+namespace blender {
+
+/* Task Scheduler */
+
+static int task_scheduler_num_threads = 1;
+#ifdef WITH_TBB_GLOBAL_CONTROL
+static tbb::global_control *task_scheduler_global_control = nullptr;
+#endif
+
+#ifdef WITH_TBB
+/**
+ * Enables flush-to-zero and denormals-are-zero on every task scheduler thread.
+ *
+ * Denormal handling is part of the per-thread floating point state, so it has to be set on each
+ * thread rather than once at startup. Applying it consistently everywhere makes results
+ * reproducible no matter which thread a computation uses.
+ */
+class FlushDenormalsObserver : public tbb::task_scheduler_observer {
+ public:
+```
+
+</details>
+
+<a id="f-ff5dc789ad13d8eb"></a>
+
+### `blender::FlushDenormalsObserver::FlushDenormalsObserver`
+
+实现位置：[source/blender/blenlib/intern/task_scheduler.cc](../../../../../source/blender/blenlib/intern/task_scheduler.cc) · L48—L51。
+
+**教学注释版**
+
+<!-- annotated:fb1f7ee29e865b -->
 
 ```cpp
   FlushDenormalsObserver()
   {
     this->observe(true);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L48—L51</summary>
+
+<!-- original:fb1f7ee29e865b:source/blender/blenlib/intern/task_scheduler.cc:48:51 -->
+
+```cpp
+  FlushDenormalsObserver()
+  {
+    this->observe(true);
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->observe` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L50。
+
+<!-- annotated:16a30f9ce375b7 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L52—L52</summary>
+
+<!-- original:16a30f9ce375b7:source/blender/blenlib/intern/task_scheduler.cc:52:52 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-03931f4641132345"></a>
+
+### `blender::FlushDenormalsObserver::~FlushDenormalsObserver`
+
+实现位置：[source/blender/blenlib/intern/task_scheduler.cc](../../../../../source/blender/blenlib/intern/task_scheduler.cc) · L53—L56。
+
+**教学注释版**
+
+<!-- annotated:47bd10a1b596cb -->
+
+```cpp
   ~FlushDenormalsObserver() override
   {
     this->observe(false);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L53—L56</summary>
+
+<!-- original:47bd10a1b596cb:source/blender/blenlib/intern/task_scheduler.cc:53:56 -->
+
+```cpp
+  ~FlushDenormalsObserver() override
+  {
+    this->observe(false);
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->observe` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L55。
+
+<!-- annotated:6de0ae17422cb6 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L57—L57</summary>
+
+<!-- original:6de0ae17422cb6:source/blender/blenlib/intern/task_scheduler.cc:57:57 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-17a563159ebddcad"></a>
+
+### `blender::FlushDenormalsObserver::on_scheduler_entry`
+
+实现位置：[source/blender/blenlib/intern/task_scheduler.cc](../../../../../source/blender/blenlib/intern/task_scheduler.cc) · L58—L61。
+
+接口参数：
+
+- `bool`
+
+**教学注释版**
+
+<!-- annotated:615ba2a6ee5b1a -->
+
+```cpp
   void on_scheduler_entry(bool /*is_worker*/) override
   {
     SIMD_SET_FLUSH_TO_ZERO;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L58—L61</summary>
+
+<!-- original:615ba2a6ee5b1a:source/blender/blenlib/intern/task_scheduler.cc:58:61 -->
+
+```cpp
+  void on_scheduler_entry(bool /*is_worker*/) override
+  {
+    SIMD_SET_FLUSH_TO_ZERO;
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · task_scheduler.cc L62—L63
+
+<!-- annotated:4ca5ef7186f822 -->
+
+```cpp
 };
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L62—L63</summary>
+
+<!-- original:4ca5ef7186f822:source/blender/blenlib/intern/task_scheduler.cc:62:63 -->
+
+```cpp
+};
+
+```
+
+</details>
+
+<a id="f-46d3c115eb3e1766"></a>
+
+### `blender::ensure_flush_denormals_observer`
+
+实现位置：[source/blender/blenlib/intern/task_scheduler.cc](../../../../../source/blender/blenlib/intern/task_scheduler.cc) · L64—L67。
+
+**教学注释版**
+
+<!-- annotated:7499adc4707b3f -->
+
+```cpp
 static void ensure_flush_denormals_observer()
 {
   static FlushDenormalsObserver observer;
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L64—L67</summary>
+
+<!-- original:7499adc4707b3f:source/blender/blenlib/intern/task_scheduler.cc:64:67 -->
+
+```cpp
+static void ensure_flush_denormals_observer()
+{
+  static FlushDenormalsObserver observer;
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · task_scheduler.cc L68—L69
+
+<!-- annotated:2aa255c9b3ecc7 -->
+
+```cpp
 #endif
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L68—L69</summary>
+
+<!-- original:2aa255c9b3ecc7:source/blender/blenlib/intern/task_scheduler.cc:68:69 -->
+
+```cpp
+#endif
+
+```
+
+</details>
+
+<a id="f-2a9b04d296c08d20"></a>
+
+### `blender::BLI_task_scheduler_init`
+
+实现位置：[source/blender/blenlib/intern/task_scheduler.cc](../../../../../source/blender/blenlib/intern/task_scheduler.cc) · L70—L101。
+
+接口参数：
+
+- `const bool use_flush_denormals_to_zero`
+
+**教学注释版**
+
+<!-- annotated:ae156b3f8943f1 -->
+
+```cpp
 void BLI_task_scheduler_init(const bool use_flush_denormals_to_zero)
 {
   if (use_flush_denormals_to_zero) {
@@ -1782,72 +4183,207 @@ void BLI_task_scheduler_init(const bool use_flush_denormals_to_zero)
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L70—L101</summary>
 
-- 分支证据 `use_flush_denormals_to_zero)`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `threads_override_num > 0)`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:ae156b3f8943f1:source/blender/blenlib/intern/task_scheduler.cc:70:101 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L48 | 出现调用或函数声明 `FlushDenormalsObserver`，对应表达式为 `FlushDenormalsObserver()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L49 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L50 | 出现调用或函数声明 `observe`，对应表达式为 `this->observe(true);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L51 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L53 | 涉及析构接口或显式析构：`~FlushDenormalsObserver() override`。检查目标对象已成功构造，且资源不会在另一条清理路径再次销毁。 |
-| L54 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L55 | 出现调用或函数声明 `observe`，对应表达式为 `this->observe(false);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L56 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L58 | 出现调用或函数声明 `on_scheduler_entry`，对应表达式为 `void on_scheduler_entry(bool ) override`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L59 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L60 | 声明成员、局部对象或完成语句 `SIMD_SET_FLUSH_TO_ZERO`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L61 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L62 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L64 | 出现调用或函数声明 `ensure_flush_denormals_observer`，对应表达式为 `static void ensure_flush_denormals_observer()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L65 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L66 | 声明成员、局部对象或完成语句 `static FlushDenormalsObserver observer`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L67 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L68 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L70 | 出现调用或函数声明 `BLI_task_scheduler_init`，对应表达式为 `void BLI_task_scheduler_init(const bool use_flush_denormals_to_zero)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L71 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L72 | 判断 `use_flush_denormals_to_zero`，成立时进入本分支，否则继续后续路径。 |
-| L74 | 声明成员、局部对象或完成语句 `SIMD_SET_FLUSH_TO_ZERO`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L76 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L77 | 出现调用或函数声明 `ensure_flush_denormals_observer`，对应表达式为 `ensure_flush_denormals_observer();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L78 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L79 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L81 | 预处理阶段处理 #ifdef WITH_TBB_GLOBAL_CONTROL。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L82 | 把右侧 `BLI_system_num_threads_override_get()` 用于初始化或更新左侧 `const int threads_override_num`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L84 | 判断 `threads_override_num > 0`，成立时进入本分支，否则继续后续路径。 |
-| L87 | 把右侧 `MEM_new<tbb::global_control>(` 用于初始化或更新左侧 `task_scheduler_global_control`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L88 | 声明成员、局部对象或完成语句 `__func__, tbb::global_control::max_allowed_parallelism, threads_override_num)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L89 | 把右侧 `threads_override_num` 用于初始化或更新左侧 `task_scheduler_num_threads`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L90 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L91 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L96 | 把右侧 `BLI_system_thread_count()` 用于初始化或更新左侧 `task_scheduler_num_threads`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L97 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L98 | 预处理阶段处理 #else。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L99 | 把右侧 `BLI_system_thread_count()` 用于初始化或更新左侧 `task_scheduler_num_threads`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L100 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L101 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+void BLI_task_scheduler_init(const bool use_flush_denormals_to_zero)
+{
+  if (use_flush_denormals_to_zero) {
+    /* The main thread is not observed by the task scheduler, set it directly. */
+    SIMD_SET_FLUSH_TO_ZERO;
 
-### task_scheduler.cc：L102—L125
+#ifdef WITH_TBB
+    ensure_flush_denormals_observer();
+#endif
+  }
 
-<!-- source:source/blender/blenlib/intern/task_scheduler.cc:102:125 -->
+#ifdef WITH_TBB_GLOBAL_CONTROL
+  const int threads_override_num = BLI_system_num_threads_override_get();
+
+  if (threads_override_num > 0) {
+    /* Override number of threads. This settings is used within the lifetime
+     * of tbb::global_control, so we allocate it on the heap. */
+    task_scheduler_global_control = MEM_new<tbb::global_control>(
+        __func__, tbb::global_control::max_allowed_parallelism, threads_override_num);
+    task_scheduler_num_threads = threads_override_num;
+  }
+  else {
+    /* Let TBB choose the number of threads. For (legacy) code that calls
+     * BLI_task_scheduler_num_threads() we provide the system thread count.
+     * Ideally such code should be rewritten not to use the number of threads
+     * at all. */
+    task_scheduler_num_threads = BLI_system_thread_count();
+  }
+#else
+  task_scheduler_num_threads = BLI_system_thread_count();
+#endif
+}
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `task_scheduler_global_control = MEM_new<tbb::global_control>(`
+- `task_scheduler_num_threads = threads_override_num;`
+- `task_scheduler_num_threads = BLI_system_thread_count();`
+
+**继续追踪实现**
+
+- `ensure_flush_denormals_observer` → [blender::ensure_flush_denormals_observer · L64](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-46d3c115eb3e1766)。
+- `BLI_system_num_threads_override_get` → [BLI_system_num_threads_override_get · L299](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-threads-a036bf.md#f-60300d2554231109)。
+- `MEM_new<tbb::global_control>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
+- `BLI_system_thread_count` → [BLI_system_thread_count · L258](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-threads-a036bf.md#f-12aff71a24fecec4)。
+
+<!-- annotated:568a00fa9e5c98 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L102—L102</summary>
+
+<!-- original:568a00fa9e5c98:source/blender/blenlib/intern/task_scheduler.cc:102:102 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-18b11f0ce15cd616"></a>
+
+### `blender::BLI_task_scheduler_exit`
+
+实现位置：[source/blender/blenlib/intern/task_scheduler.cc](../../../../../source/blender/blenlib/intern/task_scheduler.cc) · L103—L108。
+
+**教学注释版**
+
+<!-- annotated:9de6626c4bf5b5 -->
+
+```cpp
 void BLI_task_scheduler_exit()
 {
 #ifdef WITH_TBB_GLOBAL_CONTROL
   MEM_delete(task_scheduler_global_control);
 #endif
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L103—L108</summary>
+
+<!-- original:9de6626c4bf5b5:source/blender/blenlib/intern/task_scheduler.cc:103:108 -->
+
+```cpp
+void BLI_task_scheduler_exit()
+{
+#ifdef WITH_TBB_GLOBAL_CONTROL
+  MEM_delete(task_scheduler_global_control);
+#endif
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `MEM_delete` → [MEM_delete · L400](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-9049ffdd1682887c)。
+
+<!-- annotated:64473e0696a6f7 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L109—L109</summary>
+
+<!-- original:64473e0696a6f7:source/blender/blenlib/intern/task_scheduler.cc:109:109 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3c1a5dc8137998ab"></a>
+
+### `blender::BLI_task_scheduler_num_threads`
+
+实现位置：[source/blender/blenlib/intern/task_scheduler.cc](../../../../../source/blender/blenlib/intern/task_scheduler.cc) · L110—L113。
+
+**教学注释版**
+
+<!-- annotated:5c5f28524cbdcf -->
+
+```cpp
 int BLI_task_scheduler_num_threads()
 {
   return task_scheduler_num_threads;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L110—L113</summary>
+
+<!-- original:5c5f28524cbdcf:source/blender/blenlib/intern/task_scheduler.cc:110:113 -->
+
+```cpp
+int BLI_task_scheduler_num_threads()
+{
+  return task_scheduler_num_threads;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return task_scheduler_num_threads;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:19bdcc6de7f923 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L114—L114</summary>
+
+<!-- original:19bdcc6de7f923:source/blender/blenlib/intern/task_scheduler.cc:114:114 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a745b4ecb6c311ab"></a>
+
+### `blender::BLI_task_isolate`
+
+实现位置：[source/blender/blenlib/intern/task_scheduler.cc](../../../../../source/blender/blenlib/intern/task_scheduler.cc) · L115—L123。
+
+接口参数：
+
+- `void (*func)(void *userdata)`
+- `void *userdata`
+- `void *userdata`
+
+**教学注释版**
+
+<!-- annotated:95d236d0a3697d -->
+
+```cpp
 void BLI_task_isolate(void (*func)(void *userdata), void *userdata)
 {
 #ifdef WITH_TBB
@@ -1857,288 +4393,149 @@ void BLI_task_isolate(void (*func)(void *userdata), void *userdata)
   func(userdata);
 #endif
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L115—L123</summary>
+
+<!-- original:95d236d0a3697d:source/blender/blenlib/intern/task_scheduler.cc:115:123 -->
+
+```cpp
+void BLI_task_isolate(void (*func)(void *userdata), void *userdata)
+{
+#ifdef WITH_TBB
+  lazy_threading::ReceiverIsolation isolation;
+  tbb::this_task_arena::isolate([&] { func(userdata); });
+#else
+  func(userdata);
+#endif
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `tbb::this_task_arena::isolate` → [外部契约](https://uxlfoundation.github.io/oneTBB/)：任务调度属于第三方运行时；检查任务寿命、等待与隔离规则，不能把并行等待当作普通同步函数调用。
+- `func` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L119。
+
+### 类型布局、声明与编译条件 · task_scheduler.cc L124—L125
+
+<!-- annotated:abec0994d8cc52 -->
+
+```cpp
 
 }  // namespace blender
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L103 | 出现调用或函数声明 `BLI_task_scheduler_exit`，对应表达式为 `void BLI_task_scheduler_exit()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L104 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L105 | 预处理阶段处理 #ifdef WITH_TBB_GLOBAL_CONTROL。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L106 | 出现调用或函数声明 `MEM_delete`，对应表达式为 `MEM_delete(task_scheduler_global_control);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L107 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L108 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L110 | 出现调用或函数声明 `BLI_task_scheduler_num_threads`，对应表达式为 `int BLI_task_scheduler_num_threads()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L111 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L112 | 返回表达式 `task_scheduler_num_threads`。 |
-| L113 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L115 | 出现调用或函数声明 `BLI_task_isolate`，对应表达式为 `void BLI_task_isolate(void (*func)(void *userdata), void *userdata)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L116 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L117 | 预处理阶段处理 #ifdef WITH_TBB。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L118 | 声明成员、局部对象或完成语句 `lazy_threading::ReceiverIsolation isolation`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L119 | 出现调用或函数声明 `tbb::this_task_arena::isolate`，对应表达式为 `tbb::this_task_arena::isolate([&] { func(userdata); });`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L120 | 预处理阶段处理 #else。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L121 | 出现调用或函数声明 `func`，对应表达式为 `func(userdata);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L122 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L123 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L125 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+<details>
+<summary>核对原始源码：source/blender/blenlib/intern/task_scheduler.cc · L124—L125</summary>
 
-## 五、接口定位、调用线索与生命周期
+<!-- original:abec0994d8cc52:source/blender/blenlib/intern/task_scheduler.cc:124:125 -->
 
-### 本篇声明与实现入口
+```cpp
 
-| 源码位置 | 实际声明片段 |
-|---|---|
-| [BLI_task.hh:L31](../../../../../source/blender/blenlib/BLI_task.hh#L31) | `inline void parallel_for_each(Range &&range, const Function &function)` |
-| [BLI_task.hh:L43](../../../../../source/blender/blenlib/BLI_task.hh#L43) | `void parallel_for_impl(IndexRange range,` |
-| [BLI_task.hh:L47](../../../../../source/blender/blenlib/BLI_task.hh#L47) | `void memory_bandwidth_bound_task_impl(FunctionRef<void()> function);` |
-| [BLI_task.hh:L48](../../../../../source/blender/blenlib/BLI_task.hh#L48) | `void max_threads_task_impl(int max_threads, FunctionRef<void()> function);` |
-| [BLI_task.hh:L69](../../../../../source/blender/blenlib/BLI_task.hh#L69) | `inline void parallel_for(const IndexRange range,` |
-| [BLI_task.hh:L89](../../../../../source/blender/blenlib/BLI_task.hh#L89) | `inline IndexRange align_sub_range(const IndexRange unaligned_range,` |
-| [BLI_task.hh:L115](../../../../../source/blender/blenlib/BLI_task.hh#L115) | `inline void parallel_for_aligned(const IndexRange range,` |
-| [BLI_task.hh:L127](../../../../../source/blender/blenlib/BLI_task.hh#L127) | `inline Value parallel_reduce(IndexRange range,` |
-| [BLI_task.hh:L145](../../../../../source/blender/blenlib/BLI_task.hh#L145) | `UNUSED_VARS(grain_size, reduction);` |
-| [BLI_task.hh:L151](../../../../../source/blender/blenlib/BLI_task.hh#L151) | `inline Value parallel_reduce_aligned(const IndexRange range,` |
-| [BLI_task.hh:L170](../../../../../source/blender/blenlib/BLI_task.hh#L170) | `inline Value parallel_deterministic_reduce(IndexRange range,` |
-| [BLI_task.hh:L188](../../../../../source/blender/blenlib/BLI_task.hh#L188) | `UNUSED_VARS(grain_size, reduction);` |
-| [BLI_task.hh:L212](../../../../../source/blender/blenlib/BLI_task.hh#L212) | `inline void parallel_invoke(const bool use_threading, Functions &&...functions)` |
-| [BLI_task.hh:L224](../../../../../source/blender/blenlib/BLI_task.hh#L224) | `template<typename Function> inline auto isolate_task(const Function &function)` |
-| [BLI_task.hh:L239](../../../../../source/blender/blenlib/BLI_task.hh#L239) | `inline void max_threads_task(const int max_threads, const Function &function)` |
-| [BLI_task.hh:L251](../../../../../source/blender/blenlib/BLI_task.hh#L251) | `inline void memory_bandwidth_bound_task(const int64_t approximate_bytes_touched,` |
-| [task_pool.cc:L34](../../../../../source/blender/blenlib/intern/task_pool.cc#L34) | `struct ThreadSlot;` |
-| [task_pool.cc:L41](../../../../../source/blender/blenlib/intern/task_pool.cc#L41) | `class Task` |
-| [task_pool.cc:L49](../../../../../source/blender/blenlib/intern/task_pool.cc#L49) | `Task(TaskPool *pool,` |
-| [task_pool.cc:L54](../../../../../source/blender/blenlib/intern/task_pool.cc#L54) | `: pool(pool), run(run), taskdata(taskdata), free_taskdata(free_taskdata), freedata(freedata)` |
-| [task_pool.cc:L65](../../../../../source/blender/blenlib/intern/task_pool.cc#L65) | `MEM_delete_void(taskdata);` |
-| [task_pool.cc:L74](../../../../../source/blender/blenlib/intern/task_pool.cc#L74) | `Task(Task &&other)` |
-| [task_pool.cc:L75](../../../../../source/blender/blenlib/intern/task_pool.cc#L75) | `: pool(other.pool),` |
-| [task_pool.cc:L94](../../../../../source/blender/blenlib/intern/task_pool.cc#L94) | `Task(const Task &other)` |
-| [task_pool.cc:L95](../../../../../source/blender/blenlib/intern/task_pool.cc#L95) | `: pool(other.pool),` |
-| [task_pool.cc:L108](../../../../../source/blender/blenlib/intern/task_pool.cc#L108) | `Task(const Task &other) = delete;` |
-| [task_pool.cc:L114](../../../../../source/blender/blenlib/intern/task_pool.cc#L114) | `void operator()() const;` |
-| [task_pool.cc:L118](../../../../../source/blender/blenlib/intern/task_pool.cc#L118) | `void Task::operator()() const` |
-| [task_pool.cc:L128](../../../../../source/blender/blenlib/intern/task_pool.cc#L128) | `class TBBTaskGroup : public tbb::task_group` |
-| [task_pool.cc:L130](../../../../../source/blender/blenlib/intern/task_pool.cc#L130) | `TBBTaskGroup(eTaskPriority priority)` |
-| [task_pool.cc:L136](../../../../../source/blender/blenlib/intern/task_pool.cc#L136) | `UNUSED_VARS(priority);` |
-| [task_pool.cc:L161](../../../../../source/blender/blenlib/intern/task_pool.cc#L161) | `struct TaskPool` |
-| [task_pool.cc:L180](../../../../../source/blender/blenlib/intern/task_pool.cc#L180) | `TaskPool(const TaskPoolType type, const eTaskPriority priority, void *userdata)` |
-| [task_pool.cc:L181](../../../../../source/blender/blenlib/intern/task_pool.cc#L181) | `: type(type), userdata(userdata), priority(priority)` |
-| [task_pool.cc:L210](../../../../../source/blender/blenlib/intern/task_pool.cc#L210) | `BLI_threadpool_init(&this->background_threads, this->background_task_run, 1);` |
-| [task_pool.cc:L227](../../../../../source/blender/blenlib/intern/task_pool.cc#L227) | `BLI_threadpool_end(&this->background_threads);` |
-| [task_pool.cc:L228](../../../../../source/blender/blenlib/intern/task_pool.cc#L228) | `BLI_thread_queue_free(this->background_queue);` |
-| [task_pool.cc:L234](../../../../../source/blender/blenlib/intern/task_pool.cc#L234) | `TaskPool(TaskPool &&other) = delete;` |
-| [task_pool.cc:L236](../../../../../source/blender/blenlib/intern/task_pool.cc#L236) | `: type(other.type), use_threads(other.use_threads), userdata(other.userdata)` |
-| [task_pool.cc:L246](../../../../../source/blender/blenlib/intern/task_pool.cc#L246) | `TaskPool(const TaskPool &other) = delete;` |
-| [task_pool.cc:L254](../../../../../source/blender/blenlib/intern/task_pool.cc#L254) | `void task_push(TaskRunFunction run,` |
-| [task_pool.cc:L275](../../../../../source/blender/blenlib/intern/task_pool.cc#L275) | `void work_and_wait()` |
-| [task_pool.cc:L298](../../../../../source/blender/blenlib/intern/task_pool.cc#L298) | `void tbb_task_pool_run(Task &&task);` |
-| [task_pool.cc:L299](../../../../../source/blender/blenlib/intern/task_pool.cc#L299) | `void tbb_task_pool_work_and_wait();` |
-| [task_pool.cc:L304](../../../../../source/blender/blenlib/intern/task_pool.cc#L304) | `void background_task_pool_run(Task &&task);` |
-| [task_pool.cc:L305](../../../../../source/blender/blenlib/intern/task_pool.cc#L305) | `void background_task_pool_work_and_wait();` |
-| [task_pool.cc:L306](../../../../../source/blender/blenlib/intern/task_pool.cc#L306) | `static void *background_task_run(void *userdata);` |
-| [task_pool.cc:L309](../../../../../source/blender/blenlib/intern/task_pool.cc#L309) | `void TaskPool::tbb_task_pool_run(Task &&task)` |
-| [task_pool.cc:L330](../../../../../source/blender/blenlib/intern/task_pool.cc#L330) | `else if (this->use_threads)` |
-| [task_pool.cc:L341](../../../../../source/blender/blenlib/intern/task_pool.cc#L341) | `void TaskPool::tbb_task_pool_work_and_wait()` |
-| [task_pool.cc:L365](../../../../../source/blender/blenlib/intern/task_pool.cc#L365) | `void TaskPool::background_task_pool_run(Task &&task)` |
-| [task_pool.cc:L370](../../../../../source/blender/blenlib/intern/task_pool.cc#L370) | `BLI_thread_queue_push(this->background_queue,` |
-| [task_pool.cc:L377](../../../../../source/blender/blenlib/intern/task_pool.cc#L377) | `BLI_threadpool_insert(&this->background_threads, this);` |
-| [task_pool.cc:L381](../../../../../source/blender/blenlib/intern/task_pool.cc#L381) | `void TaskPool::background_task_pool_work_and_wait()` |
-| [task_pool.cc:L387](../../../../../source/blender/blenlib/intern/task_pool.cc#L387) | `BLI_thread_queue_nowait(this->background_queue);` |
-| [task_pool.cc:L388](../../../../../source/blender/blenlib/intern/task_pool.cc#L388) | `BLI_thread_queue_wait_finish(this->background_queue);` |
-| [task_pool.cc:L389](../../../../../source/blender/blenlib/intern/task_pool.cc#L389) | `BLI_threadpool_clear(&this->background_threads);` |
-| [task_pool.cc:L392](../../../../../source/blender/blenlib/intern/task_pool.cc#L392) | `void *TaskPool::background_task_run(void *userdata)` |
-| [task_pool.cc:L397](../../../../../source/blender/blenlib/intern/task_pool.cc#L397) | `MEM_delete(task);` |
-| [task_pool.cc:L404](../../../../../source/blender/blenlib/intern/task_pool.cc#L404) | `TaskPool *BLI_task_pool_create(void *userdata, eTaskPriority priority)` |
-| [task_pool.cc:L409](../../../../../source/blender/blenlib/intern/task_pool.cc#L409) | `TaskPool *BLI_task_pool_create_background(void *userdata, eTaskPriority priority)` |
-| [task_pool.cc:L423](../../../../../source/blender/blenlib/intern/task_pool.cc#L423) | `TaskPool *BLI_task_pool_create_suspended(void *userdata, eTaskPriority priority)` |
-| [task_pool.cc:L431](../../../../../source/blender/blenlib/intern/task_pool.cc#L431) | `TaskPool *BLI_task_pool_create_no_threads(void *userdata)` |
-| [task_pool.cc:L436](../../../../../source/blender/blenlib/intern/task_pool.cc#L436) | `TaskPool *BLI_task_pool_create_background_serial(void *userdata, eTaskPriority priority)` |
-| [task_pool.cc:L441](../../../../../source/blender/blenlib/intern/task_pool.cc#L441) | `void BLI_task_pool_free(TaskPool *pool)` |
-| [task_pool.cc:L443](../../../../../source/blender/blenlib/intern/task_pool.cc#L443) | `MEM_delete(pool);` |
-| [task_pool.cc:L446](../../../../../source/blender/blenlib/intern/task_pool.cc#L446) | `void BLI_task_pool_push(TaskPool *pool,` |
-| [task_pool.cc:L455](../../../../../source/blender/blenlib/intern/task_pool.cc#L455) | `void BLI_task_pool_work_and_wait(TaskPool *pool)` |
-| [task_pool.cc:L460](../../../../../source/blender/blenlib/intern/task_pool.cc#L460) | `void *BLI_task_pool_user_data(TaskPool *pool)` |
-| [task_scheduler.cc:L46](../../../../../source/blender/blenlib/intern/task_scheduler.cc#L46) | `class FlushDenormalsObserver : public tbb::task_scheduler_observer` |
-| [task_scheduler.cc:L48](../../../../../source/blender/blenlib/intern/task_scheduler.cc#L48) | `FlushDenormalsObserver()` |
-| [task_scheduler.cc:L58](../../../../../source/blender/blenlib/intern/task_scheduler.cc#L58) | `void on_scheduler_entry(bool /*is_worker*/) override` |
-| [task_scheduler.cc:L64](../../../../../source/blender/blenlib/intern/task_scheduler.cc#L64) | `static void ensure_flush_denormals_observer()` |
-| [task_scheduler.cc:L70](../../../../../source/blender/blenlib/intern/task_scheduler.cc#L70) | `void BLI_task_scheduler_init(const bool use_flush_denormals_to_zero)` |
-| [task_scheduler.cc:L103](../../../../../source/blender/blenlib/intern/task_scheduler.cc#L103) | `void BLI_task_scheduler_exit()` |
-| [task_scheduler.cc:L106](../../../../../source/blender/blenlib/intern/task_scheduler.cc#L106) | `MEM_delete(task_scheduler_global_control);` |
-| [task_scheduler.cc:L110](../../../../../source/blender/blenlib/intern/task_scheduler.cc#L110) | `int BLI_task_scheduler_num_threads()` |
-| [task_scheduler.cc:L115](../../../../../source/blender/blenlib/intern/task_scheduler.cc#L115) | `void BLI_task_isolate(void (*func)(void *userdata), void *userdata)` |
-
-### 同名符号出现位置
-
-以下表提供跨文件阅读入口，包含声明、调用或测试使用；没有经过完整C++名称解析，不把它命名为已证明的运行时调用图。
-
-| 符号 | 位置 | 文本证据 |
-|---|---|---|
-| `parallel_for_impl` | [task_range.cc:L251](../../../../../source/blender/blenlib/intern/task_range.cc#L251) | `void parallel_for_impl(const IndexRange range,` |
-| `memory_bandwidth_bound_task_impl` | [task_range.cc:L291](../../../../../source/blender/blenlib/intern/task_range.cc#L291) | `void memory_bandwidth_bound_task_impl(const FunctionRef<void()> function)` |
-| `max_threads_task_impl` | [task_range.cc:L319](../../../../../source/blender/blenlib/intern/task_range.cc#L319) | `void max_threads_task_impl(const int max_threads, const FunctionRef<void()> function)` |
-| `parallel_for` | [geometry_fields.cc:L1161](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L1161) | `threading::parallel_for(grease_pencil->layers().index_range(), 8, [&](const IndexRange range) {` |
-| `parallel_for` | [mesh.cc:L813](../../../../../source/blender/blenkernel/intern/mesh.cc#L813) | `threading::parallel_for(leaf_indices.index_range(), 8, [&](const IndexRange range) {` |
-| `parallel_for` | [mesh.cc:L2035](../../../../../source/blender/blenkernel/intern/mesh.cc#L2035) | `threading::parallel_for(` |
-| `parallel_for_aligned` | [multi_function.cc:L150](../../../../../source/blender/functions/intern/multi_function.cc#L150) | `threading::parallel_for_aligned(` |
-| `parallel_reduce` | [mesh.cc:L760](../../../../../source/blender/blenkernel/intern/mesh.cc#L760) | `bounds = threading::parallel_reduce(` |
-| `parallel_reduce` | [mesh.cc:L877](../../../../../source/blender/blenkernel/intern/mesh.cc#L877) | `const Bounds<float3> bounds = threading::parallel_reduce(` |
-| `parallel_reduce` | [BLI_array_utils.hh:L481](../../../../../source/blender/blenlib/BLI_array_utils.hh#L481) | `const T *max_it = threading::parallel_reduce(` |
-| `UNUSED_VARS` | [mesh_mapping.cc:L955](../../../../../source/blender/blenkernel/intern/mesh_mapping.cc#L955) | `UNUSED_VARS(vert_positions);` |
-| `UNUSED_VARS` | [task_graph.cc:L65](../../../../../source/blender/blenlib/intern/task_graph.cc#L65) | `UNUSED_VARS(task_graph);` |
-| `UNUSED_VARS` | [task_graph.cc:L113](../../../../../source/blender/blenlib/intern/task_graph.cc#L113) | `UNUSED_VARS(task_graph);` |
-| `parallel_invoke` | [kdtree.cc:L403](../../../../../source/blender/blenlib/intern/kdtree.cc#L403) | `threading::parallel_invoke(` |
-| `parallel_invoke` | [task_range.cc:L242](../../../../../source/blender/blenlib/intern/task_range.cc#L242) | `threading::parallel_invoke(` |
-| `isolate_task` | [index_mask.cc:L79](../../../../../source/blender/blenlib/intern/index_mask.cc#L79) | `threading::isolate_task([&]() {` |
-| `isolate_task` | [lazy_function_graph_executor_generic.hh:L818](../../../../../source/blender/functions/intern/lazy_function_graph_executor_generic.hh#L818) | `threading::isolate_task([&]() { f(locked_node); });` |
-| `max_threads_task` | [kdtree.cc:L207](../../../../../source/blender/blenlib/intern/kdtree.cc#L207) | `threading::max_threads_task(parallel_build_threads(size),` |
-| `memory_bandwidth_bound_task` | [mesh_runtime.cc:L72](../../../../../source/blender/blenkernel/intern/mesh_runtime.cc#L72) | `threading::memory_bandwidth_bound_task(indices_to_set.size(), [&]() {` |
-| `memory_bandwidth_bound_task` | [offset_indices.cc:L70](../../../../../source/blender/blenlib/intern/offset_indices.cc#L70) | `threading::memory_bandwidth_bound_task(offsets.size_in_bytes(), [&]() {` |
-| `memory_bandwidth_bound_task` | [offset_indices.cc:L100](../../../../../source/blender/blenlib/intern/offset_indices.cc#L100) | `threading::memory_bandwidth_bound_task(` |
-| `MEM_delete_void` | [BLI_allocator.hh:L62](../../../../../source/blender/blenlib/BLI_allocator.hh#L62) | `MEM_delete_void(ptr);` |
-| `MEM_delete_void` | [BLI_allocator.hh:L92](../../../../../source/blender/blenlib/BLI_allocator.hh#L92) | `MEM_delete_void(ptr);` |
-| `MEM_delete_void` | [generic_virtual_array.cc:L250](../../../../../source/blender/blenlib/intern/generic_virtual_array.cc#L250) | `MEM_delete_void(const_cast<void *>(value_));` |
-| `operator` | [BKE_attribute_storage.hh:L127](../../../../../source/blender/blenkernel/BKE_attribute_storage.hh#L127) | `StringRef operator()(const std::unique_ptr<Attribute> &value) const` |
-| `operator` | [BLI_cpp_type.hh:L441](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L441) | `fn.template operator()<T>();` |
-| `operator` | [BLI_function_ref.hh:L147](../../../../../source/blender/blenlib/BLI_function_ref.hh#L147) | `Ret operator()(Params... params) const` |
-| `type` | [BKE_attribute.hh:L82](../../../../../source/blender/blenkernel/BKE_attribute.hh#L82) | `AttributeInit(const Type type) : type(type) {}` |
-| `type` | [BKE_attribute.hh:L735](../../../../../source/blender/blenkernel/BKE_attribute.hh#L735) | `if (!attribute.varray.type().is<T>()) {` |
-| `type` | [BKE_geometry_fields.hh:L193](../../../../../source/blender/blenkernel/BKE_geometry_fields.hh#L193) | `GeometryComponent::Type type() const` |
-
-### 生命周期推理图
-
-```mermaid
-flowchart LR
-  O["调用者或源数据拥有者"]:::input
-  V["任务池与TBB接入的接口与状态"]:::abstraction
-  B["借用地址、引用或视图"]:::data
-  W["实际计算或修改"]:::compute
-  R["结果与清理责任"]:::result
-  O -->|"创建与配置"| V
-  O -->|"保障寿命"| B
-  B -->|"访问前验证"| W
-  V -->|"规定操作"| W
-  W -->|"交付或销毁"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+}  // namespace blender
 ```
 
-这是审查生命周期的通用模型。具体类是否拥有数据由本篇成员、构造、析构和调用者一起证明；任何箭头都不自动代表shared_ptr。
+</details>
 
-## 六、把代码放进具体数据中推演
+## 语法与相关类型
 
-本方向的共同数值模型如下。本篇的专门检查是：对小任务与重任务分别比较串行和并行基线。
+### 模板 template
 
-| 步骤 | 数据或状态 | 为什么需要这一步 |
-|---|---|---|
-| 变化 | 父对象变换修改 | 只记录相关源变化 |
-| 传播 | 子对象变换受影响 | 标记不等于立即运行 |
-| 控制依赖 | 修改器开关由驱动决定 | 需要先更新控制状态 |
-| 就绪 | 前置结果均完成 | 操作才能加入可运行集合 |
-| 执行 | 任务池处理独立操作 | 小任务不一定从并行获益 |
-| 等待 | 可能发生任务窃取 | 检查嵌套锁与外部运行时约束 |
+模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
 
-```mermaid
-flowchart TB
-  T0["父对象变换修改"]:::input
-  T1["子对象变换受影响"]:::compute
-  T2["修改器开关由驱动决定"]:::compute
-  T3["前置结果均完成"]:::compute
-  T4["任务池处理独立操作"]:::compute
-  T5["可能发生任务窃取"]:::result
-  T0 -->|"传播"| T1
-  T1 -->|"控制依赖"| T2
-  T2 -->|"就绪"| T3
-  T3 -->|"执行"| T4
-  T4 -->|"等待"| T5
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
+把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
 
-图是教学推演模型；精确分支与状态更新以本篇摘录及调用契约为准。
+### 依赖名称 typename
 
-### 本篇独立练习与参考思路
+typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+
+区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+
+### 只读限定 const
+
+const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
+
+分别写T* const、const T*与const T* const，并画出不可修改的层次。
+
+### 移动转换 std::move
+
+std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
+
+记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
+
+### 完美转发 std::forward
+
+std::forward在转发引用模板中恢复调用者原来的值类别。它依赖推导出的模板实参；无条件move会改变左值调用者的语义。
+
+对同一接口分别传入左值、临时对象和const左值，记录实际重载。
+
+### 异常边界 try与catch
+
+try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
+
+在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
+
+### 显式静态转换 static_cast
+
+static_cast表达编译期允许的转换，不会自动验证运行时真实类型、指针寿命或索引边界。由void指针恢复T指针时，调用者仍须保证实际存储中确有合法T对象。
+
+标出转换前后的类型以及正确性依据来自哪里。
+
+### 覆写检查 override
+
+override要求函数确实覆盖基类虚函数，可捕获参数类型和const限定不匹配。它不改变基类规定的生命周期或线程约束。
+
+故意改变一个参数或const，观察编译器如何拒绝误写的新函数。
+
+### 原子操作 atomic
+
+原子性保护相应原子对象的访问；发布其他普通数据还要分析内存序。多个原子字段分别安全不等于复合不变量整体原子。
+
+画出写数据、发布ready与读ready、读数据的顺序关系。
+
+### 构造与new表达式
+
+普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
+
+追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
+
+### 内部断言 assert
+
+断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
+
+对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
+
+### 独占拥有 unique_ptr
+
+unique_ptr通过移动转移拥有关系，默认删除策略必须与资源来源匹配。get返回借用指针，release交出责任而不销毁。
+
+区分move、get、release和reset后谁负责销毁。
+
+### 类型别名 using
+
+类型别名为已有类型建立名字，不创建运行期对象。它常把模板内部使用的类型统一暴露给泛型调用者。
+
+展开别名直到基础类型，区分类型别名和变量声明。
+
+### 枚举与状态模型 enum
+
+枚举把有限状态命名；enum class避免许多隐式整数转换。状态机正确性还依赖允许的转移，不能只看有哪些枚举项。
+
+列出每个状态的进入条件和离开条件，检查终止状态是否仍可能被调度。
+
+## 实现练习与验证
 
 对小任务与重任务分别比较串行和并行基线。
 
-参考思路：任务提交、等待与隔离表达不同能力；并行成本包含分割、同步和调度，不只有线程数。
+参考推理：分别测试短任务与重任务，记录分割、同步和总耗时。
 
-将输入、预期结果和资源责任分成三张清单。先用最直接的实现给出可核对的答案，再替换成对应源码使用的表示；比较结果不变的条件，而不是只比较接口名字。
+依赖结果先于消费者可见；禁用节点仍保留必要控制计算；没有同时持有锁的循环等待。
 
-验收依据：依赖结果先于消费者可见；禁用节点仍保留必要控制计算；没有同时持有锁的循环等待。
-
-## 七、复杂度、设计取舍与其他基础库
+## 历史、跨库比较与证据
 
 与构建系统依赖图、oneTBB任务与几何节点图比较：场景更新需要处理源变化和可见性，具体图执行还受领域语义影响。
 
-本篇的具体取舍：任务提交、等待与隔离表达不同能力；并行成本包含分割、同步和调度，不只有线程数。
-
-| 观察维度 | 从源码取得证据的方法 | 本篇要避免的误判 |
-|---|---|---|
-| 时间 | 对循环次数、分派次数和重建频率分别计数 | 看到单次常数操作就断定整个操作序列是常数成本 |
-| 内存 | 区分对象本体、容量存储、间接资源和共享控制块 | 用sizeof代替总内存 |
-| 安全 | 沿构造、失败回滚、销毁与失效逐路径检查 | 把断言或非空指针当作完整安全证明 |
-| 并发 | 逐字段确认锁、发布顺序和借用寿命 | 把引用计数线程安全等同数据读写线程安全 |
-
-相关一手资料：
-
-- [C++公开工作草案](https://eel.is/c++draft/)：持续更新的工作草案；语言与标准库语义以相应章节为准。
-- [oneTBB官方文档](https://uxlfoundation.github.io/oneTBB/)：在线入口；实现细节以实际依赖版本为准。
-
-资料用于核对契约和进一步阅读；这里没有声称外部库与Blender实现相同，也没有把上游性能数字当作本机实测。
-
-## 八、历史提交与设计演化
-
-### 2020-04-30 · Brecht Van Lommel
-
-[Task: Use TBB as Task Scheduler](https://projects.blender.org/blender/blender/commit/d8a3f3595af0fb3ca5937e41c2728fd750d986ef)
-
-完整哈希：`d8a3f3595af0fb3ca5937e41c2728fd750d986ef`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-Task: Use TBB as Task Scheduler
-
-This patch enables TBB as the default task scheduler. TBB stands for Threading Building Blocks and is developed by Intel. The library contains several threading patters. This patch maps blenders BLI_task_* function to their counterpart. After this patch we can add more patterns. A promising one is TBB:graph that can be used for depsgraph, draw manager and compositor.
-
-Performance changes depends on the actual hardware. It was tested on different hardwares from laptops to workstations and we didn't detected any downgrade of the performance.
-* Linux Xeon E5-2699 v4 got FPS boost from 12 to 17 using Spring's 04_010_A.anim.blend.
-* AMD Ryzen Threadripper 2990WX 32-Core Animation playback goes from 9.5-10.5 FPS to 13.0-14.0 FPS on Agent 327 , 10_03_B.anim.blend.
-
-Reviewed By: brecht, sergey
-
-Differential Revision: https://developer.blender.org/D7475
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“上层任务接口怎样隐藏调度器细节？”判断方案改变的是表示、接口、生命周期还是调度。
-
-## 九、反例、测试入口与掌握标准
-
-仓库测试入口：
-
-- [BLI_task_test.cc](../../../../../source/blender/blenlib/tests/BLI_task_test.cc)：阅读输入、断言与覆盖边界；本篇不把“存在测试”写成“本轮已运行”。
-
-需要实际构造的反例：
-
-- 空输入或没有结果需求：确认接口允许的空状态与不允许访问的操作。
-- 边界位置和退化结构：把长度为1、末尾位置、重复值或深链代入真实分支。
-- 生命周期结束或修改之后：检查保存的指针、引用、结果视图是否仍有效。
-- 与本篇核心不变量相冲突的输入：对小任务与重任务分别比较串行和并行基线。
-
-### 可运行的教学参考程序
-
-[reference_exercises.cc](../_tools/reference_exercises.cc)包含独立于Blender的C++20参考检查：视图、简化SmallVector、异常回滚、哈希碰撞与删除、偏移数组、拓扑映射、共享缓存、表达式、惰性分支、闭包和暴力最近邻。
-
-参考程序有意省略生产实现的完整能力。例如SmallVector禁止复制移动容器，不支持只能移动的元素，并禁止append参数别名到自身元素；TinyMap固定8槽，不提供增长。程序通过不能替代Blender实现测试。实际运行结果、编译器与命令见验收报告。
-
-掌握标准：离开源码解释“上层任务接口怎样隐藏调度器细节？”；独立完成上述练习；能指出一个会破坏变化源相关约束的最小反例，并用具体代码行说明检查或修复应放在哪里。
+[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)

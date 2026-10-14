@@ -1,40 +1,40 @@
 # 04-02 VArrayImpl实现接口
 
-[方向导航](README.md) · [总目录](../README.md) · [覆盖索引](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
 
-> 阅读顺序：问题与数据模型 → 语法与类型 → 源码逐行 → 调用线索 → 历史与取舍 → 推演和练习。
-
-- 基准 HEAD：`cbda6b96c26c0dee3c3b5cbb93960c4ac06a6b30`。
-- 记录日期：2026-10-14。
-- 教学示例状态：正文中的推演不是本机性能实测；已运行练习见验收报告。
-
-## 一、从问题到设计
+## 从问题到实现
 
 包装层与多态实现层为什么分开？
 
 稳定的值封装便于传参，具体实现负责获取和物化；新增实现要遵守大小、类型和生命周期契约。
 
-本篇把语法、数据语义和系统取舍连接起来。表示与接口分离，元素编号与选择内部位置分离，生成成本与执行成本分离。
-
-### 本篇独立模型与设计推理
+**数据模型**
 
 VArrayImpl提供实现行为，VArray包装选择与保存实现；公开值对象不等于内部没有动态多态。
 
-设计取舍：把内部实现封装起来方便替换，但新增实现必须遵守物化和寿命约定。
+**设计取舍**
 
-最小反例：只实现单元素get，却在批量物化中写越界。
+把内部实现封装起来方便替换，但新增实现必须遵守物化和寿命约定。
 
-推导与处理：同一组输入分别验证逐项获取与每种物化路径。
+**最小反例**
+
+只实现单元素get，却在批量物化中写越界。
+
+**推导**
+
+同一组输入分别验证逐项获取与每种物化路径。
+
+## 阅读地图与执行推演
 
 ```mermaid
 flowchart TB
-  M["VArrayImpl提供实现行为，VArray包装选择与<br/>保存实现；公开值对象不等于内部没有动态多<br/>态。"]:::data
-  T["把内部实现封装起来方便替换，但新增实现必<br/>须遵守物化和寿命约定。"]:::abstraction
-  X["只实现单元素get，却在批量物化中写越界。"]:::error
-  A["同一组输入分别验证逐项获取与每种物化路径<br/>。"]:::result
-  M -->|"建立约束"| T
-  T -->|"构造反例"| X
-  X -->|"恢复不变量"| A
+  M["VArrayImpl提供实现行为，VArray包装选择与保<br/>存实现；公开值对象不等于内部没有动态多态。"]:::data
+  C["把内部实现封装起来方便替换，但新增实现必须<br/>遵守物化和寿命约定。"]:::abstraction
+  B["只实现单元素get，却在批量物化中写越界。"]:::error
+  R["同一组输入分别验证逐项获取与每种物化路径。"]:::result
+  M -->|"明确约束"| C
+  C -->|"检验边界"| B
+  B -->|"恢复正确性"| R
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -42,59 +42,17 @@ flowchart TB
   classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
-
-### 源码范围与相邻篇章
-
-| 文件 | 本篇逐行范围 | 基准SHA-256 |
-|---|---|---|
-| [source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) | L307—L606 | `0dad9ae245918d5aff4c98aac3248f277cd8060ca11a9acf2e59943aa18a18fe` |
-
-同一主讲文件可能分多篇覆盖；超出本篇范围的符号通过覆盖索引定位。空行与纯注释保留在源码摘录中，逐行表解释有效语句与语法边界；许可证头统一保留。
-
-前篇：[VArray表示与值语义](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md).
-
-后篇：[单值与Span表示](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md).
-
-## 二、类型、数据与阅读地图
-
-```mermaid
-flowchart TB
-  Q["包装层与多态实现层为什么分开？"]:::input
-  C0["虚拟数组表示"]:::abstraction
-  C1["批量物化"]:::data
-  C2["选择索引"]:::data
-  C3["专门化路径"]:::data
-  R["VArrayImpl实现接口"]:::result
-  Q -->|"建立模型"| C0
-  C0 -->|"区分职责"| C1
-  C1 -->|"区分职责"| C2
-  C2 -->|"区分职责"| C3
-  C3 -->|"回到源码"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
-
-这是概念依赖图，边表示阅读关系，不声称是运行时调用顺序。
-
-### 直接编译依赖
 
 ```mermaid
 flowchart LR
-  S["BLI_virtual_array.hh"]:::abstraction
-  I0["BLI_any_derived.hh"]:::data
-  I1["BLI_array.hh"]:::data
-  I2["BLI_devirtualize_parameters.hh"]:::data
-  I3["BLI_index_mask.hh"]:::data
-  I4["BLI_span.hh"]:::data
-  S -->|"直接include"| I0
-  S -->|"直接include"| I1
-  S -->|"直接include"| I2
-  S -->|"直接include"| I3
-  S -->|"直接include"| I4
+  F0["blender::VArrayImpl_For_Single::VArrayImpl_For_Single"]:::input
+  F1["blender::VArrayImpl_For_Single::get"]:::compute
+  F2["blender::VArrayImpl_For_Single::common_info"]:::compute
+  F3["blender::VArrayImpl_For_Single::materialize"]:::compute
+  F4["blender::VArrayImpl_For_Single::materialize_compressed"]:::compute
+  F5["blender::VArrayImpl_For_Func::VArrayImpl_For_Func"]:::compute
+  F6["blender::VArrayImpl_For_Func::get"]:::compute
+  F7["blender::VArrayImpl_For_Func::materialize"]:::compute
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -103,95 +61,59 @@ flowchart LR
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-箭头只表示头文件包含关系；完整调用线索见后面的符号定位表。
+```mermaid
+flowchart LR
+  P0["虚拟数组表示"]:::input
+  P1["批量物化"]:::data
+  P2["选择索引"]:::data
+  P3["专门化路径"]:::result
+  P0 -->|"分析关系"| P1
+  P1 -->|"分析关系"| P2
+  P2 -->|"分析关系"| P3
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-## 三、关键词、语法与类型角色
+```mermaid
+flowchart TB
+  S0["长度6，所有值为3"]:::input
+  S1["mask={1,4}"]:::compute
+  S2["读取1与4"]:::compute
+  S3["按接口准备目标"]:::compute
+  S4["判断常见表示"]:::compute
+  S5["与直接数组结果一致"]:::result
+  S0 -->|"选择"| S1
+  S1 -->|"执行"| S2
+  S2 -->|"物化"| S3
+  S3 -->|"分派"| S4
+  S4 -->|"核对"| S5
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-### 模板 template
+图中的数值推演是本方向的教学模型；实际函数之间的调用边与概念分析边分别标注，不能把概念关系当作运行时调度顺序。
 
-模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
+## 完整源码单元与就地讲解
 
-具体检查：把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
+中文讲解直接放在相关代码旁，复杂机制在代码下展开。原文折叠区保留基准行号；不需要在行号表和函数之间来回查找。类布局可分段展示，函数实现不按固定行数切开。
 
-### 依赖名称 typename
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L307—L318
 
-typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+<a id="t-e37fe08cacb2"></a>
 
-具体检查：区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+`VArrayImpl_For_Single`在这里声明的数据成员：
 
-### 常量求值 constexpr
+- `T value_`
 
-constexpr声明允许相应实体参与常量求值，但constexpr函数仍可以在运行时执行。是否常量求值由调用场景和表达式合法性共同决定。
-
-具体检查：比较constexpr变量初始化和从运行时输入调用同一函数。
-
-### 只读限定 const
-
-const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
-
-具体检查：分别写T* const、const T*与const T* const，并画出不可修改的层次。
-
-### 移动转换 std::move
-
-std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
-
-具体检查：记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
-
-### 完美转发 std::forward
-
-std::forward在转发引用模板中恢复调用者原来的值类别。它依赖推导出的模板实参；无条件move会改变左值调用者的语义。
-
-具体检查：对同一接口分别传入左值、临时对象和const左值，记录实际重载。
-
-### 运行时多态 virtual
-
-虚调用根据实际动态类型选择实现；经基类指针销毁对象时通常需要相应虚析构契约。每元素虚调用和循环外一次分派有不同开销。
-
-具体检查：找出虚接口的实现类和调用频率，再讨论是否值得去虚拟化。
-
-### 覆写检查 override
-
-override要求函数确实覆盖基类虚函数，可捕获参数类型和const限定不匹配。它不改变基类规定的生命周期或线程约束。
-
-具体检查：故意改变一个参数或const，观察编译器如何拒绝误写的新函数。
-
-### 构造与new表达式
-
-普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
-
-具体检查：追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
-
-### 内部断言 assert
-
-断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
-
-具体检查：对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
-
-### 编译期分支 if constexpr
-
-条件在实例化时决定被保留的分支，这常用于不同类型的合法操作选择。它与运行时if有不同的实例化检查规则。
-
-具体检查：找出每个分支依赖哪些类型特征，再使用满足与不满足条件的类型。
-
-### 受控访问 friend
-
-friend授予指定函数或类访问非公开成员的权限，并不意味着继承，也不自动扩展到友元的派生类。
-
-具体检查：解释执行器为何需要访问包装器的内部映射，同时检查边界是否仍清楚。
-
-### 共享拥有 shared_ptr
-
-shared_ptr让控制块跟踪共享寿命，不自动使被指向对象的读写线程安全；循环拥有可能阻止销毁。
-
-具体检查：画出强引用环并考虑是否应改变所有权方向或引入弱引用。
-
-## 四、真实源码与逐行讲解
-
-源码块保持原行内容，原始行号由小节标题及逐行表给出。表中的调用定位是静态阅读辅助；重载、模板实例化、宏展开和虚调用需结合完整声明，不能仅凭词法出现证明动态调用。
-
-### BLI_virtual_array.hh：L307—L348
-
-<!-- source:source/blender/blenlib/BLI_virtual_array.hh:307:348 -->
+<!-- annotated:f504ebeee733a7 -->
 
 ```cpp
 };
@@ -206,22 +128,224 @@ template<typename T> class VArrayImpl_For_Single final : public VArrayImpl<T> {
   T value_;
 
  public:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L307—L318</summary>
+
+<!-- original:f504ebeee733a7:source/blender/blenlib/BLI_virtual_array.hh:307:318 -->
+
+```cpp
+};
+
+/**
+ * A virtual array implementation that returns the same value for every index. This class is final
+ * so that it can be devirtualized by the compiler in some cases (e.g. when #devirtualize_varray is
+ * used).
+ */
+template<typename T> class VArrayImpl_For_Single final : public VArrayImpl<T> {
+ private:
+  T value_;
+
+ public:
+```
+
+</details>
+
+<a id="f-7ed229374a641958"></a>
+
+### `blender::VArrayImpl_For_Single::VArrayImpl_For_Single`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L319—L322。
+
+接口参数：
+
+- `T value`
+- `const int64_t size`
+
+**教学注释版**
+
+<!-- annotated:f4f07f913c5879 -->
+
+```cpp
   VArrayImpl_For_Single(T value, const int64_t size)
       : VArrayImpl<T>(size), value_(std::move(value))
   {
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L319—L322</summary>
+
+<!-- original:f4f07f913c5879:source/blender/blenlib/BLI_virtual_array.hh:319:322 -->
+
+```cpp
+  VArrayImpl_For_Single(T value, const int64_t size)
+      : VArrayImpl<T>(size), value_(std::move(value))
+  {
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L323—L324
+
+<!-- annotated:1030fa3871200d -->
+
+```cpp
 
  protected:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L323—L324</summary>
+
+<!-- original:1030fa3871200d:source/blender/blenlib/BLI_virtual_array.hh:323:324 -->
+
+```cpp
+
+ protected:
+```
+
+</details>
+
+<a id="f-62c705cc3442334e"></a>
+
+### `blender::VArrayImpl_For_Single::get`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L325—L328。
+
+接口参数：
+
+- `const int64_t`
+
+**教学注释版**
+
+<!-- annotated:12735dbe073328 -->
+
+```cpp
   T get(const int64_t /*index*/) const override
   {
     return value_;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L325—L328</summary>
+
+<!-- original:12735dbe073328:source/blender/blenlib/BLI_virtual_array.hh:325:328 -->
+
+```cpp
+  T get(const int64_t /*index*/) const override
+  {
+    return value_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return value_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:91504aded9c7bc -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L329—L329</summary>
+
+<!-- original:91504aded9c7bc:source/blender/blenlib/BLI_virtual_array.hh:329:329 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8b3462728d95d9b1"></a>
+
+### `blender::VArrayImpl_For_Single::common_info`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L330—L333。
+
+**教学注释版**
+
+<!-- annotated:ab7a2683066949 -->
+
+```cpp
   CommonVArrayInfo common_info() const override
   {
     return CommonVArrayInfo(CommonVArrayInfo::Type::Single, true, &value_);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L330—L333</summary>
+
+<!-- original:ab7a2683066949:source/blender/blenlib/BLI_virtual_array.hh:330:333 -->
+
+```cpp
+  CommonVArrayInfo common_info() const override
+  {
+    return CommonVArrayInfo(CommonVArrayInfo::Type::Single, true, &value_);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return CommonVArrayInfo(CommonVArrayInfo::Type::Single, true, &value_);`
+
+**继续追踪实现**
+
+- `CommonVArrayInfo` → [blender::CommonVArrayInfo::CommonVArrayInfo · L66](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-a716088fcd760d27)；[blender::CommonVArrayInfo::CommonVArrayInfo · L67](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-018a4490310fea4d)。同名重载需按实参类型选择。
+
+<!-- annotated:a93a28d8f46256 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L334—L334</summary>
+
+<!-- original:a93a28d8f46256:source/blender/blenlib/BLI_virtual_array.hh:334:334 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-362c12525e25f825"></a>
+
+### `blender::VArrayImpl_For_Single::materialize`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L335—L348。
+
+接口参数：
+
+- `const IndexMask &mask`
+- `T *dst`
+- `const bool dst_is_uninitialized`
+
+**教学注释版**
+
+<!-- annotated:8d0b913aa2c19a -->
+
+```cpp
   void materialize(const IndexMask &mask, T *dst, const bool dst_is_uninitialized) const override
   {
     if constexpr (std::is_trivially_copyable_v<T>) {
@@ -238,51 +362,94 @@ template<typename T> class VArrayImpl_For_Single final : public VArrayImpl<T> {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L335—L348</summary>
 
-- 分支证据 `dst_is_uninitialized)`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:8d0b913aa2c19a:source/blender/blenlib/BLI_virtual_array.hh:335:348 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L307 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L314 | 声明模板参数 `template<typename T> class VArrayImpl_For_Single final : public VArrayImpl<T> {`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L315 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L316 | 声明成员、局部对象或完成语句 `T value_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L318 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L319 | 出现调用或函数声明 `VArrayImpl_For_Single`，对应表达式为 `VArrayImpl_For_Single(T value, const int64_t size)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L320 | 出现调用或函数声明 `VArrayImpl`，对应表达式为 `: VArrayImpl<T>(size), value_(std::move(value))`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L321 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L322 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L324 | 切换成员访问权限为 protected；它是编译期接口边界，不是线程同步或内存保护。 |
-| L325 | 出现调用或函数声明 `get`，对应表达式为 `T get(const int64_t ) const override`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L326 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L327 | 返回表达式 `value_`。 |
-| L328 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L330 | 出现调用或函数声明 `common_info`，对应表达式为 `CommonVArrayInfo common_info() const override`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L331 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L332 | 返回表达式 `CommonVArrayInfo(CommonVArrayInfo::Type::Single, true, &value_)`。 |
-| L333 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L335 | 出现调用或函数声明 `materialize`，对应表达式为 `void materialize(const IndexMask &mask, T *dst, const bool dst_is_uninitialized) const override`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L336 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L337 | 编译期条件分支 `if constexpr (std::is_trivially_copyable_v<T>)`。按实例化类型选择相应实现；被舍弃分支和运行期if具有不同检查规则，不能当作运行时输入验证。 |
-| L338 | 出现调用或函数声明 `index_mask::detail::fill`，对应表达式为 `index_mask::detail::fill(dst, value_, mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L339 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L340 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L341 | 判断 `dst_is_uninitialized`，成立时进入本分支，否则继续后续路径。 |
-| L342 | 出现调用或函数声明 `foreach_index`，对应表达式为 `mask.foreach_index([&](const int64_t i) { new (dst + i) T(value_); });`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L343 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L344 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L345 | 把右侧 `value_; })` 用于初始化或更新左侧 `mask.foreach_index([&](const int64_t i) { dst[i]`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L346 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L347 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L348 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  void materialize(const IndexMask &mask, T *dst, const bool dst_is_uninitialized) const override
+  {
+    if constexpr (std::is_trivially_copyable_v<T>) {
+      index_mask::detail::fill(dst, value_, mask);
+    }
+    else {
+      if (dst_is_uninitialized) {
+        mask.foreach_index([&](const int64_t i) { new (dst + i) T(value_); });
+      }
+      else {
+        mask.foreach_index([&](const int64_t i) { dst[i] = value_; });
+      }
+    }
+  }
+```
 
-### BLI_virtual_array.hh：L349—L389
+</details>
 
-<!-- source:source/blender/blenlib/BLI_virtual_array.hh:349:389 -->
+**继续追踪实现**
+
+- `index_mask::detail::fill` → [blender::index_mask::detail::fill · L1251](12-%E9%87%8D%E6%9E%84%E5%8E%86%E5%8F%B2%E4%B8%8E%E5%9F%BA%E5%87%86%E7%BB%83%E4%B9%A0.md#f-ea2ed6e1c98523f9)。
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
+
+<!-- annotated:8dac7a96d13760 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L349—L349</summary>
+
+<!-- original:8dac7a96d13760:source/blender/blenlib/BLI_virtual_array.hh:349:349 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-bfe3bf894410b6c7"></a>
+
+### `blender::VArrayImpl_For_Single::materialize_compressed`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L350—L365。
+
+接口参数：
+
+- `const IndexMask &mask`
+- `T *dst`
+- `const bool dst_is_uninitialized`
+
+**教学注释版**
+
+<!-- annotated:dccc3d2e1836e7 -->
+
+```cpp
+  void materialize_compressed(const IndexMask &mask,
+                              T *dst,
+                              const bool dst_is_uninitialized) const override
+  {
+    if constexpr (std::is_trivially_copyable_v<T>) {
+      initialized_fill_n(dst, mask.size(), value_);
+    }
+    else {
+      if (dst_is_uninitialized) {
+        // [讲解] uninitialized_fill_n：从同一个value复制构造目标n个T。
+        uninitialized_fill_n(dst, mask.size(), value_);
+      }
+      else {
+        initialized_fill_n(dst, mask.size(), value_);
+      }
+    }
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L350—L365</summary>
+
+<!-- original:dccc3d2e1836e7:source/blender/blenlib/BLI_virtual_array.hh:350:365 -->
+
+```cpp
   void materialize_compressed(const IndexMask &mask,
                               T *dst,
                               const bool dst_is_uninitialized) const override
@@ -299,6 +466,27 @@ template<typename T> class VArrayImpl_For_Single final : public VArrayImpl<T> {
       }
     }
   }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `initialized_fill_n` → [blender::initialized_fill_n · L86](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-4af3bf5ccfdcee6c)。
+- `mask.size` → [blender::index_mask::IndexMask::size · L743](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-0163b32abc9a0d9c)。
+- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-020ca78eff5f9227)。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L366—L379
+
+<a id="t-40019843c95a"></a>
+
+`VArrayImpl_For_Func`在这里声明的数据成员：
+
+- `GetFunc get_func_`
+
+<!-- annotated:59eb0cdf3abebf -->
+
+```cpp
 };
 
 template<typename T>
@@ -313,63 +501,170 @@ template<typename T, typename GetFunc> class VArrayImpl_For_Func final : public 
   GetFunc get_func_;
 
  public:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L366—L379</summary>
+
+<!-- original:59eb0cdf3abebf:source/blender/blenlib/BLI_virtual_array.hh:366:379 -->
+
+```cpp
+};
+
+template<typename T>
+inline constexpr bool is_trivial_extended_v<VArrayImpl_For_Single<T>> = is_trivial_extended_v<T>;
+
+/**
+ * This class makes it easy to create a virtual array for an existing function or lambda. The
+ * `GetFunc` should take a single `index` argument and return the value at that index.
+ */
+template<typename T, typename GetFunc> class VArrayImpl_For_Func final : public VArrayImpl<T> {
+ private:
+  GetFunc get_func_;
+
+ public:
+```
+
+</details>
+
+<a id="f-a8ac022375e41bd0"></a>
+
+### `blender::VArrayImpl_For_Func::VArrayImpl_For_Func`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L380—L383。
+
+接口参数：
+
+- `const int64_t size`
+- `GetFunc get_func`
+
+**教学注释版**
+
+<!-- annotated:80bb7b15dd2462 -->
+
+```cpp
   VArrayImpl_For_Func(const int64_t size, GetFunc get_func)
       : VArrayImpl<T>(size), get_func_(std::move(get_func))
   {
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L380—L383</summary>
+
+<!-- original:80bb7b15dd2462:source/blender/blenlib/BLI_virtual_array.hh:380:383 -->
+
+```cpp
+  VArrayImpl_For_Func(const int64_t size, GetFunc get_func)
+      : VArrayImpl<T>(size), get_func_(std::move(get_func))
+  {
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L384—L385
+
+<!-- annotated:313fca1572a8aa -->
+
+```cpp
 
  private:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L384—L385</summary>
+
+<!-- original:313fca1572a8aa:source/blender/blenlib/BLI_virtual_array.hh:384:385 -->
+
+```cpp
+
+ private:
+```
+
+</details>
+
+<a id="f-0dda53e7719f99d6"></a>
+
+### `blender::VArrayImpl_For_Func::get`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L386—L389。
+
+接口参数：
+
+- `const int64_t index`
+
+**教学注释版**
+
+<!-- annotated:2a7bab8ddd668c -->
+
+```cpp
   T get(const int64_t index) const override
   {
     return get_func_(index);
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L386—L389</summary>
 
-- 分支证据 `dst_is_uninitialized)`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:2a7bab8ddd668c:source/blender/blenlib/BLI_virtual_array.hh:386:389 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L350 | 出现调用或函数声明 `materialize_compressed`，对应表达式为 `void materialize_compressed(const IndexMask &mask,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L351 | 本行是连续声明或表达式的一部分：`T *dst,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L352 | 本行是连续声明或表达式的一部分：`const bool dst_is_uninitialized) const override`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L353 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L354 | 编译期条件分支 `if constexpr (std::is_trivially_copyable_v<T>)`。按实例化类型选择相应实现；被舍弃分支和运行期if具有不同检查规则，不能当作运行时输入验证。 |
-| L355 | 出现调用或函数声明 `initialized_fill_n`，对应表达式为 `initialized_fill_n(dst, mask.size(), value_);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L356 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L357 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L358 | 判断 `dst_is_uninitialized`，成立时进入本分支，否则继续后续路径。 |
-| L359 | 出现调用或函数声明 `uninitialized_fill_n`，对应表达式为 `uninitialized_fill_n(dst, mask.size(), value_);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L360 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L361 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L362 | 出现调用或函数声明 `initialized_fill_n`，对应表达式为 `initialized_fill_n(dst, mask.size(), value_);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L363 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L364 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L365 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L366 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L368 | 声明模板参数 `template<typename T>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L369 | 把右侧 `is_trivial_extended_v<T>` 用于初始化或更新左侧 `inline constexpr bool is_trivial_extended_v<VArrayImpl_For_Single<T>>`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L375 | 声明模板参数 `template<typename T, typename GetFunc> class VArrayImpl_For_Func final : public VArrayImpl<T> {`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L376 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L377 | 声明成员、局部对象或完成语句 `GetFunc get_func_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L379 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L380 | 出现调用或函数声明 `VArrayImpl_For_Func`，对应表达式为 `VArrayImpl_For_Func(const int64_t size, GetFunc get_func)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L381 | 出现调用或函数声明 `VArrayImpl`，对应表达式为 `: VArrayImpl<T>(size), get_func_(std::move(get_func))`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L382 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L383 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L385 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L386 | 出现调用或函数声明 `get`，对应表达式为 `T get(const int64_t index) const override`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L387 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L388 | 返回表达式 `get_func_(index)`。 |
-| L389 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  T get(const int64_t index) const override
+  {
+    return get_func_(index);
+  }
+```
 
-### BLI_virtual_array.hh：L390—L436
+</details>
 
-<!-- source:source/blender/blenlib/BLI_virtual_array.hh:390:436 -->
+**结果出口**
+
+- `return get_func_(index);`
+
+**继续追踪实现**
+
+- `get_func_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L388。
+
+<!-- annotated:ddc07be5adbc09 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L390—L390</summary>
+
+<!-- original:ddc07be5adbc09:source/blender/blenlib/BLI_virtual_array.hh:390:390 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-35071ab6a1d4c612"></a>
+
+### `blender::VArrayImpl_For_Func::materialize`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L391—L404。
+
+接口参数：
+
+- `const IndexMask &mask`
+- `T *dst`
+- `const bool dst_is_uninitialized`
+
+**教学注释版**
+
+<!-- annotated:e0e7fc47c1cc2b -->
+
+```cpp
   void materialize(const IndexMask &mask, T *dst, const bool dst_is_uninitialized) const override
   {
     if constexpr (std::is_trivially_copyable_v<T>) {
@@ -384,7 +679,71 @@ template<typename T, typename GetFunc> class VArrayImpl_For_Func final : public 
       }
     }
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L391—L404</summary>
+
+<!-- original:e0e7fc47c1cc2b:source/blender/blenlib/BLI_virtual_array.hh:391:404 -->
+
+```cpp
+  void materialize(const IndexMask &mask, T *dst, const bool dst_is_uninitialized) const override
+  {
+    if constexpr (std::is_trivially_copyable_v<T>) {
+      mask.foreach_index([&](const int64_t i) { dst[i] = get_func_(i); });
+    }
+    else {
+      if (dst_is_uninitialized) {
+        mask.foreach_index([&](const int64_t i) { new (dst + i) T(get_func_(i)); });
+      }
+      else {
+        mask.foreach_index([&](const int64_t i) { dst[i] = get_func_(i); });
+      }
+    }
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
+- `get_func_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L394。
+
+<!-- annotated:7bc7bb248a378f -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L405—L405</summary>
+
+<!-- original:7bc7bb248a378f:source/blender/blenlib/BLI_virtual_array.hh:405:405 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-fc50a319fd7dc3b3"></a>
+
+### `blender::VArrayImpl_For_Func::materialize_compressed`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L406—L422。
+
+接口参数：
+
+- `const IndexMask &mask`
+- `T *dst`
+- `const bool dst_is_uninitialized`
+
+**教学注释版**
+
+<!-- annotated:04e90facf2754e -->
+
+```cpp
   void materialize_compressed(const IndexMask &mask,
                               T *dst,
                               const bool dst_is_uninitialized) const override
@@ -402,6 +761,51 @@ template<typename T, typename GetFunc> class VArrayImpl_For_Func final : public 
       }
     }
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L406—L422</summary>
+
+<!-- original:04e90facf2754e:source/blender/blenlib/BLI_virtual_array.hh:406:422 -->
+
+```cpp
+  void materialize_compressed(const IndexMask &mask,
+                              T *dst,
+                              const bool dst_is_uninitialized) const override
+  {
+    if constexpr (std::is_trivially_copyable_v<T>) {
+      mask.foreach_index([&](const int64_t i, const int64_t pos) { dst[pos] = get_func_(i); });
+    }
+    else {
+      if (dst_is_uninitialized) {
+        mask.foreach_index(
+            [&](const int64_t i, const int64_t pos) { new (dst + pos) T(get_func_(i)); });
+      }
+      else {
+        mask.foreach_index([&](const int64_t i, const int64_t pos) { dst[pos] = get_func_(i); });
+      }
+    }
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
+- `get_func_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L411。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L423—L436
+
+<a id="t-14f425ff914d"></a>
+
+`VArrayImpl_For_DerivedSpan`在这里声明的数据成员：
+
+- `StructT data_`
+
+<!-- annotated:fbd4c14af8ec4c -->
+
+```cpp
 };
 
 /**
@@ -418,62 +822,74 @@ class VArrayImpl_For_DerivedSpan final : public VMutableArrayImpl<ElemT> {
  public:
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L423—L436</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
+<!-- original:fbd4c14af8ec4c:source/blender/blenlib/BLI_virtual_array.hh:423:436 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L391 | 出现调用或函数声明 `materialize`，对应表达式为 `void materialize(const IndexMask &mask, T *dst, const bool dst_is_uninitialized) const override`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L392 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L393 | 编译期条件分支 `if constexpr (std::is_trivially_copyable_v<T>)`。按实例化类型选择相应实现；被舍弃分支和运行期if具有不同检查规则，不能当作运行时输入验证。 |
-| L394 | 把右侧 `get_func_(i); })` 用于初始化或更新左侧 `mask.foreach_index([&](const int64_t i) { dst[i]`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L395 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L396 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L397 | 判断 `dst_is_uninitialized`，成立时进入本分支，否则继续后续路径。 |
-| L398 | 出现调用或函数声明 `foreach_index`，对应表达式为 `mask.foreach_index([&](const int64_t i) { new (dst + i) T(get_func_(i)); });`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L399 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L400 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L401 | 把右侧 `get_func_(i); })` 用于初始化或更新左侧 `mask.foreach_index([&](const int64_t i) { dst[i]`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L402 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L403 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L404 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L406 | 出现调用或函数声明 `materialize_compressed`，对应表达式为 `void materialize_compressed(const IndexMask &mask,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L407 | 本行是连续声明或表达式的一部分：`T *dst,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L408 | 本行是连续声明或表达式的一部分：`const bool dst_is_uninitialized) const override`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L409 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L410 | 编译期条件分支 `if constexpr (std::is_trivially_copyable_v<T>)`。按实例化类型选择相应实现；被舍弃分支和运行期if具有不同检查规则，不能当作运行时输入验证。 |
-| L411 | 把右侧 `get_func_(i); })` 用于初始化或更新左侧 `mask.foreach_index([&](const int64_t i, const int64_t pos) { dst[pos]`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L412 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L413 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L414 | 判断 `dst_is_uninitialized`，成立时进入本分支，否则继续后续路径。 |
-| L415 | 出现调用或函数声明 `foreach_index`，对应表达式为 `mask.foreach_index(`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L416 | 出现调用或函数声明 `new`，对应表达式为 `[&](const int64_t i, const int64_t pos) { new (dst + pos) T(get_func_(i)); });`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L417 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L418 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L419 | 把右侧 `get_func_(i); })` 用于初始化或更新左侧 `mask.foreach_index([&](const int64_t i, const int64_t pos) { dst[pos]`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L420 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L421 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L422 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L423 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L428 | 声明模板参数 `template<typename StructT,`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L429 | 本行是连续声明或表达式的一部分：`typename ElemT,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L430 | 出现调用或函数声明 `ElemT`，对应表达式为 `ElemT (*GetFunc)(const StructT &),`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L431 | 把右侧 `nullptr>` 用于初始化或更新左侧 `void (*SetFunc)(StructT &, ElemT)`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L432 | 声明或定义类型 `class VArrayImpl_For_DerivedSpan final : public VMutableArrayImpl<ElemT>`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L433 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L434 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `StructT *data_`，不要把地址、数量或状态混用。 |
-| L436 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
+```cpp
+};
 
-### BLI_virtual_array.hh：L437—L474
+/**
+ * \note This is `final` so that #may_have_ownership can be implemented reliably.
+ */
+template<typename StructT,
+         typename ElemT,
+         ElemT (*GetFunc)(const StructT &),
+         void (*SetFunc)(StructT &, ElemT) = nullptr>
+class VArrayImpl_For_DerivedSpan final : public VMutableArrayImpl<ElemT> {
+ private:
+  StructT *data_;
 
-<!-- source:source/blender/blenlib/BLI_virtual_array.hh:437:474 -->
+ public:
+```
+
+</details>
+
+<a id="f-115fb3d38f6b6fd4"></a>
+
+### `blender::VArrayImpl_For_DerivedSpan::VArrayImpl_For_DerivedSpan`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L437—L440。
+
+接口参数：
+
+- `const MutableSpan<StructT> data`
+
+**教学注释版**
+
+<!-- annotated:84cee1a7430cdf -->
 
 ```cpp
   VArrayImpl_For_DerivedSpan(const MutableSpan<StructT> data)
       : VMutableArrayImpl<ElemT>(data.size()), data_(data.data())
   {
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L437—L440</summary>
+
+<!-- original:84cee1a7430cdf:source/blender/blenlib/BLI_virtual_array.hh:437:440 -->
+
+```cpp
+  VArrayImpl_For_DerivedSpan(const MutableSpan<StructT> data)
+      : VMutableArrayImpl<ElemT>(data.size()), data_(data.data())
+  {
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L441—L448
+
+<!-- annotated:128bb0e1633d3e -->
+
+```cpp
 
   template<typename OtherStructT,
            typename OtherElemT,
@@ -482,16 +898,162 @@ class VArrayImpl_For_DerivedSpan final : public VMutableArrayImpl<ElemT> {
   friend class VArrayImpl_For_DerivedSpan;
 
  private:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L441—L448</summary>
+
+<!-- original:128bb0e1633d3e:source/blender/blenlib/BLI_virtual_array.hh:441:448 -->
+
+```cpp
+
+  template<typename OtherStructT,
+           typename OtherElemT,
+           OtherElemT (*OtherGetFunc)(const OtherStructT &),
+           void (*OtherSetFunc)(OtherStructT &, OtherElemT)>
+  friend class VArrayImpl_For_DerivedSpan;
+
+ private:
+```
+
+</details>
+
+<a id="f-9a7d40e70a914814"></a>
+
+### `blender::VArrayImpl_For_DerivedSpan::get`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L449—L452。
+
+接口参数：
+
+- `const int64_t index`
+
+**教学注释版**
+
+<!-- annotated:43669f9b90f166 -->
+
+```cpp
   ElemT get(const int64_t index) const override
   {
     return GetFunc(data_[index]);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L449—L452</summary>
+
+<!-- original:43669f9b90f166:source/blender/blenlib/BLI_virtual_array.hh:449:452 -->
+
+```cpp
+  ElemT get(const int64_t index) const override
+  {
+    return GetFunc(data_[index]);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return GetFunc(data_[index]);`
+
+**继续追踪实现**
+
+- `GetFunc` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L451。
+
+<!-- annotated:b1443b3a7033ef -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L453—L453</summary>
+
+<!-- original:b1443b3a7033ef:source/blender/blenlib/BLI_virtual_array.hh:453:453 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-85b0b72dcbb29644"></a>
+
+### `blender::VArrayImpl_For_DerivedSpan::set`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L454—L457。
+
+接口参数：
+
+- `const int64_t index`
+- `ElemT value`
+
+**教学注释版**
+
+<!-- annotated:6b4d8ed22a1cf7 -->
+
+```cpp
+  void set(const int64_t index, ElemT value) override
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    SetFunc(data_[index], std::move(value));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L454—L457</summary>
+
+<!-- original:6b4d8ed22a1cf7:source/blender/blenlib/BLI_virtual_array.hh:454:457 -->
+
+```cpp
   void set(const int64_t index, ElemT value) override
   {
     SetFunc(data_[index], std::move(value));
   }
+```
 
+</details>
+
+**继续追踪实现**
+
+- `SetFunc` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L456。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<!-- annotated:17e4492f36b64b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L458—L458</summary>
+
+<!-- original:17e4492f36b64b:source/blender/blenlib/BLI_virtual_array.hh:458:458 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a7470a0f0ca5f8ca"></a>
+
+### `blender::VArrayImpl_For_DerivedSpan::materialize`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L459—L474。
+
+接口参数：
+
+- `const IndexMask &mask`
+- `ElemT *dst`
+- `const bool dst_is_uninitialized`
+
+**教学注释版**
+
+<!-- annotated:dccb9956d67456 -->
+
+```cpp
   void materialize(const IndexMask &mask,
                    ElemT *dst,
                    const bool dst_is_uninitialized) const override
@@ -510,53 +1072,71 @@ class VArrayImpl_For_DerivedSpan final : public VMutableArrayImpl<ElemT> {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L459—L474</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
+<!-- original:dccb9956d67456:source/blender/blenlib/BLI_virtual_array.hh:459:474 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L437 | 出现调用或函数声明 `VArrayImpl_For_DerivedSpan`，对应表达式为 `VArrayImpl_For_DerivedSpan(const MutableSpan<StructT> data)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L438 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `: VMutableArrayImpl<ElemT>(data.size()), data_(data.data())`，不要把地址、数量或状态混用。 |
-| L439 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L440 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L442 | 声明模板参数 `template<typename OtherStructT,`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L443 | 本行是连续声明或表达式的一部分：`typename OtherElemT,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L444 | 出现调用或函数声明 `OtherElemT`，对应表达式为 `OtherElemT (*OtherGetFunc)(const OtherStructT &),`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L445 | 出现调用或函数声明 `void`，对应表达式为 `void (*OtherSetFunc)(OtherStructT &, OtherElemT)>`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L446 | 声明成员、局部对象或完成语句 `friend class VArrayImpl_For_DerivedSpan`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L448 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L449 | 出现调用或函数声明 `get`，对应表达式为 `ElemT get(const int64_t index) const override`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L450 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L451 | 返回表达式 `GetFunc(data_[index])`。 |
-| L452 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L454 | 出现调用或函数声明 `set`，对应表达式为 `void set(const int64_t index, ElemT value) override`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L455 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L456 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `SetFunc(data_[index], std::move(value))`，不要把地址、数量或状态混用。 |
-| L457 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L459 | 出现调用或函数声明 `materialize`，对应表达式为 `void materialize(const IndexMask &mask,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L460 | 本行是连续声明或表达式的一部分：`ElemT *dst,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L461 | 本行是连续声明或表达式的一部分：`const bool dst_is_uninitialized) const override`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L462 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L463 | 编译期条件分支 `if constexpr (std::is_trivially_copyable_v<ElemT>)`。按实例化类型选择相应实现；被舍弃分支和运行期if具有不同检查规则，不能当作运行时输入验证。 |
-| L464 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `mask.foreach_index([&](const int64_t i) { dst[i] = GetFunc(data_[i]); })`；对照更新前后相应范围或状态是否一致。 |
-| L465 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L466 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L467 | 判断 `dst_is_uninitialized`，成立时进入本分支，否则继续后续路径。 |
-| L468 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `mask.foreach_index([&](const int64_t i) { new (dst + i) ElemT(GetFunc(data_[i])); })`，不要把地址、数量或状态混用。 |
-| L469 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L470 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L471 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `mask.foreach_index([&](const int64_t i) { dst[i] = GetFunc(data_[i]); })`；对照更新前后相应范围或状态是否一致。 |
-| L472 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L473 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L474 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  void materialize(const IndexMask &mask,
+                   ElemT *dst,
+                   const bool dst_is_uninitialized) const override
+  {
+    if constexpr (std::is_trivially_copyable_v<ElemT>) {
+      mask.foreach_index([&](const int64_t i) { dst[i] = GetFunc(data_[i]); });
+    }
+    else {
+      if (dst_is_uninitialized) {
+        mask.foreach_index([&](const int64_t i) { new (dst + i) ElemT(GetFunc(data_[i])); });
+      }
+      else {
+        mask.foreach_index([&](const int64_t i) { dst[i] = GetFunc(data_[i]); });
+      }
+    }
+  }
+```
 
-### BLI_virtual_array.hh：L475—L521
+</details>
 
-<!-- source:source/blender/blenlib/BLI_virtual_array.hh:475:521 -->
+**继续追踪实现**
+
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
+- `GetFunc` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L464。
+
+<!-- annotated:0336d7b7bbe7b6 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L475—L475</summary>
+
+<!-- original:0336d7b7bbe7b6:source/blender/blenlib/BLI_virtual_array.hh:475:475 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-404ea683b11062d6"></a>
+
+### `blender::VArrayImpl_For_DerivedSpan::materialize_compressed`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L476—L494。
+
+接口参数：
+
+- `const IndexMask &mask`
+- `ElemT *dst`
+- `const bool dst_is_uninitialized`
+
+**教学注释版**
+
+<!-- annotated:e9349c7ffa9ad7 -->
+
+```cpp
   void materialize_compressed(const IndexMask &mask,
                               ElemT *dst,
                               const bool dst_is_uninitialized) const override
@@ -576,6 +1156,53 @@ class VArrayImpl_For_DerivedSpan final : public VMutableArrayImpl<ElemT> {
       }
     }
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L476—L494</summary>
+
+<!-- original:e9349c7ffa9ad7:source/blender/blenlib/BLI_virtual_array.hh:476:494 -->
+
+```cpp
+  void materialize_compressed(const IndexMask &mask,
+                              ElemT *dst,
+                              const bool dst_is_uninitialized) const override
+  {
+    if constexpr (std::is_trivially_copyable_v<ElemT>) {
+      mask.foreach_index(
+          [&](const int64_t i, const int64_t pos) { dst[pos] = GetFunc(data_[i]); });
+    }
+    else {
+      if (dst_is_uninitialized) {
+        mask.foreach_index(
+            [&](const int64_t i, const int64_t pos) { new (dst + pos) ElemT(GetFunc(data_[i])); });
+      }
+      else {
+        mask.foreach_index(
+            [&](const int64_t i, const int64_t pos) { dst[pos] = GetFunc(data_[i]); });
+      }
+    }
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
+- `GetFunc` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L482。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L495—L514
+
+<a id="t-4b7820cb970c"></a>
+
+`VArrayCommon`在这里声明的数据成员：
+
+- `AnyDerived<const VArrayImpl<T>> impl_`
+
+<!-- annotated:d681c967c5ce87 -->
+
+```cpp
 };
 
 template<typename StructT,
@@ -596,84 +1223,353 @@ template<typename T> class VArrayCommon {
  protected:
   AnyDerived<const VArrayImpl<T>> impl_;
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L495—L514</summary>
+
+<!-- original:d681c967c5ce87:source/blender/blenlib/BLI_virtual_array.hh:495:514 -->
+
+```cpp
+};
+
+template<typename StructT,
+         typename ElemT,
+         ElemT (*GetFunc)(const StructT &),
+         void (*SetFunc)(StructT &, ElemT)>
+inline constexpr bool
+    is_trivial_extended_v<VArrayImpl_For_DerivedSpan<StructT, ElemT, GetFunc, SetFunc>> = true;
+
+/**
+ * Utility class to reduce code duplication for methods available on #VArray and #VMutableArray.
+ * Deriving #VMutableArray from #VArray would have some issues:
+ * - Static methods on #VArray would also be available on #VMutableArray.
+ * - It would allow assigning a #VArray to a #VMutableArray under some circumstances which is not
+ *   allowed and could result in hard to find bugs.
+ */
+template<typename T> class VArrayCommon {
+ protected:
+  AnyDerived<const VArrayImpl<T>> impl_;
+
+```
+
+</details>
+
+<a id="f-1d8435455d764938"></a>
+
+### `blender::VArrayCommon::VArrayCommon`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L515—L515。
+
+**教学注释版**
+
+<!-- annotated:da49ab3201fcb0 -->
+
+```cpp
   VArrayCommon() = default;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L515—L515</summary>
+
+<!-- original:da49ab3201fcb0:source/blender/blenlib/BLI_virtual_array.hh:515:515 -->
+
+```cpp
+  VArrayCommon() = default;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L516—L520
+
+<!-- annotated:4b325b54193d29 -->
+
+```cpp
 
   /**
    * Wrap an existing #VArrayImpl and don't take ownership of it. This should rarely be used in
    * practice.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L516—L520</summary>
+
+<!-- original:4b325b54193d29:source/blender/blenlib/BLI_virtual_array.hh:516:520 -->
+
+```cpp
+
+  /**
+   * Wrap an existing #VArrayImpl and don't take ownership of it. This should rarely be used in
+   * practice.
+   */
+```
+
+</details>
+
+<a id="f-48c11e1ce3c370ae"></a>
+
+### `blender::VArrayCommon::VArrayCommon`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L521—L521。
+
+接口参数：
+
+- `const VArrayImpl<T> *impl`
+
+**教学注释版**
+
+<!-- annotated:1f6a695b8023db -->
+
+```cpp
   VArrayCommon(const VArrayImpl<T> *impl) : impl_(impl) {}
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L521—L521</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
+<!-- original:1f6a695b8023db:source/blender/blenlib/BLI_virtual_array.hh:521:521 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L476 | 出现调用或函数声明 `materialize_compressed`，对应表达式为 `void materialize_compressed(const IndexMask &mask,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L477 | 本行是连续声明或表达式的一部分：`ElemT *dst,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L478 | 本行是连续声明或表达式的一部分：`const bool dst_is_uninitialized) const override`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L479 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L480 | 编译期条件分支 `if constexpr (std::is_trivially_copyable_v<ElemT>)`。按实例化类型选择相应实现；被舍弃分支和运行期if具有不同检查规则，不能当作运行时输入验证。 |
-| L481 | 出现调用或函数声明 `foreach_index`，对应表达式为 `mask.foreach_index(`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L482 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `[&](const int64_t i, const int64_t pos) { dst[pos] = GetFunc(data_[i]); })`；对照更新前后相应范围或状态是否一致。 |
-| L483 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L484 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L485 | 判断 `dst_is_uninitialized`，成立时进入本分支，否则继续后续路径。 |
-| L486 | 出现调用或函数声明 `foreach_index`，对应表达式为 `mask.foreach_index(`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L487 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `[&](const int64_t i, const int64_t pos) { new (dst + pos) ElemT(GetFunc(data_[i])); })`，不要把地址、数量或状态混用。 |
-| L488 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L489 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L490 | 出现调用或函数声明 `foreach_index`，对应表达式为 `mask.foreach_index(`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L491 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `[&](const int64_t i, const int64_t pos) { dst[pos] = GetFunc(data_[i]); })`；对照更新前后相应范围或状态是否一致。 |
-| L492 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L493 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L494 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L495 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L497 | 声明模板参数 `template<typename StructT,`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L498 | 本行是连续声明或表达式的一部分：`typename ElemT,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L499 | 出现调用或函数声明 `ElemT`，对应表达式为 `ElemT (*GetFunc)(const StructT &),`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L500 | 出现调用或函数声明 `void`，对应表达式为 `void (*SetFunc)(StructT &, ElemT)>`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L501 | 本行是连续声明或表达式的一部分：`inline constexpr bool`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L502 | 把右侧 `true` 用于初始化或更新左侧 `is_trivial_extended_v<VArrayImpl_For_DerivedSpan<StructT, ElemT, GetFunc, SetFunc>>`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L511 | 声明模板参数 `template<typename T> class VArrayCommon {`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L512 | 切换成员访问权限为 protected；它是编译期接口边界，不是线程同步或内存保护。 |
-| L513 | 声明成员、局部对象或完成语句 `AnyDerived<const VArrayImpl<T>> impl_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L515 | 显式采用编译器生成的特殊成员行为：`VArrayCommon() = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L521 | 出现调用或函数声明 `VArrayCommon`，对应表达式为 `VArrayCommon(const VArrayImpl<T> *impl) : impl_(impl) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
+```cpp
+  VArrayCommon(const VArrayImpl<T> *impl) : impl_(impl) {}
+```
 
-### BLI_virtual_array.hh：L522—L563
+</details>
 
-<!-- source:source/blender/blenlib/BLI_virtual_array.hh:522:563 -->
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L522—L525
+
+<!-- annotated:54d5c16e917cc2 -->
 
 ```cpp
 
   /**
    * Wrap an existing #VArrayImpl that is contained in a #std::shared_ptr. This takes ownership.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L522—L525</summary>
+
+<!-- original:54d5c16e917cc2:source/blender/blenlib/BLI_virtual_array.hh:522:525 -->
+
+```cpp
+
+  /**
+   * Wrap an existing #VArrayImpl that is contained in a #std::shared_ptr. This takes ownership.
+   */
+```
+
+</details>
+
+<a id="f-aa8eea78ae380d31"></a>
+
+### `blender::VArrayCommon::VArrayCommon`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L526—L526。
+
+接口参数：
+
+- `std::shared_ptr<const VArrayImpl<T>> impl`
+
+**教学注释版**
+
+<!-- annotated:91a4dba43ec5e8 -->
+
+```cpp
   VArrayCommon(std::shared_ptr<const VArrayImpl<T>> impl) : impl_(std::move(impl)) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L526—L526</summary>
+
+<!-- original:91a4dba43ec5e8:source/blender/blenlib/BLI_virtual_array.hh:526:526 -->
+
+```cpp
+  VArrayCommon(std::shared_ptr<const VArrayImpl<T>> impl) : impl_(std::move(impl)) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L527—L530
+
+<!-- annotated:3353528f08cd95 -->
+
+```cpp
 
   /**
    * Replace the contained #VArrayImpl.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L527—L530</summary>
+
+<!-- original:3353528f08cd95:source/blender/blenlib/BLI_virtual_array.hh:527:530 -->
+
+```cpp
+
+  /**
+   * Replace the contained #VArrayImpl.
+   */
+```
+
+</details>
+
+<a id="f-bd0fffea634fdbce"></a>
+
+### `blender::VArrayCommon::emplace`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L531—L534。
+
+**教学注释版**
+
+<!-- annotated:659c01412f3e98 -->
+
+```cpp
+  template<typename ImplT, typename... Args> void emplace(Args &&...args)
+  {
+    // [讲解] std::forward<Args>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+    impl_.template emplace<ImplT>(std::forward<Args>(args)...);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L531—L534</summary>
+
+<!-- original:659c01412f3e98:source/blender/blenlib/BLI_virtual_array.hh:531:534 -->
+
+```cpp
   template<typename ImplT, typename... Args> void emplace(Args &&...args)
   {
     impl_.template emplace<ImplT>(std::forward<Args>(args)...);
   }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `impl_.template emplace<ImplT>` → [blender::AnyDerived::emplace · L134](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-57e6b0e71dbdff55)。
+- `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L535—L537
+
+<!-- annotated:e7c5b95b12f09f -->
+
+```cpp
 
  public:
   /** Return false when there is no virtual array implementation currently. */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L535—L537</summary>
+
+<!-- original:e7c5b95b12f09f:source/blender/blenlib/BLI_virtual_array.hh:535:537 -->
+
+```cpp
+
+ public:
+  /** Return false when there is no virtual array implementation currently. */
+```
+
+</details>
+
+<a id="f-047193deec782945"></a>
+
+### `blender::VArrayCommon::() const`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L538—L541。
+
+**教学注释版**
+
+<!-- annotated:f1b959e193631f -->
+
+```cpp
   operator bool() const
   {
     return impl_;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L538—L541</summary>
+
+<!-- original:f1b959e193631f:source/blender/blenlib/BLI_virtual_array.hh:538:541 -->
+
+```cpp
+  operator bool() const
+  {
+    return impl_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return impl_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L542—L547
+
+<!-- annotated:ae1dd6172046e2 -->
+
+```cpp
 
   /**
    * Get the element at a specific index.
    * \note This can't return a reference because the value may be computed on the fly. This also
    * implies that one can not use this method for assignments.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L542—L547</summary>
+
+<!-- original:ae1dd6172046e2:source/blender/blenlib/BLI_virtual_array.hh:542:547 -->
+
+```cpp
+
+  /**
+   * Get the element at a specific index.
+   * \note This can't return a reference because the value may be computed on the fly. This also
+   * implies that one can not use this method for assignments.
+   */
+```
+
+</details>
+
+<a id="f-8192a9f439402fc9"></a>
+
+### `blender::VArrayCommon::operator[]`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L548—L554。
+
+接口参数：
+
+- `const int64_t index`
+
+**教学注释版**
+
+<!-- annotated:97cb25a1630c3c -->
+
+```cpp
   T operator[](const int64_t index) const
   {
     BLI_assert(*this);
@@ -681,44 +1577,108 @@ template<typename T> class VArrayCommon {
     BLI_assert(index < this->size());
     return impl_->get(index);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L548—L554</summary>
+
+<!-- original:97cb25a1630c3c:source/blender/blenlib/BLI_virtual_array.hh:548:554 -->
+
+```cpp
+  T operator[](const int64_t index) const
+  {
+    BLI_assert(*this);
+    BLI_assert(index >= 0);
+    BLI_assert(index < this->size());
+    return impl_->get(index);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return impl_->get(index);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
+- `impl_->get` → [blender::AnyDerived::get · L167](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-ebda3f1086d3f9fc)。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L555—L559
+
+<!-- annotated:8f5aac037773d5 -->
+
+```cpp
 
   /**
    * Same as the #operator[] but is sometimes easier to use when one has a pointer to a virtual
    * array.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L555—L559</summary>
+
+<!-- original:8f5aac037773d5:source/blender/blenlib/BLI_virtual_array.hh:555:559 -->
+
+```cpp
+
+  /**
+   * Same as the #operator[] but is sometimes easier to use when one has a pointer to a virtual
+   * array.
+   */
+```
+
+</details>
+
+<a id="f-dce84cee97df9ded"></a>
+
+### `blender::VArrayCommon::get`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L560—L563。
+
+接口参数：
+
+- `const int64_t index`
+
+**教学注释版**
+
+<!-- annotated:de1910d0f3decf -->
+
+```cpp
   T get(const int64_t index) const
   {
     return (*this)[index];
   }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L526 | 出现调用或函数声明 `VArrayCommon`，对应表达式为 `VArrayCommon(std::shared_ptr<const VArrayImpl<T>> impl) : impl_(std::move(impl)) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L531 | 声明模板参数 `template<typename ImplT, typename... Args> void emplace(Args &&...args)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L532 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L533 | 出现调用或函数声明 `emplace`，对应表达式为 `impl_.template emplace<ImplT>(std::forward<Args>(args)...);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L534 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L536 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L538 | 运算符重载声明、定义或显式调用：`operator bool() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L539 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L540 | 返回表达式 `impl_`。 |
-| L541 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L548 | 运算符重载声明、定义或显式调用：`T operator[](const int64_t index) const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L549 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L550 | 断言约束 `BLI_assert(*this);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L551 | 断言约束 `BLI_assert(index >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L552 | 断言约束 `BLI_assert(index < this->size());`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L553 | 返回表达式 `impl_->get(index)`。 |
-| L554 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L560 | 出现调用或函数声明 `get`，对应表达式为 `T get(const int64_t index) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L561 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L562 | 返回表达式 `(*this)[index]`。 |
-| L563 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L560—L563</summary>
 
-### BLI_virtual_array.hh：L564—L606
+<!-- original:de1910d0f3decf:source/blender/blenlib/BLI_virtual_array.hh:560:563 -->
 
-<!-- source:source/blender/blenlib/BLI_virtual_array.hh:564:606 -->
+```cpp
+  T get(const int64_t index) const
+  {
+    return (*this)[index];
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return (*this)[index];`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L564—L568
+
+<!-- annotated:02a93644b82aa9 -->
 
 ```cpp
 
@@ -726,6 +1686,34 @@ template<typename T> class VArrayCommon {
    * Return the size of the virtual array. It's allowed to call this method even when there is no
    * virtual array. In this case 0 is returned.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L564—L568</summary>
+
+<!-- original:02a93644b82aa9:source/blender/blenlib/BLI_virtual_array.hh:564:568 -->
+
+```cpp
+
+  /**
+   * Return the size of the virtual array. It's allowed to call this method even when there is no
+   * virtual array. In this case 0 is returned.
+   */
+```
+
+</details>
+
+<a id="f-a098c32ba789341e"></a>
+
+### `blender::VArrayCommon::size`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L569—L575。
+
+**教学注释版**
+
+<!-- annotated:b34b588dbb46bb -->
+
+```cpp
   int64_t size() const
   {
     if (!impl_) {
@@ -733,32 +1721,307 @@ template<typename T> class VArrayCommon {
     }
     return impl_->size();
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L569—L575</summary>
+
+<!-- original:b34b588dbb46bb:source/blender/blenlib/BLI_virtual_array.hh:569:575 -->
+
+```cpp
+  int64_t size() const
+  {
+    if (!impl_) {
+      return 0;
+    }
+    return impl_->size();
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return 0;`
+- `return impl_->size();`
+
+**继续追踪实现**
+
+- `impl_->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L576—L578
+
+<!-- annotated:603d7d2fe0d0cf -->
+
+```cpp
   /**
    * Get the first element.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L576—L578</summary>
+
+<!-- original:603d7d2fe0d0cf:source/blender/blenlib/BLI_virtual_array.hh:576:578 -->
+
+```cpp
+  /**
+   * Get the first element.
+   */
+```
+
+</details>
+
+<a id="f-b613483c80286afb"></a>
+
+### `blender::VArrayCommon::first`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L579—L582。
+
+**教学注释版**
+
+<!-- annotated:f36539cc84f885 -->
+
+```cpp
   T first() const
   {
     return (*this)[0];
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L579—L582</summary>
+
+<!-- original:f36539cc84f885:source/blender/blenlib/BLI_virtual_array.hh:579:582 -->
+
+```cpp
+  T first() const
+  {
+    return (*this)[0];
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return (*this)[0];`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L583—L585
+
+<!-- annotated:b00b725079a2ca -->
+
+```cpp
   /**
    * Get the nth last element.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L583—L585</summary>
+
+<!-- original:b00b725079a2ca:source/blender/blenlib/BLI_virtual_array.hh:583:585 -->
+
+```cpp
+  /**
+   * Get the nth last element.
+   */
+```
+
+</details>
+
+<a id="f-e17c360c3547b9b6"></a>
+
+### `blender::VArrayCommon::last`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L586—L589。
+
+接口参数：
+
+- `const int64_t n = 0`
+
+**教学注释版**
+
+<!-- annotated:a439a99b5ac45e -->
+
+```cpp
   T last(const int64_t n = 0) const
   {
     return (*this)[this->size() - 1 - n];
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L586—L589</summary>
+
+<!-- original:a439a99b5ac45e:source/blender/blenlib/BLI_virtual_array.hh:586:589 -->
+
+```cpp
+  T last(const int64_t n = 0) const
+  {
+    return (*this)[this->size() - 1 - n];
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return (*this)[this->size() - 1 - n];`
+
+**继续追踪实现**
+
+- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
+
+### 类型布局、声明与编译条件 · BLI_virtual_array.hh L590—L591
+
+<!-- annotated:7072010ea3349b -->
+
+```cpp
 
   /** True when the size is zero or when there is no virtual array. */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L590—L591</summary>
+
+<!-- original:7072010ea3349b:source/blender/blenlib/BLI_virtual_array.hh:590:591 -->
+
+```cpp
+
+  /** True when the size is zero or when there is no virtual array. */
+```
+
+</details>
+
+<a id="f-234c8d43229160e3"></a>
+
+### `blender::VArrayCommon::is_empty`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L592—L595。
+
+**教学注释版**
+
+<!-- annotated:2d6e33c2d5c27b -->
+
+```cpp
   bool is_empty() const
   {
     return this->size() == 0;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L592—L595</summary>
+
+<!-- original:2d6e33c2d5c27b:source/blender/blenlib/BLI_virtual_array.hh:592:595 -->
+
+```cpp
+  bool is_empty() const
+  {
+    return this->size() == 0;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->size() == 0;`
+
+**继续追踪实现**
+
+- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
+
+<!-- annotated:e69048caf86964 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L596—L596</summary>
+
+<!-- original:e69048caf86964:source/blender/blenlib/BLI_virtual_array.hh:596:596 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-0d80b03598c030d3"></a>
+
+### `blender::VArrayCommon::index_range`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L597—L600。
+
+**教学注释版**
+
+<!-- annotated:09486fe43f8c37 -->
+
+```cpp
   IndexRange index_range() const
   {
     return IndexRange(this->size());
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L597—L600</summary>
+
+<!-- original:09486fe43f8c37:source/blender/blenlib/BLI_virtual_array.hh:597:600 -->
+
+```cpp
+  IndexRange index_range() const
+  {
+    return IndexRange(this->size());
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return IndexRange(this->size());`
+
+**继续追踪实现**
+
+- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
+
+<!-- annotated:35c73e3fd9902e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L601—L601</summary>
+
+<!-- original:35c73e3fd9902e:source/blender/blenlib/BLI_virtual_array.hh:601:601 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-087793fc5c4b8977"></a>
+
+### `blender::VArrayCommon::common_info`
+
+实现位置：[source/blender/blenlib/BLI_virtual_array.hh](../../../../../source/blender/blenlib/BLI_virtual_array.hh) · L602—L606。
+
+**教学注释版**
+
+<!-- annotated:f990cfc8aef165 -->
+
+```cpp
   CommonVArrayInfo common_info() const
   {
     BLI_assert(*this);
@@ -766,408 +2029,120 @@ template<typename T> class VArrayCommon {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_virtual_array.hh · L602—L606</summary>
 
-- 分支证据 `!impl_)`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:f990cfc8aef165:source/blender/blenlib/BLI_virtual_array.hh:602:606 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L569 | 出现调用或函数声明 `size`，对应表达式为 `int64_t size() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L570 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L571 | 判断 `!impl_`，成立时进入本分支，否则继续后续路径。 |
-| L572 | 返回表达式 `0`。 |
-| L573 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L574 | 返回表达式 `impl_->size()`。 |
-| L575 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L579 | 出现调用或函数声明 `first`，对应表达式为 `T first() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L580 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L581 | 返回表达式 `(*this)[0]`。 |
-| L582 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L586 | 把右侧 `0) const` 用于初始化或更新左侧 `T last(const int64_t n`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L587 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L588 | 返回表达式 `(*this)[this->size() - 1 - n]`。 |
-| L589 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L592 | 出现调用或函数声明 `is_empty`，对应表达式为 `bool is_empty() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L593 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L594 | 纯虚接口声明：`return this->size() == 0;`。等号零标记抽象接口，需要按继承约定提供覆写；不表示执行函数并把结果设为零。 |
-| L595 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L597 | 出现调用或函数声明 `index_range`，对应表达式为 `IndexRange index_range() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L598 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L599 | 返回表达式 `IndexRange(this->size())`。 |
-| L600 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L602 | 出现调用或函数声明 `common_info`，对应表达式为 `CommonVArrayInfo common_info() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L603 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L604 | 断言约束 `BLI_assert(*this);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L605 | 返回表达式 `impl_->common_info()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L606 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-
-## 五、接口定位、调用线索与生命周期
-
-### 本篇声明与实现入口
-
-| 源码位置 | 实际声明片段 |
-|---|---|
-| [BLI_virtual_array.hh:L314](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L314) | `template<typename T> class VArrayImpl_For_Single final : public VArrayImpl<T>` |
-| [BLI_virtual_array.hh:L319](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L319) | `VArrayImpl_For_Single(T value, const int64_t size)` |
-| [BLI_virtual_array.hh:L325](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L325) | `T get(const int64_t /*index*/) const override` |
-| [BLI_virtual_array.hh:L330](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L330) | `CommonVArrayInfo common_info() const override` |
-| [BLI_virtual_array.hh:L335](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L335) | `void materialize(const IndexMask &mask, T *dst, const bool dst_is_uninitialized) const override` |
-| [BLI_virtual_array.hh:L350](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L350) | `void materialize_compressed(const IndexMask &mask,` |
-| [BLI_virtual_array.hh:L375](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L375) | `template<typename T, typename GetFunc> class VArrayImpl_For_Func final : public VArrayImpl<T>` |
-| [BLI_virtual_array.hh:L380](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L380) | `VArrayImpl_For_Func(const int64_t size, GetFunc get_func)` |
-| [BLI_virtual_array.hh:L386](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L386) | `T get(const int64_t index) const override` |
-| [BLI_virtual_array.hh:L391](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L391) | `void materialize(const IndexMask &mask, T *dst, const bool dst_is_uninitialized) const override` |
-| [BLI_virtual_array.hh:L406](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L406) | `void materialize_compressed(const IndexMask &mask,` |
-| [BLI_virtual_array.hh:L430](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L430) | `ElemT (*GetFunc)(const StructT &),` |
-| [BLI_virtual_array.hh:L432](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L432) | `class VArrayImpl_For_DerivedSpan final : public VMutableArrayImpl<ElemT>` |
-| [BLI_virtual_array.hh:L437](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L437) | `VArrayImpl_For_DerivedSpan(const MutableSpan<StructT> data)` |
-| [BLI_virtual_array.hh:L444](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L444) | `OtherElemT (*OtherGetFunc)(const OtherStructT &),` |
-| [BLI_virtual_array.hh:L449](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L449) | `ElemT get(const int64_t index) const override` |
-| [BLI_virtual_array.hh:L454](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L454) | `void set(const int64_t index, ElemT value) override` |
-| [BLI_virtual_array.hh:L456](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L456) | `SetFunc(data_[index], std::move(value));` |
-| [BLI_virtual_array.hh:L459](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L459) | `void materialize(const IndexMask &mask,` |
-| [BLI_virtual_array.hh:L476](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L476) | `void materialize_compressed(const IndexMask &mask,` |
-| [BLI_virtual_array.hh:L499](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L499) | `ElemT (*GetFunc)(const StructT &),` |
-| [BLI_virtual_array.hh:L511](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L511) | `template<typename T> class VArrayCommon` |
-| [BLI_virtual_array.hh:L515](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L515) | `VArrayCommon() = default;` |
-| [BLI_virtual_array.hh:L521](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L521) | `VArrayCommon(const VArrayImpl<T> *impl) : impl_(impl) {}` |
-| [BLI_virtual_array.hh:L526](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L526) | `VArrayCommon(std::shared_ptr<const VArrayImpl<T>> impl) : impl_(std::move(impl)) {}` |
-| [BLI_virtual_array.hh:L538](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L538) | `operator bool() const` |
-| [BLI_virtual_array.hh:L560](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L560) | `T get(const int64_t index) const` |
-| [BLI_virtual_array.hh:L569](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L569) | `int64_t size() const` |
-| [BLI_virtual_array.hh:L579](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L579) | `T first() const` |
-| [BLI_virtual_array.hh:L586](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L586) | `T last(const int64_t n = 0) const` |
-| [BLI_virtual_array.hh:L592](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L592) | `bool is_empty() const` |
-| [BLI_virtual_array.hh:L597](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L597) | `IndexRange index_range() const` |
-| [BLI_virtual_array.hh:L602](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L602) | `CommonVArrayInfo common_info() const` |
-
-### 同名符号出现位置
-
-以下表提供跨文件阅读入口，包含声明、调用或测试使用；没有经过完整C++名称解析，不把它命名为已证明的运行时调用图。
-
-| 符号 | 位置 | 文本证据 |
-|---|---|---|
-| `get` | [BKE_attribute.hh:L425](../../../../../source/blender/blenkernel/BKE_attribute.hh#L425) | `GAttributeReader get() const` |
-| `get` | [BKE_attribute.hh:L431](../../../../../source/blender/blenkernel/BKE_attribute.hh#L431) | `GAttributeReader get(std::optional<AttrDomain> domain, std::optional<AttrType> data_type) const;` |
-| `get` | [BKE_attribute.hh:L433](../../../../../source/blender/blenkernel/BKE_attribute.hh#L433) | `GAttributeReader get(const AttrDomain domain) const` |
-| `common_info` | [geometry_fields.cc:L959](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L959) | `const CommonVArrayInfo attribute_info = attribute.varray.common_info();` |
-| `common_info` | [geometry_fields.cc:L1103](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L1103) | `const CommonVArrayInfo info = result_data.common_info();` |
-| `common_info` | [BLI_array_utils.hh:L246](../../../../../source/blender/blenlib/BLI_array_utils.hh#L246) | `const CommonVArrayInfo info = src.common_info();` |
-| `materialize` | [geometry_fields.cc:L992](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L992) | `old_attribute.varray.materialize(buffer);` |
-| `materialize` | [mesh_normals.cc:L87](../../../../../source/blender/blenkernel/intern/mesh_normals.cc#L87) | `data.materialize(this->ensure_vector_size(data.size()));` |
-| `materialize` | [BLI_array_utils.hh:L64](../../../../../source/blender/blenlib/BLI_array_utils.hh#L64) | `src.materialize(range, dst);` |
-| `materialize_compressed` | [BLI_array_utils.hh:L59](../../../../../source/blender/blenlib/BLI_array_utils.hh#L59) | `src.materialize_compressed(dst.index_range(), dst);` |
-| `materialize_compressed` | [BLI_array_utils.hh:L196](../../../../../source/blender/blenlib/BLI_array_utils.hh#L196) | `src.materialize_compressed(indices, dst);` |
-| `materialize_compressed` | [BLI_array_utils.hh:L201](../../../../../source/blender/blenlib/BLI_array_utils.hh#L201) | `src.materialize_compressed(indices.slice(range), dst.slice(range));` |
-| `set` | [mesh.cc:L581](../../../../../source/blender/blenkernel/intern/mesh.cc#L581) | `root.varray.set(0, true);` |
-| `set` | [mesh.cc:L849](../../../../../source/blender/blenkernel/intern/mesh.cc#L849) | `vert_used[vert].set();` |
-| `set` | [mesh.cc:L943](../../../../../source/blender/blenkernel/intern/mesh.cc#L943) | `added_verts[vert_idx].set();` |
-| `bool` | [BKE_attribute.hh:L140](../../../../../source/blender/blenkernel/BKE_attribute.hh#L140) | `FunctionRef<bool(StringRefNull name, const AttributeMetaData &meta_data)>;` |
-| `bool` | [BKE_attribute.hh:L177](../../../../../source/blender/blenkernel/BKE_attribute.hh#L177) | `operator bool() const` |
-| `bool` | [BKE_attribute.hh:L194](../../../../../source/blender/blenkernel/BKE_attribute.hh#L194) | `operator bool() const` |
-| `size` | [BKE_curves.hh:L599](../../../../../source/blender/blenkernel/BKE_curves.hh#L599) | `return {curve_index + points.start(), points.size() + 1};` |
-| `size` | [BKE_curves.hh:L1085](../../../../../source/blender/blenkernel/BKE_curves.hh#L1085) | `return {start, curves::segments_num(points.size(), cyclic)};` |
-| `size` | [BKE_mesh.hh:L308](../../../../../source/blender/blenkernel/BKE_mesh.hh#L308) | `return corner - 1 + (corner == face.start()) * face.size();` |
-| `first` | [mesh_normals.cc:L1170](../../../../../source/blender/blenkernel/intern/mesh_normals.cc#L1170) | `return face_normals[corner_infos[local_corners_in_fan.first()].face];` |
-| `first` | [mesh_normals.cc:L1199](../../../../../source/blender/blenkernel/intern/mesh_normals.cc#L1199) | `const int local_edge_first = corner_infos[local_corners_in_fan.first()].local_edge_next;` |
-| `first` | [node_tree_reference_lifetimes.cc:L383](../../../../../source/blender/blenkernel/intern/node_tree_reference_lifetimes.cc#L383) | `BitVector<> found(sources.first()->group_size(), false);` |
-| `last` | [BKE_curves.hh:L1102](../../../../../source/blender/blenkernel/BKE_curves.hh#L1102) | `return lengths.last();` |
-| `last` | [BKE_mesh.hh:L317](../../../../../source/blender/blenkernel/BKE_mesh.hh#L317) | `if (corner == face.last()) {` |
-| `last` | [mesh_mapping.cc:L309](../../../../../source/blender/blenkernel/intern/mesh_mapping.cc#L309) | `r_indices.reinitialize(r_offsets.last());` |
-| `is_empty` | [BKE_attribute.hh:L780](../../../../../source/blender/blenkernel/BKE_attribute.hh#L780) | `if (name.is_empty()) {` |
-| `is_empty` | [BKE_attribute.hh:L798](../../../../../source/blender/blenkernel/BKE_attribute.hh#L798) | `if (name.is_empty()) {` |
-| `is_empty` | [BKE_curves.hh:L185](../../../../../source/blender/blenkernel/BKE_curves.hh#L185) | `bool is_empty() const;` |
-
-### 生命周期推理图
-
-```mermaid
-flowchart LR
-  O["调用者或源数据拥有者"]:::input
-  V["VArrayImpl实现接口的接口与状态"]:::abstraction
-  B["借用地址、引用或视图"]:::data
-  W["实际计算或修改"]:::compute
-  R["结果与清理责任"]:::result
-  O -->|"创建与配置"| V
-  O -->|"保障寿命"| B
-  B -->|"访问前验证"| W
-  V -->|"规定操作"| W
-  W -->|"交付或销毁"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```cpp
+  CommonVArrayInfo common_info() const
+  {
+    BLI_assert(*this);
+    return impl_->common_info();
+  }
 ```
 
-这是审查生命周期的通用模型。具体类是否拥有数据由本篇成员、构造、析构和调用者一起证明；任何箭头都不自动代表shared_ptr。
+</details>
 
-## 六、把代码放进具体数据中推演
+**结果出口**
 
-本方向的共同数值模型如下。本篇的专门检查是：写基于公式的数组，比较逐项获取与批量物化。
+- `return impl_->common_info();`
 
-| 步骤 | 数据或状态 | 为什么需要这一步 |
-|---|---|---|
-| 输入 | 长度6，所有值为3 | 单值表示可只存一个3 |
-| 选择 | mask={1,4} | 内部位置0对应全局1 |
-| 执行 | 读取1与4 | 避免读取未选位置 |
-| 物化 | 按接口准备目标 | 支付真实存储和复制成本 |
-| 分派 | 判断常见表示 | 专门化循环可避免逐项虚调用 |
-| 核对 | 与直接数组结果一致 | 表示变化不能改变元素语义 |
+**继续追踪实现**
 
-```mermaid
-flowchart TB
-  T0["长度6，所有值为3"]:::input
-  T1["mask={1,4}"]:::compute
-  T2["读取1与4"]:::compute
-  T3["按接口准备目标"]:::compute
-  T4["判断常见表示"]:::compute
-  T5["与直接数组结果一致"]:::result
-  T0 -->|"选择"| T1
-  T1 -->|"执行"| T2
-  T2 -->|"物化"| T3
-  T3 -->|"分派"| T4
-  T4 -->|"核对"| T5
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `impl_->common_info` → [blender::VArrayCommon::common_info · L602](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-087793fc5c4b8977)。
 
-图是教学推演模型；精确分支与状态更新以本篇摘录及调用契约为准。
+## 语法与相关类型
 
-### 本篇独立练习与参考思路
+### 模板 template
+
+模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
+
+把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
+
+### 依赖名称 typename
+
+typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+
+区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+
+### 常量求值 constexpr
+
+constexpr声明允许相应实体参与常量求值，但constexpr函数仍可以在运行时执行。是否常量求值由调用场景和表达式合法性共同决定。
+
+比较constexpr变量初始化和从运行时输入调用同一函数。
+
+### 只读限定 const
+
+const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
+
+分别写T* const、const T*与const T* const，并画出不可修改的层次。
+
+### 移动转换 std::move
+
+std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
+
+记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
+
+### 完美转发 std::forward
+
+std::forward在转发引用模板中恢复调用者原来的值类别。它依赖推导出的模板实参；无条件move会改变左值调用者的语义。
+
+对同一接口分别传入左值、临时对象和const左值，记录实际重载。
+
+### 运行时多态 virtual
+
+虚调用根据实际动态类型选择实现；经基类指针销毁对象时通常需要相应虚析构契约。每元素虚调用和循环外一次分派有不同开销。
+
+找出虚接口的实现类和调用频率，再讨论是否值得去虚拟化。
+
+### 覆写检查 override
+
+override要求函数确实覆盖基类虚函数，可捕获参数类型和const限定不匹配。它不改变基类规定的生命周期或线程约束。
+
+故意改变一个参数或const，观察编译器如何拒绝误写的新函数。
+
+### 构造与new表达式
+
+普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
+
+追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
+
+### 内部断言 assert
+
+断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
+
+对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
+
+### 编译期分支 if constexpr
+
+条件在实例化时决定被保留的分支，这常用于不同类型的合法操作选择。它与运行时if有不同的实例化检查规则。
+
+找出每个分支依赖哪些类型特征，再使用满足与不满足条件的类型。
+
+### 受控访问 friend
+
+friend授予指定函数或类访问非公开成员的权限，并不意味着继承，也不自动扩展到友元的派生类。
+
+解释执行器为何需要访问包装器的内部映射，同时检查边界是否仍清楚。
+
+### 共享拥有 shared_ptr
+
+shared_ptr让控制块跟踪共享寿命，不自动使被指向对象的读写线程安全；循环拥有可能阻止销毁。
+
+画出强引用环并考虑是否应改变所有权方向或引入弱引用。
+
+## 实现练习与验证
 
 写基于公式的数组，比较逐项获取与批量物化。
 
-参考思路：稳定的值封装便于传参，具体实现负责获取和物化；新增实现要遵守大小、类型和生命周期契约。
+参考推理：同一组输入分别验证逐项获取与每种物化路径。
 
-将输入、预期结果和资源责任分成三张清单。先用最直接的实现给出可核对的答案，再替换成对应源码使用的表示；比较结果不变的条件，而不是只比较接口名字。
+遍历结果按真实索引排序且无重复；单值、Span与计算表示在有效索引上返回一致语义。
 
-验收依据：遍历结果按真实索引排序且无重复；单值、Span与计算表示在有效索引上返回一致语义。
-
-## 七、复杂度、设计取舍与其他基础库
+## 历史、跨库比较与证据
 
 对比普通Span、标准ranges惰性视图和虚拟数组时，明确随机索引能力、批量物化、类型擦除和拥有关系；接口外观相近不代表同一抽象。
 
-本篇的具体取舍：稳定的值封装便于传参，具体实现负责获取和物化；新增实现要遵守大小、类型和生命周期契约。
-
-| 观察维度 | 从源码取得证据的方法 | 本篇要避免的误判 |
-|---|---|---|
-| 时间 | 对循环次数、分派次数和重建频率分别计数 | 看到单次常数操作就断定整个操作序列是常数成本 |
-| 内存 | 区分对象本体、容量存储、间接资源和共享控制块 | 用sizeof代替总内存 |
-| 安全 | 沿构造、失败回滚、销毁与失效逐路径检查 | 把断言或非空指针当作完整安全证明 |
-| 并发 | 逐字段确认锁、发布顺序和借用寿命 | 把引用计数线程安全等同数据读写线程安全 |
-
-相关一手资料：
-
-- [C++公开工作草案](https://eel.is/c++draft/)：持续更新的工作草案；语言与标准库语义以相应章节为准。
-- [LLVM Programmer’s Manual](https://llvm.org/docs/ProgrammersManual.html)：在线版，2026-10-14查阅；仅比较设计思路，不保证与本地LLVM版本一致。
-
-资料用于核对契约和进一步阅读；这里没有声称外部库与Blender实现相同，也没有把上游性能数字当作本机实测。
-
-## 八、历史提交与设计演化
-
-### 2021-11-16 · Jacques Lucke
-
-[Geometry Nodes: refactor virtual array system](https://projects.blender.org/blender/blender/commit/d4c868da9f97a06c3457b8eafd344a23ed704874)
-
-完整哈希：`d4c868da9f97a06c3457b8eafd344a23ed704874`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-Geometry Nodes: refactor virtual array system
-
-Goals of this refactor:
-* Simplify creating virtual arrays.
-* Simplify passing virtual arrays around.
-* Simplify converting between typed and generic virtual arrays.
-* Reduce memory allocations.
-
-As a quick reminder, a virtual arrays is a data structure that behaves like an
-array (i.e. it can be accessed using an index). However, it may not actually
-be stored as array internally. The two most important implementations
-of virtual arrays are those that correspond to an actual plain array and those
-that have the same value for every index. However, many more
-implementations exist for various reasons (interfacing with legacy attributes,
-unified iterator over all points in multiple splines, ...).
-
-With this refactor the core types (`VArray`, `GVArray`, `VMutableArray` and
-`GVMutableArray`) can be used like "normal values". They typically live
-on the stack. Before, they were usually inside a `std::unique_ptr`. This makes
-passing them around much easier. Creation of new virtual arrays is also
-much simpler now due to some constructors. Memory allocations are
-reduced by making use of small object optimization inside the core types.
-
-Previously, `VArray` was a class with virtual methods that had to be overridden
-to change the behavior of a the virtual array. Now,`VArray` has a fixed size
-and has no virtual methods. Instead it contains a `VArrayImpl` that is
-similar to the old `VArray`. `VArrayImpl` should rarely ever be used directly,
-unless a new virtual array implementation is added.
-
-To support the small object optimization for many `VArrayImpl` classes,
-a new `blender::Any` type is added. It is similar to `std::any` with two
-additional features. It has an adjustable inline buffer size and alignment.
-The inline buffer size of `std::any` can't be relied on and is usually too
-small for our use case here. Furthermore, `blender::Any` can store
-additional user-defined type information without increasing the
-stack size.
-
-Differential Revision: https://developer.blender.org/D12986
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“包装层与多态实现层为什么分开？”判断方案改变的是表示、接口、生命周期还是调度。
-
-### 2022-04-26 · Jacques Lucke
-
-[Geometry Nodes: refactor array devirtualization](https://projects.blender.org/blender/blender/commit/ae94e36cfb2f3bc9a99b638782092d9c71d4b3c7)
-
-完整哈希：`ae94e36cfb2f3bc9a99b638782092d9c71d4b3c7`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-Geometry Nodes: refactor array devirtualization
-
-Goals:
-* Better high level control over where devirtualization occurs. There is always
-  a trade-off between performance and compile-time/binary-size.
-* Simplify using array devirtualization.
-* Better performance for cases where devirtualization wasn't used before.
-
-Many geometry nodes accept fields as inputs. Internally, that means that the
-execution functions have to accept so called "virtual arrays" as inputs. Those
- can be e.g. actual arrays, just single values, or lazily computed arrays.
-Due to these different possible virtual arrays implementations, access to
-individual elements is slower than it would be if everything was just a normal
-array (access does through a virtual function call). For more complex execution
-functions, this overhead does not matter, but for small functions (like a simple
-addition) it very much does. The virtual function call also prevents the compiler
-from doing some optimizations (e.g. loop unrolling and inserting simd instructions).
-
-The solution is to "devirtualize" the virtual arrays for small functions where the
-overhead is measurable. Essentially, the function is generated many times with
-different array types as input. Then there is a run-time dispatch that calls the
-best implementation. We have been doing devirtualization in e.g. math nodes
-for a long time already. This patch just generalizes the concept and makes it
-easier to control. It also makes it easier to investigate the different trade-offs
-when it comes to devirtualization.
-
-Nodes that we've optimized using devirtualization before didn't get a speedup.
-However, a couple of nodes are using devirtualization now, that didn't before.
-Those got a 2-4x speedup in common cases.
-* Map Range
-* Random Value
-* Switch
-* Combine XYZ
-
-Differential Revision: https://developer.blender.org/D14628
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“包装层与多态实现层为什么分开？”判断方案改变的是表示、接口、生命周期还是调度。
-
-### 2023-05-24 · Jacques Lucke
-
-[BLI: refactor IndexMask for better performance and memory usage](https://projects.blender.org/blender/blender/commit/2cfcb8b0b805401a0ffb252fd41750fadb0392ab)
-
-完整哈希：`2cfcb8b0b805401a0ffb252fd41750fadb0392ab`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-BLI: refactor IndexMask for better performance and memory usage
-
-Goals of this refactor:
-* Reduce memory consumption of `IndexMask`. The old `IndexMask` uses an
-  `int64_t` for each index which is more than necessary in pretty much all
-  practical cases currently. Using `int32_t` might still become limiting
-  in the future in case we use this to index e.g. byte buffers larger than
-  a few gigabytes. We also don't want to template `IndexMask`, because
-  that would cause a split in the "ecosystem", or everything would have to
-  be implemented twice or templated.
-* Allow for more multi-threading. The old `IndexMask` contains a single
-  array. This is generally good but has the problem that it is hard to fill
-  from multiple-threads when the final size is not known from the beginning.
-  This is commonly the case when e.g. converting an array of bool to an
-  index mask. Currently, this kind of code only runs on a single thread.
-* Allow for efficient set operations like join, intersect and difference.
-  It should be possible to multi-thread those operations.
-* It should be possible to iterate over an `IndexMask` very efficiently.
-  The most important part of that is to avoid all memory access when iterating
-  over continuous ranges. For some core nodes (e.g. math nodes), we generate
-  optimized code for the cases of irregular index masks and simple index ranges.
-
-To achieve these goals, a few compromises had to made:
-* Slicing of the mask (at specific indices) and random element access is
-  `O(log #indices)` now, but with a low constant factor. It should be possible
-  to split a mask into n approximately equally sized parts in `O(n)` though,
-  making the time per split `O(1)`.
-* Using range-based for loops does not work well when iterating over a nested
-  data structure like the new `IndexMask`. Therefor, `foreach_*` functions with
-  callbacks have to be used. To avoid extra code complexity at the call site,
-  the `foreach_*` methods support multi-threading out of the box.
-
-The new data structure splits an `IndexMask` into an arbitrary number of ordered
-`IndexMaskSegment`. Each segment can contain at most `2^14 = 16384` indices. The
-indices within a segment are stored as `int16_t`. Each segment has an additional
-`int64_t` offset which allows storing arbitrary `int64_t` indices. This approach
-has the main benefits that segments can be processed/constructed individually on
-multiple threads without a serial bottleneck. Also it reduces the memory
-requirements significantly.
-
-For more details see comments in `BLI_index_mask.hh`.
-
-I did a few tests to verify that the data structure generally improves
-performance and does not cause regressions:
-* Our field evaluation benchmarks take about as much as before. This is to be
-  expected because we already made sure that e.g. add node evaluation is
-  vectorized. The important thing here is to check that changes to the way we
-  iterate over the indices still allows for auto-vectorization.
-* Memory usage by a mask is about 1/4 of what it was before in the average case.
-  That's mainly caused by the switch from `int64_t` to `int16_t` for indices.
-  In the worst case, the memory requirements can be larger when there are many
-  indices that are very far away. However, when they are far away from each other,
-  that indicates that there aren't many indices in total. In common cases, memory
-  usage can be way lower than 1/4 of before, because sub-ranges use static memory.
-* For some more specific numbers I benchmarked `IndexMask::from_bools` in
-  `index_mask_from_selection` on 10.000.000 elements at various probabilities for
-  `true` at every index:
-  ```
-  Probability      Old        New
-  0              4.6 ms     0.8 ms
-  0.001          5.1 ms     1.3 ms
-  0.2            8.4 ms     1.8 ms
-  0.5           15.3 ms     3.0 ms
-  0.8           20.1 ms     3.0 ms
-  0.999         25.1 ms     1.7 ms
-  1             13.5 ms     1.1 ms
-  ```
-
-Pull Request: https://projects.blender.org/blender/blender/pulls/104629
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“包装层与多态实现层为什么分开？”判断方案改变的是表示、接口、生命周期还是调度。
-
-## 九、反例、测试入口与掌握标准
-
-仓库测试入口：
-
-- [BLI_virtual_array_test.cc](../../../../../source/blender/blenlib/tests/BLI_virtual_array_test.cc)：阅读输入、断言与覆盖边界；本篇不把“存在测试”写成“本轮已运行”。
-
-需要实际构造的反例：
-
-- 空输入或没有结果需求：确认接口允许的空状态与不允许访问的操作。
-- 边界位置和退化结构：把长度为1、末尾位置、重复值或深链代入真实分支。
-- 生命周期结束或修改之后：检查保存的指针、引用、结果视图是否仍有效。
-- 与本篇核心不变量相冲突的输入：写基于公式的数组，比较逐项获取与批量物化。
-
-### 可运行的教学参考程序
-
-[reference_exercises.cc](../_tools/reference_exercises.cc)包含独立于Blender的C++20参考检查：视图、简化SmallVector、异常回滚、哈希碰撞与删除、偏移数组、拓扑映射、共享缓存、表达式、惰性分支、闭包和暴力最近邻。
-
-参考程序有意省略生产实现的完整能力。例如SmallVector禁止复制移动容器，不支持只能移动的元素，并禁止append参数别名到自身元素；TinyMap固定8槽，不提供增长。程序通过不能替代Blender实现测试。实际运行结果、编译器与命令见验收报告。
-
-掌握标准：离开源码解释“包装层与多态实现层为什么分开？”；独立完成上述练习；能指出一个会破坏虚拟数组表示相关约束的最小反例，并用具体代码行说明检查或修复应放在哪里。
+[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)

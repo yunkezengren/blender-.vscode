@@ -1,40 +1,40 @@
 # 03-11 GSpan与GArray
 
-[方向导航](README.md) · [总目录](../README.md) · [覆盖索引](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
 
-> 阅读顺序：问题与数据模型 → 语法与类型 → 源码逐行 → 调用线索 → 历史与取舍 → 推演和练习。
-
-- 基准 HEAD：`cbda6b96c26c0dee3c3b5cbb93960c4ac06a6b30`。
-- 记录日期：2026-10-14。
-- 教学示例状态：正文中的推演不是本机性能实测；已运行练习见验收报告。
-
-## 一、从问题到设计
+## 从问题到实现
 
 未知元素类型的数组怎样计算步长和生命周期？
 
 类型信息与地址长度共同构成通用视图；拥有型数组还要执行相应类型操作。
 
-本篇把语法、数据语义和系统取舍连接起来。把存储分配、对象构造、类型操作和最终清理拆开建模。
-
-### 本篇独立模型与设计推理
+**数据模型**
 
 GSpan包含动态类型、地址和长度；第i个对象地址依赖类型步长。
 
-设计取舍：统一接口适合工具与通用算法，热点循环可恢复静态类型。
+**设计取舍**
 
-最小反例：用int步长访问string数组，地址即使落在缓冲内也不是合法对象。
+统一接口适合工具与通用算法，热点循环可恢复静态类型。
 
-推导与处理：先验证CPPType一致，再typed访问；拥有型GArray必须调用对应析构。
+**最小反例**
+
+用int步长访问string数组，地址即使落在缓冲内也不是合法对象。
+
+**推导**
+
+先验证CPPType一致，再typed访问；拥有型GArray必须调用对应析构。
+
+## 阅读地图与执行推演
 
 ```mermaid
 flowchart TB
-  M["GSpan包含动态类型、地址和长度；第i个对象<br/>地址依赖类型步长。"]:::data
-  T["统一接口适合工具与通用算法，热点循环可恢<br/>复静态类型。"]:::abstraction
-  X["用int步长访问string数组，地址即使落在缓<br/>冲内也不是合法对象。"]:::error
-  A["先验证CPPType一致，再typed访问；拥有型<br/>GArray必须调用对应析构。"]:::result
-  M -->|"建立约束"| T
-  T -->|"构造反例"| X
-  X -->|"恢复不变量"| A
+  M["GSpan包含动态类型、地址和长度；第i个对象地<br/>址依赖类型步长。"]:::data
+  C["统一接口适合工具与通用算法，热点循环可恢复<br/>静态类型。"]:::abstraction
+  B["用int步长访问string数组，地址即使落在缓冲<br/>内也不是合法对象。"]:::error
+  R["先验证CPPType一致，再typed访问；拥有型<br/>GArray必须调用对应析构。"]:::result
+  M -->|"明确约束"| C
+  C -->|"检验边界"| B
+  B -->|"恢复正确性"| R
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -42,54 +42,17 @@ flowchart TB
   classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
-
-### 源码范围与相邻篇章
-
-| 文件 | 本篇逐行范围 | 基准SHA-256 |
-|---|---|---|
-| [source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) | L1—L281 | `e2ac971e72efc8ff4e74c91be7882d5e9234af8ff177a1adbd1a4f3bb8a3b0d4` |
-| [source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) | L1—L262 | `4ba9ccccd5e24e66b9fceb388515df25913c43319cf6383f46b057e1fdf74e42` |
-
-同一主讲文件可能分多篇覆盖；超出本篇范围的符号通过覆盖索引定位。空行与纯注释保留在源码摘录中，逐行表解释有效语句与语法边界；许可证头统一保留。
-
-前篇：[运行时到静态类型分派](10-%E8%BF%90%E8%A1%8C%E6%97%B6%E5%88%B0%E9%9D%99%E6%80%81%E7%B1%BB%E5%9E%8B%E5%88%86%E6%B4%BE.md).
-
-后篇：[异构值存储实战](12-%E5%BC%82%E6%9E%84%E5%80%BC%E5%AD%98%E5%82%A8%E5%AE%9E%E6%88%98.md).
-
-## 二、类型、数据与阅读地图
-
-```mermaid
-flowchart TB
-  Q["未知元素类型的数组怎样计算步长和生命周期<br/>？"]:::input
-  C0["原始存储"]:::abstraction
-  C1["类型描述"]:::data
-  C2["对象操作"]:::data
-  C3["作用域清理"]:::data
-  R["GSpan与GArray"]:::result
-  Q -->|"建立模型"| C0
-  C0 -->|"区分职责"| C1
-  C1 -->|"区分职责"| C2
-  C2 -->|"区分职责"| C3
-  C3 -->|"回到源码"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
-
-这是概念依赖图，边表示阅读关系，不声称是运行时调用顺序。
-
-### 直接编译依赖
 
 ```mermaid
 flowchart LR
-  S["BLI_generic_span.hh"]:::abstraction
-  I0["BLI_cpp_type.hh"]:::data
-  I1["BLI_span.hh"]:::data
-  S -->|"直接include"| I0
-  S -->|"直接include"| I1
+  F0["blender::GArray::GArray"]:::input
+  F1["blender::GArray::GArray"]:::compute
+  F2["blender::GArray::GArray"]:::compute
+  F3["blender::GArray::GArray"]:::compute
+  F4["blender::GArray::GArray"]:::compute
+  F5["blender::GArray::GArray"]:::compute
+  F6["blender::GArray::GArray"]:::compute
+  F7["blender::GArray::GArray"]:::compute
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -98,660 +61,62 @@ flowchart LR
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-箭头只表示头文件包含关系；完整调用线索见后面的符号定位表。
-
-## 三、关键词、语法与类型角色
-
-### 模板 template
-
-模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
-
-具体检查：把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
-
-### 依赖名称 typename
-
-typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
-
-具体检查：区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
-
-### 只读限定 const
-
-const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
-
-具体检查：分别写T* const、const T*与const T* const，并画出不可修改的层次。
-
-### 移动转换 std::move
-
-std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
-
-具体检查：记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
-
-### 异常约定 noexcept
-
-noexcept表达式可以依赖类型特征。违反不抛异常约定会终止程序；它不是自动捕获异常，也不是资源回滚代码。
-
-具体检查：找出声明的条件与实际可能抛出的分配、构造操作是否一致。
-
-### 异常边界 try与catch
-
-try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
-
-具体检查：在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
-
-### 显式静态转换 static_cast
-
-static_cast表达编译期允许的转换，不会自动验证运行时真实类型、指针寿命或索引边界。由void指针恢复T指针时，调用者仍须保证实际存储中确有合法T对象。
-
-具体检查：标出转换前后的类型以及正确性依据来自哪里。
-
-### 构造与new表达式
-
-普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
-
-具体检查：追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
-
-### 内部断言 assert
-
-断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
-
-具体检查：对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
-
-## 四、真实源码与逐行讲解
-
-源码块保持原行内容，原始行号由小节标题及逐行表给出。表中的调用定位是静态阅读辅助；重载、模板实例化、宏展开和虚调用需结合完整声明，不能仅凭词法出现证明动态调用。
-
-### BLI_generic_span.hh：L1—L47
-
-<!-- source:source/blender/blenlib/BLI_generic_span.hh:1:47 -->
-
-```cpp
-/* SPDX-FileCopyrightText: 2023 Blender Authors
- *
- * SPDX-License-Identifier: GPL-2.0-or-later */
-
-#pragma once
-
-/** \file
- * \ingroup bli
- */
-
-#include "BLI_cpp_type.hh"
-#include "BLI_span.hh"
-
-namespace blender {
-
-/**
- * A generic span. It behaves just like a Span<T>, but the type is only known at run-time.
- */
-class GSpan {
- protected:
-  const CPPType *type_ = nullptr;
-  const void *data_ = nullptr;
-  int64_t size_ = 0;
-
- public:
-  GSpan() = default;
-
-  GSpan(const CPPType *type, const void *buffer, int64_t size)
-      : type_(type), data_(buffer), size_(size)
-  {
-    BLI_assert(size >= 0);
-    BLI_assert(buffer != nullptr || size == 0);
-    BLI_assert(size == 0 || type != nullptr);
-    BLI_assert(type == nullptr || type->pointer_has_valid_alignment(buffer));
-  }
-
-  GSpan(const CPPType &type, const void *buffer, int64_t size) : GSpan(&type, buffer, size) {}
-
-  GSpan(const CPPType &type) : type_(&type) {}
-
-  GSpan(const CPPType *type) : type_(type) {}
-
-  template<typename T>
-  GSpan(Span<T> array)
-      : GSpan(CPPType::get<T>(), static_cast<const void *>(array.data()), array.size())
-  {
-  }
+```mermaid
+flowchart LR
+  P0["原始存储"]:::input
+  P1["类型描述"]:::data
+  P2["对象操作"]:::data
+  P3["作用域清理"]:::result
+  P0 -->|"分析关系"| P1
+  P1 -->|"分析关系"| P2
+  P2 -->|"分析关系"| P3
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-本段语义重点：
-
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L5 | 防止同一头文件在一个翻译单元中重复展开；不控制多个源文件之间的链接或对象寿命。 |
-| L11 | 引入编译依赖 "BLI_cpp_type.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L12 | 引入编译依赖 "BLI_span.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L14 | 把后续声明放入 blender 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L19 | 声明或定义类型 `class GSpan`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L20 | 切换成员访问权限为 protected；它是编译期接口边界，不是线程同步或内存保护。 |
-| L21 | 把右侧 `nullptr` 用于初始化或更新左侧 `const CPPType *type_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L22 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `const void *data_ = nullptr`；对照更新前后相应范围或状态是否一致。 |
-| L23 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `int64_t size_ = 0`；对照更新前后相应范围或状态是否一致。 |
-| L25 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L26 | 显式采用编译器生成的特殊成员行为：`GSpan() = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L28 | 出现调用或函数声明 `GSpan`，对应表达式为 `GSpan(const CPPType *type, const void *buffer, int64_t size)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L29 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `: type_(type), data_(buffer), size_(size)`，不要把地址、数量或状态混用。 |
-| L30 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L31 | 断言约束 `BLI_assert(size >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L32 | 断言约束 `BLI_assert(buffer != nullptr &#124;&#124; size == 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L33 | 断言约束 `BLI_assert(size == 0 &#124;&#124; type != nullptr);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L34 | 断言约束 `BLI_assert(type == nullptr &#124;&#124; type->pointer_has_valid_alignment(buffer));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L35 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L37 | 出现调用或函数声明 `GSpan`，对应表达式为 `GSpan(const CPPType &type, const void *buffer, int64_t size) : GSpan(&type, buffer, size) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L39 | 出现调用或函数声明 `GSpan`，对应表达式为 `GSpan(const CPPType &type) : type_(&type) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L41 | 出现调用或函数声明 `GSpan`，对应表达式为 `GSpan(const CPPType *type) : type_(type) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L43 | 声明模板参数 `template<typename T>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L44 | 出现调用或函数声明 `GSpan`，对应表达式为 `GSpan(Span<T> array)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L45 | 出现调用或函数声明 `GSpan`，对应表达式为 `: GSpan(CPPType::get<T>(), static_cast<const void *>(array.data()), array.size())`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L46 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L47 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-
-### BLI_generic_span.hh：L48—L97
-
-<!-- source:source/blender/blenlib/BLI_generic_span.hh:48:97 -->
-
-```cpp
-
-  template<typename T>
-  GSpan(MutableSpan<T> array)
-      : GSpan(CPPType::get<T>(), static_cast<const void *>(array.data()), array.size())
-  {
-  }
-
-  const CPPType &type() const
-  {
-    BLI_assert(type_ != nullptr);
-    return *type_;
-  }
-
-  const CPPType *type_ptr() const
-  {
-    return type_;
-  }
-
-  bool is_empty() const
-  {
-    return size_ == 0;
-  }
-
-  int64_t size() const
-  {
-    return size_;
-  }
-
-  int64_t size_in_bytes() const
-  {
-    return type_->size * size_;
-  }
-
-  const void *data() const
-  {
-    return data_;
-  }
-
-  const void *operator[](int64_t index) const
-  {
-    BLI_assert(index < size_);
-    return POINTER_OFFSET(data_, type_->size * index);
-  }
-
-  template<typename T> Span<T> typed() const
-  {
-    BLI_assert(size_ == 0 || type_ != nullptr);
-    BLI_assert(type_ == nullptr || type_->is<T>());
-    return Span<T>(static_cast<const T *>(data_), size_);
-  }
+```mermaid
+flowchart TB
+  S0["sizeof(T), alignof(T)"]:::input
+  S1["尚无一般意义上的已构造T"]:::compute
+  S2["T生命周期开始"]:::compute
+  S3["建立或更新另一个对象"]:::compute
+  S4["执行登记的析构"]:::compute
+  S5["释放缓冲"]:::result
+  S0 -->|"取得地址"| S1
+  S1 -->|"构造成功"| S2
+  S2 -->|"复制或移动"| S3
+  S3 -->|"作用域退出"| S4
+  S4 -->|"归还存储"| S5
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-本段语义重点：
+图中的数值推演是本方向的教学模型；实际函数之间的调用边与概念分析边分别标注，不能把概念关系当作运行时调度顺序。
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
+## 完整源码单元与就地讲解
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L49 | 声明模板参数 `template<typename T>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L50 | 出现调用或函数声明 `GSpan`，对应表达式为 `GSpan(MutableSpan<T> array)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L51 | 出现调用或函数声明 `GSpan`，对应表达式为 `: GSpan(CPPType::get<T>(), static_cast<const void *>(array.data()), array.size())`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L52 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L53 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L55 | 出现调用或函数声明 `type`，对应表达式为 `const CPPType &type() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L56 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L57 | 断言约束 `BLI_assert(type_ != nullptr);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L58 | 返回表达式 `*type_`。 |
-| L59 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L61 | 出现调用或函数声明 `type_ptr`，对应表达式为 `const CPPType *type_ptr() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L62 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L63 | 返回表达式 `type_`。 |
-| L64 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L66 | 出现调用或函数声明 `is_empty`，对应表达式为 `bool is_empty() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L67 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L68 | 返回表达式 `size_ == 0`。 |
-| L69 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L71 | 出现调用或函数声明 `size`，对应表达式为 `int64_t size() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L72 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L73 | 返回表达式 `size_`。 |
-| L74 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L76 | 出现调用或函数声明 `size_in_bytes`，对应表达式为 `int64_t size_in_bytes() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L77 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L78 | 返回表达式 `type_->size * size_`。 |
-| L79 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L81 | 出现调用或函数声明 `data`，对应表达式为 `const void *data() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L82 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L83 | 返回表达式 `data_`。 |
-| L84 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L86 | 运算符重载声明、定义或显式调用：`const void *operator[](int64_t index) const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L87 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L88 | 断言约束 `BLI_assert(index < size_);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L89 | 返回表达式 `POINTER_OFFSET(data_, type_->size * index)`。 |
-| L90 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L92 | 声明模板参数 `template<typename T> Span<T> typed() const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L93 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L94 | 断言约束 `BLI_assert(size_ == 0 &#124;&#124; type_ != nullptr);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L95 | 断言约束 `BLI_assert(type_ == nullptr &#124;&#124; type_->is<T>());`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L96 | 返回表达式 `Span<T>(static_cast<const T *>(data_), size_)`。 |
-| L97 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+中文讲解直接放在相关代码旁，复杂机制在代码下展开。原文折叠区保留基准行号；不需要在行号表和函数之间来回查找。类布局可分段展示，函数实现不按固定行数切开。
 
-### BLI_generic_span.hh：L98—L146
+### 类型布局、声明与编译条件 · BLI_generic_array.hh L1—L47
 
-<!-- source:source/blender/blenlib/BLI_generic_span.hh:98:146 -->
+<a id="t-b5fe05933ec1"></a>
 
-```cpp
+`GArray`在这里声明的数据成员：
 
-  GSpan slice(const int64_t start, int64_t size) const
-  {
-    BLI_assert(start >= 0);
-    BLI_assert(size >= 0);
-    BLI_assert(start + size <= size_ || size == 0);
-    return GSpan(type_, POINTER_OFFSET(data_, type_->size * start), size);
-  }
+- `CPPType type_`
+- `void data_`
+- `int64_t size_`
+- `BLI_NO_UNIQUE_ADDRESS allocator_`
 
-  GSpan slice(const IndexRange range) const
-  {
-    return this->slice(range.start(), range.size());
-  }
-
-  GSpan drop_front(const int64_t n) const
-  {
-    BLI_assert(n >= 0);
-    const int64_t new_size = std::max<int64_t>(0, size_ - n);
-    return GSpan(*type_, POINTER_OFFSET(data_, type_->size * n), new_size);
-  }
-
-  GSpan drop_back(const int64_t n) const
-  {
-    BLI_assert(n >= 0);
-    const int64_t new_size = std::max<int64_t>(0, size_ - n);
-    return GSpan(*type_, data_, new_size);
-  }
-
-  GSpan take_front(const int64_t n) const
-  {
-    BLI_assert(n >= 0);
-    const int64_t new_size = std::min<int64_t>(size_, n);
-    return GSpan(*type_, data_, new_size);
-  }
-
-  GSpan take_back(const int64_t n) const
-  {
-    BLI_assert(n >= 0);
-    const int64_t new_size = std::min<int64_t>(size_, n);
-    return GSpan(*type_, POINTER_OFFSET(data_, type_->size * (size_ - new_size)), new_size);
-  }
-};
-
-/**
- * A generic mutable span. It behaves just like a MutableSpan<T>, but the type is only
- * known at run-time.
- */
-class GMutableSpan {
- protected:
-```
-
-本段语义重点：
-
-- `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。
-- `std::min`：取较小值，常用于截断范围；还要检查负值、溢出和空范围。
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L99 | 出现调用或函数声明 `slice`，对应表达式为 `GSpan slice(const int64_t start, int64_t size) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L100 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L101 | 断言约束 `BLI_assert(start >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L102 | 断言约束 `BLI_assert(size >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L103 | 断言约束 `BLI_assert(start + size <= size_ &#124;&#124; size == 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L104 | 返回表达式 `GSpan(type_, POINTER_OFFSET(data_, type_->size * start), size)`。 |
-| L105 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L107 | 出现调用或函数声明 `slice`，对应表达式为 `GSpan slice(const IndexRange range) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L108 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L109 | 返回表达式 `this->slice(range.start(), range.size())`。 |
-| L110 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L112 | 出现调用或函数声明 `drop_front`，对应表达式为 `GSpan drop_front(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L113 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L114 | 断言约束 `BLI_assert(n >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L115 | 本行使用 `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。 |
-| L116 | 返回表达式 `GSpan(*type_, POINTER_OFFSET(data_, type_->size * n), new_size)`。 |
-| L117 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L119 | 出现调用或函数声明 `drop_back`，对应表达式为 `GSpan drop_back(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L120 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L121 | 断言约束 `BLI_assert(n >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L122 | 本行使用 `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。 |
-| L123 | 返回表达式 `GSpan(*type_, data_, new_size)`。 |
-| L124 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L126 | 出现调用或函数声明 `take_front`，对应表达式为 `GSpan take_front(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L127 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L128 | 断言约束 `BLI_assert(n >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L129 | 本行使用 `std::min`：取较小值，常用于截断范围；还要检查负值、溢出和空范围。 |
-| L130 | 返回表达式 `GSpan(*type_, data_, new_size)`。 |
-| L131 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L133 | 出现调用或函数声明 `take_back`，对应表达式为 `GSpan take_back(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L134 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L135 | 断言约束 `BLI_assert(n >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L136 | 本行使用 `std::min`：取较小值，常用于截断范围；还要检查负值、溢出和空范围。 |
-| L137 | 返回表达式 `GSpan(*type_, POINTER_OFFSET(data_, type_->size * (size_ - new_size)), new_size)`。 |
-| L138 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L139 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L145 | 声明或定义类型 `class GMutableSpan`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L146 | 切换成员访问权限为 protected；它是编译期接口边界，不是线程同步或内存保护。 |
-
-### BLI_generic_span.hh：L147—L196
-
-<!-- source:source/blender/blenlib/BLI_generic_span.hh:147:196 -->
-
-```cpp
-  const CPPType *type_ = nullptr;
-  void *data_ = nullptr;
-  int64_t size_ = 0;
-
- public:
-  GMutableSpan() = default;
-
-  GMutableSpan(const CPPType *type, void *buffer, int64_t size)
-      : type_(type), data_(buffer), size_(size)
-  {
-    BLI_assert(size >= 0);
-    BLI_assert(buffer != nullptr || size == 0);
-    BLI_assert(size == 0 || type != nullptr);
-    BLI_assert(type == nullptr || type->pointer_has_valid_alignment(buffer));
-  }
-
-  GMutableSpan(const CPPType &type, void *buffer, int64_t size) : GMutableSpan(&type, buffer, size)
-  {
-  }
-
-  GMutableSpan(const CPPType &type) : type_(&type) {}
-
-  GMutableSpan(const CPPType *type) : type_(type) {}
-
-  template<typename T>
-  GMutableSpan(MutableSpan<T> array)
-      : GMutableSpan(CPPType::get<T>(), static_cast<void *>(array.begin()), array.size())
-  {
-  }
-
-  operator GSpan() const
-  {
-    return GSpan(type_, data_, size_);
-  }
-
-  const CPPType &type() const
-  {
-    BLI_assert(type_ != nullptr);
-    return *type_;
-  }
-
-  const CPPType *type_ptr() const
-  {
-    return type_;
-  }
-
-  bool is_empty() const
-  {
-    return size_ == 0;
-  }
-```
-
-本段语义重点：
-
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L147 | 把右侧 `nullptr` 用于初始化或更新左侧 `const CPPType *type_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L148 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `void *data_ = nullptr`；对照更新前后相应范围或状态是否一致。 |
-| L149 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `int64_t size_ = 0`；对照更新前后相应范围或状态是否一致。 |
-| L151 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L152 | 显式采用编译器生成的特殊成员行为：`GMutableSpan() = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L154 | 出现调用或函数声明 `GMutableSpan`，对应表达式为 `GMutableSpan(const CPPType *type, void *buffer, int64_t size)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L155 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `: type_(type), data_(buffer), size_(size)`，不要把地址、数量或状态混用。 |
-| L156 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L157 | 断言约束 `BLI_assert(size >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L158 | 断言约束 `BLI_assert(buffer != nullptr &#124;&#124; size == 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L159 | 断言约束 `BLI_assert(size == 0 &#124;&#124; type != nullptr);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L160 | 断言约束 `BLI_assert(type == nullptr &#124;&#124; type->pointer_has_valid_alignment(buffer));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L161 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L163 | 出现调用或函数声明 `GMutableSpan`，对应表达式为 `GMutableSpan(const CPPType &type, void *buffer, int64_t size) : GMutableSpan(&type, buffer, size)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L164 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L165 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L167 | 出现调用或函数声明 `GMutableSpan`，对应表达式为 `GMutableSpan(const CPPType &type) : type_(&type) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L169 | 出现调用或函数声明 `GMutableSpan`，对应表达式为 `GMutableSpan(const CPPType *type) : type_(type) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L171 | 声明模板参数 `template<typename T>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L172 | 出现调用或函数声明 `GMutableSpan`，对应表达式为 `GMutableSpan(MutableSpan<T> array)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L173 | 出现调用或函数声明 `GMutableSpan`，对应表达式为 `: GMutableSpan(CPPType::get<T>(), static_cast<void *>(array.begin()), array.size())`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L174 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L175 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L177 | 运算符重载声明、定义或显式调用：`operator GSpan() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L178 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L179 | 返回表达式 `GSpan(type_, data_, size_)`。 |
-| L180 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L182 | 出现调用或函数声明 `type`，对应表达式为 `const CPPType &type() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L183 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L184 | 断言约束 `BLI_assert(type_ != nullptr);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L185 | 返回表达式 `*type_`。 |
-| L186 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L188 | 出现调用或函数声明 `type_ptr`，对应表达式为 `const CPPType *type_ptr() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L189 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L190 | 返回表达式 `type_`。 |
-| L191 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L193 | 出现调用或函数声明 `is_empty`，对应表达式为 `bool is_empty() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L194 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L195 | 返回表达式 `size_ == 0`。 |
-| L196 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-
-### BLI_generic_span.hh：L197—L245
-
-<!-- source:source/blender/blenlib/BLI_generic_span.hh:197:245 -->
-
-```cpp
-
-  int64_t size() const
-  {
-    return size_;
-  }
-
-  int64_t size_in_bytes() const
-  {
-    return type_->size * size_;
-  }
-
-  void *data() const
-  {
-    return data_;
-  }
-
-  void *operator[](int64_t index) const
-  {
-    BLI_assert(index >= 0);
-    BLI_assert(index < size_);
-    return POINTER_OFFSET(data_, type_->size * index);
-  }
-
-  template<typename T> MutableSpan<T> typed() const
-  {
-    BLI_assert(size_ == 0 || type_ != nullptr);
-    BLI_assert(type_ == nullptr || type_->is<T>());
-    return MutableSpan<T>(static_cast<T *>(data_), size_);
-  }
-
-  GMutableSpan slice(const int64_t start, int64_t size) const
-  {
-    BLI_assert(start >= 0);
-    BLI_assert(size >= 0);
-    BLI_assert(start + size <= size_ || size == 0);
-    return GMutableSpan(type_, POINTER_OFFSET(data_, type_->size * start), size);
-  }
-
-  GMutableSpan slice(IndexRange range) const
-  {
-    return this->slice(range.start(), range.size());
-  }
-
-  GMutableSpan drop_front(const int64_t n) const
-  {
-    BLI_assert(n >= 0);
-    const int64_t new_size = std::max<int64_t>(0, size_ - n);
-    return GMutableSpan(*type_, POINTER_OFFSET(data_, type_->size * n), new_size);
-  }
-```
-
-本段语义重点：
-
-- `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L198 | 出现调用或函数声明 `size`，对应表达式为 `int64_t size() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L199 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L200 | 返回表达式 `size_`。 |
-| L201 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L203 | 出现调用或函数声明 `size_in_bytes`，对应表达式为 `int64_t size_in_bytes() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L204 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L205 | 返回表达式 `type_->size * size_`。 |
-| L206 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L208 | 出现调用或函数声明 `data`，对应表达式为 `void *data() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L209 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L210 | 返回表达式 `data_`。 |
-| L211 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L213 | 运算符重载声明、定义或显式调用：`void *operator[](int64_t index) const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L214 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L215 | 断言约束 `BLI_assert(index >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L216 | 断言约束 `BLI_assert(index < size_);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L217 | 返回表达式 `POINTER_OFFSET(data_, type_->size * index)`。 |
-| L218 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L220 | 声明模板参数 `template<typename T> MutableSpan<T> typed() const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L221 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L222 | 断言约束 `BLI_assert(size_ == 0 &#124;&#124; type_ != nullptr);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L223 | 断言约束 `BLI_assert(type_ == nullptr &#124;&#124; type_->is<T>());`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L224 | 返回表达式 `MutableSpan<T>(static_cast<T *>(data_), size_)`。 |
-| L225 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L227 | 出现调用或函数声明 `slice`，对应表达式为 `GMutableSpan slice(const int64_t start, int64_t size) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L228 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L229 | 断言约束 `BLI_assert(start >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L230 | 断言约束 `BLI_assert(size >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L231 | 断言约束 `BLI_assert(start + size <= size_ &#124;&#124; size == 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L232 | 返回表达式 `GMutableSpan(type_, POINTER_OFFSET(data_, type_->size * start), size)`。 |
-| L233 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L235 | 出现调用或函数声明 `slice`，对应表达式为 `GMutableSpan slice(IndexRange range) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L236 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L237 | 返回表达式 `this->slice(range.start(), range.size())`。 |
-| L238 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L240 | 出现调用或函数声明 `drop_front`，对应表达式为 `GMutableSpan drop_front(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L241 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L242 | 断言约束 `BLI_assert(n >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L243 | 本行使用 `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。 |
-| L244 | 返回表达式 `GMutableSpan(*type_, POINTER_OFFSET(data_, type_->size * n), new_size)`。 |
-| L245 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-
-### BLI_generic_span.hh：L246—L281
-
-<!-- source:source/blender/blenlib/BLI_generic_span.hh:246:281 -->
-
-```cpp
-
-  GMutableSpan drop_back(const int64_t n) const
-  {
-    BLI_assert(n >= 0);
-    const int64_t new_size = std::max<int64_t>(0, size_ - n);
-    return GMutableSpan(*type_, data_, new_size);
-  }
-
-  GMutableSpan take_front(const int64_t n) const
-  {
-    BLI_assert(n >= 0);
-    const int64_t new_size = std::min<int64_t>(size_, n);
-    return GMutableSpan(*type_, data_, new_size);
-  }
-
-  GMutableSpan take_back(const int64_t n) const
-  {
-    BLI_assert(n >= 0);
-    const int64_t new_size = std::min<int64_t>(size_, n);
-    return GMutableSpan(*type_, POINTER_OFFSET(data_, type_->size * (size_ - new_size)), new_size);
-  }
-
-  /**
-   * Copy all values from another span into this span. This invokes undefined behavior when the
-   * destination contains uninitialized data and T is not trivially copy constructible.
-   * The size of both spans is expected to be the same.
-   */
-  void copy_from(GSpan values)
-  {
-    BLI_assert(type_ == &values.type());
-    BLI_assert(size_ == values.size());
-    type_->copy_assign_n(values.data(), data_, size_);
-  }
-};
-
-}  // namespace blender
-```
-
-本段语义重点：
-
-- `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。
-- `std::min`：取较小值，常用于截断范围；还要检查负值、溢出和空范围。
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L247 | 出现调用或函数声明 `drop_back`，对应表达式为 `GMutableSpan drop_back(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L248 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L249 | 断言约束 `BLI_assert(n >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L250 | 本行使用 `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。 |
-| L251 | 返回表达式 `GMutableSpan(*type_, data_, new_size)`。 |
-| L252 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L254 | 出现调用或函数声明 `take_front`，对应表达式为 `GMutableSpan take_front(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L255 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L256 | 断言约束 `BLI_assert(n >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L257 | 本行使用 `std::min`：取较小值，常用于截断范围；还要检查负值、溢出和空范围。 |
-| L258 | 返回表达式 `GMutableSpan(*type_, data_, new_size)`。 |
-| L259 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L261 | 出现调用或函数声明 `take_back`，对应表达式为 `GMutableSpan take_back(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L262 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L263 | 断言约束 `BLI_assert(n >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L264 | 本行使用 `std::min`：取较小值，常用于截断范围；还要检查负值、溢出和空范围。 |
-| L265 | 返回表达式 `GMutableSpan(*type_, POINTER_OFFSET(data_, type_->size * (size_ - new_size)), new_size)`。 |
-| L266 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L273 | 出现调用或函数声明 `copy_from`，对应表达式为 `void copy_from(GSpan values)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L274 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L275 | 断言约束 `BLI_assert(type_ == &values.type());`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L276 | 断言约束 `BLI_assert(size_ == values.size());`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L277 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `type_->copy_assign_n(values.data(), data_, size_)`，不要把地址、数量或状态混用。 |
-| L278 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L279 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L281 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-
-### BLI_generic_array.hh：L1—L48
-
-<!-- source:source/blender/blenlib/BLI_generic_array.hh:1:48 -->
+<!-- annotated:25626cf143856f -->
 
 ```cpp
 /* SPDX-FileCopyrightText: 2023 Blender Authors
@@ -801,51 +166,254 @@ class GArray {
    * allowed to be null. This default constructor exists so `GArray` can be used in containers,
    * but the type should be supplied before doing anything else to the array.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L1—L47</summary>
+
+<!-- original:25626cf143856f:source/blender/blenlib/BLI_generic_array.hh:1:47 -->
+
+```cpp
+/* SPDX-FileCopyrightText: 2023 Blender Authors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
+#pragma once
+
+/** \file
+ * \ingroup bli
+ *
+ * This is a generic counterpart to #Array, used when the type is not known at runtime.
+ *
+ * `GArray` should generally only be used for passing data around in dynamic contexts.
+ * It does not support a few things that #Array supports:
+ *  - Small object optimization / inline buffer.
+ *  - Exception safety and various more specific constructors.
+ */
+
+#include "BLI_allocator.hh"
+#include "BLI_cpp_type.hh"
+#include "BLI_generic_span.hh"
+
+namespace blender {
+
+template<
+    /**
+     * The allocator used by this array. Should rarely be changed, except when you don't want that
+     * MEM_* functions are used internally.
+     */
+    typename Allocator = GuardedAllocator>
+class GArray {
+ protected:
+  /**
+   * The type of the data in the array, will be null after the array is default constructed,
+   * but a value should be assigned before any other interaction with the array.
+   */
+  const CPPType *type_ = nullptr;
+  void *data_ = nullptr;
+  int64_t size_ = 0;
+
+  BLI_NO_UNIQUE_ADDRESS Allocator allocator_;
+
+ public:
+  /**
+   * The default constructor creates an empty array, the only situation in which the type is
+   * allowed to be null. This default constructor exists so `GArray` can be used in containers,
+   * but the type should be supplied before doing anything else to the array.
+   */
+```
+
+</details>
+
+<a id="f-7183420bd41edea3"></a>
+
+### `blender::GArray::GArray`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L48—L48。
+
+接口参数：
+
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:4dbae196b9ec98 -->
+
+```cpp
   GArray(Allocator allocator = {}) noexcept : allocator_(allocator) {}
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L48—L48</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
-- `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。
+<!-- original:4dbae196b9ec98:source/blender/blenlib/BLI_generic_array.hh:48:48 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L5 | 防止同一头文件在一个翻译单元中重复展开；不控制多个源文件之间的链接或对象寿命。 |
-| L18 | 引入编译依赖 "BLI_allocator.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L19 | 引入编译依赖 "BLI_cpp_type.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L20 | 引入编译依赖 "BLI_generic_span.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L22 | 把后续声明放入 blender 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L24 | 声明模板参数 `template<`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L29 | 把右侧 `GuardedAllocator>` 用于初始化或更新左侧 `typename Allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L30 | 声明或定义类型 `class GArray`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L31 | 切换成员访问权限为 protected；它是编译期接口边界，不是线程同步或内存保护。 |
-| L36 | 把右侧 `nullptr` 用于初始化或更新左侧 `const CPPType *type_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L37 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `void *data_ = nullptr`；对照更新前后相应范围或状态是否一致。 |
-| L38 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `int64_t size_ = 0`；对照更新前后相应范围或状态是否一致。 |
-| L40 | 本行涉及 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。按此语义解读 `BLI_NO_UNIQUE_ADDRESS Allocator allocator_`，不要把地址、数量或状态混用。 |
-| L42 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L48 | 建立或更新 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。本行的具体值关系为 `GArray(Allocator allocator = {}) noexcept : allocator_(allocator) {}`；对照更新前后相应范围或状态是否一致。 |
+```cpp
+  GArray(Allocator allocator = {}) noexcept : allocator_(allocator) {}
+```
 
-### BLI_generic_array.hh：L49—L94
+</details>
 
-<!-- source:source/blender/blenlib/BLI_generic_array.hh:49:94 -->
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:f6c75a91165168 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L49—L49</summary>
+
+<!-- original:f6c75a91165168:source/blender/blenlib/BLI_generic_array.hh:49:49 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-54ba86a04812c90f"></a>
+
+### `blender::GArray::GArray`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L50—L50。
+
+接口参数：
+
+- `NoExceptConstructor`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:5ccdc4383e2a0c -->
+
+```cpp
   GArray(NoExceptConstructor, Allocator allocator = {}) noexcept : GArray(allocator) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L50—L50</summary>
+
+<!-- original:5ccdc4383e2a0c:source/blender/blenlib/BLI_generic_array.hh:50:50 -->
+
+```cpp
+  GArray(NoExceptConstructor, Allocator allocator = {}) noexcept : GArray(allocator) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_generic_array.hh L51—L55
+
+<!-- annotated:cc594e195295b8 -->
+
+```cpp
 
   /**
    * Create and allocate a new array, with elements default constructed
    * (which does not do anything for trivial types).
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L51—L55</summary>
+
+<!-- original:cc594e195295b8:source/blender/blenlib/BLI_generic_array.hh:51:55 -->
+
+```cpp
+
+  /**
+   * Create and allocate a new array, with elements default constructed
+   * (which does not do anything for trivial types).
+   */
+```
+
+</details>
+
+<a id="f-18357249324c54dd"></a>
+
+### `blender::GArray::GArray`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L56—L60。
+
+接口参数：
+
+- `const CPPType &type`
+- `int64_t size`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:992cf8863fabbd -->
+
+```cpp
   GArray(const CPPType &type, int64_t size, Allocator allocator = {})
       : GArray(type, size, NoInitialization{}, allocator)
   {
     type_->default_construct_n(data_, size_);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L56—L60</summary>
+
+<!-- original:992cf8863fabbd:source/blender/blenlib/BLI_generic_array.hh:56:60 -->
+
+```cpp
+  GArray(const CPPType &type, int64_t size, Allocator allocator = {})
+      : GArray(type, size, NoInitialization{}, allocator)
+  {
+    type_->default_construct_n(data_, size_);
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `type_->default_construct_n` → [blender::CPPType::default_construct_n · L532](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-ffb51b59521d5579)。
+
+<!-- annotated:e5abcb46833a0d -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L61—L61</summary>
+
+<!-- original:e5abcb46833a0d:source/blender/blenlib/BLI_generic_array.hh:61:61 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-33241c148b83a171"></a>
+
+### `blender::GArray::GArray`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L62—L71。
+
+接口参数：
+
+- `const CPPType &type`
+- `const int64_t size`
+- `NoInitialization`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:db7d382196c044 -->
+
+```cpp
   GArray(const CPPType &type,
          const int64_t size,
          NoInitialization /*not_init_tag*/,
@@ -856,19 +424,152 @@ class GArray {
     size_ = size;
     data_ = this->allocate(size_);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L62—L71</summary>
+
+<!-- original:db7d382196c044:source/blender/blenlib/BLI_generic_array.hh:62:71 -->
+
+```cpp
+  GArray(const CPPType &type,
+         const int64_t size,
+         NoInitialization /*not_init_tag*/,
+         Allocator allocator = {})
+      : GArray(type, allocator)
+  {
+    BLI_assert(size >= 0);
+    size_ = size;
+    data_ = this->allocate(size_);
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `size_ = size;`
+- `data_ = this->allocate(size_);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->allocate` → [blender::GArray::allocate · L249](11-GSpan%E4%B8%8EGArray.md#f-a7d4b4dd2b1d68c6)。
+
+### 类型布局、声明与编译条件 · BLI_generic_array.hh L72—L75
+
+<!-- annotated:609200cd45321a -->
+
+```cpp
 
   /**
    * Create an empty array with just a type.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L72—L75</summary>
+
+<!-- original:609200cd45321a:source/blender/blenlib/BLI_generic_array.hh:72:75 -->
+
+```cpp
+
+  /**
+   * Create an empty array with just a type.
+   */
+```
+
+</details>
+
+<a id="f-0faafb1b26659ab4"></a>
+
+### `blender::GArray::GArray`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L76—L79。
+
+接口参数：
+
+- `const CPPType &type`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:5f7426de854059 -->
+
+```cpp
   GArray(const CPPType &type, Allocator allocator = {}) : GArray(allocator)
   {
     type_ = &type;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L76—L79</summary>
+
+<!-- original:5f7426de854059:source/blender/blenlib/BLI_generic_array.hh:76:79 -->
+
+```cpp
+  GArray(const CPPType &type, Allocator allocator = {}) : GArray(allocator)
+  {
+    type_ = &type;
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `type_ = &type;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_generic_array.hh L80—L84
+
+<!-- annotated:f708ac4f146cc5 -->
+
+```cpp
 
   /**
    * Take ownership of a buffer with a provided size. The buffer should be
    * allocated with the same allocator provided to the constructor.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L80—L84</summary>
+
+<!-- original:f708ac4f146cc5:source/blender/blenlib/BLI_generic_array.hh:80:84 -->
+
+```cpp
+
+  /**
+   * Take ownership of a buffer with a provided size. The buffer should be
+   * allocated with the same allocator provided to the constructor.
+   */
+```
+
+</details>
+
+<a id="f-2a6391fbc5a71528"></a>
+
+### `blender::GArray::GArray`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L85—L94。
+
+接口参数：
+
+- `const CPPType &type`
+- `void *buffer`
+- `int64_t size`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:c7ce271219c488 -->
+
+```cpp
   GArray(const CPPType &type, void *buffer, int64_t size, Allocator allocator = {})
       : GArray(type, allocator)
   {
@@ -881,74 +582,263 @@ class GArray {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L85—L94</summary>
 
-- `default_construct_n`：为目标区间建立默认构造对象；基本类型默认初始化未必给出可读取的零。
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
+<!-- original:c7ce271219c488:source/blender/blenlib/BLI_generic_array.hh:85:94 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L50 | 把右侧 `{}) noexcept : GArray(allocator) {}` 用于初始化或更新左侧 `GArray(NoExceptConstructor, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L56 | 把右侧 `{})` 用于初始化或更新左侧 `GArray(const CPPType &type, int64_t size, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L57 | 出现调用或函数声明 `GArray`，对应表达式为 `: GArray(type, size, NoInitialization{}, allocator)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L58 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L59 | 本行使用 `default_construct_n`：为目标区间建立默认构造对象；基本类型默认初始化未必给出可读取的零。 |
-| L60 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L62 | 出现调用或函数声明 `GArray`，对应表达式为 `GArray(const CPPType &type,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L63 | 本行是连续声明或表达式的一部分：`const int64_t size,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L64 | 本行是连续声明或表达式的一部分：`NoInitialization ,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L65 | 把右侧 `{})` 用于初始化或更新左侧 `Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L66 | 出现调用或函数声明 `GArray`，对应表达式为 `: GArray(type, allocator)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L67 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L68 | 断言约束 `BLI_assert(size >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L69 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `size_ = size`；对照更新前后相应范围或状态是否一致。 |
-| L70 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = this->allocate(size_)`；对照更新前后相应范围或状态是否一致。 |
-| L71 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L76 | 把右侧 `{}) : GArray(allocator)` 用于初始化或更新左侧 `GArray(const CPPType &type, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L77 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L78 | 把右侧 `&type` 用于初始化或更新左侧 `type_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L79 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L85 | 把右侧 `{})` 用于初始化或更新左侧 `GArray(const CPPType &type, void *buffer, int64_t size, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L86 | 出现调用或函数声明 `GArray`，对应表达式为 `: GArray(type, allocator)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L87 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L88 | 断言约束 `BLI_assert(size >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L89 | 断言约束 `BLI_assert(buffer != nullptr &#124;&#124; size == 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L90 | 断言约束 `BLI_assert(type_->pointer_has_valid_alignment(buffer));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L92 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = buffer`；对照更新前后相应范围或状态是否一致。 |
-| L93 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `size_ = size`；对照更新前后相应范围或状态是否一致。 |
-| L94 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  GArray(const CPPType &type, void *buffer, int64_t size, Allocator allocator = {})
+      : GArray(type, allocator)
+  {
+    BLI_assert(size >= 0);
+    BLI_assert(buffer != nullptr || size == 0);
+    BLI_assert(type_->pointer_has_valid_alignment(buffer));
 
-### BLI_generic_array.hh：L95—L142
+    data_ = buffer;
+    size_ = size;
+  }
+```
 
-<!-- source:source/blender/blenlib/BLI_generic_array.hh:95:142 -->
+</details>
+
+**沿实际写入检查状态**
+
+- `data_ = buffer;`
+- `size_ = size;`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `type_->pointer_has_valid_alignment` → [blender::CPPType::pointer_has_valid_alignment · L517](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-e6c3071a36daaa2d)。
+
+### 类型布局、声明与编译条件 · BLI_generic_array.hh L95—L98
+
+<!-- annotated:4386280764df31 -->
 
 ```cpp
 
   /**
    * Create an array by copying values from a generic span.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L95—L98</summary>
+
+<!-- original:4386280764df31:source/blender/blenlib/BLI_generic_array.hh:95:98 -->
+
+```cpp
+
+  /**
+   * Create an array by copying values from a generic span.
+   */
+```
+
+</details>
+
+<a id="f-15ff6ec174e95d5d"></a>
+
+### `blender::GArray::GArray`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L99—L103。
+
+接口参数：
+
+- `const GSpan span`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:b0da5a298c9465 -->
+
+```cpp
   GArray(const GSpan span, Allocator allocator = {}) : GArray(span.type(), span.size(), allocator)
   {
     /* Use copy assign rather than construct since the memory is already initialized. */
     type_->copy_assign_n(span.data(), data_, size_);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L99—L103</summary>
+
+<!-- original:b0da5a298c9465:source/blender/blenlib/BLI_generic_array.hh:99:103 -->
+
+```cpp
+  GArray(const GSpan span, Allocator allocator = {}) : GArray(span.type(), span.size(), allocator)
+  {
+    /* Use copy assign rather than construct since the memory is already initialized. */
+    type_->copy_assign_n(span.data(), data_, size_);
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `type_->copy_assign_n` → [blender::CPPType::copy_assign_n · L577](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-bdf812bca95da2b6)。
+- `span.data` → [blender::GSpan::data · L81](11-GSpan%E4%B8%8EGArray.md#f-25f2f0038c437d19)。
+
+### 类型布局、声明与编译条件 · BLI_generic_array.hh L104—L107
+
+<!-- annotated:c8b57023116f41 -->
+
+```cpp
 
   /**
    * Create an array by copying values from another generic array.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L104—L107</summary>
+
+<!-- original:c8b57023116f41:source/blender/blenlib/BLI_generic_array.hh:104:107 -->
+
+```cpp
+
+  /**
+   * Create an array by copying values from another generic array.
+   */
+```
+
+</details>
+
+<a id="f-7fcca6a7a5a969b2"></a>
+
+### `blender::GArray::GArray`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L108—L108。
+
+接口参数：
+
+- `const GArray &other`
+
+**教学注释版**
+
+<!-- annotated:145e68a31d0de1 -->
+
+```cpp
   GArray(const GArray &other) : GArray(other.as_span(), other.allocator()) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L108—L108</summary>
+
+<!-- original:145e68a31d0de1:source/blender/blenlib/BLI_generic_array.hh:108:108 -->
+
+```cpp
+  GArray(const GArray &other) : GArray(other.as_span(), other.allocator()) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_generic_array.hh L109—L112
+
+<!-- annotated:70fe8d58bfcbc0 -->
+
+```cpp
 
   /**
    * Create an array by taking ownership of another array's data, clearing the data in the other.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L109—L112</summary>
+
+<!-- original:70fe8d58bfcbc0:source/blender/blenlib/BLI_generic_array.hh:109:112 -->
+
+```cpp
+
+  /**
+   * Create an array by taking ownership of another array's data, clearing the data in the other.
+   */
+```
+
+</details>
+
+<a id="f-b4a6d6139574374a"></a>
+
+### `blender::GArray::GArray`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L113—L118。
+
+接口参数：
+
+- `GArray &&other`
+
+**教学注释版**
+
+<!-- annotated:aeca6f167dff8f -->
+
+```cpp
   GArray(GArray &&other)
       : type_(other.type_), data_(other.data_), size_(other.size_), allocator_(other.allocator_)
   {
     other.data_ = nullptr;
     other.size_ = 0;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L113—L118</summary>
+
+<!-- original:aeca6f167dff8f:source/blender/blenlib/BLI_generic_array.hh:113:118 -->
+
+```cpp
+  GArray(GArray &&other)
+      : type_(other.type_), data_(other.data_), size_(other.size_), allocator_(other.allocator_)
+  {
+    other.data_ = nullptr;
+    other.size_ = 0;
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `other.data_ = nullptr;`
+- `other.size_ = 0;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:45d5983509f598 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L119—L119</summary>
+
+<!-- original:45d5983509f598:source/blender/blenlib/BLI_generic_array.hh:119:119 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-52e9de70b8dc030c"></a>
+
+### `blender::GArray::~GArray`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L120—L126。
+
+**教学注释版**
+
+<!-- annotated:f15c06b415bee6 -->
+
+```cpp
   ~GArray()
   {
     if (data_ != nullptr) {
@@ -956,17 +846,180 @@ class GArray {
       this->deallocate(data_);
     }
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L120—L126</summary>
+
+<!-- original:f15c06b415bee6:source/blender/blenlib/BLI_generic_array.hh:120:126 -->
+
+```cpp
+  ~GArray()
+  {
+    if (data_ != nullptr) {
+      type_->destruct_n(data_, size_);
+      this->deallocate(data_);
+    }
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `type_->destruct_n` → [blender::CPPType::destruct_n · L562](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-1858ea1d7f707a74)。
+- `this->deallocate` → [blender::GArray::deallocate · L256](11-GSpan%E4%B8%8EGArray.md#f-7b412d648b115aab)。
+
+<!-- annotated:731f5255dd5958 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L127—L127</summary>
+
+<!-- original:731f5255dd5958:source/blender/blenlib/BLI_generic_array.hh:127:127 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-763fc0e5f452a4a5"></a>
+
+### `blender::GArray::operator=`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L128—L131。
+
+接口参数：
+
+- `const GArray &other`
+
+**教学注释版**
+
+<!-- annotated:b864bb9dea845c -->
+
+```cpp
   GArray &operator=(const GArray &other)
   {
     return copy_assign_container(*this, other);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L128—L131</summary>
+
+<!-- original:b864bb9dea845c:source/blender/blenlib/BLI_generic_array.hh:128:131 -->
+
+```cpp
+  GArray &operator=(const GArray &other)
+  {
+    return copy_assign_container(*this, other);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return copy_assign_container(*this, other);`
+
+**继续追踪实现**
+
+- `copy_assign_container` → [blender::copy_assign_container · L284](01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-546a45b4d8b5ab44)。
+
+<!-- annotated:6fc6b3c2b5f138 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L132—L132</summary>
+
+<!-- original:6fc6b3c2b5f138:source/blender/blenlib/BLI_generic_array.hh:132:132 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-36d4610cf35f67a4"></a>
+
+### `blender::GArray::operator=`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L133—L136。
+
+接口参数：
+
+- `GArray &&other`
+
+**教学注释版**
+
+<!-- annotated:f56cc8a965ed15 -->
+
+```cpp
+  GArray &operator=(GArray &&other)
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    return move_assign_container(*this, std::move(other));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L133—L136</summary>
+
+<!-- original:f56cc8a965ed15:source/blender/blenlib/BLI_generic_array.hh:133:136 -->
+
+```cpp
   GArray &operator=(GArray &&other)
   {
     return move_assign_container(*this, std::move(other));
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return move_assign_container(*this, std::move(other));`
+
+**继续追踪实现**
+
+- `move_assign_container` → [blender::move_assign_container · L300](01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-5144b56be86e6f42)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<!-- annotated:aba33ea932fe5a -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L137—L137</summary>
+
+<!-- original:aba33ea932fe5a:source/blender/blenlib/BLI_generic_array.hh:137:137 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3c4bebd424df52cc"></a>
+
+### `blender::GArray::type`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L138—L142。
+
+**教学注释版**
+
+<!-- annotated:f28995f04bedf7 -->
+
+```cpp
   const CPPType &type() const
   {
     BLI_assert(type_ != nullptr);
@@ -974,96 +1027,465 @@ class GArray {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L138—L142</summary>
 
-- `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
-- `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。
+<!-- original:f28995f04bedf7:source/blender/blenlib/BLI_generic_array.hh:138:142 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L99 | 把右侧 `{}) : GArray(span.type(), span.size(), allocator)` 用于初始化或更新左侧 `GArray(const GSpan span, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L100 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L102 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `type_->copy_assign_n(span.data(), data_, size_)`，不要把地址、数量或状态混用。 |
-| L103 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L108 | 出现调用或函数声明 `GArray`，对应表达式为 `GArray(const GArray &other) : GArray(other.as_span(), other.allocator()) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L113 | 出现调用或函数声明 `GArray`，对应表达式为 `GArray(GArray &&other)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L114 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `: type_(other.type_), data_(other.data_), size_(other.size_), allocator_(other.allocator_)`，不要把地址、数量或状态混用。 |
-| L115 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L116 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `other.data_ = nullptr`；对照更新前后相应范围或状态是否一致。 |
-| L117 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `other.size_ = 0`；对照更新前后相应范围或状态是否一致。 |
-| L118 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L120 | 涉及析构接口或显式析构：`~GArray()`。检查目标对象已成功构造，且资源不会在另一条清理路径再次销毁。 |
-| L121 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L122 | 判断 `data_ != nullptr`，成立时进入本分支，否则继续后续路径。这里区分空地址与可用地址，但非空本身仍不能证明对象存活。 |
-| L123 | 本行使用 `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。 |
-| L124 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `this->deallocate(data_)`，不要把地址、数量或状态混用。 |
-| L125 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L126 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L128 | 运算符重载声明、定义或显式调用：`GArray &operator=(const GArray &other)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L129 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L130 | 返回表达式 `copy_assign_container(*this, other)`。 |
-| L131 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L133 | 运算符重载声明、定义或显式调用：`GArray &operator=(GArray &&other)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L134 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L135 | 返回表达式 `move_assign_container(*this, std::move(other))`。 |
-| L136 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L138 | 出现调用或函数声明 `type`，对应表达式为 `const CPPType &type() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L139 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L140 | 断言约束 `BLI_assert(type_ != nullptr);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L141 | 返回表达式 `*type_`。 |
-| L142 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  const CPPType &type() const
+  {
+    BLI_assert(type_ != nullptr);
+    return *type_;
+  }
+```
 
-### BLI_generic_array.hh：L143—L191
+</details>
 
-<!-- source:source/blender/blenlib/BLI_generic_array.hh:143:191 -->
+**结果出口**
+
+- `return *type_;`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+
+<!-- annotated:1613220d82d3cd -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L143—L143</summary>
+
+<!-- original:1613220d82d3cd:source/blender/blenlib/BLI_generic_array.hh:143:143 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-4ccdaadbedb64690"></a>
+
+### `blender::GArray::is_empty`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L144—L147。
+
+**教学注释版**
+
+<!-- annotated:307e56bdd56b50 -->
+
+```cpp
   bool is_empty() const
   {
     return size_ == 0;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L144—L147</summary>
+
+<!-- original:307e56bdd56b50:source/blender/blenlib/BLI_generic_array.hh:144:147 -->
+
+```cpp
+  bool is_empty() const
+  {
+    return size_ == 0;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return size_ == 0;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_generic_array.hh L148—L151
+
+<!-- annotated:4a42c62a207125 -->
+
+```cpp
 
   /**
    * Return the number of elements in the array (not the size in bytes).
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L148—L151</summary>
+
+<!-- original:4a42c62a207125:source/blender/blenlib/BLI_generic_array.hh:148:151 -->
+
+```cpp
+
+  /**
+   * Return the number of elements in the array (not the size in bytes).
+   */
+```
+
+</details>
+
+<a id="f-8897580a87dde189"></a>
+
+### `blender::GArray::size`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L152—L155。
+
+**教学注释版**
+
+<!-- annotated:a9390c9d6ccf02 -->
+
+```cpp
   int64_t size() const
   {
     return size_;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L152—L155</summary>
+
+<!-- original:a9390c9d6ccf02:source/blender/blenlib/BLI_generic_array.hh:152:155 -->
+
+```cpp
+  int64_t size() const
+  {
+    return size_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return size_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_generic_array.hh L156—L159
+
+<!-- annotated:f247f8710e6a81 -->
+
+```cpp
 
   /**
    * Get a pointer to the beginning of the array.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L156—L159</summary>
+
+<!-- original:f247f8710e6a81:source/blender/blenlib/BLI_generic_array.hh:156:159 -->
+
+```cpp
+
+  /**
+   * Get a pointer to the beginning of the array.
+   */
+```
+
+</details>
+
+<a id="f-fe965f44840f15ac"></a>
+
+### `blender::GArray::data`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L160—L163。
+
+**教学注释版**
+
+<!-- annotated:ea2298c2d37c44 -->
+
+```cpp
   const void *data() const
   {
     return data_;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L160—L163</summary>
+
+<!-- original:ea2298c2d37c44:source/blender/blenlib/BLI_generic_array.hh:160:163 -->
+
+```cpp
+  const void *data() const
+  {
+    return data_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return data_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<a id="f-831c5c3abf4c5711"></a>
+
+### `blender::GArray::data`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L164—L167。
+
+**教学注释版**
+
+<!-- annotated:0a4474f6d51df8 -->
+
+```cpp
   void *data()
   {
     return data_;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L164—L167</summary>
+
+<!-- original:0a4474f6d51df8:source/blender/blenlib/BLI_generic_array.hh:164:167 -->
+
+```cpp
+  void *data()
+  {
+    return data_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return data_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:609ea51245ba02 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L168—L168</summary>
+
+<!-- original:609ea51245ba02:source/blender/blenlib/BLI_generic_array.hh:168:168 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-4e3d4e23c3b378de"></a>
+
+### `blender::GArray::operator[]`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L169—L173。
+
+接口参数：
+
+- `int64_t index`
+
+**教学注释版**
+
+<!-- annotated:d321f8f4a89f9d -->
+
+```cpp
   const void *operator[](int64_t index) const
   {
     BLI_assert(index < size_);
     return POINTER_OFFSET(data_, type_->size * index);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L169—L173</summary>
+
+<!-- original:d321f8f4a89f9d:source/blender/blenlib/BLI_generic_array.hh:169:173 -->
+
+```cpp
+  const void *operator[](int64_t index) const
+  {
+    BLI_assert(index < size_);
+    return POINTER_OFFSET(data_, type_->size * index);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return POINTER_OFFSET(data_, type_->size * index);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+
+<!-- annotated:740634b85738ea -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L174—L174</summary>
+
+<!-- original:740634b85738ea:source/blender/blenlib/BLI_generic_array.hh:174:174 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-66c04936ac4748d9"></a>
+
+### `blender::GArray::operator[]`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L175—L179。
+
+接口参数：
+
+- `int64_t index`
+
+**教学注释版**
+
+<!-- annotated:97ecd08fd0b482 -->
+
+```cpp
   void *operator[](int64_t index)
   {
     BLI_assert(index < size_);
     return POINTER_OFFSET(data_, type_->size * index);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L175—L179</summary>
+
+<!-- original:97ecd08fd0b482:source/blender/blenlib/BLI_generic_array.hh:175:179 -->
+
+```cpp
+  void *operator[](int64_t index)
+  {
+    BLI_assert(index < size_);
+    return POINTER_OFFSET(data_, type_->size * index);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return POINTER_OFFSET(data_, type_->size * index);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+
+<!-- annotated:cfb48338dfa58c -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L180—L180</summary>
+
+<!-- original:cfb48338dfa58c:source/blender/blenlib/BLI_generic_array.hh:180:180 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-97578d7bb8d6ea87"></a>
+
+### `blender::GArray::() const`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L181—L185。
+
+**教学注释版**
+
+<!-- annotated:9c1e652a618c42 -->
+
+```cpp
   operator GSpan() const
   {
     BLI_assert(size_ == 0 || type_ != nullptr);
     return GSpan(type_, data_, size_);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L181—L185</summary>
+
+<!-- original:9c1e652a618c42:source/blender/blenlib/BLI_generic_array.hh:181:185 -->
+
+```cpp
+  operator GSpan() const
+  {
+    BLI_assert(size_ == 0 || type_ != nullptr);
+    return GSpan(type_, data_, size_);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return GSpan(type_, data_, size_);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `GSpan` → [blender::GSpan::GSpan · L26](11-GSpan%E4%B8%8EGArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](11-GSpan%E4%B8%8EGArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](11-GSpan%E4%B8%8EGArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](11-GSpan%E4%B8%8EGArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](11-GSpan%E4%B8%8EGArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](11-GSpan%E4%B8%8EGArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](11-GSpan%E4%B8%8EGArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
+
+<!-- annotated:5338f88d687909 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L186—L186</summary>
+
+<!-- original:5338f88d687909:source/blender/blenlib/BLI_generic_array.hh:186:186 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-627fa18ad52324b4"></a>
+
+### `blender::GArray::()`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L187—L191。
+
+**教学注释版**
+
+<!-- annotated:8f155b128a2f96 -->
+
+```cpp
   operator GMutableSpan()
   {
     BLI_assert(size_ == 0 || type_ != nullptr);
@@ -1071,82 +1493,287 @@ class GArray {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L187—L191</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
+<!-- original:8f155b128a2f96:source/blender/blenlib/BLI_generic_array.hh:187:191 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L144 | 出现调用或函数声明 `is_empty`，对应表达式为 `bool is_empty() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L145 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L146 | 返回表达式 `size_ == 0`。 |
-| L147 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L152 | 出现调用或函数声明 `size`，对应表达式为 `int64_t size() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L153 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L154 | 返回表达式 `size_`。 |
-| L155 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L160 | 出现调用或函数声明 `data`，对应表达式为 `const void *data() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L161 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L162 | 返回表达式 `data_`。 |
-| L163 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L164 | 出现调用或函数声明 `data`，对应表达式为 `void *data()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L165 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L166 | 返回表达式 `data_`。 |
-| L167 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L169 | 运算符重载声明、定义或显式调用：`const void *operator[](int64_t index) const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L170 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L171 | 断言约束 `BLI_assert(index < size_);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L172 | 返回表达式 `POINTER_OFFSET(data_, type_->size * index)`。 |
-| L173 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L175 | 运算符重载声明、定义或显式调用：`void *operator[](int64_t index)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L176 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L177 | 断言约束 `BLI_assert(index < size_);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L178 | 返回表达式 `POINTER_OFFSET(data_, type_->size * index)`。 |
-| L179 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L181 | 运算符重载声明、定义或显式调用：`operator GSpan() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L182 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L183 | 断言约束 `BLI_assert(size_ == 0 &#124;&#124; type_ != nullptr);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L184 | 返回表达式 `GSpan(type_, data_, size_)`。 |
-| L185 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L187 | 运算符重载声明、定义或显式调用：`operator GMutableSpan()`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L188 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L189 | 断言约束 `BLI_assert(size_ == 0 &#124;&#124; type_ != nullptr);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L190 | 返回表达式 `GMutableSpan(type_, data_, size_)`。 |
-| L191 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  operator GMutableSpan()
+  {
+    BLI_assert(size_ == 0 || type_ != nullptr);
+    return GMutableSpan(type_, data_, size_);
+  }
+```
 
-### BLI_generic_array.hh：L192—L246
+</details>
 
-<!-- source:source/blender/blenlib/BLI_generic_array.hh:192:246 -->
+**结果出口**
+
+- `return GMutableSpan(type_, data_, size_);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `GMutableSpan` → [blender::GMutableSpan::GMutableSpan · L152](11-GSpan%E4%B8%8EGArray.md#f-b4ef5399177eeedd)；[blender::GMutableSpan::GMutableSpan · L154](11-GSpan%E4%B8%8EGArray.md#f-6439a40f33c7a2e5)；[blender::GMutableSpan::GMutableSpan · L163](11-GSpan%E4%B8%8EGArray.md#f-6054339faadc1405)；[blender::GMutableSpan::GMutableSpan · L167](11-GSpan%E4%B8%8EGArray.md#f-d1333b42c7982310)；[blender::GMutableSpan::GMutableSpan · L169](11-GSpan%E4%B8%8EGArray.md#f-3584f997d0fe9a96)；[blender::GMutableSpan::GMutableSpan · L171](11-GSpan%E4%B8%8EGArray.md#f-3074afdbe5232417)。同名重载需按实参类型选择。
+
+<!-- annotated:09705bb8c54b76 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L192—L192</summary>
+
+<!-- original:09705bb8c54b76:source/blender/blenlib/BLI_generic_array.hh:192:192 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3f8b9fae52fa4eca"></a>
+
+### `blender::GArray::as_span`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L193—L196。
+
+**教学注释版**
+
+<!-- annotated:de27bdf82a3aff -->
+
+```cpp
   GSpan as_span() const
   {
     return *this;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L193—L196</summary>
+
+<!-- original:de27bdf82a3aff:source/blender/blenlib/BLI_generic_array.hh:193:196 -->
+
+```cpp
+  GSpan as_span() const
+  {
+    return *this;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return *this;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:6222a40c665fce -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L197—L197</summary>
+
+<!-- original:6222a40c665fce:source/blender/blenlib/BLI_generic_array.hh:197:197 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-2f8508997cf678b6"></a>
+
+### `blender::GArray::as_mutable_span`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L198—L201。
+
+**教学注释版**
+
+<!-- annotated:a1eb626c9d68a2 -->
+
+```cpp
   GMutableSpan as_mutable_span()
   {
     return *this;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L198—L201</summary>
+
+<!-- original:a1eb626c9d68a2:source/blender/blenlib/BLI_generic_array.hh:198:201 -->
+
+```cpp
+  GMutableSpan as_mutable_span()
+  {
+    return *this;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return *this;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_generic_array.hh L202—L205
+
+<!-- annotated:fde7fb70fdd660 -->
+
+```cpp
 
   /**
    * Access the allocator used by this array.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L202—L205</summary>
+
+<!-- original:fde7fb70fdd660:source/blender/blenlib/BLI_generic_array.hh:202:205 -->
+
+```cpp
+
+  /**
+   * Access the allocator used by this array.
+   */
+```
+
+</details>
+
+<a id="f-ff4a88b67591331c"></a>
+
+### `blender::GArray::allocator`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L206—L209。
+
+**教学注释版**
+
+<!-- annotated:52d787d735d8de -->
+
+```cpp
   Allocator &allocator()
   {
     return allocator_;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L206—L209</summary>
+
+<!-- original:52d787d735d8de:source/blender/blenlib/BLI_generic_array.hh:206:209 -->
+
+```cpp
+  Allocator &allocator()
+  {
+    return allocator_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return allocator_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<a id="f-b5bcd3b1182e656d"></a>
+
+### `blender::GArray::allocator`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L210—L213。
+
+**教学注释版**
+
+<!-- annotated:3c5bb30ecbf752 -->
+
+```cpp
   const Allocator &allocator() const
   {
     return allocator_;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L210—L213</summary>
+
+<!-- original:3c5bb30ecbf752:source/blender/blenlib/BLI_generic_array.hh:210:213 -->
+
+```cpp
+  const Allocator &allocator() const
+  {
+    return allocator_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return allocator_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_generic_array.hh L214—L218
+
+<!-- annotated:2f45ae2f3c6fbf -->
+
+```cpp
 
   /**
    * Destruct values and create a new array of the given size. The values in the new array are
    * default constructed.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L214—L218</summary>
+
+<!-- original:2f45ae2f3c6fbf:source/blender/blenlib/BLI_generic_array.hh:214:218 -->
+
+```cpp
+
+  /**
+   * Destruct values and create a new array of the given size. The values in the new array are
+   * default constructed.
+   */
+```
+
+</details>
+
+<a id="f-9e39971b381f60e8"></a>
+
+### `blender::GArray::reinitialize`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L219—L246。
+
+接口参数：
+
+- `const int64_t new_size`
+
+**教学注释版**
+
+<!-- annotated:d1a236a6c97b20 -->
+
+```cpp
   void reinitialize(const int64_t new_size)
   {
     BLI_assert(new_size >= 0);
@@ -1177,335 +1804,2958 @@ class GArray {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L219—L246</summary>
 
-- `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。
-- `default_construct_n`：为目标区间建立默认构造对象；基本类型默认初始化未必给出可读取的零。
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
-- `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。
+<!-- original:d1a236a6c97b20:source/blender/blenlib/BLI_generic_array.hh:219:246 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L193 | 出现调用或函数声明 `as_span`，对应表达式为 `GSpan as_span() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L194 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L195 | 返回表达式 `*this`。返回当前对象；返回类型决定它是引用还是值，不能仅凭表达式假定复制。 |
-| L196 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L198 | 出现调用或函数声明 `as_mutable_span`，对应表达式为 `GMutableSpan as_mutable_span()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L199 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L200 | 返回表达式 `*this`。返回当前对象；返回类型决定它是引用还是值，不能仅凭表达式假定复制。 |
-| L201 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L206 | 出现调用或函数声明 `allocator`，对应表达式为 `Allocator &allocator()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L207 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L208 | 返回表达式 `allocator_`。 |
-| L209 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L210 | 出现调用或函数声明 `allocator`，对应表达式为 `const Allocator &allocator() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L211 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L212 | 返回表达式 `allocator_`。 |
-| L213 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L219 | 出现调用或函数声明 `reinitialize`，对应表达式为 `void reinitialize(const int64_t new_size)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L220 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L221 | 断言约束 `BLI_assert(new_size >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L222 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `int64_t old_size = size_`；对照更新前后相应范围或状态是否一致。 |
-| L224 | 本行使用 `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。 |
-| L225 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `size_ = 0`；对照更新前后相应范围或状态是否一致。 |
-| L227 | 判断 `new_size <= old_size`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L228 | 本行使用 `default_construct_n`：为目标区间建立默认构造对象；基本类型默认初始化未必给出可读取的零。 |
-| L229 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L230 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L231 | 把右侧 `this->allocate(new_size)` 用于初始化或更新左侧 `void *new_data`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L232 | 开始可能抛异常的操作区间；下面catch负责局部回滚，需精确区分已经构造和尚未构造对象。 |
-| L233 | 本行使用 `default_construct_n`：为目标区间建立默认构造对象；基本类型默认初始化未必给出可读取的零。 |
-| L234 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L235 | 进入异常清理路径；随后应释放本路径新取得的资源，同时遵守源对象已经发生的状态变化。 |
-| L236 | 出现调用或函数声明 `deallocate`，对应表达式为 `this->deallocate(new_data);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L237 | 继续传播异常或抛出新异常；在执行前必须完成本层负责的资源清理。 |
-| L238 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L239 | 判断 `this->data_`，成立时进入本分支，否则继续后续路径。 |
-| L240 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `this->deallocate(data_)`，不要把地址、数量或状态混用。 |
-| L241 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L242 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = new_data`；对照更新前后相应范围或状态是否一致。 |
-| L243 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L245 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `size_ = new_size`；对照更新前后相应范围或状态是否一致。 |
-| L246 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  void reinitialize(const int64_t new_size)
+  {
+    BLI_assert(new_size >= 0);
+    int64_t old_size = size_;
 
-### BLI_generic_array.hh：L247—L262
+    type_->destruct_n(data_, size_);
+    size_ = 0;
 
-<!-- source:source/blender/blenlib/BLI_generic_array.hh:247:262 -->
+    if (new_size <= old_size) {
+      type_->default_construct_n(data_, new_size);
+    }
+    else {
+      void *new_data = this->allocate(new_size);
+      try {
+        type_->default_construct_n(new_data, new_size);
+      }
+      catch (...) {
+        this->deallocate(new_data);
+        throw;
+      }
+      if (this->data_) {
+        this->deallocate(data_);
+      }
+      data_ = new_data;
+    }
+
+    size_ = new_size;
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `size_ = 0;`
+- `data_ = new_data;`
+- `size_ = new_size;`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `type_->destruct_n` → [blender::CPPType::destruct_n · L562](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-1858ea1d7f707a74)。
+- `type_->default_construct_n` → [blender::CPPType::default_construct_n · L532](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-ffb51b59521d5579)。
+- `this->allocate` → [blender::GArray::allocate · L249](11-GSpan%E4%B8%8EGArray.md#f-a7d4b4dd2b1d68c6)。
+- `this->deallocate` → [blender::GArray::deallocate · L256](11-GSpan%E4%B8%8EGArray.md#f-7b412d648b115aab)。
+
+### 类型布局、声明与编译条件 · BLI_generic_array.hh L247—L248
+
+<!-- annotated:51ed93062a85de -->
 
 ```cpp
 
  private:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L247—L248</summary>
+
+<!-- original:51ed93062a85de:source/blender/blenlib/BLI_generic_array.hh:247:248 -->
+
+```cpp
+
+ private:
+```
+
+</details>
+
+<a id="f-a7d4b4dd2b1d68c6"></a>
+
+### `blender::GArray::allocate`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L249—L254。
+
+接口参数：
+
+- `int64_t size`
+
+**教学注释版**
+
+<!-- annotated:2679e90ef364f7 -->
+
+```cpp
   void *allocate(int64_t size)
   {
     const int64_t item_size = type_->size;
     const int64_t alignment = type_->alignment;
     return allocator_.allocate(size_t(size) * item_size, alignment, AT);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L249—L254</summary>
+
+<!-- original:2679e90ef364f7:source/blender/blenlib/BLI_generic_array.hh:249:254 -->
+
+```cpp
+  void *allocate(int64_t size)
+  {
+    const int64_t item_size = type_->size;
+    const int64_t alignment = type_->alignment;
+    return allocator_.allocate(size_t(size) * item_size, alignment, AT);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return allocator_.allocate(size_t(size) * item_size, alignment, AT);`
+
+**继续追踪实现**
+
+- `allocator_.allocate` → [blender::GArray::allocate · L249](11-GSpan%E4%B8%8EGArray.md#f-a7d4b4dd2b1d68c6)。
+
+<!-- annotated:a1ddda58406638 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L255—L255</summary>
+
+<!-- original:a1ddda58406638:source/blender/blenlib/BLI_generic_array.hh:255:255 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-7b412d648b115aab"></a>
+
+### `blender::GArray::deallocate`
+
+实现位置：[source/blender/blenlib/BLI_generic_array.hh](../../../../../source/blender/blenlib/BLI_generic_array.hh) · L256—L259。
+
+接口参数：
+
+- `void *ptr`
+
+**教学注释版**
+
+<!-- annotated:1bb93b2171c01a -->
+
+```cpp
   void deallocate(void *ptr)
   {
     allocator_.deallocate(ptr);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L256—L259</summary>
+
+<!-- original:1bb93b2171c01a:source/blender/blenlib/BLI_generic_array.hh:256:259 -->
+
+```cpp
+  void deallocate(void *ptr)
+  {
+    allocator_.deallocate(ptr);
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `allocator_.deallocate` → [blender::GArray::deallocate · L256](11-GSpan%E4%B8%8EGArray.md#f-7b412d648b115aab)。
+
+### 类型布局、声明与编译条件 · BLI_generic_array.hh L260—L262
+
+<!-- annotated:348d6f660c340f -->
+
+```cpp
 };
 
 }  // namespace blender
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_array.hh · L260—L262</summary>
 
-- `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。
+<!-- original:348d6f660c340f:source/blender/blenlib/BLI_generic_array.hh:260:262 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L248 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L249 | 出现调用或函数声明 `allocate`，对应表达式为 `void *allocate(int64_t size)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L250 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L251 | 把右侧 `type_->size` 用于初始化或更新左侧 `const int64_t item_size`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L252 | 把右侧 `type_->alignment` 用于初始化或更新左侧 `const int64_t alignment`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L253 | 返回表达式 `allocator_.allocate(size_t(size) * item_size, alignment, AT)`。 |
-| L254 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L256 | 出现调用或函数声明 `deallocate`，对应表达式为 `void deallocate(void *ptr)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L257 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L258 | 本行涉及 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。按此语义解读 `allocator_.deallocate(ptr)`，不要把地址、数量或状态混用。 |
-| L259 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L260 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L262 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+};
 
-## 五、接口定位、调用线索与生命周期
-
-### 本篇声明与实现入口
-
-| 源码位置 | 实际声明片段 |
-|---|---|
-| [BLI_generic_span.hh:L19](../../../../../source/blender/blenlib/BLI_generic_span.hh#L19) | `class GSpan` |
-| [BLI_generic_span.hh:L26](../../../../../source/blender/blenlib/BLI_generic_span.hh#L26) | `GSpan() = default;` |
-| [BLI_generic_span.hh:L28](../../../../../source/blender/blenlib/BLI_generic_span.hh#L28) | `GSpan(const CPPType *type, const void *buffer, int64_t size)` |
-| [BLI_generic_span.hh:L29](../../../../../source/blender/blenlib/BLI_generic_span.hh#L29) | `: type_(type), data_(buffer), size_(size)` |
-| [BLI_generic_span.hh:L37](../../../../../source/blender/blenlib/BLI_generic_span.hh#L37) | `GSpan(const CPPType &type, const void *buffer, int64_t size) : GSpan(&type, buffer, size) {}` |
-| [BLI_generic_span.hh:L39](../../../../../source/blender/blenlib/BLI_generic_span.hh#L39) | `GSpan(const CPPType &type) : type_(&type) {}` |
-| [BLI_generic_span.hh:L41](../../../../../source/blender/blenlib/BLI_generic_span.hh#L41) | `GSpan(const CPPType *type) : type_(type) {}` |
-| [BLI_generic_span.hh:L44](../../../../../source/blender/blenlib/BLI_generic_span.hh#L44) | `GSpan(Span<T> array)` |
-| [BLI_generic_span.hh:L45](../../../../../source/blender/blenlib/BLI_generic_span.hh#L45) | `: GSpan(CPPType::get<T>(), static_cast<const void *>(array.data()), array.size())` |
-| [BLI_generic_span.hh:L50](../../../../../source/blender/blenlib/BLI_generic_span.hh#L50) | `GSpan(MutableSpan<T> array)` |
-| [BLI_generic_span.hh:L51](../../../../../source/blender/blenlib/BLI_generic_span.hh#L51) | `: GSpan(CPPType::get<T>(), static_cast<const void *>(array.data()), array.size())` |
-| [BLI_generic_span.hh:L55](../../../../../source/blender/blenlib/BLI_generic_span.hh#L55) | `const CPPType &type() const` |
-| [BLI_generic_span.hh:L61](../../../../../source/blender/blenlib/BLI_generic_span.hh#L61) | `const CPPType *type_ptr() const` |
-| [BLI_generic_span.hh:L66](../../../../../source/blender/blenlib/BLI_generic_span.hh#L66) | `bool is_empty() const` |
-| [BLI_generic_span.hh:L71](../../../../../source/blender/blenlib/BLI_generic_span.hh#L71) | `int64_t size() const` |
-| [BLI_generic_span.hh:L76](../../../../../source/blender/blenlib/BLI_generic_span.hh#L76) | `int64_t size_in_bytes() const` |
-| [BLI_generic_span.hh:L81](../../../../../source/blender/blenlib/BLI_generic_span.hh#L81) | `const void *data() const` |
-| [BLI_generic_span.hh:L92](../../../../../source/blender/blenlib/BLI_generic_span.hh#L92) | `template<typename T> Span<T> typed() const` |
-| [BLI_generic_span.hh:L99](../../../../../source/blender/blenlib/BLI_generic_span.hh#L99) | `GSpan slice(const int64_t start, int64_t size) const` |
-| [BLI_generic_span.hh:L107](../../../../../source/blender/blenlib/BLI_generic_span.hh#L107) | `GSpan slice(const IndexRange range) const` |
-| [BLI_generic_span.hh:L112](../../../../../source/blender/blenlib/BLI_generic_span.hh#L112) | `GSpan drop_front(const int64_t n) const` |
-| [BLI_generic_span.hh:L119](../../../../../source/blender/blenlib/BLI_generic_span.hh#L119) | `GSpan drop_back(const int64_t n) const` |
-| [BLI_generic_span.hh:L126](../../../../../source/blender/blenlib/BLI_generic_span.hh#L126) | `GSpan take_front(const int64_t n) const` |
-| [BLI_generic_span.hh:L133](../../../../../source/blender/blenlib/BLI_generic_span.hh#L133) | `GSpan take_back(const int64_t n) const` |
-| [BLI_generic_span.hh:L145](../../../../../source/blender/blenlib/BLI_generic_span.hh#L145) | `class GMutableSpan` |
-| [BLI_generic_span.hh:L152](../../../../../source/blender/blenlib/BLI_generic_span.hh#L152) | `GMutableSpan() = default;` |
-| [BLI_generic_span.hh:L154](../../../../../source/blender/blenlib/BLI_generic_span.hh#L154) | `GMutableSpan(const CPPType *type, void *buffer, int64_t size)` |
-| [BLI_generic_span.hh:L155](../../../../../source/blender/blenlib/BLI_generic_span.hh#L155) | `: type_(type), data_(buffer), size_(size)` |
-| [BLI_generic_span.hh:L163](../../../../../source/blender/blenlib/BLI_generic_span.hh#L163) | `GMutableSpan(const CPPType &type, void *buffer, int64_t size) : GMutableSpan(&type, buffer, size)` |
-| [BLI_generic_span.hh:L167](../../../../../source/blender/blenlib/BLI_generic_span.hh#L167) | `GMutableSpan(const CPPType &type) : type_(&type) {}` |
-| [BLI_generic_span.hh:L169](../../../../../source/blender/blenlib/BLI_generic_span.hh#L169) | `GMutableSpan(const CPPType *type) : type_(type) {}` |
-| [BLI_generic_span.hh:L172](../../../../../source/blender/blenlib/BLI_generic_span.hh#L172) | `GMutableSpan(MutableSpan<T> array)` |
-| [BLI_generic_span.hh:L173](../../../../../source/blender/blenlib/BLI_generic_span.hh#L173) | `: GMutableSpan(CPPType::get<T>(), static_cast<void *>(array.begin()), array.size())` |
-| [BLI_generic_span.hh:L177](../../../../../source/blender/blenlib/BLI_generic_span.hh#L177) | `operator GSpan() const` |
-| [BLI_generic_span.hh:L182](../../../../../source/blender/blenlib/BLI_generic_span.hh#L182) | `const CPPType &type() const` |
-| [BLI_generic_span.hh:L188](../../../../../source/blender/blenlib/BLI_generic_span.hh#L188) | `const CPPType *type_ptr() const` |
-| [BLI_generic_span.hh:L193](../../../../../source/blender/blenlib/BLI_generic_span.hh#L193) | `bool is_empty() const` |
-| [BLI_generic_span.hh:L198](../../../../../source/blender/blenlib/BLI_generic_span.hh#L198) | `int64_t size() const` |
-| [BLI_generic_span.hh:L203](../../../../../source/blender/blenlib/BLI_generic_span.hh#L203) | `int64_t size_in_bytes() const` |
-| [BLI_generic_span.hh:L208](../../../../../source/blender/blenlib/BLI_generic_span.hh#L208) | `void *data() const` |
-| [BLI_generic_span.hh:L220](../../../../../source/blender/blenlib/BLI_generic_span.hh#L220) | `template<typename T> MutableSpan<T> typed() const` |
-| [BLI_generic_span.hh:L227](../../../../../source/blender/blenlib/BLI_generic_span.hh#L227) | `GMutableSpan slice(const int64_t start, int64_t size) const` |
-| [BLI_generic_span.hh:L235](../../../../../source/blender/blenlib/BLI_generic_span.hh#L235) | `GMutableSpan slice(IndexRange range) const` |
-| [BLI_generic_span.hh:L240](../../../../../source/blender/blenlib/BLI_generic_span.hh#L240) | `GMutableSpan drop_front(const int64_t n) const` |
-| [BLI_generic_span.hh:L247](../../../../../source/blender/blenlib/BLI_generic_span.hh#L247) | `GMutableSpan drop_back(const int64_t n) const` |
-| [BLI_generic_span.hh:L254](../../../../../source/blender/blenlib/BLI_generic_span.hh#L254) | `GMutableSpan take_front(const int64_t n) const` |
-| [BLI_generic_span.hh:L261](../../../../../source/blender/blenlib/BLI_generic_span.hh#L261) | `GMutableSpan take_back(const int64_t n) const` |
-| [BLI_generic_span.hh:L273](../../../../../source/blender/blenlib/BLI_generic_span.hh#L273) | `void copy_from(GSpan values)` |
-| [BLI_generic_array.hh:L30](../../../../../source/blender/blenlib/BLI_generic_array.hh#L30) | `class GArray` |
-| [BLI_generic_array.hh:L48](../../../../../source/blender/blenlib/BLI_generic_array.hh#L48) | `GArray(Allocator allocator = {}) noexcept : allocator_(allocator) {}` |
-| [BLI_generic_array.hh:L50](../../../../../source/blender/blenlib/BLI_generic_array.hh#L50) | `GArray(NoExceptConstructor, Allocator allocator = {}) noexcept : GArray(allocator) {}` |
-| [BLI_generic_array.hh:L56](../../../../../source/blender/blenlib/BLI_generic_array.hh#L56) | `GArray(const CPPType &type, int64_t size, Allocator allocator = {})` |
-| [BLI_generic_array.hh:L57](../../../../../source/blender/blenlib/BLI_generic_array.hh#L57) | `: GArray(type, size, NoInitialization{}, allocator)` |
-| [BLI_generic_array.hh:L62](../../../../../source/blender/blenlib/BLI_generic_array.hh#L62) | `GArray(const CPPType &type,` |
-| [BLI_generic_array.hh:L66](../../../../../source/blender/blenlib/BLI_generic_array.hh#L66) | `: GArray(type, allocator)` |
-| [BLI_generic_array.hh:L76](../../../../../source/blender/blenlib/BLI_generic_array.hh#L76) | `GArray(const CPPType &type, Allocator allocator = {}) : GArray(allocator)` |
-| [BLI_generic_array.hh:L85](../../../../../source/blender/blenlib/BLI_generic_array.hh#L85) | `GArray(const CPPType &type, void *buffer, int64_t size, Allocator allocator = {})` |
-| [BLI_generic_array.hh:L86](../../../../../source/blender/blenlib/BLI_generic_array.hh#L86) | `: GArray(type, allocator)` |
-| [BLI_generic_array.hh:L99](../../../../../source/blender/blenlib/BLI_generic_array.hh#L99) | `GArray(const GSpan span, Allocator allocator = {}) : GArray(span.type(), span.size(), allocator)` |
-| [BLI_generic_array.hh:L108](../../../../../source/blender/blenlib/BLI_generic_array.hh#L108) | `GArray(const GArray &other) : GArray(other.as_span(), other.allocator()) {}` |
-| [BLI_generic_array.hh:L113](../../../../../source/blender/blenlib/BLI_generic_array.hh#L113) | `GArray(GArray &&other)` |
-| [BLI_generic_array.hh:L114](../../../../../source/blender/blenlib/BLI_generic_array.hh#L114) | `: type_(other.type_), data_(other.data_), size_(other.size_), allocator_(other.allocator_)` |
-| [BLI_generic_array.hh:L138](../../../../../source/blender/blenlib/BLI_generic_array.hh#L138) | `const CPPType &type() const` |
-| [BLI_generic_array.hh:L144](../../../../../source/blender/blenlib/BLI_generic_array.hh#L144) | `bool is_empty() const` |
-| [BLI_generic_array.hh:L152](../../../../../source/blender/blenlib/BLI_generic_array.hh#L152) | `int64_t size() const` |
-| [BLI_generic_array.hh:L160](../../../../../source/blender/blenlib/BLI_generic_array.hh#L160) | `const void *data() const` |
-| [BLI_generic_array.hh:L164](../../../../../source/blender/blenlib/BLI_generic_array.hh#L164) | `void *data()` |
-| [BLI_generic_array.hh:L181](../../../../../source/blender/blenlib/BLI_generic_array.hh#L181) | `operator GSpan() const` |
-| [BLI_generic_array.hh:L187](../../../../../source/blender/blenlib/BLI_generic_array.hh#L187) | `operator GMutableSpan()` |
-| [BLI_generic_array.hh:L193](../../../../../source/blender/blenlib/BLI_generic_array.hh#L193) | `GSpan as_span() const` |
-| [BLI_generic_array.hh:L198](../../../../../source/blender/blenlib/BLI_generic_array.hh#L198) | `GMutableSpan as_mutable_span()` |
-| [BLI_generic_array.hh:L206](../../../../../source/blender/blenlib/BLI_generic_array.hh#L206) | `Allocator &allocator()` |
-| [BLI_generic_array.hh:L210](../../../../../source/blender/blenlib/BLI_generic_array.hh#L210) | `const Allocator &allocator() const` |
-| [BLI_generic_array.hh:L219](../../../../../source/blender/blenlib/BLI_generic_array.hh#L219) | `void reinitialize(const int64_t new_size)` |
-| [BLI_generic_array.hh:L249](../../../../../source/blender/blenlib/BLI_generic_array.hh#L249) | `void *allocate(int64_t size)` |
-| [BLI_generic_array.hh:L256](../../../../../source/blender/blenlib/BLI_generic_array.hh#L256) | `void deallocate(void *ptr)` |
-
-### 同名符号出现位置
-
-以下表提供跨文件阅读入口，包含声明、调用或测试使用；没有经过完整C++名称解析，不把它命名为已证明的运行时调用图。
-
-| 符号 | 位置 | 文本证据 |
-|---|---|---|
-| `GSpan` | [BLI_array_utils.hh:L347](../../../../../source/blender/blenlib/BLI_array_utils.hh#L347) | `copy_group_to_group(src_offsets, dst_offsets, selection, GSpan(src), GMutableSpan(dst));` |
-| `GSpan` | [BLI_generic_array.hh:L181](../../../../../source/blender/blenlib/BLI_generic_array.hh#L181) | `operator GSpan() const` |
-| `GSpan` | [BLI_generic_array.hh:L184](../../../../../source/blender/blenlib/BLI_generic_array.hh#L184) | `return GSpan(type_, data_, size_);` |
-| `type_` | [geometry_fields.cc:L73](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L73) | `type_(other.type_),` |
-| `type_` | [geometry_fields.cc:L85](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L85) | `type_(type),` |
-| `type_` | [geometry_fields.cc:L99](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L99) | `: type_(component.type()), domain_(domain)` |
-| `type` | [BKE_attribute.hh:L82](../../../../../source/blender/blenkernel/BKE_attribute.hh#L82) | `AttributeInit(const Type type) : type(type) {}` |
-| `type` | [BKE_attribute.hh:L735](../../../../../source/blender/blenkernel/BKE_attribute.hh#L735) | `if (!attribute.varray.type().is<T>()) {` |
-| `type` | [BKE_geometry_fields.hh:L193](../../../../../source/blender/blenkernel/BKE_geometry_fields.hh#L193) | `GeometryComponent::Type type() const` |
-| `type_ptr` | [generic_virtual_array.cc:L338](../../../../../source/blender/blenlib/intern/generic_virtual_array.cc#L338) | `: GSpan(other.type_ptr()), varray_(std::move(other.varray_)), owned_data_(other.owned_data_)` |
-| `type_ptr` | [generic_virtual_array.cc:L407](../../../../../source/blender/blenlib/intern/generic_virtual_array.cc#L407) | `: GMutableSpan(other.type_ptr()),` |
-| `is_empty` | [BKE_attribute.hh:L780](../../../../../source/blender/blenkernel/BKE_attribute.hh#L780) | `if (name.is_empty()) {` |
-| `is_empty` | [BKE_attribute.hh:L798](../../../../../source/blender/blenkernel/BKE_attribute.hh#L798) | `if (name.is_empty()) {` |
-| `is_empty` | [BKE_curves.hh:L185](../../../../../source/blender/blenkernel/BKE_curves.hh#L185) | `bool is_empty() const;` |
-| `size` | [BKE_curves.hh:L599](../../../../../source/blender/blenkernel/BKE_curves.hh#L599) | `return {curve_index + points.start(), points.size() + 1};` |
-| `size` | [BKE_curves.hh:L1085](../../../../../source/blender/blenkernel/BKE_curves.hh#L1085) | `return {start, curves::segments_num(points.size(), cyclic)};` |
-| `size` | [BKE_mesh.hh:L308](../../../../../source/blender/blenkernel/BKE_mesh.hh#L308) | `return corner - 1 + (corner == face.start()) * face.size();` |
-| `size_in_bytes` | [mesh.cc:L1290](../../../../../source/blender/blenkernel/intern/mesh.cc#L1290) | `this->face_offsets().size_in_bytes());` |
-| `size_in_bytes` | [BLI_hash_tables.hh:L256](../../../../../source/blender/blenlib/BLI_hash_tables.hh#L256) | `size_in_bytes_ = hash_table.size_in_bytes();` |
-| `size_in_bytes` | [BLI_map.hh:L1019](../../../../../source/blender/blenlib/BLI_map.hh#L1019) | `int64_t size_in_bytes() const` |
-| `data` | [BKE_attribute.hh:L133](../../../../../source/blender/blenkernel/BKE_attribute.hh#L133) | `: AttributeInit(Type::Shared), data(data), sharing_info(&sharing_info)` |
-| `data` | [BKE_attribute_storage.hh:L112](../../../../../source/blender/blenkernel/BKE_attribute_storage.hh#L112) | `const DataVariant &data() const;` |
-| `data` | [BKE_attribute_storage.hh:L296](../../../../../source/blender/blenkernel/BKE_attribute_storage.hh#L296) | `inline const Attribute::DataVariant &Attribute::data() const` |
-| `typed` | [BKE_attribute.hh:L318](../../../../../source/blender/blenkernel/BKE_attribute.hh#L318) | `template<typename T> AttributeReader<T> typed() const` |
-| `typed` | [BKE_attribute.hh:L344](../../../../../source/blender/blenkernel/BKE_attribute.hh#L344) | `template<typename T> AttributeWriter<T> typed() const` |
-| `typed` | [BLI_generic_virtual_array.hh:L174](../../../../../source/blender/blenlib/BLI_generic_virtual_array.hh#L174) | `template<typename T> VArray<T> typed() const;` |
-| `slice` | [BKE_curves.hh:L1076](../../../../../source/blender/blenkernel/BKE_curves.hh#L1076) | `return offsets.slice(range);` |
-| `slice` | [BKE_curves.hh:L1092](../../../../../source/blender/blenkernel/BKE_curves.hh#L1092) | `return this->runtime->evaluated_length_cache.data().as_span().slice(range);` |
-| `slice` | [BKE_mesh.hh:L331](../../../../../source/blender/blenkernel/BKE_mesh.hh#L331) | `return face[corner_verts.slice(face).first_index(vert)];` |
-| `drop_front` | [mesh.cc:L790](../../../../../source/blender/blenkernel/intern/mesh.cc#L790) | `face_indices.drop_front(split),` |
-| `drop_front` | [mesh.cc:L1732](../../../../../source/blender/blenkernel/intern/mesh.cc#L1732) | `result.as_mutable_span().drop_front(positions.size()).fill(float3(0));` |
-| `drop_front` | [mesh_normals.cc:L1337](../../../../../source/blender/blenkernel/intern/mesh_normals.cc#L1337) | `BLI_assert(local_corner_visited.as_span().drop_front(start_local_corner).contains(false));` |
-
-### 生命周期推理图
-
-```mermaid
-flowchart LR
-  O["调用者或源数据拥有者"]:::input
-  V["GSpan与GArray的接口与状态"]:::abstraction
-  B["借用地址、引用或视图"]:::data
-  W["实际计算或修改"]:::compute
-  R["结果与清理责任"]:::result
-  O -->|"创建与配置"| V
-  O -->|"保障寿命"| B
-  B -->|"访问前验证"| W
-  V -->|"规定操作"| W
-  W -->|"交付或销毁"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+}  // namespace blender
 ```
 
-这是审查生命周期的通用模型。具体类是否拥有数据由本篇成员、构造、析构和调用者一起证明；任何箭头都不自动代表shared_ptr。
+</details>
 
-## 六、把代码放进具体数据中推演
+### 类型布局、声明与编译条件 · BLI_generic_span.hh L1—L25
 
-本方向的共同数值模型如下。本篇的专门检查是：分别创建int与string通用数组，验证步长、对齐、复制和销毁。
+<a id="t-4ce0909aac7c"></a>
 
-| 步骤 | 数据或状态 | 为什么需要这一步 |
-|---|---|---|
-| 请求存储 | sizeof(T), alignof(T) | 空间和地址都满足类型要求 |
-| 取得地址 | 尚无一般意义上的已构造T | 不能先调用T成员 |
-| 构造成功 | T生命周期开始 | 登记相应清理责任 |
-| 复制或移动 | 建立或更新另一个对象 | 区分初始化和赋值 |
-| 作用域退出 | 执行登记的析构 | 只销毁已构造部分 |
-| 归还存储 | 释放缓冲 | 与分配器来源匹配 |
+`GSpan`在这里声明的数据成员：
 
-```mermaid
-flowchart TB
-  T0["sizeof(T), alignof(T)"]:::input
-  T1["尚无一般意义上的已构造T"]:::compute
-  T2["T生命周期开始"]:::compute
-  T3["建立或更新另一个对象"]:::compute
-  T4["执行登记的析构"]:::compute
-  T5["释放缓冲"]:::result
-  T0 -->|"取得地址"| T1
-  T1 -->|"构造成功"| T2
-  T2 -->|"复制或移动"| T3
-  T3 -->|"作用域退出"| T4
-  T4 -->|"归还存储"| T5
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+- `CPPType type_`
+- `void data_`
+- `int64_t size_`
+
+<!-- annotated:8ac59b5e3a62be -->
+
+```cpp
+/* SPDX-FileCopyrightText: 2023 Blender Authors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
+#pragma once
+
+/** \file
+ * \ingroup bli
+ */
+
+#include "BLI_cpp_type.hh"
+#include "BLI_span.hh"
+
+namespace blender {
+
+/**
+ * A generic span. It behaves just like a Span<T>, but the type is only known at run-time.
+ */
+class GSpan {
+ protected:
+  const CPPType *type_ = nullptr;
+  const void *data_ = nullptr;
+  int64_t size_ = 0;
+
+ public:
 ```
 
-图是教学推演模型；精确分支与状态更新以本篇摘录及调用契约为准。
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L1—L25</summary>
 
-### 本篇独立练习与参考思路
+<!-- original:8ac59b5e3a62be:source/blender/blenlib/BLI_generic_span.hh:1:25 -->
+
+```cpp
+/* SPDX-FileCopyrightText: 2023 Blender Authors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
+#pragma once
+
+/** \file
+ * \ingroup bli
+ */
+
+#include "BLI_cpp_type.hh"
+#include "BLI_span.hh"
+
+namespace blender {
+
+/**
+ * A generic span. It behaves just like a Span<T>, but the type is only known at run-time.
+ */
+class GSpan {
+ protected:
+  const CPPType *type_ = nullptr;
+  const void *data_ = nullptr;
+  int64_t size_ = 0;
+
+ public:
+```
+
+</details>
+
+<a id="f-9d0c95702007eea6"></a>
+
+### `blender::GSpan::GSpan`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L26—L26。
+
+**教学注释版**
+
+<!-- annotated:36aa7cab8803a8 -->
+
+```cpp
+  GSpan() = default;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L26—L26</summary>
+
+<!-- original:36aa7cab8803a8:source/blender/blenlib/BLI_generic_span.hh:26:26 -->
+
+```cpp
+  GSpan() = default;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:d7a89d5c071c46 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L27—L27</summary>
+
+<!-- original:d7a89d5c071c46:source/blender/blenlib/BLI_generic_span.hh:27:27 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-6650bd08c7eecc66"></a>
+
+### `blender::GSpan::GSpan`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L28—L35。
+
+接口参数：
+
+- `const CPPType *type`
+- `const void *buffer`
+- `int64_t size`
+
+**教学注释版**
+
+<!-- annotated:93114deebc7c4d -->
+
+```cpp
+  GSpan(const CPPType *type, const void *buffer, int64_t size)
+      : type_(type), data_(buffer), size_(size)
+  {
+    BLI_assert(size >= 0);
+    BLI_assert(buffer != nullptr || size == 0);
+    BLI_assert(size == 0 || type != nullptr);
+    BLI_assert(type == nullptr || type->pointer_has_valid_alignment(buffer));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L28—L35</summary>
+
+<!-- original:93114deebc7c4d:source/blender/blenlib/BLI_generic_span.hh:28:35 -->
+
+```cpp
+  GSpan(const CPPType *type, const void *buffer, int64_t size)
+      : type_(type), data_(buffer), size_(size)
+  {
+    BLI_assert(size >= 0);
+    BLI_assert(buffer != nullptr || size == 0);
+    BLI_assert(size == 0 || type != nullptr);
+    BLI_assert(type == nullptr || type->pointer_has_valid_alignment(buffer));
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `type->pointer_has_valid_alignment` → [blender::CPPType::pointer_has_valid_alignment · L517](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-e6c3071a36daaa2d)。
+
+<!-- annotated:9f3e64bfe3222b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L36—L36</summary>
+
+<!-- original:9f3e64bfe3222b:source/blender/blenlib/BLI_generic_span.hh:36:36 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-bf180950832673fb"></a>
+
+### `blender::GSpan::GSpan`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L37—L37。
+
+接口参数：
+
+- `const CPPType &type`
+- `const void *buffer`
+- `int64_t size`
+
+**教学注释版**
+
+<!-- annotated:e4541b316cfaea -->
+
+```cpp
+  GSpan(const CPPType &type, const void *buffer, int64_t size) : GSpan(&type, buffer, size) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L37—L37</summary>
+
+<!-- original:e4541b316cfaea:source/blender/blenlib/BLI_generic_span.hh:37:37 -->
+
+```cpp
+  GSpan(const CPPType &type, const void *buffer, int64_t size) : GSpan(&type, buffer, size) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:3552dfb856993a -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L38—L38</summary>
+
+<!-- original:3552dfb856993a:source/blender/blenlib/BLI_generic_span.hh:38:38 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-cf949d5590ea9ab6"></a>
+
+### `blender::GSpan::GSpan`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L39—L39。
+
+接口参数：
+
+- `const CPPType &type`
+
+**教学注释版**
+
+<!-- annotated:437020ef732e3f -->
+
+```cpp
+  GSpan(const CPPType &type) : type_(&type) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L39—L39</summary>
+
+<!-- original:437020ef732e3f:source/blender/blenlib/BLI_generic_span.hh:39:39 -->
+
+```cpp
+  GSpan(const CPPType &type) : type_(&type) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:fda1800cf0c576 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L40—L40</summary>
+
+<!-- original:fda1800cf0c576:source/blender/blenlib/BLI_generic_span.hh:40:40 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a66ab52ee0842aee"></a>
+
+### `blender::GSpan::GSpan`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L41—L41。
+
+接口参数：
+
+- `const CPPType *type`
+
+**教学注释版**
+
+<!-- annotated:949986811f02fe -->
+
+```cpp
+  GSpan(const CPPType *type) : type_(type) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L41—L41</summary>
+
+<!-- original:949986811f02fe:source/blender/blenlib/BLI_generic_span.hh:41:41 -->
+
+```cpp
+  GSpan(const CPPType *type) : type_(type) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:c03a5eede4b7f2 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L42—L42</summary>
+
+<!-- original:c03a5eede4b7f2:source/blender/blenlib/BLI_generic_span.hh:42:42 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-d9084fa10964390f"></a>
+
+### `blender::GSpan::GSpan`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L43—L47。
+
+接口参数：
+
+- `Span<T> array`
+
+**教学注释版**
+
+<!-- annotated:655fa88d3a0a84 -->
+
+```cpp
+  template<typename T>
+  GSpan(Span<T> array)
+      : GSpan(CPPType::get<T>(), static_cast<const void *>(array.data()), array.size())
+  {
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L43—L47</summary>
+
+<!-- original:655fa88d3a0a84:source/blender/blenlib/BLI_generic_span.hh:43:47 -->
+
+```cpp
+  template<typename T>
+  GSpan(Span<T> array)
+      : GSpan(CPPType::get<T>(), static_cast<const void *>(array.data()), array.size())
+  {
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:a83f8abaf8d359 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L48—L48</summary>
+
+<!-- original:a83f8abaf8d359:source/blender/blenlib/BLI_generic_span.hh:48:48 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-76e3de3cc3d65761"></a>
+
+### `blender::GSpan::GSpan`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L49—L53。
+
+接口参数：
+
+- `MutableSpan<T> array`
+
+**教学注释版**
+
+<!-- annotated:93245baa9c207c -->
+
+```cpp
+  template<typename T>
+  GSpan(MutableSpan<T> array)
+      : GSpan(CPPType::get<T>(), static_cast<const void *>(array.data()), array.size())
+  {
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L49—L53</summary>
+
+<!-- original:93245baa9c207c:source/blender/blenlib/BLI_generic_span.hh:49:53 -->
+
+```cpp
+  template<typename T>
+  GSpan(MutableSpan<T> array)
+      : GSpan(CPPType::get<T>(), static_cast<const void *>(array.data()), array.size())
+  {
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:066d2fd3e3dcfc -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L54—L54</summary>
+
+<!-- original:066d2fd3e3dcfc:source/blender/blenlib/BLI_generic_span.hh:54:54 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-4c44cc0364dcf191"></a>
+
+### `blender::GSpan::type`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L55—L59。
+
+**教学注释版**
+
+<!-- annotated:56255c15c0a9ff -->
+
+```cpp
+  const CPPType &type() const
+  {
+    BLI_assert(type_ != nullptr);
+    return *type_;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L55—L59</summary>
+
+<!-- original:56255c15c0a9ff:source/blender/blenlib/BLI_generic_span.hh:55:59 -->
+
+```cpp
+  const CPPType &type() const
+  {
+    BLI_assert(type_ != nullptr);
+    return *type_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return *type_;`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+
+<!-- annotated:60120920d1daa3 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L60—L60</summary>
+
+<!-- original:60120920d1daa3:source/blender/blenlib/BLI_generic_span.hh:60:60 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-5294e3d5beb8ed8f"></a>
+
+### `blender::GSpan::type_ptr`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L61—L64。
+
+**教学注释版**
+
+<!-- annotated:b2f9bb7950da2b -->
+
+```cpp
+  const CPPType *type_ptr() const
+  {
+    return type_;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L61—L64</summary>
+
+<!-- original:b2f9bb7950da2b:source/blender/blenlib/BLI_generic_span.hh:61:64 -->
+
+```cpp
+  const CPPType *type_ptr() const
+  {
+    return type_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return type_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:a510c7b25b9639 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L65—L65</summary>
+
+<!-- original:a510c7b25b9639:source/blender/blenlib/BLI_generic_span.hh:65:65 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-30ba56eaa986966b"></a>
+
+### `blender::GSpan::is_empty`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L66—L69。
+
+**教学注释版**
+
+<!-- annotated:225698bdc1adf3 -->
+
+```cpp
+  bool is_empty() const
+  {
+    return size_ == 0;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L66—L69</summary>
+
+<!-- original:225698bdc1adf3:source/blender/blenlib/BLI_generic_span.hh:66:69 -->
+
+```cpp
+  bool is_empty() const
+  {
+    return size_ == 0;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return size_ == 0;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:f42b69ec36ab66 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L70—L70</summary>
+
+<!-- original:f42b69ec36ab66:source/blender/blenlib/BLI_generic_span.hh:70:70 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-c942a700d5d93de1"></a>
+
+### `blender::GSpan::size`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L71—L74。
+
+**教学注释版**
+
+<!-- annotated:f8256432eed529 -->
+
+```cpp
+  int64_t size() const
+  {
+    return size_;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L71—L74</summary>
+
+<!-- original:f8256432eed529:source/blender/blenlib/BLI_generic_span.hh:71:74 -->
+
+```cpp
+  int64_t size() const
+  {
+    return size_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return size_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:ff663ef46bfbc5 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L75—L75</summary>
+
+<!-- original:ff663ef46bfbc5:source/blender/blenlib/BLI_generic_span.hh:75:75 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-bb9e867bc32a6f4e"></a>
+
+### `blender::GSpan::size_in_bytes`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L76—L79。
+
+**教学注释版**
+
+<!-- annotated:4c49dc40894d8d -->
+
+```cpp
+  int64_t size_in_bytes() const
+  {
+    return type_->size * size_;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L76—L79</summary>
+
+<!-- original:4c49dc40894d8d:source/blender/blenlib/BLI_generic_span.hh:76:79 -->
+
+```cpp
+  int64_t size_in_bytes() const
+  {
+    return type_->size * size_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return type_->size * size_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:f042d3ad4f83ad -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L80—L80</summary>
+
+<!-- original:f042d3ad4f83ad:source/blender/blenlib/BLI_generic_span.hh:80:80 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-25f2f0038c437d19"></a>
+
+### `blender::GSpan::data`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L81—L84。
+
+**教学注释版**
+
+<!-- annotated:19fbfd78bbccd7 -->
+
+```cpp
+  const void *data() const
+  {
+    return data_;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L81—L84</summary>
+
+<!-- original:19fbfd78bbccd7:source/blender/blenlib/BLI_generic_span.hh:81:84 -->
+
+```cpp
+  const void *data() const
+  {
+    return data_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return data_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:b6e593947efd3e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L85—L85</summary>
+
+<!-- original:b6e593947efd3e:source/blender/blenlib/BLI_generic_span.hh:85:85 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-6d10b3ee1228df45"></a>
+
+### `blender::GSpan::operator[]`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L86—L90。
+
+接口参数：
+
+- `int64_t index`
+
+**教学注释版**
+
+<!-- annotated:d3940f65dbc300 -->
+
+```cpp
+  const void *operator[](int64_t index) const
+  {
+    BLI_assert(index < size_);
+    return POINTER_OFFSET(data_, type_->size * index);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L86—L90</summary>
+
+<!-- original:d3940f65dbc300:source/blender/blenlib/BLI_generic_span.hh:86:90 -->
+
+```cpp
+  const void *operator[](int64_t index) const
+  {
+    BLI_assert(index < size_);
+    return POINTER_OFFSET(data_, type_->size * index);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return POINTER_OFFSET(data_, type_->size * index);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+
+<!-- annotated:bff1d0b1c71c81 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L91—L91</summary>
+
+<!-- original:bff1d0b1c71c81:source/blender/blenlib/BLI_generic_span.hh:91:91 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-aa54cf0d7a8dae2b"></a>
+
+### `blender::GSpan::typed`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L92—L97。
+
+**教学注释版**
+
+<!-- annotated:c261c44b411ccf -->
+
+```cpp
+  template<typename T> Span<T> typed() const
+  {
+    BLI_assert(size_ == 0 || type_ != nullptr);
+    BLI_assert(type_ == nullptr || type_->is<T>());
+    return Span<T>(static_cast<const T *>(data_), size_);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L92—L97</summary>
+
+<!-- original:c261c44b411ccf:source/blender/blenlib/BLI_generic_span.hh:92:97 -->
+
+```cpp
+  template<typename T> Span<T> typed() const
+  {
+    BLI_assert(size_ == 0 || type_ != nullptr);
+    BLI_assert(type_ == nullptr || type_->is<T>());
+    return Span<T>(static_cast<const T *>(data_), size_);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return Span<T>(static_cast<const T *>(data_), size_);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `type_->is<T>` → [blender::CPPType::is · L758](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-2e2c3ee7602530a4)。
+- `Span<T>` → [blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
+
+<!-- annotated:1db2aef86bae6a -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L98—L98</summary>
+
+<!-- original:1db2aef86bae6a:source/blender/blenlib/BLI_generic_span.hh:98:98 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-c7f535c5dacdc816"></a>
+
+### `blender::GSpan::slice`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L99—L105。
+
+接口参数：
+
+- `const int64_t start`
+- `int64_t size`
+
+**教学注释版**
+
+<!-- annotated:ebceef211906bf -->
+
+```cpp
+  GSpan slice(const int64_t start, int64_t size) const
+  {
+    BLI_assert(start >= 0);
+    BLI_assert(size >= 0);
+    BLI_assert(start + size <= size_ || size == 0);
+    return GSpan(type_, POINTER_OFFSET(data_, type_->size * start), size);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L99—L105</summary>
+
+<!-- original:ebceef211906bf:source/blender/blenlib/BLI_generic_span.hh:99:105 -->
+
+```cpp
+  GSpan slice(const int64_t start, int64_t size) const
+  {
+    BLI_assert(start >= 0);
+    BLI_assert(size >= 0);
+    BLI_assert(start + size <= size_ || size == 0);
+    return GSpan(type_, POINTER_OFFSET(data_, type_->size * start), size);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return GSpan(type_, POINTER_OFFSET(data_, type_->size * start), size);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `GSpan` → [blender::GSpan::GSpan · L26](11-GSpan%E4%B8%8EGArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](11-GSpan%E4%B8%8EGArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](11-GSpan%E4%B8%8EGArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](11-GSpan%E4%B8%8EGArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](11-GSpan%E4%B8%8EGArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](11-GSpan%E4%B8%8EGArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](11-GSpan%E4%B8%8EGArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+
+<!-- annotated:3bd2f74baccd91 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L106—L106</summary>
+
+<!-- original:3bd2f74baccd91:source/blender/blenlib/BLI_generic_span.hh:106:106 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-13774c4cd5408fa2"></a>
+
+### `blender::GSpan::slice`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L107—L110。
+
+接口参数：
+
+- `const IndexRange range`
+
+**教学注释版**
+
+<!-- annotated:2e83a7969a8839 -->
+
+```cpp
+  GSpan slice(const IndexRange range) const
+  {
+    // [讲解] range.start：读取连续区间或分组的边界信息。
+    return this->slice(range.start(), range.size());
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L107—L110</summary>
+
+<!-- original:2e83a7969a8839:source/blender/blenlib/BLI_generic_span.hh:107:110 -->
+
+```cpp
+  GSpan slice(const IndexRange range) const
+  {
+    return this->slice(range.start(), range.size());
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->slice(range.start(), range.size());`
+
+**继续追踪实现**
+
+- `this->slice` → [blender::GSpan::slice · L99](11-GSpan%E4%B8%8EGArray.md#f-c7f535c5dacdc816)；[blender::GSpan::slice · L107](11-GSpan%E4%B8%8EGArray.md#f-13774c4cd5408fa2)。同名重载需按实参类型选择。
+- `range.start` → [blender::IndexRange::start · L243](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
+- `range.size` → [blender::IndexRange::size · L156](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+
+<!-- annotated:c06ae6e01e272f -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L111—L111</summary>
+
+<!-- original:c06ae6e01e272f:source/blender/blenlib/BLI_generic_span.hh:111:111 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-4fdd4b33b123f637"></a>
+
+### `blender::GSpan::drop_front`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L112—L117。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:cedfadfc5ada69 -->
+
+```cpp
+  GSpan drop_front(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    // [讲解] std::max<int64_t>：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+    const int64_t new_size = std::max<int64_t>(0, size_ - n);
+    return GSpan(*type_, POINTER_OFFSET(data_, type_->size * n), new_size);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L112—L117</summary>
+
+<!-- original:cedfadfc5ada69:source/blender/blenlib/BLI_generic_span.hh:112:117 -->
+
+```cpp
+  GSpan drop_front(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    const int64_t new_size = std::max<int64_t>(0, size_ - n);
+    return GSpan(*type_, POINTER_OFFSET(data_, type_->size * n), new_size);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return GSpan(*type_, POINTER_OFFSET(data_, type_->size * n), new_size);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `std::max<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+- `GSpan` → [blender::GSpan::GSpan · L26](11-GSpan%E4%B8%8EGArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](11-GSpan%E4%B8%8EGArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](11-GSpan%E4%B8%8EGArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](11-GSpan%E4%B8%8EGArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](11-GSpan%E4%B8%8EGArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](11-GSpan%E4%B8%8EGArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](11-GSpan%E4%B8%8EGArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+
+<!-- annotated:9a35ce5940e7be -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L118—L118</summary>
+
+<!-- original:9a35ce5940e7be:source/blender/blenlib/BLI_generic_span.hh:118:118 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-56187450e4e2ecc9"></a>
+
+### `blender::GSpan::drop_back`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L119—L124。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:13faf3d0ed9ae5 -->
+
+```cpp
+  GSpan drop_back(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    // [讲解] std::max<int64_t>：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+    const int64_t new_size = std::max<int64_t>(0, size_ - n);
+    return GSpan(*type_, data_, new_size);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L119—L124</summary>
+
+<!-- original:13faf3d0ed9ae5:source/blender/blenlib/BLI_generic_span.hh:119:124 -->
+
+```cpp
+  GSpan drop_back(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    const int64_t new_size = std::max<int64_t>(0, size_ - n);
+    return GSpan(*type_, data_, new_size);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return GSpan(*type_, data_, new_size);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `std::max<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+- `GSpan` → [blender::GSpan::GSpan · L26](11-GSpan%E4%B8%8EGArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](11-GSpan%E4%B8%8EGArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](11-GSpan%E4%B8%8EGArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](11-GSpan%E4%B8%8EGArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](11-GSpan%E4%B8%8EGArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](11-GSpan%E4%B8%8EGArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](11-GSpan%E4%B8%8EGArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
+
+<!-- annotated:a7600d90e6466b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L125—L125</summary>
+
+<!-- original:a7600d90e6466b:source/blender/blenlib/BLI_generic_span.hh:125:125 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-74aac1e521e64a50"></a>
+
+### `blender::GSpan::take_front`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L126—L131。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:0707ef49d679dc -->
+
+```cpp
+  GSpan take_front(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    // [讲解] std::min<int64_t>：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
+    const int64_t new_size = std::min<int64_t>(size_, n);
+    return GSpan(*type_, data_, new_size);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L126—L131</summary>
+
+<!-- original:0707ef49d679dc:source/blender/blenlib/BLI_generic_span.hh:126:131 -->
+
+```cpp
+  GSpan take_front(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    const int64_t new_size = std::min<int64_t>(size_, n);
+    return GSpan(*type_, data_, new_size);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return GSpan(*type_, data_, new_size);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `std::min<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
+- `GSpan` → [blender::GSpan::GSpan · L26](11-GSpan%E4%B8%8EGArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](11-GSpan%E4%B8%8EGArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](11-GSpan%E4%B8%8EGArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](11-GSpan%E4%B8%8EGArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](11-GSpan%E4%B8%8EGArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](11-GSpan%E4%B8%8EGArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](11-GSpan%E4%B8%8EGArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
+
+<!-- annotated:77da58f898584d -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L132—L132</summary>
+
+<!-- original:77da58f898584d:source/blender/blenlib/BLI_generic_span.hh:132:132 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-5da03f9b93d53ea8"></a>
+
+### `blender::GSpan::take_back`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L133—L138。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:258a93274a9057 -->
+
+```cpp
+  GSpan take_back(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    // [讲解] std::min<int64_t>：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
+    const int64_t new_size = std::min<int64_t>(size_, n);
+    return GSpan(*type_, POINTER_OFFSET(data_, type_->size * (size_ - new_size)), new_size);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L133—L138</summary>
+
+<!-- original:258a93274a9057:source/blender/blenlib/BLI_generic_span.hh:133:138 -->
+
+```cpp
+  GSpan take_back(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    const int64_t new_size = std::min<int64_t>(size_, n);
+    return GSpan(*type_, POINTER_OFFSET(data_, type_->size * (size_ - new_size)), new_size);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return GSpan(*type_, POINTER_OFFSET(data_, type_->size * (size_ - new_size)), new_size);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `std::min<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
+- `GSpan` → [blender::GSpan::GSpan · L26](11-GSpan%E4%B8%8EGArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](11-GSpan%E4%B8%8EGArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](11-GSpan%E4%B8%8EGArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](11-GSpan%E4%B8%8EGArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](11-GSpan%E4%B8%8EGArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](11-GSpan%E4%B8%8EGArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](11-GSpan%E4%B8%8EGArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+
+### 类型布局、声明与编译条件 · BLI_generic_span.hh L139—L151
+
+<a id="t-d2543429f4ee"></a>
+
+`GMutableSpan`在这里声明的数据成员：
+
+- `CPPType type_`
+- `void data_`
+- `int64_t size_`
+
+<!-- annotated:8d955511805453 -->
+
+```cpp
+};
+
+/**
+ * A generic mutable span. It behaves just like a MutableSpan<T>, but the type is only
+ * known at run-time.
+ */
+class GMutableSpan {
+ protected:
+  const CPPType *type_ = nullptr;
+  void *data_ = nullptr;
+  int64_t size_ = 0;
+
+ public:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L139—L151</summary>
+
+<!-- original:8d955511805453:source/blender/blenlib/BLI_generic_span.hh:139:151 -->
+
+```cpp
+};
+
+/**
+ * A generic mutable span. It behaves just like a MutableSpan<T>, but the type is only
+ * known at run-time.
+ */
+class GMutableSpan {
+ protected:
+  const CPPType *type_ = nullptr;
+  void *data_ = nullptr;
+  int64_t size_ = 0;
+
+ public:
+```
+
+</details>
+
+<a id="f-b4ef5399177eeedd"></a>
+
+### `blender::GMutableSpan::GMutableSpan`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L152—L152。
+
+**教学注释版**
+
+<!-- annotated:00ea63840eb343 -->
+
+```cpp
+  GMutableSpan() = default;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L152—L152</summary>
+
+<!-- original:00ea63840eb343:source/blender/blenlib/BLI_generic_span.hh:152:152 -->
+
+```cpp
+  GMutableSpan() = default;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:a6c1e898858fb9 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L153—L153</summary>
+
+<!-- original:a6c1e898858fb9:source/blender/blenlib/BLI_generic_span.hh:153:153 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-6439a40f33c7a2e5"></a>
+
+### `blender::GMutableSpan::GMutableSpan`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L154—L161。
+
+接口参数：
+
+- `const CPPType *type`
+- `void *buffer`
+- `int64_t size`
+
+**教学注释版**
+
+<!-- annotated:56c4dd3f74f574 -->
+
+```cpp
+  GMutableSpan(const CPPType *type, void *buffer, int64_t size)
+      : type_(type), data_(buffer), size_(size)
+  {
+    BLI_assert(size >= 0);
+    BLI_assert(buffer != nullptr || size == 0);
+    BLI_assert(size == 0 || type != nullptr);
+    BLI_assert(type == nullptr || type->pointer_has_valid_alignment(buffer));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L154—L161</summary>
+
+<!-- original:56c4dd3f74f574:source/blender/blenlib/BLI_generic_span.hh:154:161 -->
+
+```cpp
+  GMutableSpan(const CPPType *type, void *buffer, int64_t size)
+      : type_(type), data_(buffer), size_(size)
+  {
+    BLI_assert(size >= 0);
+    BLI_assert(buffer != nullptr || size == 0);
+    BLI_assert(size == 0 || type != nullptr);
+    BLI_assert(type == nullptr || type->pointer_has_valid_alignment(buffer));
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `type->pointer_has_valid_alignment` → [blender::CPPType::pointer_has_valid_alignment · L517](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-e6c3071a36daaa2d)。
+
+<!-- annotated:5c18902f2b4f27 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L162—L162</summary>
+
+<!-- original:5c18902f2b4f27:source/blender/blenlib/BLI_generic_span.hh:162:162 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-6054339faadc1405"></a>
+
+### `blender::GMutableSpan::GMutableSpan`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L163—L165。
+
+接口参数：
+
+- `const CPPType &type`
+- `void *buffer`
+- `int64_t size`
+
+**教学注释版**
+
+<!-- annotated:b6815b8dfd710b -->
+
+```cpp
+  GMutableSpan(const CPPType &type, void *buffer, int64_t size) : GMutableSpan(&type, buffer, size)
+  {
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L163—L165</summary>
+
+<!-- original:b6815b8dfd710b:source/blender/blenlib/BLI_generic_span.hh:163:165 -->
+
+```cpp
+  GMutableSpan(const CPPType &type, void *buffer, int64_t size) : GMutableSpan(&type, buffer, size)
+  {
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:84b0c66d23735d -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L166—L166</summary>
+
+<!-- original:84b0c66d23735d:source/blender/blenlib/BLI_generic_span.hh:166:166 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-d1333b42c7982310"></a>
+
+### `blender::GMutableSpan::GMutableSpan`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L167—L167。
+
+接口参数：
+
+- `const CPPType &type`
+
+**教学注释版**
+
+<!-- annotated:b8941c0c1f6da2 -->
+
+```cpp
+  GMutableSpan(const CPPType &type) : type_(&type) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L167—L167</summary>
+
+<!-- original:b8941c0c1f6da2:source/blender/blenlib/BLI_generic_span.hh:167:167 -->
+
+```cpp
+  GMutableSpan(const CPPType &type) : type_(&type) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:eedebf268351d5 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L168—L168</summary>
+
+<!-- original:eedebf268351d5:source/blender/blenlib/BLI_generic_span.hh:168:168 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3584f997d0fe9a96"></a>
+
+### `blender::GMutableSpan::GMutableSpan`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L169—L169。
+
+接口参数：
+
+- `const CPPType *type`
+
+**教学注释版**
+
+<!-- annotated:6a3051599392a2 -->
+
+```cpp
+  GMutableSpan(const CPPType *type) : type_(type) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L169—L169</summary>
+
+<!-- original:6a3051599392a2:source/blender/blenlib/BLI_generic_span.hh:169:169 -->
+
+```cpp
+  GMutableSpan(const CPPType *type) : type_(type) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:65bd7f00f97aff -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L170—L170</summary>
+
+<!-- original:65bd7f00f97aff:source/blender/blenlib/BLI_generic_span.hh:170:170 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3074afdbe5232417"></a>
+
+### `blender::GMutableSpan::GMutableSpan`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L171—L175。
+
+接口参数：
+
+- `MutableSpan<T> array`
+
+**教学注释版**
+
+<!-- annotated:4109b4d3a51601 -->
+
+```cpp
+  template<typename T>
+  GMutableSpan(MutableSpan<T> array)
+      : GMutableSpan(CPPType::get<T>(), static_cast<void *>(array.begin()), array.size())
+  {
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L171—L175</summary>
+
+<!-- original:4109b4d3a51601:source/blender/blenlib/BLI_generic_span.hh:171:175 -->
+
+```cpp
+  template<typename T>
+  GMutableSpan(MutableSpan<T> array)
+      : GMutableSpan(CPPType::get<T>(), static_cast<void *>(array.begin()), array.size())
+  {
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:9a28e9dc907bdb -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L176—L176</summary>
+
+<!-- original:9a28e9dc907bdb:source/blender/blenlib/BLI_generic_span.hh:176:176 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-cfe0fd5b7efdce1e"></a>
+
+### `blender::GMutableSpan::() const`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L177—L180。
+
+**教学注释版**
+
+<!-- annotated:3a801b4a3ec070 -->
+
+```cpp
+  operator GSpan() const
+  {
+    return GSpan(type_, data_, size_);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L177—L180</summary>
+
+<!-- original:3a801b4a3ec070:source/blender/blenlib/BLI_generic_span.hh:177:180 -->
+
+```cpp
+  operator GSpan() const
+  {
+    return GSpan(type_, data_, size_);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return GSpan(type_, data_, size_);`
+
+**继续追踪实现**
+
+- `GSpan` → [blender::GSpan::GSpan · L26](11-GSpan%E4%B8%8EGArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](11-GSpan%E4%B8%8EGArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](11-GSpan%E4%B8%8EGArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](11-GSpan%E4%B8%8EGArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](11-GSpan%E4%B8%8EGArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](11-GSpan%E4%B8%8EGArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](11-GSpan%E4%B8%8EGArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
+
+<!-- annotated:d981c620a9df70 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L181—L181</summary>
+
+<!-- original:d981c620a9df70:source/blender/blenlib/BLI_generic_span.hh:181:181 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-74385040046c86d5"></a>
+
+### `blender::GMutableSpan::type`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L182—L186。
+
+**教学注释版**
+
+<!-- annotated:a9c45e7b0e5dba -->
+
+```cpp
+  const CPPType &type() const
+  {
+    BLI_assert(type_ != nullptr);
+    return *type_;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L182—L186</summary>
+
+<!-- original:a9c45e7b0e5dba:source/blender/blenlib/BLI_generic_span.hh:182:186 -->
+
+```cpp
+  const CPPType &type() const
+  {
+    BLI_assert(type_ != nullptr);
+    return *type_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return *type_;`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+
+<!-- annotated:18d4abf1f7e8c4 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L187—L187</summary>
+
+<!-- original:18d4abf1f7e8c4:source/blender/blenlib/BLI_generic_span.hh:187:187 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a8fc419775d9560b"></a>
+
+### `blender::GMutableSpan::type_ptr`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L188—L191。
+
+**教学注释版**
+
+<!-- annotated:fa8936a6de2ecd -->
+
+```cpp
+  const CPPType *type_ptr() const
+  {
+    return type_;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L188—L191</summary>
+
+<!-- original:fa8936a6de2ecd:source/blender/blenlib/BLI_generic_span.hh:188:191 -->
+
+```cpp
+  const CPPType *type_ptr() const
+  {
+    return type_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return type_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:f62c02bb21c8ec -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L192—L192</summary>
+
+<!-- original:f62c02bb21c8ec:source/blender/blenlib/BLI_generic_span.hh:192:192 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-6fac8d7ba01608fb"></a>
+
+### `blender::GMutableSpan::is_empty`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L193—L196。
+
+**教学注释版**
+
+<!-- annotated:1f31118c73dbcc -->
+
+```cpp
+  bool is_empty() const
+  {
+    return size_ == 0;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L193—L196</summary>
+
+<!-- original:1f31118c73dbcc:source/blender/blenlib/BLI_generic_span.hh:193:196 -->
+
+```cpp
+  bool is_empty() const
+  {
+    return size_ == 0;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return size_ == 0;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:2f1aba7bad3fec -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L197—L197</summary>
+
+<!-- original:2f1aba7bad3fec:source/blender/blenlib/BLI_generic_span.hh:197:197 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-ecf8873167fb66c8"></a>
+
+### `blender::GMutableSpan::size`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L198—L201。
+
+**教学注释版**
+
+<!-- annotated:c9cb01caf6418c -->
+
+```cpp
+  int64_t size() const
+  {
+    return size_;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L198—L201</summary>
+
+<!-- original:c9cb01caf6418c:source/blender/blenlib/BLI_generic_span.hh:198:201 -->
+
+```cpp
+  int64_t size() const
+  {
+    return size_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return size_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:4c00e623894604 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L202—L202</summary>
+
+<!-- original:4c00e623894604:source/blender/blenlib/BLI_generic_span.hh:202:202 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-78ac72dc14caccbc"></a>
+
+### `blender::GMutableSpan::size_in_bytes`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L203—L206。
+
+**教学注释版**
+
+<!-- annotated:a70828c4f74550 -->
+
+```cpp
+  int64_t size_in_bytes() const
+  {
+    return type_->size * size_;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L203—L206</summary>
+
+<!-- original:a70828c4f74550:source/blender/blenlib/BLI_generic_span.hh:203:206 -->
+
+```cpp
+  int64_t size_in_bytes() const
+  {
+    return type_->size * size_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return type_->size * size_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:598d28a86da3ee -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L207—L207</summary>
+
+<!-- original:598d28a86da3ee:source/blender/blenlib/BLI_generic_span.hh:207:207 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-f951536a0bdbb159"></a>
+
+### `blender::GMutableSpan::data`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L208—L211。
+
+**教学注释版**
+
+<!-- annotated:a9bf8b8dc3b9a1 -->
+
+```cpp
+  void *data() const
+  {
+    return data_;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L208—L211</summary>
+
+<!-- original:a9bf8b8dc3b9a1:source/blender/blenlib/BLI_generic_span.hh:208:211 -->
+
+```cpp
+  void *data() const
+  {
+    return data_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return data_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:51d33376e34615 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L212—L212</summary>
+
+<!-- original:51d33376e34615:source/blender/blenlib/BLI_generic_span.hh:212:212 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-d35de295cbb18ea0"></a>
+
+### `blender::GMutableSpan::operator[]`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L213—L218。
+
+接口参数：
+
+- `int64_t index`
+
+**教学注释版**
+
+<!-- annotated:053d02913f45ff -->
+
+```cpp
+  void *operator[](int64_t index) const
+  {
+    BLI_assert(index >= 0);
+    BLI_assert(index < size_);
+    return POINTER_OFFSET(data_, type_->size * index);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L213—L218</summary>
+
+<!-- original:053d02913f45ff:source/blender/blenlib/BLI_generic_span.hh:213:218 -->
+
+```cpp
+  void *operator[](int64_t index) const
+  {
+    BLI_assert(index >= 0);
+    BLI_assert(index < size_);
+    return POINTER_OFFSET(data_, type_->size * index);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return POINTER_OFFSET(data_, type_->size * index);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+
+<!-- annotated:26a5d8e3f67745 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L219—L219</summary>
+
+<!-- original:26a5d8e3f67745:source/blender/blenlib/BLI_generic_span.hh:219:219 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-d66e288b393f6545"></a>
+
+### `blender::GMutableSpan::typed`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L220—L225。
+
+**教学注释版**
+
+<!-- annotated:23747a4e39907f -->
+
+```cpp
+  template<typename T> MutableSpan<T> typed() const
+  {
+    BLI_assert(size_ == 0 || type_ != nullptr);
+    BLI_assert(type_ == nullptr || type_->is<T>());
+    return MutableSpan<T>(static_cast<T *>(data_), size_);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L220—L225</summary>
+
+<!-- original:23747a4e39907f:source/blender/blenlib/BLI_generic_span.hh:220:225 -->
+
+```cpp
+  template<typename T> MutableSpan<T> typed() const
+  {
+    BLI_assert(size_ == 0 || type_ != nullptr);
+    BLI_assert(type_ == nullptr || type_->is<T>());
+    return MutableSpan<T>(static_cast<T *>(data_), size_);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return MutableSpan<T>(static_cast<T *>(data_), size_);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `type_->is<T>` → [blender::CPPType::is · L758](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-2e2c3ee7602530a4)。
+- `MutableSpan<T>` → [blender::MutableSpan::MutableSpan · L462](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
+
+<!-- annotated:e383a1214bdada -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L226—L226</summary>
+
+<!-- original:e383a1214bdada:source/blender/blenlib/BLI_generic_span.hh:226:226 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-d7f8e350bc3a5156"></a>
+
+### `blender::GMutableSpan::slice`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L227—L233。
+
+接口参数：
+
+- `const int64_t start`
+- `int64_t size`
+
+**教学注释版**
+
+<!-- annotated:cb08341131dd94 -->
+
+```cpp
+  GMutableSpan slice(const int64_t start, int64_t size) const
+  {
+    BLI_assert(start >= 0);
+    BLI_assert(size >= 0);
+    BLI_assert(start + size <= size_ || size == 0);
+    return GMutableSpan(type_, POINTER_OFFSET(data_, type_->size * start), size);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L227—L233</summary>
+
+<!-- original:cb08341131dd94:source/blender/blenlib/BLI_generic_span.hh:227:233 -->
+
+```cpp
+  GMutableSpan slice(const int64_t start, int64_t size) const
+  {
+    BLI_assert(start >= 0);
+    BLI_assert(size >= 0);
+    BLI_assert(start + size <= size_ || size == 0);
+    return GMutableSpan(type_, POINTER_OFFSET(data_, type_->size * start), size);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return GMutableSpan(type_, POINTER_OFFSET(data_, type_->size * start), size);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `GMutableSpan` → [blender::GMutableSpan::GMutableSpan · L152](11-GSpan%E4%B8%8EGArray.md#f-b4ef5399177eeedd)；[blender::GMutableSpan::GMutableSpan · L154](11-GSpan%E4%B8%8EGArray.md#f-6439a40f33c7a2e5)；[blender::GMutableSpan::GMutableSpan · L163](11-GSpan%E4%B8%8EGArray.md#f-6054339faadc1405)；[blender::GMutableSpan::GMutableSpan · L167](11-GSpan%E4%B8%8EGArray.md#f-d1333b42c7982310)；[blender::GMutableSpan::GMutableSpan · L169](11-GSpan%E4%B8%8EGArray.md#f-3584f997d0fe9a96)；[blender::GMutableSpan::GMutableSpan · L171](11-GSpan%E4%B8%8EGArray.md#f-3074afdbe5232417)。同名重载需按实参类型选择。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+
+<!-- annotated:f2d740323901e4 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L234—L234</summary>
+
+<!-- original:f2d740323901e4:source/blender/blenlib/BLI_generic_span.hh:234:234 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b1101d4d9009fa75"></a>
+
+### `blender::GMutableSpan::slice`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L235—L238。
+
+接口参数：
+
+- `IndexRange range`
+
+**教学注释版**
+
+<!-- annotated:af252b435c44f4 -->
+
+```cpp
+  GMutableSpan slice(IndexRange range) const
+  {
+    // [讲解] range.start：读取连续区间或分组的边界信息。
+    return this->slice(range.start(), range.size());
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L235—L238</summary>
+
+<!-- original:af252b435c44f4:source/blender/blenlib/BLI_generic_span.hh:235:238 -->
+
+```cpp
+  GMutableSpan slice(IndexRange range) const
+  {
+    return this->slice(range.start(), range.size());
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->slice(range.start(), range.size());`
+
+**继续追踪实现**
+
+- `this->slice` → [blender::GMutableSpan::slice · L227](11-GSpan%E4%B8%8EGArray.md#f-d7f8e350bc3a5156)；[blender::GMutableSpan::slice · L235](11-GSpan%E4%B8%8EGArray.md#f-b1101d4d9009fa75)。同名重载需按实参类型选择。
+- `range.start` → [blender::IndexRange::start · L243](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
+- `range.size` → [blender::IndexRange::size · L156](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+
+<!-- annotated:d5767aed305c42 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L239—L239</summary>
+
+<!-- original:d5767aed305c42:source/blender/blenlib/BLI_generic_span.hh:239:239 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-04cf63f6499f2011"></a>
+
+### `blender::GMutableSpan::drop_front`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L240—L245。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:6c77962d501134 -->
+
+```cpp
+  GMutableSpan drop_front(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    // [讲解] std::max<int64_t>：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+    const int64_t new_size = std::max<int64_t>(0, size_ - n);
+    return GMutableSpan(*type_, POINTER_OFFSET(data_, type_->size * n), new_size);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L240—L245</summary>
+
+<!-- original:6c77962d501134:source/blender/blenlib/BLI_generic_span.hh:240:245 -->
+
+```cpp
+  GMutableSpan drop_front(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    const int64_t new_size = std::max<int64_t>(0, size_ - n);
+    return GMutableSpan(*type_, POINTER_OFFSET(data_, type_->size * n), new_size);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return GMutableSpan(*type_, POINTER_OFFSET(data_, type_->size * n), new_size);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `std::max<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+- `GMutableSpan` → [blender::GMutableSpan::GMutableSpan · L152](11-GSpan%E4%B8%8EGArray.md#f-b4ef5399177eeedd)；[blender::GMutableSpan::GMutableSpan · L154](11-GSpan%E4%B8%8EGArray.md#f-6439a40f33c7a2e5)；[blender::GMutableSpan::GMutableSpan · L163](11-GSpan%E4%B8%8EGArray.md#f-6054339faadc1405)；[blender::GMutableSpan::GMutableSpan · L167](11-GSpan%E4%B8%8EGArray.md#f-d1333b42c7982310)；[blender::GMutableSpan::GMutableSpan · L169](11-GSpan%E4%B8%8EGArray.md#f-3584f997d0fe9a96)；[blender::GMutableSpan::GMutableSpan · L171](11-GSpan%E4%B8%8EGArray.md#f-3074afdbe5232417)。同名重载需按实参类型选择。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+
+<!-- annotated:388c7684d8f90a -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L246—L246</summary>
+
+<!-- original:388c7684d8f90a:source/blender/blenlib/BLI_generic_span.hh:246:246 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-6d40d07765898686"></a>
+
+### `blender::GMutableSpan::drop_back`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L247—L252。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:fe7a71714cb3c6 -->
+
+```cpp
+  GMutableSpan drop_back(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    // [讲解] std::max<int64_t>：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+    const int64_t new_size = std::max<int64_t>(0, size_ - n);
+    return GMutableSpan(*type_, data_, new_size);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L247—L252</summary>
+
+<!-- original:fe7a71714cb3c6:source/blender/blenlib/BLI_generic_span.hh:247:252 -->
+
+```cpp
+  GMutableSpan drop_back(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    const int64_t new_size = std::max<int64_t>(0, size_ - n);
+    return GMutableSpan(*type_, data_, new_size);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return GMutableSpan(*type_, data_, new_size);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `std::max<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+- `GMutableSpan` → [blender::GMutableSpan::GMutableSpan · L152](11-GSpan%E4%B8%8EGArray.md#f-b4ef5399177eeedd)；[blender::GMutableSpan::GMutableSpan · L154](11-GSpan%E4%B8%8EGArray.md#f-6439a40f33c7a2e5)；[blender::GMutableSpan::GMutableSpan · L163](11-GSpan%E4%B8%8EGArray.md#f-6054339faadc1405)；[blender::GMutableSpan::GMutableSpan · L167](11-GSpan%E4%B8%8EGArray.md#f-d1333b42c7982310)；[blender::GMutableSpan::GMutableSpan · L169](11-GSpan%E4%B8%8EGArray.md#f-3584f997d0fe9a96)；[blender::GMutableSpan::GMutableSpan · L171](11-GSpan%E4%B8%8EGArray.md#f-3074afdbe5232417)。同名重载需按实参类型选择。
+
+<!-- annotated:58db15150e3b88 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L253—L253</summary>
+
+<!-- original:58db15150e3b88:source/blender/blenlib/BLI_generic_span.hh:253:253 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-25bf88950b43997d"></a>
+
+### `blender::GMutableSpan::take_front`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L254—L259。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:0563565a23f9ce -->
+
+```cpp
+  GMutableSpan take_front(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    // [讲解] std::min<int64_t>：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
+    const int64_t new_size = std::min<int64_t>(size_, n);
+    return GMutableSpan(*type_, data_, new_size);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L254—L259</summary>
+
+<!-- original:0563565a23f9ce:source/blender/blenlib/BLI_generic_span.hh:254:259 -->
+
+```cpp
+  GMutableSpan take_front(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    const int64_t new_size = std::min<int64_t>(size_, n);
+    return GMutableSpan(*type_, data_, new_size);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return GMutableSpan(*type_, data_, new_size);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `std::min<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
+- `GMutableSpan` → [blender::GMutableSpan::GMutableSpan · L152](11-GSpan%E4%B8%8EGArray.md#f-b4ef5399177eeedd)；[blender::GMutableSpan::GMutableSpan · L154](11-GSpan%E4%B8%8EGArray.md#f-6439a40f33c7a2e5)；[blender::GMutableSpan::GMutableSpan · L163](11-GSpan%E4%B8%8EGArray.md#f-6054339faadc1405)；[blender::GMutableSpan::GMutableSpan · L167](11-GSpan%E4%B8%8EGArray.md#f-d1333b42c7982310)；[blender::GMutableSpan::GMutableSpan · L169](11-GSpan%E4%B8%8EGArray.md#f-3584f997d0fe9a96)；[blender::GMutableSpan::GMutableSpan · L171](11-GSpan%E4%B8%8EGArray.md#f-3074afdbe5232417)。同名重载需按实参类型选择。
+
+<!-- annotated:9ac13da8df801b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L260—L260</summary>
+
+<!-- original:9ac13da8df801b:source/blender/blenlib/BLI_generic_span.hh:260:260 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-dab8f8fd0229971a"></a>
+
+### `blender::GMutableSpan::take_back`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L261—L266。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:8294e22feb524e -->
+
+```cpp
+  GMutableSpan take_back(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    // [讲解] std::min<int64_t>：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
+    const int64_t new_size = std::min<int64_t>(size_, n);
+    return GMutableSpan(*type_, POINTER_OFFSET(data_, type_->size * (size_ - new_size)), new_size);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L261—L266</summary>
+
+<!-- original:8294e22feb524e:source/blender/blenlib/BLI_generic_span.hh:261:266 -->
+
+```cpp
+  GMutableSpan take_back(const int64_t n) const
+  {
+    BLI_assert(n >= 0);
+    const int64_t new_size = std::min<int64_t>(size_, n);
+    return GMutableSpan(*type_, POINTER_OFFSET(data_, type_->size * (size_ - new_size)), new_size);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return GMutableSpan(*type_, POINTER_OFFSET(data_, type_->size * (size_ - new_size)), new_size);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `std::min<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
+- `GMutableSpan` → [blender::GMutableSpan::GMutableSpan · L152](11-GSpan%E4%B8%8EGArray.md#f-b4ef5399177eeedd)；[blender::GMutableSpan::GMutableSpan · L154](11-GSpan%E4%B8%8EGArray.md#f-6439a40f33c7a2e5)；[blender::GMutableSpan::GMutableSpan · L163](11-GSpan%E4%B8%8EGArray.md#f-6054339faadc1405)；[blender::GMutableSpan::GMutableSpan · L167](11-GSpan%E4%B8%8EGArray.md#f-d1333b42c7982310)；[blender::GMutableSpan::GMutableSpan · L169](11-GSpan%E4%B8%8EGArray.md#f-3584f997d0fe9a96)；[blender::GMutableSpan::GMutableSpan · L171](11-GSpan%E4%B8%8EGArray.md#f-3074afdbe5232417)。同名重载需按实参类型选择。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+
+### 类型布局、声明与编译条件 · BLI_generic_span.hh L267—L272
+
+<!-- annotated:20d47ea3084837 -->
+
+```cpp
+
+  /**
+   * Copy all values from another span into this span. This invokes undefined behavior when the
+   * destination contains uninitialized data and T is not trivially copy constructible.
+   * The size of both spans is expected to be the same.
+   */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L267—L272</summary>
+
+<!-- original:20d47ea3084837:source/blender/blenlib/BLI_generic_span.hh:267:272 -->
+
+```cpp
+
+  /**
+   * Copy all values from another span into this span. This invokes undefined behavior when the
+   * destination contains uninitialized data and T is not trivially copy constructible.
+   * The size of both spans is expected to be the same.
+   */
+```
+
+</details>
+
+<a id="f-a171994cef44e883"></a>
+
+### `blender::GMutableSpan::copy_from`
+
+实现位置：[source/blender/blenlib/BLI_generic_span.hh](../../../../../source/blender/blenlib/BLI_generic_span.hh) · L273—L278。
+
+接口参数：
+
+- `GSpan values`
+
+**教学注释版**
+
+<!-- annotated:5b831898f78239 -->
+
+```cpp
+  void copy_from(GSpan values)
+  {
+    BLI_assert(type_ == &values.type());
+    BLI_assert(size_ == values.size());
+    type_->copy_assign_n(values.data(), data_, size_);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L273—L278</summary>
+
+<!-- original:5b831898f78239:source/blender/blenlib/BLI_generic_span.hh:273:278 -->
+
+```cpp
+  void copy_from(GSpan values)
+  {
+    BLI_assert(type_ == &values.type());
+    BLI_assert(size_ == values.size());
+    type_->copy_assign_n(values.data(), data_, size_);
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `values.type` → [blender::GSpan::type · L55](11-GSpan%E4%B8%8EGArray.md#f-4c44cc0364dcf191)。
+- `values.size` → [blender::GSpan::size · L71](11-GSpan%E4%B8%8EGArray.md#f-c942a700d5d93de1)。
+- `type_->copy_assign_n` → [blender::CPPType::copy_assign_n · L577](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-bdf812bca95da2b6)。
+- `values.data` → [blender::GSpan::data · L81](11-GSpan%E4%B8%8EGArray.md#f-25f2f0038c437d19)。
+
+### 类型布局、声明与编译条件 · BLI_generic_span.hh L279—L281
+
+<!-- annotated:f2123d0986918e -->
+
+```cpp
+};
+
+}  // namespace blender
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_generic_span.hh · L279—L281</summary>
+
+<!-- original:f2123d0986918e:source/blender/blenlib/BLI_generic_span.hh:279:281 -->
+
+```cpp
+};
+
+}  // namespace blender
+```
+
+</details>
+
+## 语法与相关类型
+
+### 模板 template
+
+模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
+
+把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
+
+### 依赖名称 typename
+
+typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+
+区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+
+### 只读限定 const
+
+const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
+
+分别写T* const、const T*与const T* const，并画出不可修改的层次。
+
+### 移动转换 std::move
+
+std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
+
+记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
+
+### 异常约定 noexcept
+
+noexcept表达式可以依赖类型特征。违反不抛异常约定会终止程序；它不是自动捕获异常，也不是资源回滚代码。
+
+找出声明的条件与实际可能抛出的分配、构造操作是否一致。
+
+### 异常边界 try与catch
+
+try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
+
+在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
+
+### 显式静态转换 static_cast
+
+static_cast表达编译期允许的转换，不会自动验证运行时真实类型、指针寿命或索引边界。由void指针恢复T指针时，调用者仍须保证实际存储中确有合法T对象。
+
+标出转换前后的类型以及正确性依据来自哪里。
+
+### 构造与new表达式
+
+普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
+
+追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
+
+### 内部断言 assert
+
+断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
+
+对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
+
+## 实现练习与验证
 
 分别创建int与string通用数组，验证步长、对齐、复制和销毁。
 
-参考思路：类型信息与地址长度共同构成通用视图；拥有型数组还要执行相应类型操作。
+参考推理：先验证CPPType一致，再typed访问；拥有型GArray必须调用对应析构。
 
-将输入、预期结果和资源责任分成三张清单。先用最直接的实现给出可核对的答案，再替换成对应源码使用的表示；比较结果不变的条件，而不是只比较接口名字。
+所有存活对象地址满足对齐；构造失败不会被当作成功对象登记；所有资源均有唯一或明确共享的清理责任。
 
-验收依据：所有存活对象地址满足对齐；构造失败不会被当作成功对象登记；所有资源均有唯一或明确共享的清理责任。
-
-## 七、复杂度、设计取舍与其他基础库
+## 历史、跨库比较与证据
 
 与std::pmr::monotonic_buffer_resource比较批量存储回收，与std::any比较拥有型类型擦除；CPPType描述类型操作，本身不保存每个值。
 
-本篇的具体取舍：类型信息与地址长度共同构成通用视图；拥有型数组还要执行相应类型操作。
-
-| 观察维度 | 从源码取得证据的方法 | 本篇要避免的误判 |
-|---|---|---|
-| 时间 | 对循环次数、分派次数和重建频率分别计数 | 看到单次常数操作就断定整个操作序列是常数成本 |
-| 内存 | 区分对象本体、容量存储、间接资源和共享控制块 | 用sizeof代替总内存 |
-| 安全 | 沿构造、失败回滚、销毁与失效逐路径检查 | 把断言或非空指针当作完整安全证明 |
-| 并发 | 逐字段确认锁、发布顺序和借用寿命 | 把引用计数线程安全等同数据读写线程安全 |
-
-相关一手资料：
-
-- [C++公开工作草案](https://eel.is/c++draft/)：持续更新的工作草案；语言与标准库语义以相应章节为准。
-- [LLVM Programmer’s Manual](https://llvm.org/docs/ProgrammersManual.html)：在线版，2026-10-14查阅；仅比较设计思路，不保证与本地LLVM版本一致。
-
-资料用于核对契约和进一步阅读；这里没有声称外部库与Blender实现相同，也没有把上游性能数字当作本机实测。
-
-## 八、历史提交与设计演化
-
-本篇主要讲当前接口或辅助实现，方向导航给出相关架构演化提交；没有把不涉及本篇文件的提交硬写成该实现的引入证据。
-
-## 九、反例、测试入口与掌握标准
-
-仓库测试入口：
-
-- [BLI_generic_span_test.cc](../../../../../source/blender/blenlib/tests/BLI_generic_span_test.cc)：阅读输入、断言与覆盖边界；本篇不把“存在测试”写成“本轮已运行”。
-- [BLI_generic_array_test.cc](../../../../../source/blender/blenlib/tests/BLI_generic_array_test.cc)：阅读输入、断言与覆盖边界；本篇不把“存在测试”写成“本轮已运行”。
-
-需要实际构造的反例：
-
-- 空输入或没有结果需求：确认接口允许的空状态与不允许访问的操作。
-- 边界位置和退化结构：把长度为1、末尾位置、重复值或深链代入真实分支。
-- 生命周期结束或修改之后：检查保存的指针、引用、结果视图是否仍有效。
-- 与本篇核心不变量相冲突的输入：分别创建int与string通用数组，验证步长、对齐、复制和销毁。
-
-### 可运行的教学参考程序
-
-[reference_exercises.cc](../_tools/reference_exercises.cc)包含独立于Blender的C++20参考检查：视图、简化SmallVector、异常回滚、哈希碰撞与删除、偏移数组、拓扑映射、共享缓存、表达式、惰性分支、闭包和暴力最近邻。
-
-参考程序有意省略生产实现的完整能力。例如SmallVector禁止复制移动容器，不支持只能移动的元素，并禁止append参数别名到自身元素；TinyMap固定8槽，不提供增长。程序通过不能替代Blender实现测试。实际运行结果、编译器与命令见验收报告。
-
-掌握标准：离开源码解释“未知元素类型的数组怎样计算步长和生命周期？”；独立完成上述练习；能指出一个会破坏原始存储相关约束的最小反例，并用具体代码行说明检查或修复应放在哪里。
+[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)

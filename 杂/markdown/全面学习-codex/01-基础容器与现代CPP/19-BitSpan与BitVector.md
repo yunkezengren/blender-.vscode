@@ -1,40 +1,40 @@
 # 01-19 BitSpan与BitVector
 
-[方向导航](README.md) · [总目录](../README.md) · [覆盖索引](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
 
-> 阅读顺序：问题与数据模型 → 语法与类型 → 源码逐行 → 调用线索 → 历史与取舍 → 推演和练习。
-
-- 基准 HEAD：`cbda6b96c26c0dee3c3b5cbb93960c4ac06a6b30`。
-- 记录日期：2026-10-14。
-- 教学示例状态：正文中的推演不是本机性能实测；已运行练习见验收报告。
-
-## 一、从问题到设计
+## 从问题到实现
 
 按位存储为什么不能像普通bool数组那样处理引用？
 
 一个机器字包含多个位，写入单个位往往是读改写；代理引用、边界掩码和并发写入需要单独推理。
 
-本篇把语法、数据语义和系统取舍连接起来。先证明对象存活，再讨论索引；先区分借用与拥有，再讨论复制移动。
-
-### 本篇独立模型与设计推理
+**数据模型**
 
 长度65个位向量跨越机器字边界，最后一字只有部分位属于逻辑集合。
 
-设计取舍：位压缩节省空间，但代理引用与读改写操作不同于bool&。
+**设计取舍**
 
-最小反例：两个线程分别写同一机器字中的不同位，却没有同步读改写。
+位压缩节省空间，但代理引用与读改写操作不同于bool&。
 
-推导与处理：按存储字划分并行范围或使用适当原子操作；检查末尾无效位掩码。
+**最小反例**
+
+两个线程分别写同一机器字中的不同位，却没有同步读改写。
+
+**推导**
+
+按存储字划分并行范围或使用适当原子操作；检查末尾无效位掩码。
+
+## 阅读地图与执行推演
 
 ```mermaid
 flowchart TB
-  M["长度65个位向量跨越机器字边界，最后一字只<br/>有部分位属于逻辑集合。"]:::data
-  T["位压缩节省空间，但代理引用与读改写操作不<br/>同于bool＆。"]:::abstraction
-  X["两个线程分别写同一机器字中的不同位，却没<br/>有同步读改写。"]:::error
-  A["按存储字划分并行范围或使用适当原子操作；<br/>检查末尾无效位掩码。"]:::result
-  M -->|"建立约束"| T
-  T -->|"构造反例"| X
-  X -->|"恢复不变量"| A
+  M["长度65个位向量跨越机器字边界，最后一字只有<br/>部分位属于逻辑集合。"]:::data
+  C["位压缩节省空间，但代理引用与读改写操作不同<br/>于bool＆。"]:::abstraction
+  B["两个线程分别写同一机器字中的不同位，却没有<br/>同步读改写。"]:::error
+  R["按存储字划分并行范围或使用适当原子操作；检<br/>查末尾无效位掩码。"]:::result
+  M -->|"明确约束"| C
+  C -->|"检验边界"| B
+  B -->|"恢复正确性"| R
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -42,58 +42,17 @@ flowchart TB
   classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
-
-### 源码范围与相邻篇章
-
-| 文件 | 本篇逐行范围 | 基准SHA-256 |
-|---|---|---|
-| [source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) | L1—L488 | `42521f747d1174c441c778f9d338e9104a5eca3b13b1c1d861f627df5eacbf25` |
-| [source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) | L1—L406 | `4201f3b3fc87748116e94f97727f8b2fd18e1633341899254f69678c7731671b` |
-
-同一主讲文件可能分多篇覆盖；超出本篇范围的符号通过覆盖索引定位。空行与纯注释保留在源码摘录中，逐行表解释有效语句与语法边界；许可证头统一保留。
-
-前篇：[AnyDerived多态对象值封装](18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md).
-
-后篇：[容器选择与独立实现](20-%E5%AE%B9%E5%99%A8%E9%80%89%E6%8B%A9%E4%B8%8E%E7%8B%AC%E7%AB%8B%E5%AE%9E%E7%8E%B0.md).
-
-## 二、类型、数据与阅读地图
-
-```mermaid
-flowchart TB
-  Q["按位存储为什么不能像普通bool数组那样处理<br/>引用？"]:::input
-  C0["拥有型容器"]:::abstraction
-  C1["借用视图"]:::data
-  C2["元素生命周期"]:::data
-  C3["分配与失效"]:::data
-  R["BitSpan与BitVector"]:::result
-  Q -->|"建立模型"| C0
-  C0 -->|"区分职责"| C1
-  C1 -->|"区分职责"| C2
-  C2 -->|"区分职责"| C3
-  C3 -->|"回到源码"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
-
-这是概念依赖图，边表示阅读关系，不声称是运行时调用顺序。
-
-### 直接编译依赖
 
 ```mermaid
 flowchart LR
-  S["BLI_bit_span.hh"]:::abstraction
-  I0["BLI_bit_ref.hh"]:::data
-  I1["BLI_index_range.hh"]:::data
-  I2["BLI_math_bits.hh"]:::data
-  I3["BLI_memory_utils.hh"]:::data
-  S -->|"直接include"| I0
-  S -->|"直接include"| I1
-  S -->|"直接include"| I2
-  S -->|"直接include"| I3
+  F0["blender::bits::BitIteratorBase::BitIteratorBase"]:::input
+  F1["blender::bits::BitIteratorBase::operator++"]:::compute
+  F2["blender::bits::BitIteratorBase::operator!="]:::compute
+  F3["blender::bits::BitIterator::BitIterator"]:::compute
+  F4["blender::bits::BitIterator::operator*"]:::compute
+  F5["blender::bits::MutableBitIterator::MutableBitIterator"]:::compute
+  F6["blender::bits::MutableBitIterator::operator<br/>*"]:::compute
+  F7["blender::bits::OneBitIterator::OneBitIterator"]:::compute
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -102,125 +61,60 @@ flowchart LR
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-箭头只表示头文件包含关系；完整调用线索见后面的符号定位表。
+```mermaid
+flowchart LR
+  P0["拥有型容器"]:::input
+  P1["借用视图"]:::data
+  P2["元素生命周期"]:::data
+  P3["分配与失效"]:::result
+  P0 -->|"分析关系"| P1
+  P1 -->|"分析关系"| P2
+  P2 -->|"分析关系"| P3
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-## 三、关键词、语法与类型角色
+```mermaid
+flowchart TB
+  S0["size=0, capacity=4"]:::input
+  S1["size=1, capacity=4"]:::compute
+  S2["size=4, capacity=4"]:::compute
+  S3["需扩大存储"]:::compute
+  S4["新缓冲含原4元素"]:::compute
+  S5["size=5"]:::result
+  S0 -->|"追加A"| S1
+  S1 -->|"追加到满"| S2
+  S2 -->|"请求第五个"| S3
+  S3 -->|"迁移成功"| S4
+  S4 -->|"追加E"| S5
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-### 模板 template
+图中的数值推演是本方向的教学模型；实际函数之间的调用边与概念分析边分别标注，不能把概念关系当作运行时调度顺序。
 
-模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
+## 完整源码单元与就地讲解
 
-具体检查：把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
+中文讲解直接放在相关代码旁，复杂机制在代码下展开。原文折叠区保留基准行号；不需要在行号表和函数之间来回查找。类布局可分段展示，函数实现不按固定行数切开。
 
-### 依赖名称 typename
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L1—L28
 
-typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+<a id="t-3b521b61abea"></a>
 
-具体检查：区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+`BitIteratorBase`在这里声明的数据成员：
 
-### 约束 requires
+- `BitInt data_`
+- `int64_t bit_index_`
 
-requires表达式或requires子句限制模板参与重载的条件。它提供编译期可用性检查，不是运行时if，不能指望输入到达程序后再被这一机制验证。
-
-具体检查：构造满足和不满足约束的两个类型，观察候选被排除而不是在函数内返回错误。
-
-### 常量求值 constexpr
-
-constexpr声明允许相应实体参与常量求值，但constexpr函数仍可以在运行时执行。是否常量求值由调用场景和表达式合法性共同决定。
-
-具体检查：比较constexpr变量初始化和从运行时输入调用同一函数。
-
-### 只读限定 const
-
-const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
-
-具体检查：分别写T* const、const T*与const T* const，并画出不可修改的层次。
-
-### 移动转换 std::move
-
-std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
-
-具体检查：记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
-
-### 异常约定 noexcept
-
-noexcept表达式可以依赖类型特征。违反不抛异常约定会终止程序；它不是自动捕获异常，也不是资源回滚代码。
-
-具体检查：找出声明的条件与实际可能抛出的分配、构造操作是否一致。
-
-### 异常边界 try与catch
-
-try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
-
-具体检查：在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
-
-### 显式静态转换 static_cast
-
-static_cast表达编译期允许的转换，不会自动验证运行时真实类型、指针寿命或索引边界。由void指针恢复T指针时，调用者仍须保证实际存储中确有合法T对象。
-
-具体检查：标出转换前后的类型以及正确性依据来自哪里。
-
-### 限定转换 const_cast
-
-const_cast可以改变访问路径的限定，但不能让本来就是const的对象合法可写。常用于复用只读实现时，仍需检查底层对象是否实际可变。
-
-具体检查：对非const对象的const引用与真正const对象分别分析修改是否合法。
-
-### 可选值 optional
-
-optional把不存在与存在的T区分开，T的构造和析构跟随engaged状态变化。访问前应由has_value或条件分支证明存在。
-
-具体检查：把空Field状态与合法常量零区分，不能用某个普通值代替不存在。
-
-### 对齐 alignof
-
-alignof得到类型要求的地址对齐。分配足够字节后仍需把地址对齐到相应边界，内嵌缓冲也一样。
-
-具体检查：对齐a为2的幂时可推导向上取整，但仍要考虑溢出与边界。
-
-### 对象表示 sizeof
-
-sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeof视图很小并不说明底层数组很小。
-
-具体检查：分别统计容器对象、容量字节和元素拥有的间接资源。
-
-### 构造与new表达式
-
-普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
-
-具体检查：追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
-
-### 内部断言 assert
-
-断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
-
-具体检查：对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
-
-### 编译期分支 if constexpr
-
-条件在实例化时决定被保留的分支，这常用于不同类型的合法操作选择。它与运行时if有不同的实例化检查规则。
-
-具体检查：找出每个分支依赖哪些类型特征，再使用满足与不满足条件的类型。
-
-### 受控访问 friend
-
-friend授予指定函数或类访问非公开成员的权限，并不意味着继承，也不自动扩展到友元的派生类。
-
-具体检查：解释执行器为何需要访问包装器的内部映射，同时检查边界是否仍清楚。
-
-### 类型别名 using
-
-类型别名为已有类型建立名字，不创建运行期对象。它常把模板内部使用的类型统一暴露给泛型调用者。
-
-具体检查：展开别名直到基础类型，区分类型别名和变量声明。
-
-## 四、真实源码与逐行讲解
-
-源码块保持原行内容，原始行号由小节标题及逐行表给出。表中的调用定位是静态阅读辅助；重载、模板实例化、宏展开和虚调用需结合完整声明，不能仅凭词法出现证明动态调用。
-
-### BLI_bit_span.hh：L1—L48
-
-<!-- source:source/blender/blenlib/BLI_bit_span.hh:1:48 -->
+<!-- annotated:368e3b7be169a2 -->
 
 ```cpp
 /* SPDX-FileCopyrightText: 2023 Blender Authors
@@ -251,21 +145,212 @@ class BitIteratorBase {
   int64_t bit_index_;
 
  public:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L1—L28</summary>
+
+<!-- original:368e3b7be169a2:source/blender/blenlib/BLI_bit_span.hh:1:28 -->
+
+```cpp
+/* SPDX-FileCopyrightText: 2023 Blender Authors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
+/** \file
+ * \ingroup bli
+ */
+
+#pragma once
+
+#include <optional>
+
+#include "BLI_bit_ref.hh"
+#include "BLI_index_range.hh"
+#include "BLI_math_bits.hh"
+#include "BLI_memory_utils.hh"
+
+namespace blender {
+
+namespace bits {
+
+/** Base class for a const and non-const bit-iterator. */
+class BitIteratorBase {
+ protected:
+  const BitInt *data_;
+  int64_t bit_index_;
+
+ public:
+```
+
+</details>
+
+<a id="f-566dbb6a47d0b80c"></a>
+
+### `blender::bits::BitIteratorBase::BitIteratorBase`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L29—L31。
+
+接口参数：
+
+- `const BitInt *data`
+- `const int64_t bit_index`
+
+**教学注释版**
+
+<!-- annotated:6b0dd2deb4fffc -->
+
+```cpp
   BitIteratorBase(const BitInt *data, const int64_t bit_index) : data_(data), bit_index_(bit_index)
   {
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L29—L31</summary>
+
+<!-- original:6b0dd2deb4fffc:source/blender/blenlib/BLI_bit_span.hh:29:31 -->
+
+```cpp
+  BitIteratorBase(const BitInt *data, const int64_t bit_index) : data_(data), bit_index_(bit_index)
+  {
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:ce795569552172 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L32—L32</summary>
+
+<!-- original:ce795569552172:source/blender/blenlib/BLI_bit_span.hh:32:32 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-5093249b73d63043"></a>
+
+### `blender::bits::BitIteratorBase::operator++`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L33—L37。
+
+**教学注释版**
+
+<!-- annotated:e8752c432bc635 -->
+
+```cpp
   BitIteratorBase &operator++()
   {
     bit_index_++;
     return *this;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L33—L37</summary>
+
+<!-- original:e8752c432bc635:source/blender/blenlib/BLI_bit_span.hh:33:37 -->
+
+```cpp
+  BitIteratorBase &operator++()
+  {
+    bit_index_++;
+    return *this;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return *this;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:e4808c0c784d8f -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L38—L38</summary>
+
+<!-- original:e4808c0c784d8f:source/blender/blenlib/BLI_bit_span.hh:38:38 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-317f789b06d60d50"></a>
+
+### `blender::bits::BitIteratorBase::operator!=`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L39—L43。
+
+接口参数：
+
+- `const BitIteratorBase &a`
+- `const BitIteratorBase &b`
+
+**教学注释版**
+
+<!-- annotated:c4409040d316c4 -->
+
+```cpp
   friend bool operator!=(const BitIteratorBase &a, const BitIteratorBase &b)
   {
     BLI_assert(a.data_ == b.data_);
     return a.bit_index_ != b.bit_index_;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L39—L43</summary>
+
+<!-- original:c4409040d316c4:source/blender/blenlib/BLI_bit_span.hh:39:43 -->
+
+```cpp
+  friend bool operator!=(const BitIteratorBase &a, const BitIteratorBase &b)
+  {
+    BLI_assert(a.data_ == b.data_);
+    return a.bit_index_ != b.bit_index_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return a.bit_index_ != b.bit_index_;`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L44—L48
+
+<a id="t-66c4328b5c2e"></a>
+
+<!-- annotated:fad9d1fcd91a43 -->
+
+```cpp
 };
 
 /** Allows iterating over the bits in a memory buffer. */
@@ -273,64 +358,242 @@ class BitIterator : public BitIteratorBase {
  public:
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L44—L48</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
+<!-- original:fad9d1fcd91a43:source/blender/blenlib/BLI_bit_span.hh:44:48 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L9 | 防止同一头文件在一个翻译单元中重复展开；不控制多个源文件之间的链接或对象寿命。 |
-| L11 | 引入编译依赖 <optional>；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L13 | 引入编译依赖 "BLI_bit_ref.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L14 | 引入编译依赖 "BLI_index_range.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L15 | 引入编译依赖 "BLI_math_bits.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L16 | 引入编译依赖 "BLI_memory_utils.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L18 | 把后续声明放入 blender 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L20 | 把后续声明放入 bits 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L23 | 声明或定义类型 `class BitIteratorBase`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L24 | 切换成员访问权限为 protected；它是编译期接口边界，不是线程同步或内存保护。 |
-| L25 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `const BitInt *data_`，不要把地址、数量或状态混用。 |
-| L26 | 声明成员、局部对象或完成语句 `int64_t bit_index_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L28 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L29 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `BitIteratorBase(const BitInt *data, const int64_t bit_index) : data_(data), bit_index_(bit_index)`，不要把地址、数量或状态混用。 |
-| L30 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L31 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L33 | 运算符重载声明、定义或显式调用：`BitIteratorBase &operator++()`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L34 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L35 | 递增或递减现有状态：`bit_index_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L36 | 返回表达式 `*this`。返回当前对象；返回类型决定它是引用还是值，不能仅凭表达式假定复制。 |
-| L37 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L39 | 运算符重载声明、定义或显式调用：`friend bool operator!=(const BitIteratorBase &a, const BitIteratorBase &b)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L40 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L41 | 断言约束 `BLI_assert(a.data_ == b.data_);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L42 | 返回表达式 `a.bit_index_ != b.bit_index_`。 |
-| L43 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L44 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L47 | 声明或定义类型 `class BitIterator : public BitIteratorBase`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L48 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
+```cpp
+};
 
-### BLI_bit_span.hh：L49—L98
+/** Allows iterating over the bits in a memory buffer. */
+class BitIterator : public BitIteratorBase {
+ public:
+```
 
-<!-- source:source/blender/blenlib/BLI_bit_span.hh:49:98 -->
+</details>
+
+<a id="f-97991474ea4ebbf9"></a>
+
+### `blender::bits::BitIterator::BitIterator`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L49—L49。
+
+接口参数：
+
+- `const BitInt *data`
+- `const int64_t bit_index`
+
+**教学注释版**
+
+<!-- annotated:82856a4cfb6f5a -->
 
 ```cpp
   BitIterator(const BitInt *data, const int64_t bit_index) : BitIteratorBase(data, bit_index) {}
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L49—L49</summary>
+
+<!-- original:82856a4cfb6f5a:source/blender/blenlib/BLI_bit_span.hh:49:49 -->
+
+```cpp
+  BitIterator(const BitInt *data, const int64_t bit_index) : BitIteratorBase(data, bit_index) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:6472490cde7786 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L50—L50</summary>
+
+<!-- original:6472490cde7786:source/blender/blenlib/BLI_bit_span.hh:50:50 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-d64bc10301b947ff"></a>
+
+### `blender::bits::BitIterator::operator*`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L51—L54。
+
+**教学注释版**
+
+<!-- annotated:5be93f1fb379ee -->
+
+```cpp
   BitRef operator*() const
   {
     return BitRef(data_, bit_index_);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L51—L54</summary>
+
+<!-- original:5be93f1fb379ee:source/blender/blenlib/BLI_bit_span.hh:51:54 -->
+
+```cpp
+  BitRef operator*() const
+  {
+    return BitRef(data_, bit_index_);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return BitRef(data_, bit_index_);`
+
+**继续追踪实现**
+
+- `BitRef` → [blender::bits::BitRef::BitRef · L96](%E4%BE%9D%E8%B5%96-BLI_bit_ref-359167.md#f-3232b097aac6b63c)；[blender::bits::BitRef::BitRef · L102](%E4%BE%9D%E8%B5%96-BLI_bit_ref-359167.md#f-bc1f6add7403fe2f)。同名重载需按实参类型选择。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L55—L59
+
+<a id="t-75ec6bf8a888"></a>
+
+<!-- annotated:4c781b5d10f3ce -->
+
+```cpp
 };
 
 /** Allows iterating over the bits in a memory buffer. */
 class MutableBitIterator : public BitIteratorBase {
  public:
-  MutableBitIterator(BitInt *data, const int64_t bit_index) : BitIteratorBase(data, bit_index) {}
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L55—L59</summary>
+
+<!-- original:4c781b5d10f3ce:source/blender/blenlib/BLI_bit_span.hh:55:59 -->
+
+```cpp
+};
+
+/** Allows iterating over the bits in a memory buffer. */
+class MutableBitIterator : public BitIteratorBase {
+ public:
+```
+
+</details>
+
+<a id="f-e0140cbf1074a83d"></a>
+
+### `blender::bits::MutableBitIterator::MutableBitIterator`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L60—L60。
+
+接口参数：
+
+- `BitInt *data`
+- `const int64_t bit_index`
+
+**教学注释版**
+
+<!-- annotated:9226a679294e10 -->
+
+```cpp
+  MutableBitIterator(BitInt *data, const int64_t bit_index) : BitIteratorBase(data, bit_index) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L60—L60</summary>
+
+<!-- original:9226a679294e10:source/blender/blenlib/BLI_bit_span.hh:60:60 -->
+
+```cpp
+  MutableBitIterator(BitInt *data, const int64_t bit_index) : BitIteratorBase(data, bit_index) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:76603904371ba9 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L61—L61</summary>
+
+<!-- original:76603904371ba9:source/blender/blenlib/BLI_bit_span.hh:61:61 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-acc2bffd6c1281c3"></a>
+
+### `blender::bits::MutableBitIterator::operator*`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L62—L65。
+
+**教学注释版**
+
+<!-- annotated:2a4096e41b110c -->
+
+```cpp
   MutableBitRef operator*() const
   {
     return MutableBitRef(const_cast<BitInt *>(data_), bit_index_);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L62—L65</summary>
+
+<!-- original:2a4096e41b110c:source/blender/blenlib/BLI_bit_span.hh:62:65 -->
+
+```cpp
+  MutableBitRef operator*() const
+  {
+    return MutableBitRef(const_cast<BitInt *>(data_), bit_index_);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return MutableBitRef(const_cast<BitInt *>(data_), bit_index_);`
+
+**继续追踪实现**
+
+- `MutableBitRef` → [blender::bits::MutableBitRef::MutableBitRef · L135](%E4%BE%9D%E8%B5%96-BLI_bit_ref-359167.md#f-23b4dd05da7142b5)；[blender::bits::MutableBitRef::MutableBitRef · L141](%E4%BE%9D%E8%B5%96-BLI_bit_ref-359167.md#f-10beea2cd369d835)。同名重载需按实参类型选择。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L66—L73
+
+<a id="t-21d69b6a938a"></a>
+
+`OneBitIterator`在这里声明的数据成员：
+
+- `BitInt data_`
+- `int current_bit_`
+
+<!-- annotated:2260e9da89cc66 -->
+
+```cpp
 };
 
 class OneBitIterator {
@@ -339,16 +602,149 @@ class OneBitIterator {
   int current_bit_;
 
  public:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L66—L73</summary>
+
+<!-- original:2260e9da89cc66:source/blender/blenlib/BLI_bit_span.hh:66:73 -->
+
+```cpp
+};
+
+class OneBitIterator {
+ private:
+  BitInt data_;
+  int current_bit_;
+
+ public:
+```
+
+</details>
+
+<a id="f-109a651a8d2c3ce6"></a>
+
+### `blender::bits::OneBitIterator::OneBitIterator`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L74—L77。
+
+接口参数：
+
+- `BitInt data`
+
+**教学注释版**
+
+<!-- annotated:2c68c84a578d67 -->
+
+```cpp
   explicit OneBitIterator(BitInt data) : data_(data)
   {
     this->operator++();
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L74—L77</summary>
+
+<!-- original:2c68c84a578d67:source/blender/blenlib/BLI_bit_span.hh:74:77 -->
+
+```cpp
+  explicit OneBitIterator(BitInt data) : data_(data)
+  {
+    this->operator++();
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L76。
+
+<!-- annotated:84800450f8a263 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L78—L78</summary>
+
+<!-- original:84800450f8a263:source/blender/blenlib/BLI_bit_span.hh:78:78 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-22c6e9ec0e303245"></a>
+
+### `blender::bits::OneBitIterator::operator*`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L79—L82。
+
+**教学注释版**
+
+<!-- annotated:3faf185d51280b -->
+
+```cpp
   int operator*() const
   {
     return current_bit_;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L79—L82</summary>
+
+<!-- original:3faf185d51280b:source/blender/blenlib/BLI_bit_span.hh:79:82 -->
+
+```cpp
+  int operator*() const
+  {
+    return current_bit_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return current_bit_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:6b1a084620073e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L83—L83</summary>
+
+<!-- original:6b1a084620073e:source/blender/blenlib/BLI_bit_span.hh:83:83 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8ce8ff8984c66e7f"></a>
+
+### `blender::bits::OneBitIterator::operator++`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L84—L93。
+
+**教学注释版**
+
+<!-- annotated:44fce9e4ab5ef5 -->
+
+```cpp
   OneBitIterator &operator++()
   {
     if (data_ > 0) {
@@ -359,64 +755,111 @@ class OneBitIterator {
     }
     return *this;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L84—L93</summary>
+
+<!-- original:44fce9e4ab5ef5:source/blender/blenlib/BLI_bit_span.hh:84:93 -->
+
+```cpp
+  OneBitIterator &operator++()
+  {
+    if (data_ > 0) {
+      current_bit_ = bitscan_forward_clear_uint64(&data_);
+    }
+    else {
+      current_bit_ = -1;
+    }
+    return *this;
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `current_bit_ = bitscan_forward_clear_uint64(&data_);`
+- `current_bit_ = -1;`
+
+**结果出口**
+
+- `return *this;`
+
+**继续追踪实现**
+
+- `bitscan_forward_clear_uint64` → [blender::bitscan_forward_clear_uint64 · L56](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_bits_inline-8a26f2.md#f-2a2b9af8175029c7)。
+
+<!-- annotated:6b785a791d5214 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L94—L94</summary>
+
+<!-- original:6b785a791d5214:source/blender/blenlib/BLI_bit_span.hh:94:94 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-60757c91250d10ce"></a>
+
+### `blender::bits::OneBitIterator::operator!=`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L95—L98。
+
+接口参数：
+
+- `const OneBitIterator &a`
+- `const OneBitIterator &b`
+
+**教学注释版**
+
+<!-- annotated:4b5e3c5deab866 -->
+
+```cpp
   friend bool operator!=(const OneBitIterator &a, const OneBitIterator &b)
   {
     return a.current_bit_ != b.current_bit_;
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L95—L98</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
+<!-- original:4b5e3c5deab866:source/blender/blenlib/BLI_bit_span.hh:95:98 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L49 | 出现调用或函数声明 `BitIterator`，对应表达式为 `BitIterator(const BitInt *data, const int64_t bit_index) : BitIteratorBase(data, bit_index) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L51 | 运算符重载声明、定义或显式调用：`BitRef operator*() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L52 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L53 | 返回表达式 `BitRef(data_, bit_index_)`。 |
-| L54 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L55 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L58 | 声明或定义类型 `class MutableBitIterator : public BitIteratorBase`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L59 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L60 | 出现调用或函数声明 `MutableBitIterator`，对应表达式为 `MutableBitIterator(BitInt *data, const int64_t bit_index) : BitIteratorBase(data, bit_index) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L62 | 运算符重载声明、定义或显式调用：`MutableBitRef operator*() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L63 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L64 | 返回表达式 `MutableBitRef(const_cast<BitInt *>(data_), bit_index_)`。 |
-| L65 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L66 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L68 | 声明或定义类型 `class OneBitIterator`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L69 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L70 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `BitInt data_`，不要把地址、数量或状态混用。 |
-| L71 | 声明成员、局部对象或完成语句 `int current_bit_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L73 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L74 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `explicit OneBitIterator(BitInt data) : data_(data)`，不要把地址、数量或状态混用。 |
-| L75 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L76 | 运算符重载声明、定义或显式调用：`this->operator++();`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L77 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L79 | 运算符重载声明、定义或显式调用：`int operator*() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L80 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L81 | 返回表达式 `current_bit_`。 |
-| L82 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L84 | 运算符重载声明、定义或显式调用：`OneBitIterator &operator++()`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L85 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L86 | 判断 `data_ > 0`，成立时进入本分支，否则继续后续路径。 |
-| L87 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `current_bit_ = bitscan_forward_clear_uint64(&data_)`；对照更新前后相应范围或状态是否一致。 |
-| L88 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L89 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L90 | 把右侧 `-1` 用于初始化或更新左侧 `current_bit_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L91 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L92 | 返回表达式 `*this`。返回当前对象；返回类型决定它是引用还是值，不能仅凭表达式假定复制。 |
-| L93 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L95 | 运算符重载声明、定义或显式调用：`friend bool operator!=(const OneBitIterator &a, const OneBitIterator &b)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L96 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L97 | 返回表达式 `a.current_bit_ != b.current_bit_`。 |
-| L98 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  friend bool operator!=(const OneBitIterator &a, const OneBitIterator &b)
+  {
+    return a.current_bit_ != b.current_bit_;
+  }
+```
 
-### BLI_bit_span.hh：L99—L146
+</details>
 
-<!-- source:source/blender/blenlib/BLI_bit_span.hh:99:146 -->
+**结果出口**
+
+- `return a.current_bit_ != b.current_bit_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L99—L105
+
+<a id="t-d6693a387bb7"></a>
+
+`OneBitIteratorRange`在这里声明的数据成员：
+
+- `BitInt data_`
+
+<!-- annotated:3f9b35497888e5 -->
 
 ```cpp
 };
@@ -426,22 +869,229 @@ class OneBitIteratorRange {
   const BitInt data_;
 
  public:
-  OneBitIteratorRange(BitInt data) : data_(data) {}
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L99—L105</summary>
+
+<!-- original:3f9b35497888e5:source/blender/blenlib/BLI_bit_span.hh:99:105 -->
+
+```cpp
+};
+
+class OneBitIteratorRange {
+ private:
+  const BitInt data_;
+
+ public:
+```
+
+</details>
+
+<a id="f-951e4a3ffd86e85a"></a>
+
+### `blender::bits::OneBitIteratorRange::OneBitIteratorRange`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L106—L106。
+
+接口参数：
+
+- `BitInt data`
+
+**教学注释版**
+
+<!-- annotated:f3e503a96e239f -->
+
+```cpp
+  OneBitIteratorRange(BitInt data) : data_(data) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L106—L106</summary>
+
+<!-- original:f3e503a96e239f:source/blender/blenlib/BLI_bit_span.hh:106:106 -->
+
+```cpp
+  OneBitIteratorRange(BitInt data) : data_(data) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:f3abff8870c361 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L107—L107</summary>
+
+<!-- original:f3abff8870c361:source/blender/blenlib/BLI_bit_span.hh:107:107 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-050923e4c44f9f9a"></a>
+
+### `blender::bits::OneBitIteratorRange::begin`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L108—L111。
+
+**教学注释版**
+
+<!-- annotated:41a3e4f5d4b400 -->
+
+```cpp
   OneBitIterator begin() const
   {
     return OneBitIterator(data_);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L108—L111</summary>
+
+<!-- original:41a3e4f5d4b400:source/blender/blenlib/BLI_bit_span.hh:108:111 -->
+
+```cpp
+  OneBitIterator begin() const
+  {
+    return OneBitIterator(data_);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return OneBitIterator(data_);`
+
+**继续追踪实现**
+
+- `OneBitIterator` → [blender::bits::OneBitIterator::OneBitIterator · L74](19-BitSpan%E4%B8%8EBitVector.md#f-109a651a8d2c3ce6)。
+
+<a id="f-a2accf9d07735340"></a>
+
+### `blender::bits::OneBitIteratorRange::end`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L112—L115。
+
+**教学注释版**
+
+<!-- annotated:554abf48d8065c -->
+
+```cpp
   OneBitIterator end() const
   {
     return OneBitIterator(0);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L112—L115</summary>
+
+<!-- original:554abf48d8065c:source/blender/blenlib/BLI_bit_span.hh:112:115 -->
+
+```cpp
+  OneBitIterator end() const
+  {
+    return OneBitIterator(0);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return OneBitIterator(0);`
+
+**继续追踪实现**
+
+- `OneBitIterator` → [blender::bits::OneBitIterator::OneBitIterator · L74](19-BitSpan%E4%B8%8EBitVector.md#f-109a651a8d2c3ce6)。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L116—L117
+
+<!-- annotated:33a681dc52e4e4 -->
+
+```cpp
 };
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L116—L117</summary>
+
+<!-- original:33a681dc52e4e4:source/blender/blenlib/BLI_bit_span.hh:116:117 -->
+
+```cpp
+};
+
+```
+
+</details>
+
+<a id="f-eb4a8451a9086ff1"></a>
+
+### `blender::bits::iter_1_indices`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L118—L121。
+
+接口参数：
+
+- `BitInt value`
+
+**教学注释版**
+
+<!-- annotated:6c0074d364433c -->
+
+```cpp
 inline OneBitIteratorRange iter_1_indices(BitInt value)
 {
   return OneBitIteratorRange(value);
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L118—L121</summary>
+
+<!-- original:6c0074d364433c:source/blender/blenlib/BLI_bit_span.hh:118:121 -->
+
+```cpp
+inline OneBitIteratorRange iter_1_indices(BitInt value)
+{
+  return OneBitIteratorRange(value);
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return OneBitIteratorRange(value);`
+
+**继续追踪实现**
+
+- `OneBitIteratorRange` → [blender::bits::OneBitIteratorRange::OneBitIteratorRange · L106](19-BitSpan%E4%B8%8EBitVector.md#f-951e4a3ffd86e85a)。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L122—L141
+
+<a id="t-40ebe7ddf0e5"></a>
+
+`BitSpan`在这里声明的数据成员：
+
+- `BitInt data_`
+- `IndexRange bit_range_`
+
+<!-- annotated:93736c24cf1722 -->
+
+```cpp
 
 /**
  * Similar to #Span, but references a range of bits instead of normal C++ types (which must be at
@@ -462,176 +1112,949 @@ class BitSpan {
 
  public:
   /** Construct an empty span. */
-  BitSpan() = default;
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L122—L141</summary>
+
+<!-- original:93736c24cf1722:source/blender/blenlib/BLI_bit_span.hh:122:141 -->
+
+```cpp
+
+/**
+ * Similar to #Span, but references a range of bits instead of normal C++ types (which must be at
+ * least one byte large). Use #MutableBitSpan if the values are supposed to be modified.
+ *
+ * The beginning and end of a #BitSpan does *not* have to be at byte/int boundaries. It can start
+ * and end at any bit.
+ */
+class BitSpan {
+ protected:
+  /**
+   * Base pointer to the integers containing the bits. The actual bit span might start at a much
+   * higher address when `bit_range_.start()` is large.
+   */
+  const BitInt *data_ = nullptr;
+  /** The range of referenced bits. */
+  IndexRange bit_range_ = {0, 0};
+
+ public:
+  /** Construct an empty span. */
+```
+
+</details>
+
+<a id="f-910f6695cf3e6c50"></a>
+
+### `blender::bits::BitSpan::BitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L142—L142。
+
+**教学注释版**
+
+<!-- annotated:29c3bd9c3ed58a -->
+
+```cpp
+  BitSpan() = default;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L142—L142</summary>
+
+<!-- original:29c3bd9c3ed58a:source/blender/blenlib/BLI_bit_span.hh:142:142 -->
+
+```cpp
+  BitSpan() = default;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:a1e3c465db046c -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L143—L143</summary>
+
+<!-- original:a1e3c465db046c:source/blender/blenlib/BLI_bit_span.hh:143:143 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-01ead3d0eaf1cbb8"></a>
+
+### `blender::bits::BitSpan::BitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L144—L146。
+
+接口参数：
+
+- `const BitInt *data`
+- `const int64_t size_in_bits`
+
+**教学注释版**
+
+<!-- annotated:0aaf4a809aa46d -->
+
+```cpp
   BitSpan(const BitInt *data, const int64_t size_in_bits) : data_(data), bit_range_(size_in_bits)
   {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L144—L146</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
+<!-- original:0aaf4a809aa46d:source/blender/blenlib/BLI_bit_span.hh:144:146 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L99 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L101 | 声明或定义类型 `class OneBitIteratorRange`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L102 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L103 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `const BitInt data_`，不要把地址、数量或状态混用。 |
-| L105 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L106 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `OneBitIteratorRange(BitInt data) : data_(data) {}`，不要把地址、数量或状态混用。 |
-| L108 | 出现调用或函数声明 `begin`，对应表达式为 `OneBitIterator begin() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L109 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L110 | 返回表达式 `OneBitIterator(data_)`。 |
-| L111 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L112 | 出现调用或函数声明 `end`，对应表达式为 `OneBitIterator end() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L113 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L114 | 返回表达式 `OneBitIterator(0)`。 |
-| L115 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L116 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L118 | 出现调用或函数声明 `iter_1_indices`，对应表达式为 `inline OneBitIteratorRange iter_1_indices(BitInt value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L119 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L120 | 返回表达式 `OneBitIteratorRange(value)`。 |
-| L121 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L130 | 声明或定义类型 `class BitSpan`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L131 | 切换成员访问权限为 protected；它是编译期接口边界，不是线程同步或内存保护。 |
-| L136 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `const BitInt *data_ = nullptr`；对照更新前后相应范围或状态是否一致。 |
-| L138 | 把右侧 `{0, 0}` 用于初始化或更新左侧 `IndexRange bit_range_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L140 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L142 | 显式采用编译器生成的特殊成员行为：`BitSpan() = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L144 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `BitSpan(const BitInt *data, const int64_t size_in_bits) : data_(data), bit_range_(size_in_bits)`，不要把地址、数量或状态混用。 |
-| L145 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L146 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  BitSpan(const BitInt *data, const int64_t size_in_bits) : data_(data), bit_range_(size_in_bits)
+  {
+  }
+```
 
-### BLI_bit_span.hh：L147—L196
+</details>
 
-<!-- source:source/blender/blenlib/BLI_bit_span.hh:147:196 -->
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:2001c44312e1d4 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L147—L147</summary>
+
+<!-- original:2001c44312e1d4:source/blender/blenlib/BLI_bit_span.hh:147:147 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-424d11167d1bc782"></a>
+
+### `blender::bits::BitSpan::BitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L148—L148。
+
+接口参数：
+
+- `const BitInt *data`
+- `const IndexRange bit_range`
+
+**教学注释版**
+
+<!-- annotated:2527eb4126d120 -->
+
+```cpp
   BitSpan(const BitInt *data, const IndexRange bit_range) : data_(data), bit_range_(bit_range) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L148—L148</summary>
+
+<!-- original:2527eb4126d120:source/blender/blenlib/BLI_bit_span.hh:148:148 -->
+
+```cpp
+  BitSpan(const BitInt *data, const IndexRange bit_range) : data_(data), bit_range_(bit_range) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L149—L150
+
+<!-- annotated:dd92023ac37abc -->
+
+```cpp
 
   /** Number of bits referenced by the span. */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L149—L150</summary>
+
+<!-- original:dd92023ac37abc:source/blender/blenlib/BLI_bit_span.hh:149:150 -->
+
+```cpp
+
+  /** Number of bits referenced by the span. */
+```
+
+</details>
+
+<a id="f-619593bac6a150f5"></a>
+
+### `blender::bits::BitSpan::size`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L151—L154。
+
+**教学注释版**
+
+<!-- annotated:9fa3bc9a055388 -->
+
+```cpp
+  int64_t size() const
+  {
+    // [讲解] bit_range_.size：读取连续区间或分组的边界信息。
+    return bit_range_.size();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L151—L154</summary>
+
+<!-- original:9fa3bc9a055388:source/blender/blenlib/BLI_bit_span.hh:151:154 -->
+
+```cpp
   int64_t size() const
   {
     return bit_range_.size();
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return bit_range_.size();`
+
+**继续追踪实现**
+
+- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+
+<!-- annotated:c60c923c2f0d8e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L155—L155</summary>
+
+<!-- original:c60c923c2f0d8e:source/blender/blenlib/BLI_bit_span.hh:155:155 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9e464d71eeb9d5c6"></a>
+
+### `blender::bits::BitSpan::is_empty`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L156—L159。
+
+**教学注释版**
+
+<!-- annotated:6e418dddde9a96 -->
+
+```cpp
+  bool is_empty() const
+  {
+    // [讲解] bit_range_.is_empty：读取连续区间或分组的边界信息。
+    return bit_range_.is_empty();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L156—L159</summary>
+
+<!-- original:6e418dddde9a96:source/blender/blenlib/BLI_bit_span.hh:156:159 -->
+
+```cpp
   bool is_empty() const
   {
     return bit_range_.is_empty();
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return bit_range_.is_empty();`
+
+**继续追踪实现**
+
+- `bit_range_.is_empty` → [blender::IndexRange::is_empty · L169](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-9501e070be01ff71)。
+
+<!-- annotated:b67511ed5c0c8c -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L160—L160</summary>
+
+<!-- original:b67511ed5c0c8c:source/blender/blenlib/BLI_bit_span.hh:160:160 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-be50d7b366362ae1"></a>
+
+### `blender::bits::BitSpan::index_range`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L161—L164。
+
+**教学注释版**
+
+<!-- annotated:afa96c42a9ee3c -->
+
+```cpp
+  IndexRange index_range() const
+  {
+    // [讲解] bit_range_.size：读取连续区间或分组的边界信息。
+    return IndexRange(bit_range_.size());
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L161—L164</summary>
+
+<!-- original:afa96c42a9ee3c:source/blender/blenlib/BLI_bit_span.hh:161:164 -->
+
+```cpp
   IndexRange index_range() const
   {
     return IndexRange(bit_range_.size());
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return IndexRange(bit_range_.size());`
+
+**继续追踪实现**
+
+- `IndexRange` → [blender::IndexRange](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+
+<!-- annotated:5ebfd0427af861 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L165—L165</summary>
+
+<!-- original:5ebfd0427af861:source/blender/blenlib/BLI_bit_span.hh:165:165 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-2803637807349bfc"></a>
+
+### `blender::bits::BitSpan::operator[]`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L166—L171。
+
+接口参数：
+
+- `const int64_t index`
+
+**教学注释版**
+
+<!-- annotated:475ba0abd9e0b5 -->
+
+```cpp
+  [[nodiscard]] BitRef operator[](const int64_t index) const
+  {
+    BLI_assert(index >= 0);
+    // [讲解] bit_range_.size：读取连续区间或分组的边界信息。
+    BLI_assert(index < bit_range_.size());
+    // [讲解] bit_range_.start：读取连续区间或分组的边界信息。
+    return {data_, bit_range_.start() + index};
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L166—L171</summary>
+
+<!-- original:475ba0abd9e0b5:source/blender/blenlib/BLI_bit_span.hh:166:171 -->
+
+```cpp
   [[nodiscard]] BitRef operator[](const int64_t index) const
   {
     BLI_assert(index >= 0);
     BLI_assert(index < bit_range_.size());
     return {data_, bit_range_.start() + index};
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.start() + index};`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `bit_range_.start` → [blender::IndexRange::start · L243](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
+
+<!-- annotated:e8a7857f06e34e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L172—L172</summary>
+
+<!-- original:e8a7857f06e34e:source/blender/blenlib/BLI_bit_span.hh:172:172 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3f83a2bfddce7a17"></a>
+
+### `blender::bits::BitSpan::slice`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L173—L176。
+
+接口参数：
+
+- `const IndexRange range`
+
+**教学注释版**
+
+<!-- annotated:06f6e1d5b1c9d3 -->
+
+```cpp
+  [[nodiscard]] BitSpan slice(const IndexRange range) const
+  {
+    // [讲解] bit_range_.slice：从已有范围生成子范围。
+    return {data_, bit_range_.slice(range)};
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L173—L176</summary>
+
+<!-- original:06f6e1d5b1c9d3:source/blender/blenlib/BLI_bit_span.hh:173:176 -->
+
+```cpp
   [[nodiscard]] BitSpan slice(const IndexRange range) const
   {
     return {data_, bit_range_.slice(range)};
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.slice(range)};`
+
+**继续追踪实现**
+
+- `bit_range_.slice` → [blender::IndexRange::slice · L276](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-6249bf624e38d609)；[blender::IndexRange::slice · L284](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-eb80885fefc31b6f)。同名重载需按实参类型选择。
+
+<!-- annotated:3096218729d43d -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L177—L177</summary>
+
+<!-- original:3096218729d43d:source/blender/blenlib/BLI_bit_span.hh:177:177 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-1afba0c992ebf775"></a>
+
+### `blender::bits::BitSpan::take_front`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L178—L181。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:3884b626e5db47 -->
+
+```cpp
   BitSpan take_front(const int64_t n) const
   {
     return {data_, bit_range_.take_front(n)};
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L178—L181</summary>
+
+<!-- original:3884b626e5db47:source/blender/blenlib/BLI_bit_span.hh:178:181 -->
+
+```cpp
+  BitSpan take_front(const int64_t n) const
+  {
+    return {data_, bit_range_.take_front(n)};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.take_front(n)};`
+
+**继续追踪实现**
+
+- `bit_range_.take_front` → [blender::IndexRange::take_front · L328](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-63ad1817cc7169c5)。
+
+<!-- annotated:073669ac4fb2e9 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L182—L182</summary>
+
+<!-- original:073669ac4fb2e9:source/blender/blenlib/BLI_bit_span.hh:182:182 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b5e56079380e9e4b"></a>
+
+### `blender::bits::BitSpan::take_back`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L183—L186。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:e5aade07b3b01a -->
+
+```cpp
   BitSpan take_back(const int64_t n) const
   {
     return {data_, bit_range_.take_back(n)};
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L183—L186</summary>
+
+<!-- original:e5aade07b3b01a:source/blender/blenlib/BLI_bit_span.hh:183:186 -->
+
+```cpp
+  BitSpan take_back(const int64_t n) const
+  {
+    return {data_, bit_range_.take_back(n)};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.take_back(n)};`
+
+**继续追踪实现**
+
+- `bit_range_.take_back` → [blender::IndexRange::take_back · L339](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-90cb4525591ba822)。
+
+<!-- annotated:dba8363af6a897 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L187—L187</summary>
+
+<!-- original:dba8363af6a897:source/blender/blenlib/BLI_bit_span.hh:187:187 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-dd957c52b8737102"></a>
+
+### `blender::bits::BitSpan::drop_front`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L188—L191。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:8b8e862e0cef53 -->
+
+```cpp
   BitSpan drop_front(const int64_t n) const
   {
     return {data_, bit_range_.drop_front(n)};
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L188—L191</summary>
+
+<!-- original:8b8e862e0cef53:source/blender/blenlib/BLI_bit_span.hh:188:191 -->
+
+```cpp
+  BitSpan drop_front(const int64_t n) const
+  {
+    return {data_, bit_range_.drop_front(n)};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.drop_front(n)};`
+
+**继续追踪实现**
+
+- `bit_range_.drop_front` → [blender::IndexRange::drop_front · L306](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-ef3101407d982c90)。
+
+<!-- annotated:05347e22560e2f -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L192—L192</summary>
+
+<!-- original:05347e22560e2f:source/blender/blenlib/BLI_bit_span.hh:192:192 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-dfacaf9d87804c5e"></a>
+
+### `blender::bits::BitSpan::drop_back`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L193—L196。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:adc97b6ef485a0 -->
+
+```cpp
   BitSpan drop_back(const int64_t n) const
   {
     return {data_, bit_range_.drop_back(n)};
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L193—L196</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
+<!-- original:adc97b6ef485a0:source/blender/blenlib/BLI_bit_span.hh:193:196 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L148 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `BitSpan(const BitInt *data, const IndexRange bit_range) : data_(data), bit_range_(bit_range) {}`，不要把地址、数量或状态混用。 |
-| L151 | 出现调用或函数声明 `size`，对应表达式为 `int64_t size() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L152 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L153 | 返回表达式 `bit_range_.size()`。 |
-| L154 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L156 | 出现调用或函数声明 `is_empty`，对应表达式为 `bool is_empty() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L157 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L158 | 返回表达式 `bit_range_.is_empty()`。 |
-| L159 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L161 | 出现调用或函数声明 `index_range`，对应表达式为 `IndexRange index_range() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L162 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L163 | 返回表达式 `IndexRange(bit_range_.size())`。 |
-| L164 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L166 | 运算符重载声明、定义或显式调用：`[[nodiscard]] BitRef operator[](const int64_t index) const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L167 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L168 | 断言约束 `BLI_assert(index >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L169 | 断言约束 `BLI_assert(index < bit_range_.size());`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L170 | 返回表达式 `{data_, bit_range_.start() + index}`。 |
-| L171 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L173 | 出现调用或函数声明 `slice`，对应表达式为 `[[nodiscard]] BitSpan slice(const IndexRange range) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L174 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L175 | 返回表达式 `{data_, bit_range_.slice(range)}`。 |
-| L176 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L178 | 出现调用或函数声明 `take_front`，对应表达式为 `BitSpan take_front(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L179 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L180 | 返回表达式 `{data_, bit_range_.take_front(n)}`。 |
-| L181 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L183 | 出现调用或函数声明 `take_back`，对应表达式为 `BitSpan take_back(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L184 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L185 | 返回表达式 `{data_, bit_range_.take_back(n)}`。 |
-| L186 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L188 | 出现调用或函数声明 `drop_front`，对应表达式为 `BitSpan drop_front(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L189 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L190 | 返回表达式 `{data_, bit_range_.drop_front(n)}`。 |
-| L191 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L193 | 出现调用或函数声明 `drop_back`，对应表达式为 `BitSpan drop_back(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L194 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L195 | 返回表达式 `{data_, bit_range_.drop_back(n)}`。 |
-| L196 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  BitSpan drop_back(const int64_t n) const
+  {
+    return {data_, bit_range_.drop_back(n)};
+  }
+```
 
-### BLI_bit_span.hh：L197—L245
+</details>
 
-<!-- source:source/blender/blenlib/BLI_bit_span.hh:197:245 -->
+**结果出口**
+
+- `return {data_, bit_range_.drop_back(n)};`
+
+**继续追踪实现**
+
+- `bit_range_.drop_back` → [blender::IndexRange::drop_back · L317](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-be17c307e5b14575)。
+
+<!-- annotated:41aa26e797f469 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L197—L197</summary>
+
+<!-- original:41aa26e797f469:source/blender/blenlib/BLI_bit_span.hh:197:197 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-7fb8ab932727dff6"></a>
+
+### `blender::bits::BitSpan::data`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L198—L201。
+
+**教学注释版**
+
+<!-- annotated:0eff75d6d9bfed -->
+
+```cpp
   const BitInt *data() const
   {
     return data_;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L198—L201</summary>
+
+<!-- original:0eff75d6d9bfed:source/blender/blenlib/BLI_bit_span.hh:198:201 -->
+
+```cpp
+  const BitInt *data() const
+  {
+    return data_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return data_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:05a3431e3f6e8b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L202—L202</summary>
+
+<!-- original:05a3431e3f6e8b:source/blender/blenlib/BLI_bit_span.hh:202:202 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8752cfebfc5d5dc6"></a>
+
+### `blender::bits::BitSpan::bit_range`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L203—L206。
+
+**教学注释版**
+
+<!-- annotated:e5b7aeabfe198e -->
+
+```cpp
   const IndexRange &bit_range() const
   {
     return bit_range_;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L203—L206</summary>
+
+<!-- original:e5b7aeabfe198e:source/blender/blenlib/BLI_bit_span.hh:203:206 -->
+
+```cpp
+  const IndexRange &bit_range() const
+  {
+    return bit_range_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return bit_range_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:a5ea904398395c -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L207—L207</summary>
+
+<!-- original:a5ea904398395c:source/blender/blenlib/BLI_bit_span.hh:207:207 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-37c1e44c5b89e9bb"></a>
+
+### `blender::bits::BitSpan::begin`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L208—L211。
+
+**教学注释版**
+
+<!-- annotated:0649e00bfe2501 -->
+
+```cpp
+  BitIterator begin() const
+  {
+    // [讲解] bit_range_.start：读取连续区间或分组的边界信息。
+    return {data_, bit_range_.start()};
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L208—L211</summary>
+
+<!-- original:0649e00bfe2501:source/blender/blenlib/BLI_bit_span.hh:208:211 -->
+
+```cpp
   BitIterator begin() const
   {
     return {data_, bit_range_.start()};
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.start()};`
+
+**继续追踪实现**
+
+- `bit_range_.start` → [blender::IndexRange::start · L243](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
+
+<!-- annotated:93b37635646fe6 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L212—L212</summary>
+
+<!-- original:93b37635646fe6:source/blender/blenlib/BLI_bit_span.hh:212:212 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-6750f56465994072"></a>
+
+### `blender::bits::BitSpan::end`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L213—L216。
+
+**教学注释版**
+
+<!-- annotated:4d8a9e0c129a92 -->
+
+```cpp
+  BitIterator end() const
+  {
+    // [讲解] bit_range_.one_after_last：读取连续区间或分组的边界信息。
+    return {data_, bit_range_.one_after_last()};
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L213—L216</summary>
+
+<!-- original:4d8a9e0c129a92:source/blender/blenlib/BLI_bit_span.hh:213:216 -->
+
+```cpp
   BitIterator end() const
   {
     return {data_, bit_range_.one_after_last()};
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.one_after_last()};`
+
+**继续追踪实现**
+
+- `bit_range_.one_after_last` → [blender::IndexRange::one_after_last · L235](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-ed04bec9c731fc86)。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L217—L225
+
+<!-- annotated:08d5838fbc46b0 -->
+
+```cpp
 };
 
 /**
@@ -641,6 +2064,42 @@ class BitSpan {
  *
  * See comments in the function for the exact requirements.
  */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L217—L225</summary>
+
+<!-- original:08d5838fbc46b0:source/blender/blenlib/BLI_bit_span.hh:217:225 -->
+
+```cpp
+};
+
+/**
+ * Checks if the span fulfills the requirements for a bounded span. Bounded spans can often be
+ * processed more efficiently, because fewer cases have to be considered when aligning multiple
+ * such spans.
+ *
+ * See comments in the function for the exact requirements.
+ */
+```
+
+</details>
+
+<a id="f-319fb838ca0d0737"></a>
+
+### `blender::bits::is_bounded_span`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L226—L245。
+
+接口参数：
+
+- `const BitSpan span`
+
+**教学注释版**
+
+<!-- annotated:8df54921addea2 -->
+
+```cpp
 inline bool is_bounded_span(const BitSpan span)
 {
   const int64_t offset = span.bit_range().start();
@@ -663,48 +2122,53 @@ inline bool is_bounded_span(const BitSpan span)
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L226—L245</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
+<!-- original:8df54921addea2:source/blender/blenlib/BLI_bit_span.hh:226:245 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L198 | 出现调用或函数声明 `data`，对应表达式为 `const BitInt *data() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L199 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L200 | 返回表达式 `data_`。 |
-| L201 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L203 | 出现调用或函数声明 `bit_range`，对应表达式为 `const IndexRange &bit_range() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L204 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L205 | 返回表达式 `bit_range_`。 |
-| L206 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L208 | 出现调用或函数声明 `begin`，对应表达式为 `BitIterator begin() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L209 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L210 | 返回表达式 `{data_, bit_range_.start()}`。 |
-| L211 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L213 | 出现调用或函数声明 `end`，对应表达式为 `BitIterator end() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L214 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L215 | 返回表达式 `{data_, bit_range_.one_after_last()}`。 |
-| L216 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L217 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L226 | 出现调用或函数声明 `is_bounded_span`，对应表达式为 `inline bool is_bounded_span(const BitSpan span)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L227 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L228 | 把右侧 `span.bit_range().start()` 用于初始化或更新左侧 `const int64_t offset`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L229 | 把右侧 `span.size()` 用于初始化或更新左侧 `const int64_t size`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L230 | 判断 `offset >= BitsPerInt`，成立时进入本分支，否则继续后续路径。 |
-| L234 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L235 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L236 | 判断 `size < BitsPerInt`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L238 | 返回表达式 `offset + size <= 64`。 |
-| L239 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L240 | 判断 `offset != 0`，成立时进入本分支，否则继续后续路径。 |
-| L242 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L243 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L244 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L245 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+inline bool is_bounded_span(const BitSpan span)
+{
+  const int64_t offset = span.bit_range().start();
+  const int64_t size = span.size();
+  if (offset >= BitsPerInt) {
+    /* The data pointer must point at the first int already. If the offset is a multiple of
+     * #BitsPerInt, the bit span could theoretically become bounded as well if the data pointer is
+     * adjusted. But that is not handled here. */
+    return false;
+  }
+  if (size < BitsPerInt) {
+    /** Don't allow small sized spans to cross `BitInt` boundaries. */
+    return offset + size <= 64;
+  }
+  if (offset != 0) {
+    /* Start of larger spans must be aligned to `BitInt` boundaries. */
+    return false;
+  }
+  return true;
+}
+```
 
-### BLI_bit_span.hh：L246—L293
+</details>
 
-<!-- source:source/blender/blenlib/BLI_bit_span.hh:246:293 -->
+**结果出口**
+
+- `return false;`
+- `return offset + size <= 64;`
+- `return true;`
+
+**继续追踪实现**
+
+- `span.bit_range().start` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L228。
+- `span.bit_range` → [blender::bits::BitSpan::bit_range · L203](19-BitSpan%E4%B8%8EBitVector.md#f-8752cfebfc5d5dc6)。
+- `span.size` → [blender::bits::BitSpan::size · L151](19-BitSpan%E4%B8%8EBitVector.md#f-619593bac6a150f5)。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L246—L251
+
+<a id="t-57c89b17615b"></a>
+
+<!-- annotated:06f1e82c952022 -->
 
 ```cpp
 
@@ -713,220 +2177,1335 @@ inline bool is_bounded_span(const BitSpan span)
  */
 class BoundedBitSpan : public BitSpan {
  public:
-  BoundedBitSpan() = default;
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L246—L251</summary>
+
+<!-- original:06f1e82c952022:source/blender/blenlib/BLI_bit_span.hh:246:251 -->
+
+```cpp
+
+/**
+ * Same as #BitSpan but fulfills the requirements mentioned on #is_bounded_span.
+ */
+class BoundedBitSpan : public BitSpan {
+ public:
+```
+
+</details>
+
+<a id="f-32131d22e1d5bfb9"></a>
+
+### `blender::bits::BoundedBitSpan::BoundedBitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L252—L252。
+
+**教学注释版**
+
+<!-- annotated:1d1e54254b29e2 -->
+
+```cpp
+  BoundedBitSpan() = default;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L252—L252</summary>
+
+<!-- original:1d1e54254b29e2:source/blender/blenlib/BLI_bit_span.hh:252:252 -->
+
+```cpp
+  BoundedBitSpan() = default;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:86283a49a644f9 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L253—L253</summary>
+
+<!-- original:86283a49a644f9:source/blender/blenlib/BLI_bit_span.hh:253:253 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-4486a1f04b261177"></a>
+
+### `blender::bits::BoundedBitSpan::BoundedBitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L254—L257。
+
+接口参数：
+
+- `const BitInt *data`
+- `const int64_t size_in_bits`
+
+**教学注释版**
+
+<!-- annotated:30af6a6e2080f0 -->
+
+```cpp
   BoundedBitSpan(const BitInt *data, const int64_t size_in_bits) : BitSpan(data, size_in_bits)
   {
     BLI_assert(is_bounded_span(*this));
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L254—L257</summary>
+
+<!-- original:30af6a6e2080f0:source/blender/blenlib/BLI_bit_span.hh:254:257 -->
+
+```cpp
+  BoundedBitSpan(const BitInt *data, const int64_t size_in_bits) : BitSpan(data, size_in_bits)
+  {
+    BLI_assert(is_bounded_span(*this));
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
+
+<!-- annotated:b3d089f3ea8244 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L258—L258</summary>
+
+<!-- original:b3d089f3ea8244:source/blender/blenlib/BLI_bit_span.hh:258:258 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-79f2490316451de0"></a>
+
+### `blender::bits::BoundedBitSpan::BoundedBitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L259—L262。
+
+接口参数：
+
+- `const BitInt *data`
+- `const IndexRange bit_range`
+
+**教学注释版**
+
+<!-- annotated:647ceedfba4e6d -->
+
+```cpp
   BoundedBitSpan(const BitInt *data, const IndexRange bit_range) : BitSpan(data, bit_range)
   {
     BLI_assert(is_bounded_span(*this));
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L259—L262</summary>
+
+<!-- original:647ceedfba4e6d:source/blender/blenlib/BLI_bit_span.hh:259:262 -->
+
+```cpp
+  BoundedBitSpan(const BitInt *data, const IndexRange bit_range) : BitSpan(data, bit_range)
+  {
+    BLI_assert(is_bounded_span(*this));
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
+
+<!-- annotated:cc60c42b925466 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L263—L263</summary>
+
+<!-- original:cc60c42b925466:source/blender/blenlib/BLI_bit_span.hh:263:263 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-0264bf64a7ffe34e"></a>
+
+### `blender::bits::BoundedBitSpan::BoundedBitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L264—L267。
+
+接口参数：
+
+- `const BitSpan other`
+
+**教学注释版**
+
+<!-- annotated:df7a18f70032af -->
+
+```cpp
   explicit BoundedBitSpan(const BitSpan other) : BitSpan(other)
   {
     BLI_assert(is_bounded_span(*this));
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L264—L267</summary>
+
+<!-- original:df7a18f70032af:source/blender/blenlib/BLI_bit_span.hh:264:267 -->
+
+```cpp
+  explicit BoundedBitSpan(const BitSpan other) : BitSpan(other)
+  {
+    BLI_assert(is_bounded_span(*this));
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
+
+<!-- annotated:4a05d97e70ca64 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L268—L268</summary>
+
+<!-- original:4a05d97e70ca64:source/blender/blenlib/BLI_bit_span.hh:268:268 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-c9adae950e66ddd6"></a>
+
+### `blender::bits::BoundedBitSpan::offset`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L269—L272。
+
+**教学注释版**
+
+<!-- annotated:8cbfa6b3685688 -->
+
+```cpp
   int64_t offset() const
   {
     return bit_range_.start();
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L269—L272</summary>
+
+<!-- original:8cbfa6b3685688:source/blender/blenlib/BLI_bit_span.hh:269:272 -->
+
+```cpp
+  int64_t offset() const
+  {
+    return bit_range_.start();
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return bit_range_.start();`
+
+**继续追踪实现**
+
+- `bit_range_.start` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L271。
+
+<!-- annotated:36f186b95f7de4 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L273—L273</summary>
+
+<!-- original:36f186b95f7de4:source/blender/blenlib/BLI_bit_span.hh:273:273 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-e2913cd46d3ecd5c"></a>
+
+### `blender::bits::BoundedBitSpan::full_ints_num`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L274—L277。
+
+**教学注释版**
+
+<!-- annotated:bcc21bb60776eb -->
+
+```cpp
   int64_t full_ints_num() const
   {
     return bit_range_.size() >> BitToIntIndexShift;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L274—L277</summary>
+
+<!-- original:bcc21bb60776eb:source/blender/blenlib/BLI_bit_span.hh:274:277 -->
+
+```cpp
+  int64_t full_ints_num() const
+  {
+    return bit_range_.size() >> BitToIntIndexShift;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return bit_range_.size() >> BitToIntIndexShift;`
+
+**继续追踪实现**
+
+- `bit_range_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L276。
+
+<!-- annotated:596ca72abe3e34 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L278—L278</summary>
+
+<!-- original:596ca72abe3e34:source/blender/blenlib/BLI_bit_span.hh:278:278 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-847de2476cddf160"></a>
+
+### `blender::bits::BoundedBitSpan::final_bits_num`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L279—L282。
+
+**教学注释版**
+
+<!-- annotated:5e29eca020de38 -->
+
+```cpp
   int64_t final_bits_num() const
   {
     return bit_range_.size() & BitIndexMask;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L279—L282</summary>
+
+<!-- original:5e29eca020de38:source/blender/blenlib/BLI_bit_span.hh:279:282 -->
+
+```cpp
+  int64_t final_bits_num() const
+  {
+    return bit_range_.size() & BitIndexMask;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return bit_range_.size() & BitIndexMask;`
+
+**继续追踪实现**
+
+- `bit_range_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L281。
+
+<!-- annotated:f2dd3f3b596114 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L283—L283</summary>
+
+<!-- original:f2dd3f3b596114:source/blender/blenlib/BLI_bit_span.hh:283:283 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-629656ccb49a92f4"></a>
+
+### `blender::bits::BoundedBitSpan::take_front`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L284—L287。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:1b77c879991ab6 -->
+
+```cpp
   BoundedBitSpan take_front(const int64_t n) const
   {
     return {data_, bit_range_.take_front(n)};
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L284—L287</summary>
+
+<!-- original:1b77c879991ab6:source/blender/blenlib/BLI_bit_span.hh:284:287 -->
+
+```cpp
+  BoundedBitSpan take_front(const int64_t n) const
+  {
+    return {data_, bit_range_.take_front(n)};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.take_front(n)};`
+
+**继续追踪实现**
+
+- `bit_range_.take_front` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L286。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L288—L296
+
+<a id="t-134b1c569c8a"></a>
+
+`MutableBitSpan`在这里声明的数据成员：
+
+- `BitInt data_`
+- `IndexRange bit_range_`
+
+<!-- annotated:e4101f9484f950 -->
+
+```cpp
 };
 
 /** Same as #BitSpan, but also allows modifying the referenced bits. */
 class MutableBitSpan {
  protected:
   BitInt *data_ = nullptr;
-```
-
-本段语义重点：
-
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L250 | 声明或定义类型 `class BoundedBitSpan : public BitSpan`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L251 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L252 | 显式采用编译器生成的特殊成员行为：`BoundedBitSpan() = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L254 | 出现调用或函数声明 `BoundedBitSpan`，对应表达式为 `BoundedBitSpan(const BitInt *data, const int64_t size_in_bits) : BitSpan(data, size_in_bits)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L255 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L256 | 断言约束 `BLI_assert(is_bounded_span(*this));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L257 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L259 | 出现调用或函数声明 `BoundedBitSpan`，对应表达式为 `BoundedBitSpan(const BitInt *data, const IndexRange bit_range) : BitSpan(data, bit_range)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L260 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L261 | 断言约束 `BLI_assert(is_bounded_span(*this));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L262 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L264 | 出现调用或函数声明 `BoundedBitSpan`，对应表达式为 `explicit BoundedBitSpan(const BitSpan other) : BitSpan(other)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L265 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L266 | 断言约束 `BLI_assert(is_bounded_span(*this));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L267 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L269 | 出现调用或函数声明 `offset`，对应表达式为 `int64_t offset() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L270 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L271 | 返回表达式 `bit_range_.start()`。 |
-| L272 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L274 | 出现调用或函数声明 `full_ints_num`，对应表达式为 `int64_t full_ints_num() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L275 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L276 | 返回表达式 `bit_range_.size() >> BitToIntIndexShift`。 |
-| L277 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L279 | 出现调用或函数声明 `final_bits_num`，对应表达式为 `int64_t final_bits_num() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L280 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L281 | 返回表达式 `bit_range_.size() & BitIndexMask`。 |
-| L282 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L284 | 出现调用或函数声明 `take_front`，对应表达式为 `BoundedBitSpan take_front(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L285 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L286 | 返回表达式 `{data_, bit_range_.take_front(n)}`。 |
-| L287 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L288 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L291 | 声明或定义类型 `class MutableBitSpan`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L292 | 切换成员访问权限为 protected；它是编译期接口边界，不是线程同步或内存保护。 |
-| L293 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `BitInt *data_ = nullptr`；对照更新前后相应范围或状态是否一致。 |
-
-### BLI_bit_span.hh：L294—L343
-
-<!-- source:source/blender/blenlib/BLI_bit_span.hh:294:343 -->
-
-```cpp
   IndexRange bit_range_ = {0, 0};
 
  public:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L288—L296</summary>
+
+<!-- original:e4101f9484f950:source/blender/blenlib/BLI_bit_span.hh:288:296 -->
+
+```cpp
+};
+
+/** Same as #BitSpan, but also allows modifying the referenced bits. */
+class MutableBitSpan {
+ protected:
+  BitInt *data_ = nullptr;
+  IndexRange bit_range_ = {0, 0};
+
+ public:
+```
+
+</details>
+
+<a id="f-84ef7fce1e590bd4"></a>
+
+### `blender::bits::MutableBitSpan::MutableBitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L297—L297。
+
+**教学注释版**
+
+<!-- annotated:14d0d1605aba4c -->
+
+```cpp
   MutableBitSpan() = default;
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L297—L297</summary>
+
+<!-- original:14d0d1605aba4c:source/blender/blenlib/BLI_bit_span.hh:297:297 -->
+
+```cpp
+  MutableBitSpan() = default;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:c5beb09b722cd7 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L298—L298</summary>
+
+<!-- original:c5beb09b722cd7:source/blender/blenlib/BLI_bit_span.hh:298:298 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-7736cbfc8277cb34"></a>
+
+### `blender::bits::MutableBitSpan::MutableBitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L299—L299。
+
+接口参数：
+
+- `BitInt *data`
+- `const int64_t size`
+
+**教学注释版**
+
+<!-- annotated:e9858447fe299b -->
+
+```cpp
   MutableBitSpan(BitInt *data, const int64_t size) : data_(data), bit_range_(size) {}
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L299—L299</summary>
+
+<!-- original:e9858447fe299b:source/blender/blenlib/BLI_bit_span.hh:299:299 -->
+
+```cpp
+  MutableBitSpan(BitInt *data, const int64_t size) : data_(data), bit_range_(size) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:f3a95d9660b861 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L300—L300</summary>
+
+<!-- original:f3a95d9660b861:source/blender/blenlib/BLI_bit_span.hh:300:300 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-840e1097a65b5c26"></a>
+
+### `blender::bits::MutableBitSpan::MutableBitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L301—L301。
+
+接口参数：
+
+- `BitInt *data`
+- `const IndexRange bit_range`
+
+**教学注释版**
+
+<!-- annotated:1ced66a150815c -->
+
+```cpp
   MutableBitSpan(BitInt *data, const IndexRange bit_range) : data_(data), bit_range_(bit_range) {}
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L301—L301</summary>
+
+<!-- original:1ced66a150815c:source/blender/blenlib/BLI_bit_span.hh:301:301 -->
+
+```cpp
+  MutableBitSpan(BitInt *data, const IndexRange bit_range) : data_(data), bit_range_(bit_range) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:4d206b3d4c1629 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L302—L302</summary>
+
+<!-- original:4d206b3d4c1629:source/blender/blenlib/BLI_bit_span.hh:302:302 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9ffa8a62bb4f9736"></a>
+
+### `blender::bits::MutableBitSpan::size`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L303—L306。
+
+**教学注释版**
+
+<!-- annotated:058ee994d0a6ae -->
+
+```cpp
+  int64_t size() const
+  {
+    // [讲解] bit_range_.size：读取连续区间或分组的边界信息。
+    return bit_range_.size();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L303—L306</summary>
+
+<!-- original:058ee994d0a6ae:source/blender/blenlib/BLI_bit_span.hh:303:306 -->
+
+```cpp
   int64_t size() const
   {
     return bit_range_.size();
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return bit_range_.size();`
+
+**继续追踪实现**
+
+- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+
+<!-- annotated:9bd186c65c130e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L307—L307</summary>
+
+<!-- original:9bd186c65c130e:source/blender/blenlib/BLI_bit_span.hh:307:307 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-35c62b2f24a38b37"></a>
+
+### `blender::bits::MutableBitSpan::is_empty`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L308—L311。
+
+**教学注释版**
+
+<!-- annotated:0477ee308a1a8c -->
+
+```cpp
+  bool is_empty() const
+  {
+    // [讲解] bit_range_.is_empty：读取连续区间或分组的边界信息。
+    return bit_range_.is_empty();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L308—L311</summary>
+
+<!-- original:0477ee308a1a8c:source/blender/blenlib/BLI_bit_span.hh:308:311 -->
+
+```cpp
   bool is_empty() const
   {
     return bit_range_.is_empty();
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return bit_range_.is_empty();`
+
+**继续追踪实现**
+
+- `bit_range_.is_empty` → [blender::IndexRange::is_empty · L169](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-9501e070be01ff71)。
+
+<!-- annotated:dbacdd0c132836 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L312—L312</summary>
+
+<!-- original:dbacdd0c132836:source/blender/blenlib/BLI_bit_span.hh:312:312 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-e0c5e51264ebfb22"></a>
+
+### `blender::bits::MutableBitSpan::index_range`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L313—L316。
+
+**教学注释版**
+
+<!-- annotated:afb9e8250fed08 -->
+
+```cpp
+  IndexRange index_range() const
+  {
+    // [讲解] bit_range_.size：读取连续区间或分组的边界信息。
+    return IndexRange(bit_range_.size());
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L313—L316</summary>
+
+<!-- original:afb9e8250fed08:source/blender/blenlib/BLI_bit_span.hh:313:316 -->
+
+```cpp
   IndexRange index_range() const
   {
     return IndexRange(bit_range_.size());
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return IndexRange(bit_range_.size());`
+
+**继续追踪实现**
+
+- `IndexRange` → [blender::IndexRange](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+
+<!-- annotated:0807c1633ea759 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L317—L317</summary>
+
+<!-- original:0807c1633ea759:source/blender/blenlib/BLI_bit_span.hh:317:317 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-5de98801abb4511b"></a>
+
+### `blender::bits::MutableBitSpan::operator[]`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L318—L323。
+
+接口参数：
+
+- `const int64_t index`
+
+**教学注释版**
+
+<!-- annotated:57f4387f1035f1 -->
+
+```cpp
+  MutableBitRef operator[](const int64_t index) const
+  {
+    BLI_assert(index >= 0);
+    // [讲解] bit_range_.size：读取连续区间或分组的边界信息。
+    BLI_assert(index < bit_range_.size());
+    // [讲解] bit_range_.start：读取连续区间或分组的边界信息。
+    return {data_, bit_range_.start() + index};
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L318—L323</summary>
+
+<!-- original:57f4387f1035f1:source/blender/blenlib/BLI_bit_span.hh:318:323 -->
+
+```cpp
   MutableBitRef operator[](const int64_t index) const
   {
     BLI_assert(index >= 0);
     BLI_assert(index < bit_range_.size());
     return {data_, bit_range_.start() + index};
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.start() + index};`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `bit_range_.start` → [blender::IndexRange::start · L243](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
+
+<!-- annotated:7e328e862403f2 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L324—L324</summary>
+
+<!-- original:7e328e862403f2:source/blender/blenlib/BLI_bit_span.hh:324:324 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a82fe11b24635930"></a>
+
+### `blender::bits::MutableBitSpan::slice`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L325—L328。
+
+接口参数：
+
+- `const IndexRange range`
+
+**教学注释版**
+
+<!-- annotated:0dec9dcf903b4d -->
+
+```cpp
+  MutableBitSpan slice(const IndexRange range) const
+  {
+    // [讲解] bit_range_.slice：从已有范围生成子范围。
+    return {data_, bit_range_.slice(range)};
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L325—L328</summary>
+
+<!-- original:0dec9dcf903b4d:source/blender/blenlib/BLI_bit_span.hh:325:328 -->
+
+```cpp
   MutableBitSpan slice(const IndexRange range) const
   {
     return {data_, bit_range_.slice(range)};
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.slice(range)};`
+
+**继续追踪实现**
+
+- `bit_range_.slice` → [blender::IndexRange::slice · L276](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-6249bf624e38d609)；[blender::IndexRange::slice · L284](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-eb80885fefc31b6f)。同名重载需按实参类型选择。
+
+<!-- annotated:42ba9da04126dd -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L329—L329</summary>
+
+<!-- original:42ba9da04126dd:source/blender/blenlib/BLI_bit_span.hh:329:329 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-94ccea9f67f4c922"></a>
+
+### `blender::bits::MutableBitSpan::take_front`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L330—L333。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:5161a6ea248759 -->
+
+```cpp
   MutableBitSpan take_front(const int64_t n) const
   {
     return {data_, bit_range_.take_front(n)};
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L330—L333</summary>
+
+<!-- original:5161a6ea248759:source/blender/blenlib/BLI_bit_span.hh:330:333 -->
+
+```cpp
+  MutableBitSpan take_front(const int64_t n) const
+  {
+    return {data_, bit_range_.take_front(n)};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.take_front(n)};`
+
+**继续追踪实现**
+
+- `bit_range_.take_front` → [blender::IndexRange::take_front · L328](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-63ad1817cc7169c5)。
+
+<!-- annotated:203326a7b918e4 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L334—L334</summary>
+
+<!-- original:203326a7b918e4:source/blender/blenlib/BLI_bit_span.hh:334:334 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-d6a5df8e9b56ae02"></a>
+
+### `blender::bits::MutableBitSpan::take_back`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L335—L338。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:1d45f1f8893389 -->
+
+```cpp
   MutableBitSpan take_back(const int64_t n) const
   {
     return {data_, bit_range_.take_back(n)};
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L335—L338</summary>
+
+<!-- original:1d45f1f8893389:source/blender/blenlib/BLI_bit_span.hh:335:338 -->
+
+```cpp
+  MutableBitSpan take_back(const int64_t n) const
+  {
+    return {data_, bit_range_.take_back(n)};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.take_back(n)};`
+
+**继续追踪实现**
+
+- `bit_range_.take_back` → [blender::IndexRange::take_back · L339](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-90cb4525591ba822)。
+
+<!-- annotated:7a369ddac3099d -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L339—L339</summary>
+
+<!-- original:7a369ddac3099d:source/blender/blenlib/BLI_bit_span.hh:339:339 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-eacb49b07ccc79d2"></a>
+
+### `blender::bits::MutableBitSpan::data`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L340—L343。
+
+**教学注释版**
+
+<!-- annotated:03b5932a069d8b -->
+
+```cpp
   BitInt *data() const
   {
     return data_;
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L340—L343</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
+<!-- original:03b5932a069d8b:source/blender/blenlib/BLI_bit_span.hh:340:343 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L294 | 把右侧 `{0, 0}` 用于初始化或更新左侧 `IndexRange bit_range_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L296 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L297 | 显式采用编译器生成的特殊成员行为：`MutableBitSpan() = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L299 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `MutableBitSpan(BitInt *data, const int64_t size) : data_(data), bit_range_(size) {}`，不要把地址、数量或状态混用。 |
-| L301 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `MutableBitSpan(BitInt *data, const IndexRange bit_range) : data_(data), bit_range_(bit_range) {}`，不要把地址、数量或状态混用。 |
-| L303 | 出现调用或函数声明 `size`，对应表达式为 `int64_t size() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L304 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L305 | 返回表达式 `bit_range_.size()`。 |
-| L306 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L308 | 出现调用或函数声明 `is_empty`，对应表达式为 `bool is_empty() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L309 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L310 | 返回表达式 `bit_range_.is_empty()`。 |
-| L311 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L313 | 出现调用或函数声明 `index_range`，对应表达式为 `IndexRange index_range() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L314 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L315 | 返回表达式 `IndexRange(bit_range_.size())`。 |
-| L316 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L318 | 运算符重载声明、定义或显式调用：`MutableBitRef operator[](const int64_t index) const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L319 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L320 | 断言约束 `BLI_assert(index >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L321 | 断言约束 `BLI_assert(index < bit_range_.size());`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L322 | 返回表达式 `{data_, bit_range_.start() + index}`。 |
-| L323 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L325 | 出现调用或函数声明 `slice`，对应表达式为 `MutableBitSpan slice(const IndexRange range) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L326 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L327 | 返回表达式 `{data_, bit_range_.slice(range)}`。 |
-| L328 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L330 | 出现调用或函数声明 `take_front`，对应表达式为 `MutableBitSpan take_front(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L331 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L332 | 返回表达式 `{data_, bit_range_.take_front(n)}`。 |
-| L333 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L335 | 出现调用或函数声明 `take_back`，对应表达式为 `MutableBitSpan take_back(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L336 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L337 | 返回表达式 `{data_, bit_range_.take_back(n)}`。 |
-| L338 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L340 | 出现调用或函数声明 `data`，对应表达式为 `BitInt *data() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L341 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L342 | 返回表达式 `data_`。 |
-| L343 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  BitInt *data() const
+  {
+    return data_;
+  }
+```
 
-### BLI_bit_span.hh：L344—L390
+</details>
 
-<!-- source:source/blender/blenlib/BLI_bit_span.hh:344:390 -->
+**结果出口**
+
+- `return data_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:9cc3ce17c4a984 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L344—L344</summary>
+
+<!-- original:9cc3ce17c4a984:source/blender/blenlib/BLI_bit_span.hh:344:344 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-0f66b0c373e90c42"></a>
+
+### `blender::bits::MutableBitSpan::bit_range`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L345—L348。
+
+**教学注释版**
+
+<!-- annotated:d7645e05edf1cd -->
+
+```cpp
   const IndexRange &bit_range() const
   {
     return bit_range_;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L345—L348</summary>
+
+<!-- original:d7645e05edf1cd:source/blender/blenlib/BLI_bit_span.hh:345:348 -->
+
+```cpp
+  const IndexRange &bit_range() const
+  {
+    return bit_range_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return bit_range_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:36af25ef5aa2c8 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L349—L349</summary>
+
+<!-- original:36af25ef5aa2c8:source/blender/blenlib/BLI_bit_span.hh:349:349 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-93bd9f64c4c3c6ec"></a>
+
+### `blender::bits::MutableBitSpan::begin`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L350—L353。
+
+**教学注释版**
+
+<!-- annotated:d879c740d62d0f -->
+
+```cpp
+  MutableBitIterator begin() const
+  {
+    // [讲解] bit_range_.start：读取连续区间或分组的边界信息。
+    return {data_, bit_range_.start()};
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L350—L353</summary>
+
+<!-- original:d879c740d62d0f:source/blender/blenlib/BLI_bit_span.hh:350:353 -->
+
+```cpp
   MutableBitIterator begin() const
   {
     return {data_, bit_range_.start()};
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.start()};`
+
+**继续追踪实现**
+
+- `bit_range_.start` → [blender::IndexRange::start · L243](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
+
+<!-- annotated:476f64b80b7a08 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L354—L354</summary>
+
+<!-- original:476f64b80b7a08:source/blender/blenlib/BLI_bit_span.hh:354:354 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-03437c4e7e5b8158"></a>
+
+### `blender::bits::MutableBitSpan::end`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L355—L358。
+
+**教学注释版**
+
+<!-- annotated:fb411e5d3c3fbc -->
+
+```cpp
+  MutableBitIterator end() const
+  {
+    // [讲解] bit_range_.one_after_last：读取连续区间或分组的边界信息。
+    return {data_, bit_range_.one_after_last()};
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L355—L358</summary>
+
+<!-- original:fb411e5d3c3fbc:source/blender/blenlib/BLI_bit_span.hh:355:358 -->
+
+```cpp
   MutableBitIterator end() const
   {
     return {data_, bit_range_.one_after_last()};
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_.one_after_last()};`
+
+**继续追踪实现**
+
+- `bit_range_.one_after_last` → [blender::IndexRange::one_after_last · L235](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-ed04bec9c731fc86)。
+
+<!-- annotated:0f2c8dea078aee -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L359—L359</summary>
+
+<!-- original:0f2c8dea078aee:source/blender/blenlib/BLI_bit_span.hh:359:359 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-88f875c8435f1dec"></a>
+
+### `blender::bits::MutableBitSpan::() const`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L360—L363。
+
+**教学注释版**
+
+<!-- annotated:80bbffe2d89730 -->
+
+```cpp
   operator BitSpan() const
   {
     return {data_, bit_range_};
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L360—L363</summary>
+
+<!-- original:80bbffe2d89730:source/blender/blenlib/BLI_bit_span.hh:360:363 -->
+
+```cpp
+  operator BitSpan() const
+  {
+    return {data_, bit_range_};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, bit_range_};`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L364—L374
+
+<!-- annotated:ffea2bfc2ba053 -->
+
+```cpp
 
   /** Sets all referenced bits to 1. */
   void set_all();
@@ -938,6 +3517,44 @@ class MutableBitSpan {
   void copy_from(const BoundedBitSpan other);
 
   /** Sets all referenced bits to either 0 or 1. */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L364—L374</summary>
+
+<!-- original:ffea2bfc2ba053:source/blender/blenlib/BLI_bit_span.hh:364:374 -->
+
+```cpp
+
+  /** Sets all referenced bits to 1. */
+  void set_all();
+
+  /** Sets all referenced bits to 0. */
+  void reset_all();
+
+  void copy_from(const BitSpan other);
+  void copy_from(const BoundedBitSpan other);
+
+  /** Sets all referenced bits to either 0 or 1. */
+```
+
+</details>
+
+<a id="f-c716291e63f0f992"></a>
+
+### `blender::bits::MutableBitSpan::set_all`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L375—L383。
+
+接口参数：
+
+- `const bool value`
+
+**教学注释版**
+
+<!-- annotated:441f02c80cbde4 -->
+
+```cpp
   void set_all(const bool value)
   {
     if (value) {
@@ -947,167 +3564,709 @@ class MutableBitSpan {
       this->reset_all();
     }
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L375—L383</summary>
+
+<!-- original:441f02c80cbde4:source/blender/blenlib/BLI_bit_span.hh:375:383 -->
+
+```cpp
+  void set_all(const bool value)
+  {
+    if (value) {
+      this->set_all();
+    }
+    else {
+      this->reset_all();
+    }
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->set_all` → [blender::bits::MutableBitSpan::set_all · L375](19-BitSpan%E4%B8%8EBitVector.md#f-c716291e63f0f992)。
+- `this->reset_all` → [blender::bits::MutableBitSpan::reset_all · L41](%E4%BE%9D%E8%B5%96-bit_span-6f3ef8.md#f-db6f6242245cb907)。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L384—L385
+
+<!-- annotated:e1235a940e5b32 -->
+
+```cpp
 
   /** Same as #set_all to mirror #MutableSpan. */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L384—L385</summary>
+
+<!-- original:e1235a940e5b32:source/blender/blenlib/BLI_bit_span.hh:384:385 -->
+
+```cpp
+
+  /** Same as #set_all to mirror #MutableSpan. */
+```
+
+</details>
+
+<a id="f-cfd7d75d122f41c6"></a>
+
+### `blender::bits::MutableBitSpan::fill`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L386—L389。
+
+接口参数：
+
+- `const bool value`
+
+**教学注释版**
+
+<!-- annotated:61a9128706c98d -->
+
+```cpp
   void fill(const bool value)
   {
     this->set_all(value);
   }
-};
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L386—L389</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L345 | 出现调用或函数声明 `bit_range`，对应表达式为 `const IndexRange &bit_range() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L346 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L347 | 返回表达式 `bit_range_`。 |
-| L348 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L350 | 出现调用或函数声明 `begin`，对应表达式为 `MutableBitIterator begin() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L351 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L352 | 返回表达式 `{data_, bit_range_.start()}`。 |
-| L353 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L355 | 出现调用或函数声明 `end`，对应表达式为 `MutableBitIterator end() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L356 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L357 | 返回表达式 `{data_, bit_range_.one_after_last()}`。 |
-| L358 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L360 | 运算符重载声明、定义或显式调用：`operator BitSpan() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L361 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L362 | 返回表达式 `{data_, bit_range_}`。 |
-| L363 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L366 | 声明接口 `void set_all()`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L369 | 声明接口 `void reset_all()`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L371 | 声明接口 `void copy_from(const BitSpan other)`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L372 | 声明接口 `void copy_from(const BoundedBitSpan other)`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L375 | 出现调用或函数声明 `set_all`，对应表达式为 `void set_all(const bool value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L376 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L377 | 判断 `value`，成立时进入本分支，否则继续后续路径。 |
-| L378 | 出现调用或函数声明 `set_all`，对应表达式为 `this->set_all();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L379 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L380 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L381 | 出现调用或函数声明 `reset_all`，对应表达式为 `this->reset_all();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L382 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L383 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L386 | 出现调用或函数声明 `fill`，对应表达式为 `void fill(const bool value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L387 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L388 | 出现调用或函数声明 `set_all`，对应表达式为 `this->set_all(value);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L389 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L390 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-
-### BLI_bit_span.hh：L391—L437
-
-<!-- source:source/blender/blenlib/BLI_bit_span.hh:391:437 -->
+<!-- original:61a9128706c98d:source/blender/blenlib/BLI_bit_span.hh:386:389 -->
 
 ```cpp
+  void fill(const bool value)
+  {
+    this->set_all(value);
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->set_all` → [blender::bits::MutableBitSpan::set_all · L375](19-BitSpan%E4%B8%8EBitVector.md#f-c716291e63f0f992)。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L390—L396
+
+<a id="t-4736959dbdf9"></a>
+
+<!-- annotated:dc4ebceb21a308 -->
+
+```cpp
+};
 
 /**
  * Same as #MutableBitSpan but fulfills the requirements mentioned on #is_bounded_span.
  */
 class MutableBoundedBitSpan : public MutableBitSpan {
  public:
-  MutableBoundedBitSpan() = default;
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L390—L396</summary>
+
+<!-- original:dc4ebceb21a308:source/blender/blenlib/BLI_bit_span.hh:390:396 -->
+
+```cpp
+};
+
+/**
+ * Same as #MutableBitSpan but fulfills the requirements mentioned on #is_bounded_span.
+ */
+class MutableBoundedBitSpan : public MutableBitSpan {
+ public:
+```
+
+</details>
+
+<a id="f-45192a8e7f0f68d2"></a>
+
+### `blender::bits::MutableBoundedBitSpan::MutableBoundedBitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L397—L397。
+
+**教学注释版**
+
+<!-- annotated:bd3c723bacfae9 -->
+
+```cpp
+  MutableBoundedBitSpan() = default;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L397—L397</summary>
+
+<!-- original:bd3c723bacfae9:source/blender/blenlib/BLI_bit_span.hh:397:397 -->
+
+```cpp
+  MutableBoundedBitSpan() = default;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:a4170438e5602f -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L398—L398</summary>
+
+<!-- original:a4170438e5602f:source/blender/blenlib/BLI_bit_span.hh:398:398 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b5d0feb2179fa0dc"></a>
+
+### `blender::bits::MutableBoundedBitSpan::MutableBoundedBitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L399—L402。
+
+接口参数：
+
+- `BitInt *data`
+- `const int64_t size`
+
+**教学注释版**
+
+<!-- annotated:9083cdd980c451 -->
+
+```cpp
   MutableBoundedBitSpan(BitInt *data, const int64_t size) : MutableBitSpan(data, size)
   {
     BLI_assert(is_bounded_span(*this));
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L399—L402</summary>
+
+<!-- original:9083cdd980c451:source/blender/blenlib/BLI_bit_span.hh:399:402 -->
+
+```cpp
+  MutableBoundedBitSpan(BitInt *data, const int64_t size) : MutableBitSpan(data, size)
+  {
+    BLI_assert(is_bounded_span(*this));
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
+
+<!-- annotated:176ef8858e6229 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L403—L403</summary>
+
+<!-- original:176ef8858e6229:source/blender/blenlib/BLI_bit_span.hh:403:403 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-5beb9b5b301bb097"></a>
+
+### `blender::bits::MutableBoundedBitSpan::MutableBoundedBitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L404—L407。
+
+接口参数：
+
+- `BitInt *data`
+- `const IndexRange bit_range`
+
+**教学注释版**
+
+<!-- annotated:b22dae4dfbcca8 -->
+
+```cpp
   MutableBoundedBitSpan(BitInt *data, const IndexRange bit_range) : MutableBitSpan(data, bit_range)
   {
     BLI_assert(is_bounded_span(*this));
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L404—L407</summary>
+
+<!-- original:b22dae4dfbcca8:source/blender/blenlib/BLI_bit_span.hh:404:407 -->
+
+```cpp
+  MutableBoundedBitSpan(BitInt *data, const IndexRange bit_range) : MutableBitSpan(data, bit_range)
+  {
+    BLI_assert(is_bounded_span(*this));
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
+
+<!-- annotated:2aa40fe76e25d2 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L408—L408</summary>
+
+<!-- original:2aa40fe76e25d2:source/blender/blenlib/BLI_bit_span.hh:408:408 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-05a04d90eb69029c"></a>
+
+### `blender::bits::MutableBoundedBitSpan::MutableBoundedBitSpan`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L409—L412。
+
+接口参数：
+
+- `const MutableBitSpan other`
+
+**教学注释版**
+
+<!-- annotated:a671e9c6631a0c -->
+
+```cpp
   explicit MutableBoundedBitSpan(const MutableBitSpan other) : MutableBitSpan(other)
   {
     BLI_assert(is_bounded_span(*this));
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L409—L412</summary>
+
+<!-- original:a671e9c6631a0c:source/blender/blenlib/BLI_bit_span.hh:409:412 -->
+
+```cpp
+  explicit MutableBoundedBitSpan(const MutableBitSpan other) : MutableBitSpan(other)
+  {
+    BLI_assert(is_bounded_span(*this));
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
+
+<!-- annotated:d44d618990be90 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L413—L413</summary>
+
+<!-- original:d44d618990be90:source/blender/blenlib/BLI_bit_span.hh:413:413 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-d151d86212ca24e6"></a>
+
+### `blender::bits::MutableBoundedBitSpan::() const`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L414—L417。
+
+**教学注释版**
+
+<!-- annotated:0acd734f80fc5a -->
+
+```cpp
   operator BoundedBitSpan() const
   {
     return BoundedBitSpan{BitSpan(*this)};
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L414—L417</summary>
+
+<!-- original:0acd734f80fc5a:source/blender/blenlib/BLI_bit_span.hh:414:417 -->
+
+```cpp
+  operator BoundedBitSpan() const
+  {
+    return BoundedBitSpan{BitSpan(*this)};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return BoundedBitSpan{BitSpan(*this)};`
+
+**继续追踪实现**
+
+- `BitSpan` → [blender::bits::BitSpan::BitSpan · L142](19-BitSpan%E4%B8%8EBitVector.md#f-910f6695cf3e6c50)；[blender::bits::BitSpan::BitSpan · L144](19-BitSpan%E4%B8%8EBitVector.md#f-01ead3d0eaf1cbb8)；[blender::bits::BitSpan::BitSpan · L148](19-BitSpan%E4%B8%8EBitVector.md#f-424d11167d1bc782)。同名重载需按实参类型选择。
+
+<!-- annotated:c4db42a959b7c9 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L418—L418</summary>
+
+<!-- original:c4db42a959b7c9:source/blender/blenlib/BLI_bit_span.hh:418:418 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-07fa36a7229192a6"></a>
+
+### `blender::bits::MutableBoundedBitSpan::offset`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L419—L422。
+
+**教学注释版**
+
+<!-- annotated:1685b3c5649fe6 -->
+
+```cpp
   int64_t offset() const
   {
     return bit_range_.start();
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L419—L422</summary>
+
+<!-- original:1685b3c5649fe6:source/blender/blenlib/BLI_bit_span.hh:419:422 -->
+
+```cpp
+  int64_t offset() const
+  {
+    return bit_range_.start();
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return bit_range_.start();`
+
+**继续追踪实现**
+
+- `bit_range_.start` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L421。
+
+<!-- annotated:83562e5ffede20 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L423—L423</summary>
+
+<!-- original:83562e5ffede20:source/blender/blenlib/BLI_bit_span.hh:423:423 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-da3a6679a324bab1"></a>
+
+### `blender::bits::MutableBoundedBitSpan::full_ints_num`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L424—L427。
+
+**教学注释版**
+
+<!-- annotated:e5e4162a83179a -->
+
+```cpp
   int64_t full_ints_num() const
   {
     return bit_range_.size() >> BitToIntIndexShift;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L424—L427</summary>
+
+<!-- original:e5e4162a83179a:source/blender/blenlib/BLI_bit_span.hh:424:427 -->
+
+```cpp
+  int64_t full_ints_num() const
+  {
+    return bit_range_.size() >> BitToIntIndexShift;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return bit_range_.size() >> BitToIntIndexShift;`
+
+**继续追踪实现**
+
+- `bit_range_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L426。
+
+<!-- annotated:7602c32a809e50 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L428—L428</summary>
+
+<!-- original:7602c32a809e50:source/blender/blenlib/BLI_bit_span.hh:428:428 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-68367f9dd6744dc4"></a>
+
+### `blender::bits::MutableBoundedBitSpan::final_bits_num`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L429—L432。
+
+**教学注释版**
+
+<!-- annotated:8ec8feca93252c -->
+
+```cpp
   int64_t final_bits_num() const
   {
     return bit_range_.size() & BitIndexMask;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L429—L432</summary>
+
+<!-- original:8ec8feca93252c:source/blender/blenlib/BLI_bit_span.hh:429:432 -->
+
+```cpp
+  int64_t final_bits_num() const
+  {
+    return bit_range_.size() & BitIndexMask;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return bit_range_.size() & BitIndexMask;`
+
+**继续追踪实现**
+
+- `bit_range_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L431。
+
+<!-- annotated:c514c20dfa69fd -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L433—L433</summary>
+
+<!-- original:c514c20dfa69fd:source/blender/blenlib/BLI_bit_span.hh:433:433 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-f5930953c2d9944e"></a>
+
+### `blender::bits::MutableBoundedBitSpan::take_front`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L434—L437。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:38594b420fc6c4 -->
+
+```cpp
   MutableBoundedBitSpan take_front(const int64_t n) const
   {
     return {data_, bit_range_.take_front(n)};
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L434—L437</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
+<!-- original:38594b420fc6c4:source/blender/blenlib/BLI_bit_span.hh:434:437 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L395 | 声明或定义类型 `class MutableBoundedBitSpan : public MutableBitSpan`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L396 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L397 | 显式采用编译器生成的特殊成员行为：`MutableBoundedBitSpan() = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L399 | 出现调用或函数声明 `MutableBoundedBitSpan`，对应表达式为 `MutableBoundedBitSpan(BitInt *data, const int64_t size) : MutableBitSpan(data, size)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L400 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L401 | 断言约束 `BLI_assert(is_bounded_span(*this));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L402 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L404 | 出现调用或函数声明 `MutableBoundedBitSpan`，对应表达式为 `MutableBoundedBitSpan(BitInt *data, const IndexRange bit_range) : MutableBitSpan(data, bit_range)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L405 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L406 | 断言约束 `BLI_assert(is_bounded_span(*this));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L407 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L409 | 出现调用或函数声明 `MutableBoundedBitSpan`，对应表达式为 `explicit MutableBoundedBitSpan(const MutableBitSpan other) : MutableBitSpan(other)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L410 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L411 | 断言约束 `BLI_assert(is_bounded_span(*this));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L412 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L414 | 运算符重载声明、定义或显式调用：`operator BoundedBitSpan() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L415 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L416 | 返回表达式 `BoundedBitSpan{BitSpan(*this)}`。 |
-| L417 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L419 | 出现调用或函数声明 `offset`，对应表达式为 `int64_t offset() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L420 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L421 | 返回表达式 `bit_range_.start()`。 |
-| L422 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L424 | 出现调用或函数声明 `full_ints_num`，对应表达式为 `int64_t full_ints_num() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L425 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L426 | 返回表达式 `bit_range_.size() >> BitToIntIndexShift`。 |
-| L427 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L429 | 出现调用或函数声明 `final_bits_num`，对应表达式为 `int64_t final_bits_num() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L430 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L431 | 返回表达式 `bit_range_.size() & BitIndexMask`。 |
-| L432 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L434 | 出现调用或函数声明 `take_front`，对应表达式为 `MutableBoundedBitSpan take_front(const int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L435 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L436 | 返回表达式 `{data_, bit_range_.take_front(n)}`。 |
-| L437 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  MutableBoundedBitSpan take_front(const int64_t n) const
+  {
+    return {data_, bit_range_.take_front(n)};
+  }
+```
 
-### BLI_bit_span.hh：L438—L488
+</details>
 
-<!-- source:source/blender/blenlib/BLI_bit_span.hh:438:488 -->
+**结果出口**
+
+- `return {data_, bit_range_.take_front(n)};`
+
+**继续追踪实现**
+
+- `bit_range_.take_front` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L436。
+
+<!-- annotated:c5f28d4610aad3 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L438—L438</summary>
+
+<!-- original:c5f28d4610aad3:source/blender/blenlib/BLI_bit_span.hh:438:438 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-440832f6359e4588"></a>
+
+### `blender::bits::MutableBoundedBitSpan::as_span`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L439—L442。
+
+**教学注释版**
+
+<!-- annotated:4f446d15f71b58 -->
+
+```cpp
   BoundedBitSpan as_span() const
   {
     return BoundedBitSpan(data_, bit_range_);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L439—L442</summary>
+
+<!-- original:4f446d15f71b58:source/blender/blenlib/BLI_bit_span.hh:439:442 -->
+
+```cpp
+  BoundedBitSpan as_span() const
+  {
+    return BoundedBitSpan(data_, bit_range_);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return BoundedBitSpan(data_, bit_range_);`
+
+**继续追踪实现**
+
+- `BoundedBitSpan` → [blender::bits::BoundedBitSpan::BoundedBitSpan · L252](19-BitSpan%E4%B8%8EBitVector.md#f-32131d22e1d5bfb9)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L254](19-BitSpan%E4%B8%8EBitVector.md#f-4486a1f04b261177)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L259](19-BitSpan%E4%B8%8EBitVector.md#f-79f2490316451de0)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L264](19-BitSpan%E4%B8%8EBitVector.md#f-0264bf64a7ffe34e)。同名重载需按实参类型选择。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L443—L447
+
+<!-- annotated:a1c2bd468d82a7 -->
+
+```cpp
 
   void copy_from(const BitSpan other);
   void copy_from(const BoundedBitSpan other);
 };
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L443—L447</summary>
+
+<!-- original:a1c2bd468d82a7:source/blender/blenlib/BLI_bit_span.hh:443:447 -->
+
+```cpp
+
+  void copy_from(const BitSpan other);
+  void copy_from(const BoundedBitSpan other);
+};
+
+```
+
+</details>
+
+<a id="f-41ec4d2628969e47"></a>
+
+### `blender::bits::try_get_bounded_span`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L448—L458。
+
+接口参数：
+
+- `const BitSpan span`
+
+**教学注释版**
+
+<!-- annotated:d6efcad9690d34 -->
+
+```cpp
 inline std::optional<BoundedBitSpan> try_get_bounded_span(const BitSpan span)
 {
   if (is_bounded_span(span)) {
@@ -1119,11 +4278,86 @@ inline std::optional<BoundedBitSpan> try_get_bounded_span(const BitSpan span)
   }
   return std::nullopt;
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L448—L458</summary>
+
+<!-- original:d6efcad9690d34:source/blender/blenlib/BLI_bit_span.hh:448:458 -->
+
+```cpp
+inline std::optional<BoundedBitSpan> try_get_bounded_span(const BitSpan span)
+{
+  if (is_bounded_span(span)) {
+    return BoundedBitSpan(span);
+  }
+  if (span.bit_range().start() % BitsPerInt == 0) {
+    return BoundedBitSpan(span.data() + (span.bit_range().start() >> BitToIntIndexShift),
+                          span.size());
+  }
+  return std::nullopt;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return BoundedBitSpan(span);`
+- `return BoundedBitSpan(span.data() + (span.bit_range().start() >> BitToIntIndexShift),`
+- `return std::nullopt;`
+
+**继续追踪实现**
+
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
+- `BoundedBitSpan` → [blender::bits::BoundedBitSpan::BoundedBitSpan · L252](19-BitSpan%E4%B8%8EBitVector.md#f-32131d22e1d5bfb9)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L254](19-BitSpan%E4%B8%8EBitVector.md#f-4486a1f04b261177)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L259](19-BitSpan%E4%B8%8EBitVector.md#f-79f2490316451de0)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L264](19-BitSpan%E4%B8%8EBitVector.md#f-0264bf64a7ffe34e)。同名重载需按实参类型选择。
+- `span.bit_range().start` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L453。
+- `span.bit_range` → [blender::bits::BitSpan::bit_range · L203](19-BitSpan%E4%B8%8EBitVector.md#f-8752cfebfc5d5dc6)。
+- `span.data` → [blender::bits::BitSpan::data · L198](19-BitSpan%E4%B8%8EBitVector.md#f-7fb8ab932727dff6)。
+- `span.size` → [blender::bits::BitSpan::size · L151](19-BitSpan%E4%B8%8EBitVector.md#f-619593bac6a150f5)。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L459—L463
+
+<!-- annotated:3be6e576584d3a -->
+
+```cpp
 
 /**
  * Overloaded in BLI_bit_vector.hh. The purpose is to make passing #BitVector into bit span
  * operations more efficient (interpreting it as `BoundedBitSpan` instead of just `BitSpan`).
  */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L459—L463</summary>
+
+<!-- original:3be6e576584d3a:source/blender/blenlib/BLI_bit_span.hh:459:463 -->
+
+```cpp
+
+/**
+ * Overloaded in BLI_bit_vector.hh. The purpose is to make passing #BitVector into bit span
+ * operations more efficient (interpreting it as `BoundedBitSpan` instead of just `BitSpan`).
+ */
+```
+
+</details>
+
+<a id="f-6022c3f014aff6c7"></a>
+
+### `blender::bits::to_best_bit_span`
+
+实现位置：[source/blender/blenlib/BLI_bit_span.hh](../../../../../source/blender/blenlib/BLI_bit_span.hh) · L464—L472。
+
+接口参数：
+
+- `const T &data`
+
+**教学注释版**
+
+<!-- annotated:d5fcea6f1df583 -->
+
+```cpp
 template<typename T> inline T to_best_bit_span(const T &data)
 {
   static_assert(is_same_any_v<std::decay_t<T>,
@@ -1133,6 +4367,40 @@ template<typename T> inline T to_best_bit_span(const T &data)
                               MutableBoundedBitSpan>);
   return data;
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L464—L472</summary>
+
+<!-- original:d5fcea6f1df583:source/blender/blenlib/BLI_bit_span.hh:464:472 -->
+
+```cpp
+template<typename T> inline T to_best_bit_span(const T &data)
+{
+  static_assert(is_same_any_v<std::decay_t<T>,
+                              BitSpan,
+                              MutableBitSpan,
+                              BoundedBitSpan,
+                              MutableBoundedBitSpan>);
+  return data;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return data;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_bit_span.hh L473—L488
+
+<!-- annotated:e720a5feb78d61 -->
+
+```cpp
 
 template<typename... Args>
 constexpr bool all_bounded_spans =
@@ -1151,54 +4419,37 @@ using bits::MutableBoundedBitSpan;
 }  // namespace blender
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_span.hh · L473—L488</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
+<!-- original:e720a5feb78d61:source/blender/blenlib/BLI_bit_span.hh:473:488 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L439 | 出现调用或函数声明 `as_span`，对应表达式为 `BoundedBitSpan as_span() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L440 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L441 | 返回表达式 `BoundedBitSpan(data_, bit_range_)`。 |
-| L442 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L444 | 声明接口 `void copy_from(const BitSpan other)`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L445 | 声明接口 `void copy_from(const BoundedBitSpan other)`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L446 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L448 | 出现调用或函数声明 `try_get_bounded_span`，对应表达式为 `inline std::optional<BoundedBitSpan> try_get_bounded_span(const BitSpan span)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L449 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L450 | 判断 `is_bounded_span(span)`，成立时进入本分支，否则继续后续路径。 |
-| L451 | 返回表达式 `BoundedBitSpan(span)`。 |
-| L452 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L453 | 判断 `span.bit_range().start() % BitsPerInt == 0`，成立时进入本分支，否则继续后续路径。 |
-| L454 | 返回表达式 `BoundedBitSpan(span.data() + (span.bit_range().start() >> BitToIntIndexShift),`。 |
-| L455 | 出现调用或函数声明 `size`，对应表达式为 `span.size());`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L456 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L457 | 返回表达式 `std::nullopt`。 |
-| L458 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L464 | 声明模板参数 `template<typename T> inline T to_best_bit_span(const T &data)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L465 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L466 | 在编译期检查 `static_assert(is_same_any_v<std::decay_t<T>,`；条件失败导致编译错误，不存在运行时错误恢复路径。 |
-| L467 | 本行是连续声明或表达式的一部分：`BitSpan,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L468 | 本行是连续声明或表达式的一部分：`MutableBitSpan,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L469 | 本行是连续声明或表达式的一部分：`BoundedBitSpan,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L470 | 声明成员、局部对象或完成语句 `MutableBoundedBitSpan>)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L471 | 返回表达式 `data`。 |
-| L472 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L474 | 声明模板参数 `template<typename... Args>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L475 | 把右侧 `` 用于初始化或更新左侧 `constexpr bool all_bounded_spans`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L476 | 声明成员、局部对象或完成语句 `(is_same_any_v<std::decay_t<Args>, BoundedBitSpan, MutableBoundedBitSpan> && ...)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L478 | 运算符重载声明、定义或显式调用：`std::ostream &operator<<(std::ostream &stream, const BitSpan &span);`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L479 | 运算符重载声明、定义或显式调用：`std::ostream &operator<<(std::ostream &stream, const MutableBitSpan &span);`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L481 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L483 | 定义类型别名 `using bits::BitSpan`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L484 | 定义类型别名 `using bits::BoundedBitSpan`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L485 | 定义类型别名 `using bits::MutableBitSpan`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L486 | 定义类型别名 `using bits::MutableBoundedBitSpan`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L488 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
 
-### BLI_bit_vector.hh：L1—L43
+template<typename... Args>
+constexpr bool all_bounded_spans =
+    (is_same_any_v<std::decay_t<Args>, BoundedBitSpan, MutableBoundedBitSpan> && ...);
 
-<!-- source:source/blender/blenlib/BLI_bit_vector.hh:1:43 -->
+std::ostream &operator<<(std::ostream &stream, const BitSpan &span);
+std::ostream &operator<<(std::ostream &stream, const MutableBitSpan &span);
+
+}  // namespace bits
+
+using bits::BitSpan;
+using bits::BoundedBitSpan;
+using bits::MutableBitSpan;
+using bits::MutableBoundedBitSpan;
+
+}  // namespace blender
+```
+
+</details>
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L1—L60
+
+<a id="t-b0b102ab0ac5"></a>
+
+<!-- annotated:bef7a0eae96b6a -->
 
 ```cpp
 /* SPDX-FileCopyrightText: 2023 Blender Authors
@@ -1244,21 +4495,6 @@ using bits::MutableBoundedBitSpan;
 #include "BLI_bit_bool_conversion.hh"
 #include "BLI_bit_span.hh"
 #include "BLI_span.hh"
-```
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L5 | 防止同一头文件在一个翻译单元中重复展开；不控制多个源文件之间的链接或对象寿命。 |
-| L40 | 引入编译依赖 "BLI_allocator.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L41 | 引入编译依赖 "BLI_bit_bool_conversion.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L42 | 引入编译依赖 "BLI_bit_span.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L43 | 引入编译依赖 "BLI_span.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-
-### BLI_bit_vector.hh：L44—L91
-
-<!-- source:source/blender/blenlib/BLI_bit_vector.hh:44:91 -->
-
-```cpp
 
 namespace blender {
 
@@ -1276,10 +4512,126 @@ template<
     typename Allocator = GuardedAllocator>
 class BitVector {
  private:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L1—L60</summary>
+
+<!-- original:bef7a0eae96b6a:source/blender/blenlib/BLI_bit_vector.hh:1:60 -->
+
+```cpp
+/* SPDX-FileCopyrightText: 2023 Blender Authors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
+#pragma once
+
+/** \file
+ * \ingroup bli
+ *
+ * A `BitVector` is a dynamically growing contiguous arrays of bits. Its main purpose is
+ * to provide a compact way to map indices to bools. It requires 8 times less memory compared to a
+ * `Vector<bool>`.
+ *
+ * Advantages of using a bit- instead of byte-vector are:
+ * - Uses less memory.
+ * - Allows checking the state of many elements at the same time (8 times more bits than bytes fit
+ *   into a CPU register). This can improve performance.
+ *
+ * The compact nature of storing bools in individual bits has some downsides that have to be kept
+ * in mind:
+ * - Writing to separate bits in the same int is not thread-safe. Therefore, an existing vector of
+ *   bool can't easily be replaced with a bit vector, if it is written to from multiple threads.
+ *   Read-only access from multiple threads is fine though.
+ * - Writing individual elements is more expensive when the array is in cache already. That is
+ *   because changing a bit is always a read-modify-write operation on the int the bit resides in.
+ * - Reading individual elements is more expensive when the array is in cache already. That is
+ *   because additional bit-wise operations have to be applied after the corresponding int is
+ *   read.
+ *
+ * Comparison to `std::vector<bool>`:
+ * - `BitVector` has an interface that is more optimized for dealing with bits.
+ * - `BitVector` has an inline buffer that is used to avoid allocations when the vector is
+ *   small.
+ *
+ * Comparison to `BLI_bitmap`:
+ * - `BitVector` offers a more C++ friendly interface.
+ * - `BLI_bitmap` should only be used in C code that can not use `BitVector`.
+ */
+
+#include "BLI_allocator.hh"
+#include "BLI_bit_bool_conversion.hh"
+#include "BLI_bit_span.hh"
+#include "BLI_span.hh"
+
+namespace blender {
+
+namespace bits {
+
+template<
+    /**
+     * Number of bits that can be stored in the vector without doing an allocation.
+     */
+    int64_t InlineBufferCapacity = 64,
+    /**
+     * The allocator used by this vector. Should rarely be changed, except when you don't want that
+     * MEM_* is used internally.
+     */
+    typename Allocator = GuardedAllocator>
+class BitVector {
+ private:
+```
+
+</details>
+
+<a id="f-1a38d1364142c5e6"></a>
+
+### `blender::bits::BitVector::required_ints_for_bits`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L61—L64。
+
+接口参数：
+
+- `const int64_t number_of_bits`
+
+**教学注释版**
+
+<!-- annotated:6c60ac96848596 -->
+
+```cpp
   static constexpr int64_t required_ints_for_bits(const int64_t number_of_bits)
   {
     return (number_of_bits + BitsPerInt - 1) / BitsPerInt;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L61—L64</summary>
+
+<!-- original:6c60ac96848596:source/blender/blenlib/BLI_bit_vector.hh:61:64 -->
+
+```cpp
+  static constexpr int64_t required_ints_for_bits(const int64_t number_of_bits)
+  {
+    return (number_of_bits + BitsPerInt - 1) / BitsPerInt;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return (number_of_bits + BitsPerInt - 1) / BitsPerInt;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L65—L88
+
+<!-- annotated:64f3dd55f778b5 -->
+
+```cpp
 
   static constexpr int64_t IntsInInlineBuffer = required_ints_for_bits(InlineBufferCapacity);
   static constexpr int64_t BitsInInlineBuffer = IntsInInlineBuffer * BitsPerInt;
@@ -1304,55 +4656,178 @@ class BitVector {
   BLI_NO_UNIQUE_ADDRESS TypedBuffer<BitInt, IntsInInlineBuffer> inline_buffer_;
 
  public:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L65—L88</summary>
+
+<!-- original:64f3dd55f778b5:source/blender/blenlib/BLI_bit_vector.hh:65:88 -->
+
+```cpp
+
+  static constexpr int64_t IntsInInlineBuffer = required_ints_for_bits(InlineBufferCapacity);
+  static constexpr int64_t BitsInInlineBuffer = IntsInInlineBuffer * BitsPerInt;
+  static constexpr int64_t AllocationAlignment = alignof(BitInt);
+
+  /**
+   * Points to the first integer used by the vector. It might point to the memory in the inline
+   * buffer.
+   */
+  BitInt *data_;
+
+  /** Current size of the vector in bits. */
+  int64_t size_in_bits_;
+
+  /** Number of bits that fit into the vector until a reallocation has to occur. */
+  int64_t capacity_in_bits_;
+
+  /** Used for allocations when the inline buffer is too small. */
+  BLI_NO_UNIQUE_ADDRESS Allocator allocator_;
+
+  /** Contains the bits as long as the vector is small enough. */
+  BLI_NO_UNIQUE_ADDRESS TypedBuffer<BitInt, IntsInInlineBuffer> inline_buffer_;
+
+ public:
+```
+
+</details>
+
+<a id="f-90975b5628d14a10"></a>
+
+### `blender::bits::BitVector::BitVector`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L89—L95。
+
+接口参数：
+
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:6ded4cd4164ecc -->
+
+```cpp
   BitVector(Allocator allocator = {}) noexcept : allocator_(allocator)
   {
     data_ = inline_buffer_;
+    size_in_bits_ = 0;
+    capacity_in_bits_ = BitsInInlineBuffer;
+    // [讲解] uninitialized_fill_n：从同一个value复制构造目标n个T。
+    uninitialized_fill_n(data_, IntsInInlineBuffer, BitInt(0));
+  }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L89—L95</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。
-- `inline_buffer_`：容器对象内部的缓冲区，不能像堆缓冲那样直接交给另一个对象。
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L45 | 把后续声明放入 blender 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L47 | 把后续声明放入 bits 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L49 | 声明模板参数 `template<`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L53 | 把右侧 `64,` 用于初始化或更新左侧 `int64_t InlineBufferCapacity`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L58 | 把右侧 `GuardedAllocator>` 用于初始化或更新左侧 `typename Allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L59 | 声明或定义类型 `class BitVector`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L60 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L61 | 出现调用或函数声明 `required_ints_for_bits`，对应表达式为 `static constexpr int64_t required_ints_for_bits(const int64_t number_of_bits)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L62 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L63 | 返回表达式 `(number_of_bits + BitsPerInt - 1) / BitsPerInt`。 |
-| L64 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L66 | 把右侧 `required_ints_for_bits(InlineBufferCapacity)` 用于初始化或更新左侧 `static constexpr int64_t IntsInInlineBuffer`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L67 | 把右侧 `IntsInInlineBuffer * BitsPerInt` 用于初始化或更新左侧 `static constexpr int64_t BitsInInlineBuffer`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L68 | 把右侧 `alignof(BitInt)` 用于初始化或更新左侧 `static constexpr int64_t AllocationAlignment`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L74 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `BitInt *data_`，不要把地址、数量或状态混用。 |
-| L77 | 声明成员、局部对象或完成语句 `int64_t size_in_bits_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L80 | 声明成员、局部对象或完成语句 `int64_t capacity_in_bits_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L83 | 本行涉及 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。按此语义解读 `BLI_NO_UNIQUE_ADDRESS Allocator allocator_`，不要把地址、数量或状态混用。 |
-| L86 | 本行涉及 `inline_buffer_`：容器对象内部的缓冲区，不能像堆缓冲那样直接交给另一个对象。按此语义解读 `BLI_NO_UNIQUE_ADDRESS TypedBuffer<BitInt, IntsInInlineBuffer> inline_buffer_`，不要把地址、数量或状态混用。 |
-| L88 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L89 | 建立或更新 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。本行的具体值关系为 `BitVector(Allocator allocator = {}) noexcept : allocator_(allocator)`；对照更新前后相应范围或状态是否一致。 |
-| L90 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L91 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = inline_buffer_`；对照更新前后相应范围或状态是否一致。 |
-
-### BLI_bit_vector.hh：L92—L147
-
-<!-- source:source/blender/blenlib/BLI_bit_vector.hh:92:147 -->
+<!-- original:6ded4cd4164ecc:source/blender/blenlib/BLI_bit_vector.hh:89:95 -->
 
 ```cpp
+  BitVector(Allocator allocator = {}) noexcept : allocator_(allocator)
+  {
+    data_ = inline_buffer_;
     size_in_bits_ = 0;
     capacity_in_bits_ = BitsInInlineBuffer;
     uninitialized_fill_n(data_, IntsInInlineBuffer, BitInt(0));
   }
+```
 
+</details>
+
+**沿实际写入检查状态**
+
+- `data_ = inline_buffer_;`
+- `size_in_bits_ = 0;`
+- `capacity_in_bits_ = BitsInInlineBuffer;`
+
+**继续追踪实现**
+
+- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-020ca78eff5f9227)。
+- `BitInt` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L94。
+
+<!-- annotated:bac455697c1a7d -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L96—L96</summary>
+
+<!-- original:bac455697c1a7d:source/blender/blenlib/BLI_bit_vector.hh:96:96 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9f2d13628c1fd34c"></a>
+
+### `blender::bits::BitVector::BitVector`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L97—L97。
+
+接口参数：
+
+- `NoExceptConstructor`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:0f0bb0240f18f9 -->
+
+```cpp
   BitVector(NoExceptConstructor, Allocator allocator = {}) noexcept : BitVector(allocator) {}
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L97—L97</summary>
+
+<!-- original:0f0bb0240f18f9:source/blender/blenlib/BLI_bit_vector.hh:97:97 -->
+
+```cpp
+  BitVector(NoExceptConstructor, Allocator allocator = {}) noexcept : BitVector(allocator) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:b793f9fe7bba03 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L98—L98</summary>
+
+<!-- original:b793f9fe7bba03:source/blender/blenlib/BLI_bit_vector.hh:98:98 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-6370d12fe2a8e1a6"></a>
+
+### `blender::bits::BitVector::BitVector`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L99—L115。
+
+接口参数：
+
+- `const BoundedBitSpan span`
+
+**教学注释版**
+
+<!-- annotated:557c15d5bf71a7 -->
+
+```cpp
   BitVector(const BoundedBitSpan span) : BitVector(NoExceptConstructor())
   {
     const int64_t ints_to_copy = required_ints_for_bits(span.size());
@@ -1370,12 +4845,143 @@ class BitVector {
     size_in_bits_ = span.size();
     uninitialized_copy_n(span.data(), ints_to_copy, data_);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L99—L115</summary>
+
+<!-- original:557c15d5bf71a7:source/blender/blenlib/BLI_bit_vector.hh:99:115 -->
+
+```cpp
+  BitVector(const BoundedBitSpan span) : BitVector(NoExceptConstructor())
+  {
+    const int64_t ints_to_copy = required_ints_for_bits(span.size());
+    if (span.size() <= BitsInInlineBuffer) {
+      /* The data is copied into the owned inline buffer. */
+      data_ = inline_buffer_;
+      capacity_in_bits_ = BitsInInlineBuffer;
+    }
+    else {
+      /* Allocate a new array because the inline buffer is too small. */
+      data_ = static_cast<BitInt *>(
+          allocator_.allocate(ints_to_copy * sizeof(BitInt), AllocationAlignment, __func__));
+      capacity_in_bits_ = ints_to_copy * BitsPerInt;
+    }
+    size_in_bits_ = span.size();
+    uninitialized_copy_n(span.data(), ints_to_copy, data_);
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `data_ = inline_buffer_;`
+- `capacity_in_bits_ = BitsInInlineBuffer;`
+- `data_ = static_cast<BitInt *>(`
+- `capacity_in_bits_ = ints_to_copy * BitsPerInt;`
+- `size_in_bits_ = span.size();`
+
+**继续追踪实现**
+
+- `required_ints_for_bits` → [blender::bits::BitVector::required_ints_for_bits · L61](19-BitSpan%E4%B8%8EBitVector.md#f-1a38d1364142c5e6)。
+- `span.size` → [blender::bits::BitVector::size · L198](19-BitSpan%E4%B8%8EBitVector.md#f-a7b6c5beecee4b89)。
+- `allocator_.allocate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L110。
+- `uninitialized_copy_n` → [blender::uninitialized_copy_n · L53](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-6cd63ebede164cd2)。
+- `span.data` → [blender::bits::BitVector::data · L216](19-BitSpan%E4%B8%8EBitVector.md#f-a9301c662d0e70bf)；[blender::bits::BitVector::data · L221](19-BitSpan%E4%B8%8EBitVector.md#f-08d0139b117e5585)。同名重载需按实参类型选择。
+
+<!-- annotated:85b2004b6c9cec -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L116—L116</summary>
+
+<!-- original:85b2004b6c9cec:source/blender/blenlib/BLI_bit_vector.hh:116:116 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-1775d911682b513c"></a>
+
+### `blender::bits::BitVector::BitVector`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L117—L120。
+
+接口参数：
+
+- `const BitVector &other`
+
+**教学注释版**
+
+<!-- annotated:1d2c75b25d353a -->
+
+```cpp
   BitVector(const BitVector &other) : BitVector(BoundedBitSpan(other))
   {
     allocator_ = other.allocator_;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L117—L120</summary>
+
+<!-- original:1d2c75b25d353a:source/blender/blenlib/BLI_bit_vector.hh:117:120 -->
+
+```cpp
+  BitVector(const BitVector &other) : BitVector(BoundedBitSpan(other))
+  {
+    allocator_ = other.allocator_;
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `allocator_ = other.allocator_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:1052210123560b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L121—L121</summary>
+
+<!-- original:1052210123560b:source/blender/blenlib/BLI_bit_vector.hh:121:121 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-dfea00b77bfa0a09"></a>
+
+### `blender::bits::BitVector::BitVector`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L122—L147。
+
+接口参数：
+
+- `BitVector &&other`
+
+**教学注释版**
+
+<!-- annotated:02ae057f83df0c -->
+
+```cpp
   BitVector(BitVector &&other) noexcept : BitVector(NoExceptConstructor(), other.allocator_)
   {
     if (other.is_inline()) {
@@ -1404,203 +5010,898 @@ class BitVector {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L122—L147</summary>
 
-- `uninitialized_copy_n`：把源值复制构造到未初始化的目标区间；目标已有对象时不能直接用此操作替代赋值。
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。
-- `inline_buffer_`：容器对象内部的缓冲区，不能像堆缓冲那样直接交给另一个对象。
+<!-- original:02ae057f83df0c:source/blender/blenlib/BLI_bit_vector.hh:122:147 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L92 | 把右侧 `0` 用于初始化或更新左侧 `size_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L93 | 把右侧 `BitsInInlineBuffer` 用于初始化或更新左侧 `capacity_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L94 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `uninitialized_fill_n(data_, IntsInInlineBuffer, BitInt(0))`，不要把地址、数量或状态混用。 |
-| L95 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L97 | 把右侧 `{}) noexcept : BitVector(allocator) {}` 用于初始化或更新左侧 `BitVector(NoExceptConstructor, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L99 | 出现调用或函数声明 `BitVector`，对应表达式为 `BitVector(const BoundedBitSpan span) : BitVector(NoExceptConstructor())`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L100 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L101 | 把右侧 `required_ints_for_bits(span.size())` 用于初始化或更新左侧 `const int64_t ints_to_copy`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L102 | 判断 `span.size() <= BitsInInlineBuffer`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L104 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = inline_buffer_`；对照更新前后相应范围或状态是否一致。 |
-| L105 | 把右侧 `BitsInInlineBuffer` 用于初始化或更新左侧 `capacity_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L106 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L107 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L109 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = static_cast<BitInt *>(`；对照更新前后相应范围或状态是否一致。 |
-| L110 | 本行涉及 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。按此语义解读 `allocator_.allocate(ints_to_copy * sizeof(BitInt), AllocationAlignment, __func__))`，不要把地址、数量或状态混用。 |
-| L111 | 把右侧 `ints_to_copy * BitsPerInt` 用于初始化或更新左侧 `capacity_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L112 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L113 | 把右侧 `span.size()` 用于初始化或更新左侧 `size_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L114 | 本行使用 `uninitialized_copy_n`：把源值复制构造到未初始化的目标区间；目标已有对象时不能直接用此操作替代赋值。 |
-| L115 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L117 | 出现调用或函数声明 `BitVector`，对应表达式为 `BitVector(const BitVector &other) : BitVector(BoundedBitSpan(other))`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L118 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L119 | 建立或更新 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。本行的具体值关系为 `allocator_ = other.allocator_`；对照更新前后相应范围或状态是否一致。 |
-| L120 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L122 | 本行涉及 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。按此语义解读 `BitVector(BitVector &&other) noexcept : BitVector(NoExceptConstructor(), other.allocator_)`，不要把地址、数量或状态混用。 |
-| L123 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L124 | 判断 `other.is_inline()`，成立时进入本分支，否则继续后续路径。 |
-| L128 | 把右侧 `IntsInInlineBuffer` 用于初始化或更新左侧 `int64_t ints_to_copy`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L129 | 编译期条件分支 `if constexpr (IntsInInlineBuffer > 8)`。按实例化类型选择相应实现；被舍弃分支和运行期if具有不同检查规则，不能当作运行时输入验证。 |
-| L131 | 把右侧 `other.used_ints_amount()` 用于初始化或更新左侧 `ints_to_copy`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L132 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L133 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = inline_buffer_`；对照更新前后相应范围或状态是否一致。 |
-| L134 | 本行使用 `uninitialized_copy_n`：把源值复制构造到未初始化的目标区间；目标已有对象时不能直接用此操作替代赋值。 |
-| L135 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L136 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L138 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = other.data_`；对照更新前后相应范围或状态是否一致。 |
-| L139 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L140 | 把右侧 `other.size_in_bits_` 用于初始化或更新左侧 `size_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L141 | 把右侧 `other.capacity_in_bits_` 用于初始化或更新左侧 `capacity_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L144 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `other.data_ = other.inline_buffer_`；对照更新前后相应范围或状态是否一致。 |
-| L145 | 把右侧 `0` 用于初始化或更新左侧 `other.size_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L146 | 把右侧 `BitsInInlineBuffer` 用于初始化或更新左侧 `other.capacity_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L147 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  BitVector(BitVector &&other) noexcept : BitVector(NoExceptConstructor(), other.allocator_)
+  {
+    if (other.is_inline()) {
+      /* Copy the data into the inline buffer. */
+      /* For small inline buffers, always copy all the bits because checking how many bits to copy
+       * would add additional overhead. */
+      int64_t ints_to_copy = IntsInInlineBuffer;
+      if constexpr (IntsInInlineBuffer > 8) {
+        /* Avoid copying too much unnecessary data in case the inline buffer is large. */
+        ints_to_copy = other.used_ints_amount();
+      }
+      data_ = inline_buffer_;
+      uninitialized_copy_n(other.data_, ints_to_copy, data_);
+    }
+    else {
+      /* Steal the pointer. */
+      data_ = other.data_;
+    }
+    size_in_bits_ = other.size_in_bits_;
+    capacity_in_bits_ = other.capacity_in_bits_;
 
-### BLI_bit_vector.hh：L148—L193
+    /* Clear the other vector because it has been moved from. */
+    other.data_ = other.inline_buffer_;
+    other.size_in_bits_ = 0;
+    other.capacity_in_bits_ = BitsInInlineBuffer;
+  }
+```
 
-<!-- source:source/blender/blenlib/BLI_bit_vector.hh:148:193 -->
+</details>
+
+**沿实际写入检查状态**
+
+- `ints_to_copy = other.used_ints_amount();`
+- `data_ = inline_buffer_;`
+- `data_ = other.data_;`
+- `size_in_bits_ = other.size_in_bits_;`
+- `capacity_in_bits_ = other.capacity_in_bits_;`
+- `other.data_ = other.inline_buffer_;`
+- `other.size_in_bits_ = 0;`
+- `other.capacity_in_bits_ = BitsInInlineBuffer;`
+
+**继续追踪实现**
+
+- `other.is_inline` → [blender::bits::BitVector::is_inline · L379](19-BitSpan%E4%B8%8EBitVector.md#f-f5129a79970cea79)。
+- `other.used_ints_amount` → [blender::bits::BitVector::used_ints_amount · L384](19-BitSpan%E4%B8%8EBitVector.md#f-c163a82e76b7acb7)。
+- `uninitialized_copy_n` → [blender::uninitialized_copy_n · L53](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-6cd63ebede164cd2)。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L148—L151
+
+<!-- annotated:bfa9a3745fb995 -->
 
 ```cpp
 
   /**
    * Create a new vector with the given size and fill it with #value.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L148—L151</summary>
+
+<!-- original:bfa9a3745fb995:source/blender/blenlib/BLI_bit_vector.hh:148:151 -->
+
+```cpp
+
+  /**
+   * Create a new vector with the given size and fill it with #value.
+   */
+```
+
+</details>
+
+<a id="f-2504a5a062cfd92b"></a>
+
+### `blender::bits::BitVector::BitVector`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L152—L156。
+
+接口参数：
+
+- `const int64_t size_in_bits`
+- `const bool value = false`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:0f92e15d24691c -->
+
+```cpp
   BitVector(const int64_t size_in_bits, const bool value = false, Allocator allocator = {})
       : BitVector(NoExceptConstructor(), allocator)
   {
     this->resize(size_in_bits, value);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L152—L156</summary>
+
+<!-- original:0f92e15d24691c:source/blender/blenlib/BLI_bit_vector.hh:152:156 -->
+
+```cpp
+  BitVector(const int64_t size_in_bits, const bool value = false, Allocator allocator = {})
+      : BitVector(NoExceptConstructor(), allocator)
+  {
+    this->resize(size_in_bits, value);
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->resize` → [blender::bits::BitVector::resize · L286](19-BitSpan%E4%B8%8EBitVector.md#f-eeab855041750a13)。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L157—L160
+
+<!-- annotated:0a98f25756c49b -->
+
+```cpp
 
   /**
    * Create a bit vector based on an array of bools. Each byte of the input array maps to one bit.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L157—L160</summary>
+
+<!-- original:0a98f25756c49b:source/blender/blenlib/BLI_bit_vector.hh:157:160 -->
+
+```cpp
+
+  /**
+   * Create a bit vector based on an array of bools. Each byte of the input array maps to one bit.
+   */
+```
+
+</details>
+
+<a id="f-bde2d7db9a78cc54"></a>
+
+### `blender::bits::BitVector::BitVector`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L161—L166。
+
+接口参数：
+
+- `const Span<bool> values`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:cfc5cf0d737552 -->
+
+```cpp
+  explicit BitVector(const Span<bool> values, Allocator allocator = {})
+      : BitVector(NoExceptConstructor(), allocator)
+  {
+    // [讲解] values.size：查询视图长度或生成对应有效索引区间。
+    this->resize(values.size(), false);
+    or_bools_into_bits(values, *this);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L161—L166</summary>
+
+<!-- original:cfc5cf0d737552:source/blender/blenlib/BLI_bit_vector.hh:161:166 -->
+
+```cpp
   explicit BitVector(const Span<bool> values, Allocator allocator = {})
       : BitVector(NoExceptConstructor(), allocator)
   {
     this->resize(values.size(), false);
     or_bools_into_bits(values, *this);
   }
+```
 
+</details>
+
+**继续追踪实现**
+
+- `this->resize` → [blender::bits::BitVector::resize · L286](19-BitSpan%E4%B8%8EBitVector.md#f-eeab855041750a13)。
+- `values.size` → [blender::Span::size · L256](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
+- `or_bools_into_bits` → [blender::bits::or_bools_into_bits · L88](%E4%BE%9D%E8%B5%96-bit_bool_conversion-6a719a.md#f-6ecebb0659e9185a)。
+
+<!-- annotated:0a210f2f21fffa -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L167—L167</summary>
+
+<!-- original:0a210f2f21fffa:source/blender/blenlib/BLI_bit_vector.hh:167:167 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8c2b889adbc4e32d"></a>
+
+### `blender::bits::BitVector::~BitVector`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L168—L173。
+
+**教学注释版**
+
+<!-- annotated:bc1358912302d3 -->
+
+```cpp
   ~BitVector()
   {
     if (!this->is_inline()) {
       allocator_.deallocate(data_);
     }
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L168—L173</summary>
+
+<!-- original:bc1358912302d3:source/blender/blenlib/BLI_bit_vector.hh:168:173 -->
+
+```cpp
+  ~BitVector()
+  {
+    if (!this->is_inline()) {
+      allocator_.deallocate(data_);
+    }
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->is_inline` → [blender::bits::BitVector::is_inline · L379](19-BitSpan%E4%B8%8EBitVector.md#f-f5129a79970cea79)。
+- `allocator_.deallocate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L171。
+
+<!-- annotated:abdc71aafbe645 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L174—L174</summary>
+
+<!-- original:abdc71aafbe645:source/blender/blenlib/BLI_bit_vector.hh:174:174 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-777eb0d9648b3c8c"></a>
+
+### `blender::bits::BitVector::operator=`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L175—L178。
+
+接口参数：
+
+- `const BitVector &other`
+
+**教学注释版**
+
+<!-- annotated:922bb98250f88a -->
+
+```cpp
   BitVector &operator=(const BitVector &other)
   {
     return copy_assign_container(*this, other);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L175—L178</summary>
+
+<!-- original:922bb98250f88a:source/blender/blenlib/BLI_bit_vector.hh:175:178 -->
+
+```cpp
+  BitVector &operator=(const BitVector &other)
+  {
+    return copy_assign_container(*this, other);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return copy_assign_container(*this, other);`
+
+**继续追踪实现**
+
+- `copy_assign_container` → [blender::copy_assign_container · L284](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-546a45b4d8b5ab44)。
+
+<!-- annotated:a66b44edd1c6f0 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L179—L179</summary>
+
+<!-- original:a66b44edd1c6f0:source/blender/blenlib/BLI_bit_vector.hh:179:179 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-625c650255dc5a79"></a>
+
+### `blender::bits::BitVector::operator=`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L180—L183。
+
+接口参数：
+
+- `BitVector &&other`
+
+**教学注释版**
+
+<!-- annotated:a2747b6ad159fe -->
+
+```cpp
+  BitVector &operator=(BitVector &&other)
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    return move_assign_container(*this, std::move(other));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L180—L183</summary>
+
+<!-- original:a2747b6ad159fe:source/blender/blenlib/BLI_bit_vector.hh:180:183 -->
+
+```cpp
   BitVector &operator=(BitVector &&other)
   {
     return move_assign_container(*this, std::move(other));
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return move_assign_container(*this, std::move(other));`
+
+**继续追踪实现**
+
+- `move_assign_container` → [blender::move_assign_container · L300](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-5144b56be86e6f42)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<!-- annotated:16d4c141630804 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L184—L184</summary>
+
+<!-- original:16d4c141630804:source/blender/blenlib/BLI_bit_vector.hh:184:184 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-254764265cfc7259"></a>
+
+### `blender::bits::BitVector::() const`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L185—L188。
+
+**教学注释版**
+
+<!-- annotated:8b3ec3c213b253 -->
+
+```cpp
   operator BoundedBitSpan() const
   {
     return {data_, IndexRange(size_in_bits_)};
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L185—L188</summary>
+
+<!-- original:8b3ec3c213b253:source/blender/blenlib/BLI_bit_vector.hh:185:188 -->
+
+```cpp
+  operator BoundedBitSpan() const
+  {
+    return {data_, IndexRange(size_in_bits_)};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, IndexRange(size_in_bits_)};`
+
+**继续追踪实现**
+
+- `IndexRange` → [blender::IndexRange](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+
+<!-- annotated:db875ce87b1240 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L189—L189</summary>
+
+<!-- original:db875ce87b1240:source/blender/blenlib/BLI_bit_vector.hh:189:189 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-da7e8aa00c4221eb"></a>
+
+### `blender::bits::BitVector::()`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L190—L193。
+
+**教学注释版**
+
+<!-- annotated:553e0316471b14 -->
+
+```cpp
   operator MutableBoundedBitSpan()
   {
     return {data_, IndexRange(size_in_bits_)};
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L190—L193</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。
+<!-- original:553e0316471b14:source/blender/blenlib/BLI_bit_vector.hh:190:193 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L152 | 把右侧 `false, Allocator allocator = {})` 用于初始化或更新左侧 `BitVector(const int64_t size_in_bits, const bool value`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L153 | 出现调用或函数声明 `BitVector`，对应表达式为 `: BitVector(NoExceptConstructor(), allocator)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L154 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L155 | 出现调用或函数声明 `resize`，对应表达式为 `this->resize(size_in_bits, value);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L156 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L161 | 把右侧 `{})` 用于初始化或更新左侧 `explicit BitVector(const Span<bool> values, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L162 | 出现调用或函数声明 `BitVector`，对应表达式为 `: BitVector(NoExceptConstructor(), allocator)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L163 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L164 | 出现调用或函数声明 `resize`，对应表达式为 `this->resize(values.size(), false);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L165 | 出现调用或函数声明 `or_bools_into_bits`，对应表达式为 `or_bools_into_bits(values, *this);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L166 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L168 | 涉及析构接口或显式析构：`~BitVector()`。检查目标对象已成功构造，且资源不会在另一条清理路径再次销毁。 |
-| L169 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L170 | 判断 `!this->is_inline()`，成立时进入本分支，否则继续后续路径。 |
-| L171 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `allocator_.deallocate(data_)`，不要把地址、数量或状态混用。 |
-| L172 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L173 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L175 | 运算符重载声明、定义或显式调用：`BitVector &operator=(const BitVector &other)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L176 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L177 | 返回表达式 `copy_assign_container(*this, other)`。 |
-| L178 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L180 | 运算符重载声明、定义或显式调用：`BitVector &operator=(BitVector &&other)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L181 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L182 | 返回表达式 `move_assign_container(*this, std::move(other))`。 |
-| L183 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L185 | 运算符重载声明、定义或显式调用：`operator BoundedBitSpan() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L186 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L187 | 返回表达式 `{data_, IndexRange(size_in_bits_)}`。 |
-| L188 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L190 | 运算符重载声明、定义或显式调用：`operator MutableBoundedBitSpan()`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L191 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L192 | 返回表达式 `{data_, IndexRange(size_in_bits_)}`。 |
-| L193 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  operator MutableBoundedBitSpan()
+  {
+    return {data_, IndexRange(size_in_bits_)};
+  }
+```
 
-### BLI_bit_vector.hh：L194—L244
+</details>
 
-<!-- source:source/blender/blenlib/BLI_bit_vector.hh:194:244 -->
+**结果出口**
+
+- `return {data_, IndexRange(size_in_bits_)};`
+
+**继续追踪实现**
+
+- `IndexRange` → [blender::IndexRange](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L194—L197
+
+<!-- annotated:6d6ba1a85bc18c -->
 
 ```cpp
 
   /**
    * Number of bits in the bit vector.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L194—L197</summary>
+
+<!-- original:6d6ba1a85bc18c:source/blender/blenlib/BLI_bit_vector.hh:194:197 -->
+
+```cpp
+
+  /**
+   * Number of bits in the bit vector.
+   */
+```
+
+</details>
+
+<a id="f-a7b6c5beecee4b89"></a>
+
+### `blender::bits::BitVector::size`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L198—L201。
+
+**教学注释版**
+
+<!-- annotated:bfa9752a5c968c -->
+
+```cpp
   int64_t size() const
   {
     return size_in_bits_;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L198—L201</summary>
+
+<!-- original:bfa9752a5c968c:source/blender/blenlib/BLI_bit_vector.hh:198:201 -->
+
+```cpp
+  int64_t size() const
+  {
+    return size_in_bits_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return size_in_bits_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L202—L205
+
+<!-- annotated:6ac2e713655305 -->
+
+```cpp
 
   /**
    * Number of bits that can be stored before the BitVector has to grow.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L202—L205</summary>
+
+<!-- original:6ac2e713655305:source/blender/blenlib/BLI_bit_vector.hh:202:205 -->
+
+```cpp
+
+  /**
+   * Number of bits that can be stored before the BitVector has to grow.
+   */
+```
+
+</details>
+
+<a id="f-c8c80d4fa68616c1"></a>
+
+### `blender::bits::BitVector::capacity`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L206—L209。
+
+**教学注释版**
+
+<!-- annotated:d9281242ac22c6 -->
+
+```cpp
   int64_t capacity() const
   {
     return capacity_in_bits_;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L206—L209</summary>
+
+<!-- original:d9281242ac22c6:source/blender/blenlib/BLI_bit_vector.hh:206:209 -->
+
+```cpp
+  int64_t capacity() const
+  {
+    return capacity_in_bits_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return capacity_in_bits_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:1f8c6c8c6ba661 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L210—L210</summary>
+
+<!-- original:1f8c6c8c6ba661:source/blender/blenlib/BLI_bit_vector.hh:210:210 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-1a7e379badc265d3"></a>
+
+### `blender::bits::BitVector::is_empty`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L211—L214。
+
+**教学注释版**
+
+<!-- annotated:613739f7aa0cab -->
+
+```cpp
   bool is_empty() const
   {
     return size_in_bits_ == 0;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L211—L214</summary>
+
+<!-- original:613739f7aa0cab:source/blender/blenlib/BLI_bit_vector.hh:211:214 -->
+
+```cpp
+  bool is_empty() const
+  {
+    return size_in_bits_ == 0;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return size_in_bits_ == 0;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:da28f3540c822b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L215—L215</summary>
+
+<!-- original:da28f3540c822b:source/blender/blenlib/BLI_bit_vector.hh:215:215 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a9301c662d0e70bf"></a>
+
+### `blender::bits::BitVector::data`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L216—L219。
+
+**教学注释版**
+
+<!-- annotated:da0fadd9ed7e70 -->
+
+```cpp
   BitInt *data()
   {
     return data_;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L216—L219</summary>
+
+<!-- original:da0fadd9ed7e70:source/blender/blenlib/BLI_bit_vector.hh:216:219 -->
+
+```cpp
+  BitInt *data()
+  {
+    return data_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return data_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:740320315fbb25 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L220—L220</summary>
+
+<!-- original:740320315fbb25:source/blender/blenlib/BLI_bit_vector.hh:220:220 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-08d0139b117e5585"></a>
+
+### `blender::bits::BitVector::data`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L221—L224。
+
+**教学注释版**
+
+<!-- annotated:264e433a41cf37 -->
+
+```cpp
   const BitInt *data() const
   {
     return data_;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L221—L224</summary>
+
+<!-- original:264e433a41cf37:source/blender/blenlib/BLI_bit_vector.hh:221:224 -->
+
+```cpp
+  const BitInt *data() const
+  {
+    return data_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return data_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L225—L228
+
+<!-- annotated:9211bd366c3a83 -->
+
+```cpp
 
   /**
    * Get a read-only reference to a specific bit.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L225—L228</summary>
+
+<!-- original:9211bd366c3a83:source/blender/blenlib/BLI_bit_vector.hh:225:228 -->
+
+```cpp
+
+  /**
+   * Get a read-only reference to a specific bit.
+   */
+```
+
+</details>
+
+<a id="f-ff2822cdaf81de7a"></a>
+
+### `blender::bits::BitVector::operator[]`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L229—L234。
+
+接口参数：
+
+- `const int64_t index`
+
+**教学注释版**
+
+<!-- annotated:d7c6c4276914ed -->
+
+```cpp
   [[nodiscard]] BitRef operator[](const int64_t index) const
   {
     BLI_assert(index >= 0);
     BLI_assert(index < size_in_bits_);
     return {data_, index};
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L229—L234</summary>
+
+<!-- original:d7c6c4276914ed:source/blender/blenlib/BLI_bit_vector.hh:229:234 -->
+
+```cpp
+  [[nodiscard]] BitRef operator[](const int64_t index) const
+  {
+    BLI_assert(index >= 0);
+    BLI_assert(index < size_in_bits_);
+    return {data_, index};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, index};`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L235—L238
+
+<!-- annotated:4241fb827b0a4b -->
+
+```cpp
 
   /**
    * Get a mutable reference to a specific bit.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L235—L238</summary>
+
+<!-- original:4241fb827b0a4b:source/blender/blenlib/BLI_bit_vector.hh:235:238 -->
+
+```cpp
+
+  /**
+   * Get a mutable reference to a specific bit.
+   */
+```
+
+</details>
+
+<a id="f-9756eb3746054773"></a>
+
+### `blender::bits::BitVector::operator[]`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L239—L244。
+
+接口参数：
+
+- `const int64_t index`
+
+**教学注释版**
+
+<!-- annotated:d90deb8d9d6967 -->
+
+```cpp
   [[nodiscard]] MutableBitRef operator[](const int64_t index)
   {
     BLI_assert(index >= 0);
@@ -1609,59 +5910,126 @@ class BitVector {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L239—L244</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
+<!-- original:d90deb8d9d6967:source/blender/blenlib/BLI_bit_vector.hh:239:244 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L198 | 出现调用或函数声明 `size`，对应表达式为 `int64_t size() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L199 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L200 | 返回表达式 `size_in_bits_`。 |
-| L201 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L206 | 出现调用或函数声明 `capacity`，对应表达式为 `int64_t capacity() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L207 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L208 | 返回表达式 `capacity_in_bits_`。 |
-| L209 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L211 | 出现调用或函数声明 `is_empty`，对应表达式为 `bool is_empty() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L212 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L213 | 返回表达式 `size_in_bits_ == 0`。 |
-| L214 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L216 | 出现调用或函数声明 `data`，对应表达式为 `BitInt *data()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L217 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L218 | 返回表达式 `data_`。 |
-| L219 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L221 | 出现调用或函数声明 `data`，对应表达式为 `const BitInt *data() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L222 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L223 | 返回表达式 `data_`。 |
-| L224 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L229 | 运算符重载声明、定义或显式调用：`[[nodiscard]] BitRef operator[](const int64_t index) const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L230 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L231 | 断言约束 `BLI_assert(index >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L232 | 断言约束 `BLI_assert(index < size_in_bits_);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L233 | 返回表达式 `{data_, index}`。 |
-| L234 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L239 | 运算符重载声明、定义或显式调用：`[[nodiscard]] MutableBitRef operator[](const int64_t index)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L240 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L241 | 断言约束 `BLI_assert(index >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L242 | 断言约束 `BLI_assert(index < size_in_bits_);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L243 | 返回表达式 `{data_, index}`。 |
-| L244 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  [[nodiscard]] MutableBitRef operator[](const int64_t index)
+  {
+    BLI_assert(index >= 0);
+    BLI_assert(index < size_in_bits_);
+    return {data_, index};
+  }
+```
 
-### BLI_bit_vector.hh：L245—L298
+</details>
 
-<!-- source:source/blender/blenlib/BLI_bit_vector.hh:245:298 -->
+**结果出口**
+
+- `return {data_, index};`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+
+<!-- annotated:08ab945225bfe5 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L245—L245</summary>
+
+<!-- original:08ab945225bfe5:source/blender/blenlib/BLI_bit_vector.hh:245:245 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-0aea2de9e95e0e03"></a>
+
+### `blender::bits::BitVector::index_range`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L246—L249。
+
+**教学注释版**
+
+<!-- annotated:d64187ba37e5f3 -->
+
+```cpp
   IndexRange index_range() const
   {
     return IndexRange(size_in_bits_);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L246—L249</summary>
+
+<!-- original:d64187ba37e5f3:source/blender/blenlib/BLI_bit_vector.hh:246:249 -->
+
+```cpp
+  IndexRange index_range() const
+  {
+    return IndexRange(size_in_bits_);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return IndexRange(size_in_bits_);`
+
+**继续追踪实现**
+
+- `IndexRange` → [blender::IndexRange](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L250—L253
+
+<!-- annotated:eeeb1c3bf202c8 -->
+
+```cpp
 
   /**
    * Add a new bit to the end of the vector.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L250—L253</summary>
+
+<!-- original:eeeb1c3bf202c8:source/blender/blenlib/BLI_bit_vector.hh:250:253 -->
+
+```cpp
+
+  /**
+   * Add a new bit to the end of the vector.
+   */
+```
+
+</details>
+
+<a id="f-9c33b7056c2bfc24"></a>
+
+### `blender::bits::BitVector::append`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L254—L260。
+
+接口参数：
+
+- `const bool value`
+
+**教学注释版**
+
+<!-- annotated:82ec5000632252 -->
+
+```cpp
   void append(const bool value)
   {
     this->ensure_space_for_one();
@@ -1669,31 +6037,297 @@ class BitVector {
     bit.set(value);
     size_in_bits_++;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L254—L260</summary>
+
+<!-- original:82ec5000632252:source/blender/blenlib/BLI_bit_vector.hh:254:260 -->
+
+```cpp
+  void append(const bool value)
+  {
+    this->ensure_space_for_one();
+    MutableBitRef bit{data_, size_in_bits_};
+    bit.set(value);
+    size_in_bits_++;
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->ensure_space_for_one` → [blender::bits::BitVector::ensure_space_for_one · L340](19-BitSpan%E4%B8%8EBitVector.md#f-928c1ea7459b573f)。
+- `bit.set` → [blender::bits::MutableBitRef::set · L176](%E4%BE%9D%E8%B5%96-BLI_bit_ref-359167.md#f-598a402a4d1cd233)；[blender::bits::MutableBitRef::set · L193](%E4%BE%9D%E8%B5%96-BLI_bit_ref-359167.md#f-aefc2b6946e75707)。同名重载需按实参类型选择。
+
+<!-- annotated:f7d4615fb742a3 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L261—L261</summary>
+
+<!-- original:f7d4615fb742a3:source/blender/blenlib/BLI_bit_vector.hh:261:261 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3caa0599974c5858"></a>
+
+### `blender::bits::BitVector::begin`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L262—L265。
+
+**教学注释版**
+
+<!-- annotated:ea9e6092bd51ba -->
+
+```cpp
   BitIterator begin() const
   {
     return {data_, 0};
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L262—L265</summary>
+
+<!-- original:ea9e6092bd51ba:source/blender/blenlib/BLI_bit_vector.hh:262:265 -->
+
+```cpp
+  BitIterator begin() const
+  {
+    return {data_, 0};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, 0};`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:cdc88298eddc29 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L266—L266</summary>
+
+<!-- original:cdc88298eddc29:source/blender/blenlib/BLI_bit_vector.hh:266:266 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a84b3c9c3876cf92"></a>
+
+### `blender::bits::BitVector::end`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L267—L270。
+
+**教学注释版**
+
+<!-- annotated:95c32663dacf1a -->
+
+```cpp
   BitIterator end() const
   {
     return {data_, size_in_bits_};
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L267—L270</summary>
+
+<!-- original:95c32663dacf1a:source/blender/blenlib/BLI_bit_vector.hh:267:270 -->
+
+```cpp
+  BitIterator end() const
+  {
+    return {data_, size_in_bits_};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, size_in_bits_};`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:ee2555ee37c675 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L271—L271</summary>
+
+<!-- original:ee2555ee37c675:source/blender/blenlib/BLI_bit_vector.hh:271:271 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-84784dada44a3ec3"></a>
+
+### `blender::bits::BitVector::begin`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L272—L275。
+
+**教学注释版**
+
+<!-- annotated:a9aaaffa7a46c9 -->
+
+```cpp
   MutableBitIterator begin()
   {
     return {data_, 0};
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L272—L275</summary>
+
+<!-- original:a9aaaffa7a46c9:source/blender/blenlib/BLI_bit_vector.hh:272:275 -->
+
+```cpp
+  MutableBitIterator begin()
+  {
+    return {data_, 0};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, 0};`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:b41167cfae9063 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L276—L276</summary>
+
+<!-- original:b41167cfae9063:source/blender/blenlib/BLI_bit_vector.hh:276:276 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-f3ad7c62c6619397"></a>
+
+### `blender::bits::BitVector::end`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L277—L280。
+
+**教学注释版**
+
+<!-- annotated:8cc4f5d1022531 -->
+
+```cpp
   MutableBitIterator end()
   {
     return {data_, size_in_bits_};
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L277—L280</summary>
+
+<!-- original:8cc4f5d1022531:source/blender/blenlib/BLI_bit_vector.hh:277:280 -->
+
+```cpp
+  MutableBitIterator end()
+  {
+    return {data_, size_in_bits_};
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return {data_, size_in_bits_};`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L281—L285
+
+<!-- annotated:78a3b0f328fbea -->
+
+```cpp
 
   /**
    * Change the size of the vector. If the new vector is larger than the old one, the new elements
    * are filled with #value.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L281—L285</summary>
+
+<!-- original:78a3b0f328fbea:source/blender/blenlib/BLI_bit_vector.hh:281:285 -->
+
+```cpp
+
+  /**
+   * Change the size of the vector. If the new vector is larger than the old one, the new elements
+   * are filled with #value.
+   */
+```
+
+</details>
+
+<a id="f-eeab855041750a13"></a>
+
+### `blender::bits::BitVector::resize`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L286—L298。
+
+接口参数：
+
+- `const int64_t new_size_in_bits`
+- `const bool value = false`
+
+**教学注释版**
+
+<!-- annotated:68d927b57704ee -->
+
+```cpp
   void resize(const int64_t new_size_in_bits, const bool value = false)
   {
     BLI_assert(new_size_in_bits >= 0);
@@ -1709,89 +6343,274 @@ class BitVector {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L286—L298</summary>
 
-- `ensure_space_for_one`：确保单次追加有可用存储，随后仍须真正构造元素。
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
+<!-- original:68d927b57704ee:source/blender/blenlib/BLI_bit_vector.hh:286:298 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L246 | 出现调用或函数声明 `index_range`，对应表达式为 `IndexRange index_range() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L247 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L248 | 返回表达式 `IndexRange(size_in_bits_)`。 |
-| L249 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L254 | 出现调用或函数声明 `append`，对应表达式为 `void append(const bool value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L255 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L256 | 本行使用 `ensure_space_for_one`：确保单次追加有可用存储，随后仍须真正构造元素。 |
-| L257 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `MutableBitRef bit{data_, size_in_bits_}`，不要把地址、数量或状态混用。 |
-| L258 | 出现调用或函数声明 `set`，对应表达式为 `bit.set(value);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L259 | 递增或递减现有状态：`size_in_bits_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L260 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L262 | 出现调用或函数声明 `begin`，对应表达式为 `BitIterator begin() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L263 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L264 | 返回表达式 `{data_, 0}`。 |
-| L265 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L267 | 出现调用或函数声明 `end`，对应表达式为 `BitIterator end() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L268 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L269 | 返回表达式 `{data_, size_in_bits_}`。 |
-| L270 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L272 | 出现调用或函数声明 `begin`，对应表达式为 `MutableBitIterator begin()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L273 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L274 | 返回表达式 `{data_, 0}`。 |
-| L275 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L277 | 出现调用或函数声明 `end`，对应表达式为 `MutableBitIterator end()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L278 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L279 | 返回表达式 `{data_, size_in_bits_}`。 |
-| L280 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L286 | 把右侧 `false)` 用于初始化或更新左侧 `void resize(const int64_t new_size_in_bits, const bool value`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L287 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L288 | 断言约束 `BLI_assert(new_size_in_bits >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L289 | 把右侧 `size_in_bits_` 用于初始化或更新左侧 `const int64_t old_size_in_bits`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L290 | 判断 `new_size_in_bits > old_size_in_bits`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L291 | 出现调用或函数声明 `reserve`，对应表达式为 `this->reserve(new_size_in_bits);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L292 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L293 | 把右侧 `new_size_in_bits` 用于初始化或更新左侧 `size_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L294 | 判断 `old_size_in_bits < new_size_in_bits`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L295 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `MutableBitSpan(data_, IndexRange::from_begin_end(old_size_in_bits, new_size_in_bits))`，不要把地址、数量或状态混用。 |
-| L296 | 出现调用或函数声明 `set_all`，对应表达式为 `.set_all(value);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L297 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L298 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  void resize(const int64_t new_size_in_bits, const bool value = false)
+  {
+    BLI_assert(new_size_in_bits >= 0);
+    const int64_t old_size_in_bits = size_in_bits_;
+    if (new_size_in_bits > old_size_in_bits) {
+      this->reserve(new_size_in_bits);
+    }
+    size_in_bits_ = new_size_in_bits;
+    if (old_size_in_bits < new_size_in_bits) {
+      MutableBitSpan(data_, IndexRange::from_begin_end(old_size_in_bits, new_size_in_bits))
+          .set_all(value);
+    }
+  }
+```
 
-### BLI_bit_vector.hh：L299—L345
+</details>
 
-<!-- source:source/blender/blenlib/BLI_bit_vector.hh:299:345 -->
+**沿实际写入检查状态**
+
+- `size_in_bits_ = new_size_in_bits;`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->reserve` → [blender::bits::BitVector::reserve · L312](19-BitSpan%E4%B8%8EBitVector.md#f-8190103e0c15f743)。
+- `MutableBitSpan(data_, IndexRange::from_begin_end(old_size_in_bits, new_size_in_bits)) .set_all` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L295。
+- `MutableBitSpan` → [blender::bits::MutableBitSpan::MutableBitSpan · L297](19-BitSpan%E4%B8%8EBitVector.md#f-84ef7fce1e590bd4)；[blender::bits::MutableBitSpan::MutableBitSpan · L299](19-BitSpan%E4%B8%8EBitVector.md#f-7736cbfc8277cb34)；[blender::bits::MutableBitSpan::MutableBitSpan · L301](19-BitSpan%E4%B8%8EBitVector.md#f-840e1097a65b5c26)。同名重载需按实参类型选择。
+- `IndexRange::from_begin_end` → [blender::IndexRange::from_begin_end · L78](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-a523839fb9650253)。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L299—L302
+
+<!-- annotated:b0fb4eb035f1ef -->
 
 ```cpp
 
   /**
    * Set #value on every element.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L299—L302</summary>
+
+<!-- original:b0fb4eb035f1ef:source/blender/blenlib/BLI_bit_vector.hh:299:302 -->
+
+```cpp
+
+  /**
+   * Set #value on every element.
+   */
+```
+
+</details>
+
+<a id="f-ebe084fd083316a3"></a>
+
+### `blender::bits::BitVector::fill`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L303—L306。
+
+接口参数：
+
+- `const bool value`
+
+**教学注释版**
+
+<!-- annotated:cb335eb029215b -->
+
+```cpp
   void fill(const bool value)
   {
     MutableBitSpan(data_, size_in_bits_).set_all(value);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L303—L306</summary>
+
+<!-- original:cb335eb029215b:source/blender/blenlib/BLI_bit_vector.hh:303:306 -->
+
+```cpp
+  void fill(const bool value)
+  {
+    MutableBitSpan(data_, size_in_bits_).set_all(value);
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `MutableBitSpan(data_, size_in_bits_).set_all` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L305。
+- `MutableBitSpan` → [blender::bits::MutableBitSpan::MutableBitSpan · L297](19-BitSpan%E4%B8%8EBitVector.md#f-84ef7fce1e590bd4)；[blender::bits::MutableBitSpan::MutableBitSpan · L299](19-BitSpan%E4%B8%8EBitVector.md#f-7736cbfc8277cb34)；[blender::bits::MutableBitSpan::MutableBitSpan · L301](19-BitSpan%E4%B8%8EBitVector.md#f-840e1097a65b5c26)。同名重载需按实参类型选择。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L307—L311
+
+<!-- annotated:39e37c6399f834 -->
+
+```cpp
 
   /**
    * Make sure that the capacity of the vector is large enough to hold the given amount of bits.
    * The actual size is not changed.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L307—L311</summary>
+
+<!-- original:39e37c6399f834:source/blender/blenlib/BLI_bit_vector.hh:307:311 -->
+
+```cpp
+
+  /**
+   * Make sure that the capacity of the vector is large enough to hold the given amount of bits.
+   * The actual size is not changed.
+   */
+```
+
+</details>
+
+<a id="f-8190103e0c15f743"></a>
+
+### `blender::bits::BitVector::reserve`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L312—L315。
+
+接口参数：
+
+- `const int new_capacity_in_bits`
+
+**教学注释版**
+
+<!-- annotated:2fe55ad1c51eab -->
+
+```cpp
   void reserve(const int new_capacity_in_bits)
   {
     this->realloc_to_at_least(new_capacity_in_bits);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L312—L315</summary>
+
+<!-- original:2fe55ad1c51eab:source/blender/blenlib/BLI_bit_vector.hh:312:315 -->
+
+```cpp
+  void reserve(const int new_capacity_in_bits)
+  {
+    this->realloc_to_at_least(new_capacity_in_bits);
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->realloc_to_at_least` → [blender::bits::BitVector::realloc_to_at_least · L347](19-BitSpan%E4%B8%8EBitVector.md#f-bc52520c3f09e80f)。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L316—L320
+
+<!-- annotated:1d17c3569fef2a -->
+
+```cpp
 
   /**
    * Reset the size of the vector to zero elements, but keep the same memory capacity to be
    * refilled again.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L316—L320</summary>
+
+<!-- original:1d17c3569fef2a:source/blender/blenlib/BLI_bit_vector.hh:316:320 -->
+
+```cpp
+
+  /**
+   * Reset the size of the vector to zero elements, but keep the same memory capacity to be
+   * refilled again.
+   */
+```
+
+</details>
+
+<a id="f-4291cadca390b3e4"></a>
+
+### `blender::bits::BitVector::clear`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L321—L324。
+
+**教学注释版**
+
+<!-- annotated:567de11164cacc -->
+
+```cpp
   void clear()
   {
     size_in_bits_ = 0;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L321—L324</summary>
+
+<!-- original:567de11164cacc:source/blender/blenlib/BLI_bit_vector.hh:321:324 -->
+
+```cpp
+  void clear()
+  {
+    size_in_bits_ = 0;
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `size_in_bits_ = 0;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L325—L328
+
+<!-- annotated:fb9ada83f21453 -->
+
+```cpp
 
   /**
    * Free memory and reset the vector to zero elements.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L325—L328</summary>
+
+<!-- original:fb9ada83f21453:source/blender/blenlib/BLI_bit_vector.hh:325:328 -->
+
+```cpp
+
+  /**
+   * Free memory and reset the vector to zero elements.
+   */
+```
+
+</details>
+
+<a id="f-ddcefa4d7a343589"></a>
+
+### `blender::bits::BitVector::clear_and_shrink`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L329—L337。
+
+**教学注释版**
+
+<!-- annotated:de9002e70e0f8d -->
+
+```cpp
   void clear_and_shrink()
   {
     size_in_bits_ = 0;
@@ -1801,8 +6620,70 @@ class BitVector {
     }
     data_ = inline_buffer_;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L329—L337</summary>
+
+<!-- original:de9002e70e0f8d:source/blender/blenlib/BLI_bit_vector.hh:329:337 -->
+
+```cpp
+  void clear_and_shrink()
+  {
+    size_in_bits_ = 0;
+    capacity_in_bits_ = 0;
+    if (!this->is_inline()) {
+      allocator_.deallocate(data_);
+    }
+    data_ = inline_buffer_;
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `size_in_bits_ = 0;`
+- `capacity_in_bits_ = 0;`
+- `data_ = inline_buffer_;`
+
+**继续追踪实现**
+
+- `this->is_inline` → [blender::bits::BitVector::is_inline · L379](19-BitSpan%E4%B8%8EBitVector.md#f-f5129a79970cea79)。
+- `allocator_.deallocate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L334。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L338—L339
+
+<!-- annotated:d1359aa572cad3 -->
+
+```cpp
 
  private:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L338—L339</summary>
+
+<!-- original:d1359aa572cad3:source/blender/blenlib/BLI_bit_vector.hh:338:339 -->
+
+```cpp
+
+ private:
+```
+
+</details>
+
+<a id="f-928c1ea7459b573f"></a>
+
+### `blender::bits::BitVector::ensure_space_for_one`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L340—L345。
+
+**教学注释版**
+
+<!-- annotated:02745d01898af0 -->
+
+```cpp
   void ensure_space_for_one()
   {
     if (size_in_bits_ >= capacity_in_bits_) [[unlikely]] {
@@ -1811,51 +6692,100 @@ class BitVector {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L340—L345</summary>
 
-- `realloc_to_at_least`：进入Vector容量增长路径；检查迁移失败回滚和旧视图失效。
-- `ensure_space_for_one`：确保单次追加有可用存储，随后仍须真正构造元素。
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。
-- `inline_buffer_`：容器对象内部的缓冲区，不能像堆缓冲那样直接交给另一个对象。
+<!-- original:02745d01898af0:source/blender/blenlib/BLI_bit_vector.hh:340:345 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L303 | 出现调用或函数声明 `fill`，对应表达式为 `void fill(const bool value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L304 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L305 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `MutableBitSpan(data_, size_in_bits_).set_all(value)`，不要把地址、数量或状态混用。 |
-| L306 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L312 | 出现调用或函数声明 `reserve`，对应表达式为 `void reserve(const int new_capacity_in_bits)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L313 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L314 | 本行使用 `realloc_to_at_least`：进入Vector容量增长路径；检查迁移失败回滚和旧视图失效。 |
-| L315 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L321 | 出现调用或函数声明 `clear`，对应表达式为 `void clear()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L322 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L323 | 把右侧 `0` 用于初始化或更新左侧 `size_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L324 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L329 | 出现调用或函数声明 `clear_and_shrink`，对应表达式为 `void clear_and_shrink()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L330 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L331 | 把右侧 `0` 用于初始化或更新左侧 `size_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L332 | 把右侧 `0` 用于初始化或更新左侧 `capacity_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L333 | 判断 `!this->is_inline()`，成立时进入本分支，否则继续后续路径。 |
-| L334 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `allocator_.deallocate(data_)`，不要把地址、数量或状态混用。 |
-| L335 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L336 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = inline_buffer_`；对照更新前后相应范围或状态是否一致。 |
-| L337 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L339 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L340 | 出现调用或函数声明 `ensure_space_for_one`，对应表达式为 `void ensure_space_for_one()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L341 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L342 | 判断 `size_in_bits_ >= capacity_in_bits_`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L343 | 本行使用 `realloc_to_at_least`：进入Vector容量增长路径；检查迁移失败回滚和旧视图失效。 |
-| L344 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L345 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  void ensure_space_for_one()
+  {
+    if (size_in_bits_ >= capacity_in_bits_) [[unlikely]] {
+      this->realloc_to_at_least(size_in_bits_ + 1);
+    }
+  }
+```
 
-### BLI_bit_vector.hh：L346—L406
+</details>
 
-<!-- source:source/blender/blenlib/BLI_bit_vector.hh:346:406 -->
+**继续追踪实现**
+
+- `this->realloc_to_at_least` → [blender::bits::BitVector::realloc_to_at_least · L347](19-BitSpan%E4%B8%8EBitVector.md#f-bc52520c3f09e80f)。
+
+<!-- annotated:d0185ef43da236 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L346—L346</summary>
+
+<!-- original:d0185ef43da236:source/blender/blenlib/BLI_bit_vector.hh:346:346 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-bc52520c3f09e80f"></a>
+
+### `blender::bits::BitVector::realloc_to_at_least`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L347—L377。
+
+接口参数：
+
+- `const int64_t min_capacity_in_bits`
+- `const BitInt initial_value_for_new_ints = 0`
+
+**教学注释版**
+
+<!-- annotated:f341af9ff08877 -->
+
+```cpp
+  BLI_NOINLINE void realloc_to_at_least(const int64_t min_capacity_in_bits,
+                                        const BitInt initial_value_for_new_ints = 0)
+  {
+    if (capacity_in_bits_ >= min_capacity_in_bits) {
+      return;
+    }
+
+    const int64_t min_capacity_in_ints = this->required_ints_for_bits(min_capacity_in_bits);
+
+    /* At least double the size of the previous allocation. */
+    const int64_t min_new_capacity_in_ints = 2 * this->required_ints_for_bits(capacity_in_bits_);
+
+    // [讲解] std::max：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+    const int64_t new_capacity_in_ints = std::max(min_capacity_in_ints, min_new_capacity_in_ints);
+    const int64_t ints_to_copy = this->used_ints_amount();
+
+    BitInt *new_data = static_cast<BitInt *>(
+        allocator_.allocate(new_capacity_in_ints * sizeof(BitInt), AllocationAlignment, __func__));
+    uninitialized_copy_n(data_, ints_to_copy, new_data);
+    /* Always initialize new capacity even if it isn't used yet. That's necessary to avoid warnings
+     * caused by using uninitialized memory. This happens when e.g. setting a clearing a bit in an
+     * uninitialized int. */
+    // [讲解] uninitialized_fill_n：从同一个value复制构造目标n个T。
+    uninitialized_fill_n(
+        new_data + ints_to_copy, new_capacity_in_ints - ints_to_copy, initial_value_for_new_ints);
+
+    if (!this->is_inline()) {
+      allocator_.deallocate(data_);
+    }
+
+    data_ = new_data;
+    capacity_in_bits_ = new_capacity_in_ints * BitsPerInt;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L347—L377</summary>
+
+<!-- original:f341af9ff08877:source/blender/blenlib/BLI_bit_vector.hh:347:377 -->
+
+```cpp
   BLI_NOINLINE void realloc_to_at_least(const int64_t min_capacity_in_bits,
                                         const BitInt initial_value_for_new_ints = 0)
   {
@@ -1887,29 +6817,271 @@ class BitVector {
     data_ = new_data;
     capacity_in_bits_ = new_capacity_in_ints * BitsPerInt;
   }
+```
 
+</details>
+
+**沿实际写入检查状态**
+
+- `data_ = new_data;`
+- `capacity_in_bits_ = new_capacity_in_ints * BitsPerInt;`
+
+**继续追踪实现**
+
+- `this->required_ints_for_bits` → [blender::bits::BitVector::required_ints_for_bits · L61](19-BitSpan%E4%B8%8EBitVector.md#f-1a38d1364142c5e6)。
+- `std::max` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+- `this->used_ints_amount` → [blender::bits::BitVector::used_ints_amount · L384](19-BitSpan%E4%B8%8EBitVector.md#f-c163a82e76b7acb7)。
+- `allocator_.allocate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L363。
+- `uninitialized_copy_n` → [blender::uninitialized_copy_n · L53](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-6cd63ebede164cd2)。
+- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-020ca78eff5f9227)。
+- `this->is_inline` → [blender::bits::BitVector::is_inline · L379](19-BitSpan%E4%B8%8EBitVector.md#f-f5129a79970cea79)。
+- `allocator_.deallocate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L372。
+
+<!-- annotated:c5ba9fb2025d86 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L378—L378</summary>
+
+<!-- original:c5ba9fb2025d86:source/blender/blenlib/BLI_bit_vector.hh:378:378 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-f5129a79970cea79"></a>
+
+### `blender::bits::BitVector::is_inline`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L379—L382。
+
+**教学注释版**
+
+<!-- annotated:b8e05b1497b091 -->
+
+```cpp
   bool is_inline() const
   {
     return data_ == inline_buffer_;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L379—L382</summary>
+
+<!-- original:b8e05b1497b091:source/blender/blenlib/BLI_bit_vector.hh:379:382 -->
+
+```cpp
+  bool is_inline() const
+  {
+    return data_ == inline_buffer_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return data_ == inline_buffer_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:5245e30d6bd52e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L383—L383</summary>
+
+<!-- original:5245e30d6bd52e:source/blender/blenlib/BLI_bit_vector.hh:383:383 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-c163a82e76b7acb7"></a>
+
+### `blender::bits::BitVector::used_ints_amount`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L384—L387。
+
+**教学注释版**
+
+<!-- annotated:eca867c4a6ff58 -->
+
+```cpp
   int64_t used_ints_amount() const
   {
     return this->required_ints_for_bits(size_in_bits_);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L384—L387</summary>
+
+<!-- original:eca867c4a6ff58:source/blender/blenlib/BLI_bit_vector.hh:384:387 -->
+
+```cpp
+  int64_t used_ints_amount() const
+  {
+    return this->required_ints_for_bits(size_in_bits_);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->required_ints_for_bits(size_in_bits_);`
+
+**继续追踪实现**
+
+- `this->required_ints_for_bits` → [blender::bits::BitVector::required_ints_for_bits · L61](19-BitSpan%E4%B8%8EBitVector.md#f-1a38d1364142c5e6)。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L388—L389
+
+<!-- annotated:7bb310f323fa47 -->
+
+```cpp
 };
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L388—L389</summary>
+
+<!-- original:7bb310f323fa47:source/blender/blenlib/BLI_bit_vector.hh:388:389 -->
+
+```cpp
+};
+
+```
+
+</details>
+
+<a id="f-3fc666cf00474745"></a>
+
+### `blender::bits::to_best_bit_span`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L390—L394。
+
+接口参数：
+
+- `const BitVector<InlineBufferCapacity, Allocator> &data`
+
+**教学注释版**
+
+<!-- annotated:d9501a14e6da1e -->
+
+```cpp
 template<int64_t InlineBufferCapacity, typename Allocator>
 inline BoundedBitSpan to_best_bit_span(const BitVector<InlineBufferCapacity, Allocator> &data)
 {
   return data;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L390—L394</summary>
+
+<!-- original:d9501a14e6da1e:source/blender/blenlib/BLI_bit_vector.hh:390:394 -->
+
+```cpp
+template<int64_t InlineBufferCapacity, typename Allocator>
+inline BoundedBitSpan to_best_bit_span(const BitVector<InlineBufferCapacity, Allocator> &data)
+{
+  return data;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return data;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:d2cf12252ba0c6 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L395—L395</summary>
+
+<!-- original:d2cf12252ba0c6:source/blender/blenlib/BLI_bit_vector.hh:395:395 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-60527b8413fafc8b"></a>
+
+### `blender::bits::to_best_bit_span`
+
+实现位置：[source/blender/blenlib/BLI_bit_vector.hh](../../../../../source/blender/blenlib/BLI_bit_vector.hh) · L396—L400。
+
+接口参数：
+
+- `BitVector<InlineBufferCapacity, Allocator> &data`
+
+**教学注释版**
+
+<!-- annotated:b297f855a588b4 -->
+
+```cpp
 template<int64_t InlineBufferCapacity, typename Allocator>
 inline MutableBoundedBitSpan to_best_bit_span(BitVector<InlineBufferCapacity, Allocator> &data)
 {
   return data;
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L396—L400</summary>
+
+<!-- original:b297f855a588b4:source/blender/blenlib/BLI_bit_vector.hh:396:400 -->
+
+```cpp
+template<int64_t InlineBufferCapacity, typename Allocator>
+inline MutableBoundedBitSpan to_best_bit_span(BitVector<InlineBufferCapacity, Allocator> &data)
+{
+  return data;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return data;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_bit_vector.hh L401—L406
+
+<!-- annotated:981e2e0bbcd63b -->
+
+```cpp
 
 }  // namespace bits
 
@@ -1918,327 +7090,142 @@ using bits::BitVector;
 }  // namespace blender
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_bit_vector.hh · L401—L406</summary>
 
-- `uninitialized_copy_n`：把源值复制构造到未初始化的目标区间；目标已有对象时不能直接用此操作替代赋值。
-- `realloc_to_at_least`：进入Vector容量增长路径；检查迁移失败回滚和旧视图失效。
-- `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。
+<!-- original:981e2e0bbcd63b:source/blender/blenlib/BLI_bit_vector.hh:401:406 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L347 | 出现调用或函数声明 `realloc_to_at_least`，对应表达式为 `BLI_NOINLINE void realloc_to_at_least(const int64_t min_capacity_in_bits,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L348 | 把右侧 `0)` 用于初始化或更新左侧 `const BitInt initial_value_for_new_ints`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L349 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L350 | 判断 `capacity_in_bits_ >= min_capacity_in_bits`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L351 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L352 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L354 | 把右侧 `this->required_ints_for_bits(min_capacity_in_bits)` 用于初始化或更新左侧 `const int64_t min_capacity_in_ints`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L357 | 把右侧 `2 * this->required_ints_for_bits(capacity_in_bits_)` 用于初始化或更新左侧 `const int64_t min_new_capacity_in_ints`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L359 | 本行使用 `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。 |
-| L360 | 把右侧 `this->used_ints_amount()` 用于初始化或更新左侧 `const int64_t ints_to_copy`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L362 | 把右侧 `static_cast<BitInt *>(` 用于初始化或更新左侧 `BitInt *new_data`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L363 | 本行涉及 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。按此语义解读 `allocator_.allocate(new_capacity_in_ints * sizeof(BitInt), AllocationAlignment, __func__))`，不要把地址、数量或状态混用。 |
-| L364 | 本行使用 `uninitialized_copy_n`：把源值复制构造到未初始化的目标区间；目标已有对象时不能直接用此操作替代赋值。 |
-| L368 | 出现调用或函数声明 `uninitialized_fill_n`，对应表达式为 `uninitialized_fill_n(`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L369 | 声明成员、局部对象或完成语句 `new_data + ints_to_copy, new_capacity_in_ints - ints_to_copy, initial_value_for_new_ints)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L371 | 判断 `!this->is_inline()`，成立时进入本分支，否则继续后续路径。 |
-| L372 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `allocator_.deallocate(data_)`，不要把地址、数量或状态混用。 |
-| L373 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L375 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = new_data`；对照更新前后相应范围或状态是否一致。 |
-| L376 | 把右侧 `new_capacity_in_ints * BitsPerInt` 用于初始化或更新左侧 `capacity_in_bits_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L377 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L379 | 出现调用或函数声明 `is_inline`，对应表达式为 `bool is_inline() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L380 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L381 | 返回表达式 `data_ == inline_buffer_`。 |
-| L382 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L384 | 出现调用或函数声明 `used_ints_amount`，对应表达式为 `int64_t used_ints_amount() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L385 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L386 | 返回表达式 `this->required_ints_for_bits(size_in_bits_)`。 |
-| L387 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L388 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L390 | 声明模板参数 `template<int64_t InlineBufferCapacity, typename Allocator>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L391 | 出现调用或函数声明 `to_best_bit_span`，对应表达式为 `inline BoundedBitSpan to_best_bit_span(const BitVector<InlineBufferCapacity, Allocator> &data)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L392 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L393 | 返回表达式 `data`。 |
-| L394 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L396 | 声明模板参数 `template<int64_t InlineBufferCapacity, typename Allocator>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L397 | 出现调用或函数声明 `to_best_bit_span`，对应表达式为 `inline MutableBoundedBitSpan to_best_bit_span(BitVector<InlineBufferCapacity, Allocator> &data)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L398 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L399 | 返回表达式 `data`。 |
-| L400 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L402 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L404 | 定义类型别名 `using bits::BitVector`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L406 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
 
-## 五、接口定位、调用线索与生命周期
+}  // namespace bits
 
-### 本篇声明与实现入口
+using bits::BitVector;
 
-| 源码位置 | 实际声明片段 |
-|---|---|
-| [BLI_bit_span.hh:L23](../../../../../source/blender/blenlib/BLI_bit_span.hh#L23) | `class BitIteratorBase` |
-| [BLI_bit_span.hh:L29](../../../../../source/blender/blenlib/BLI_bit_span.hh#L29) | `BitIteratorBase(const BitInt *data, const int64_t bit_index) : data_(data), bit_index_(bit_index)` |
-| [BLI_bit_span.hh:L47](../../../../../source/blender/blenlib/BLI_bit_span.hh#L47) | `class BitIterator : public BitIteratorBase` |
-| [BLI_bit_span.hh:L49](../../../../../source/blender/blenlib/BLI_bit_span.hh#L49) | `BitIterator(const BitInt *data, const int64_t bit_index) : BitIteratorBase(data, bit_index) {}` |
-| [BLI_bit_span.hh:L58](../../../../../source/blender/blenlib/BLI_bit_span.hh#L58) | `class MutableBitIterator : public BitIteratorBase` |
-| [BLI_bit_span.hh:L60](../../../../../source/blender/blenlib/BLI_bit_span.hh#L60) | `MutableBitIterator(BitInt *data, const int64_t bit_index) : BitIteratorBase(data, bit_index) {}` |
-| [BLI_bit_span.hh:L68](../../../../../source/blender/blenlib/BLI_bit_span.hh#L68) | `class OneBitIterator` |
-| [BLI_bit_span.hh:L74](../../../../../source/blender/blenlib/BLI_bit_span.hh#L74) | `explicit OneBitIterator(BitInt data) : data_(data)` |
-| [BLI_bit_span.hh:L101](../../../../../source/blender/blenlib/BLI_bit_span.hh#L101) | `class OneBitIteratorRange` |
-| [BLI_bit_span.hh:L106](../../../../../source/blender/blenlib/BLI_bit_span.hh#L106) | `OneBitIteratorRange(BitInt data) : data_(data) {}` |
-| [BLI_bit_span.hh:L108](../../../../../source/blender/blenlib/BLI_bit_span.hh#L108) | `OneBitIterator begin() const` |
-| [BLI_bit_span.hh:L112](../../../../../source/blender/blenlib/BLI_bit_span.hh#L112) | `OneBitIterator end() const` |
-| [BLI_bit_span.hh:L118](../../../../../source/blender/blenlib/BLI_bit_span.hh#L118) | `inline OneBitIteratorRange iter_1_indices(BitInt value)` |
-| [BLI_bit_span.hh:L130](../../../../../source/blender/blenlib/BLI_bit_span.hh#L130) | `class BitSpan` |
-| [BLI_bit_span.hh:L142](../../../../../source/blender/blenlib/BLI_bit_span.hh#L142) | `BitSpan() = default;` |
-| [BLI_bit_span.hh:L144](../../../../../source/blender/blenlib/BLI_bit_span.hh#L144) | `BitSpan(const BitInt *data, const int64_t size_in_bits) : data_(data), bit_range_(size_in_bits)` |
-| [BLI_bit_span.hh:L148](../../../../../source/blender/blenlib/BLI_bit_span.hh#L148) | `BitSpan(const BitInt *data, const IndexRange bit_range) : data_(data), bit_range_(bit_range) {}` |
-| [BLI_bit_span.hh:L151](../../../../../source/blender/blenlib/BLI_bit_span.hh#L151) | `int64_t size() const` |
-| [BLI_bit_span.hh:L156](../../../../../source/blender/blenlib/BLI_bit_span.hh#L156) | `bool is_empty() const` |
-| [BLI_bit_span.hh:L161](../../../../../source/blender/blenlib/BLI_bit_span.hh#L161) | `IndexRange index_range() const` |
-| [BLI_bit_span.hh:L178](../../../../../source/blender/blenlib/BLI_bit_span.hh#L178) | `BitSpan take_front(const int64_t n) const` |
-| [BLI_bit_span.hh:L183](../../../../../source/blender/blenlib/BLI_bit_span.hh#L183) | `BitSpan take_back(const int64_t n) const` |
-| [BLI_bit_span.hh:L188](../../../../../source/blender/blenlib/BLI_bit_span.hh#L188) | `BitSpan drop_front(const int64_t n) const` |
-| [BLI_bit_span.hh:L193](../../../../../source/blender/blenlib/BLI_bit_span.hh#L193) | `BitSpan drop_back(const int64_t n) const` |
-| [BLI_bit_span.hh:L198](../../../../../source/blender/blenlib/BLI_bit_span.hh#L198) | `const BitInt *data() const` |
-| [BLI_bit_span.hh:L203](../../../../../source/blender/blenlib/BLI_bit_span.hh#L203) | `const IndexRange &bit_range() const` |
-| [BLI_bit_span.hh:L208](../../../../../source/blender/blenlib/BLI_bit_span.hh#L208) | `BitIterator begin() const` |
-| [BLI_bit_span.hh:L213](../../../../../source/blender/blenlib/BLI_bit_span.hh#L213) | `BitIterator end() const` |
-| [BLI_bit_span.hh:L226](../../../../../source/blender/blenlib/BLI_bit_span.hh#L226) | `inline bool is_bounded_span(const BitSpan span)` |
-| [BLI_bit_span.hh:L250](../../../../../source/blender/blenlib/BLI_bit_span.hh#L250) | `class BoundedBitSpan : public BitSpan` |
-| [BLI_bit_span.hh:L252](../../../../../source/blender/blenlib/BLI_bit_span.hh#L252) | `BoundedBitSpan() = default;` |
-| [BLI_bit_span.hh:L254](../../../../../source/blender/blenlib/BLI_bit_span.hh#L254) | `BoundedBitSpan(const BitInt *data, const int64_t size_in_bits) : BitSpan(data, size_in_bits)` |
-| [BLI_bit_span.hh:L259](../../../../../source/blender/blenlib/BLI_bit_span.hh#L259) | `BoundedBitSpan(const BitInt *data, const IndexRange bit_range) : BitSpan(data, bit_range)` |
-| [BLI_bit_span.hh:L264](../../../../../source/blender/blenlib/BLI_bit_span.hh#L264) | `explicit BoundedBitSpan(const BitSpan other) : BitSpan(other)` |
-| [BLI_bit_span.hh:L269](../../../../../source/blender/blenlib/BLI_bit_span.hh#L269) | `int64_t offset() const` |
-| [BLI_bit_span.hh:L274](../../../../../source/blender/blenlib/BLI_bit_span.hh#L274) | `int64_t full_ints_num() const` |
-| [BLI_bit_span.hh:L279](../../../../../source/blender/blenlib/BLI_bit_span.hh#L279) | `int64_t final_bits_num() const` |
-| [BLI_bit_span.hh:L284](../../../../../source/blender/blenlib/BLI_bit_span.hh#L284) | `BoundedBitSpan take_front(const int64_t n) const` |
-| [BLI_bit_span.hh:L291](../../../../../source/blender/blenlib/BLI_bit_span.hh#L291) | `class MutableBitSpan` |
-| [BLI_bit_span.hh:L297](../../../../../source/blender/blenlib/BLI_bit_span.hh#L297) | `MutableBitSpan() = default;` |
-| [BLI_bit_span.hh:L299](../../../../../source/blender/blenlib/BLI_bit_span.hh#L299) | `MutableBitSpan(BitInt *data, const int64_t size) : data_(data), bit_range_(size) {}` |
-| [BLI_bit_span.hh:L301](../../../../../source/blender/blenlib/BLI_bit_span.hh#L301) | `MutableBitSpan(BitInt *data, const IndexRange bit_range) : data_(data), bit_range_(bit_range) {}` |
-| [BLI_bit_span.hh:L303](../../../../../source/blender/blenlib/BLI_bit_span.hh#L303) | `int64_t size() const` |
-| [BLI_bit_span.hh:L308](../../../../../source/blender/blenlib/BLI_bit_span.hh#L308) | `bool is_empty() const` |
-| [BLI_bit_span.hh:L313](../../../../../source/blender/blenlib/BLI_bit_span.hh#L313) | `IndexRange index_range() const` |
-| [BLI_bit_span.hh:L325](../../../../../source/blender/blenlib/BLI_bit_span.hh#L325) | `MutableBitSpan slice(const IndexRange range) const` |
-| [BLI_bit_span.hh:L330](../../../../../source/blender/blenlib/BLI_bit_span.hh#L330) | `MutableBitSpan take_front(const int64_t n) const` |
-| [BLI_bit_span.hh:L335](../../../../../source/blender/blenlib/BLI_bit_span.hh#L335) | `MutableBitSpan take_back(const int64_t n) const` |
-| [BLI_bit_span.hh:L340](../../../../../source/blender/blenlib/BLI_bit_span.hh#L340) | `BitInt *data() const` |
-| [BLI_bit_span.hh:L345](../../../../../source/blender/blenlib/BLI_bit_span.hh#L345) | `const IndexRange &bit_range() const` |
-| [BLI_bit_span.hh:L350](../../../../../source/blender/blenlib/BLI_bit_span.hh#L350) | `MutableBitIterator begin() const` |
-| [BLI_bit_span.hh:L355](../../../../../source/blender/blenlib/BLI_bit_span.hh#L355) | `MutableBitIterator end() const` |
-| [BLI_bit_span.hh:L360](../../../../../source/blender/blenlib/BLI_bit_span.hh#L360) | `operator BitSpan() const` |
-| [BLI_bit_span.hh:L366](../../../../../source/blender/blenlib/BLI_bit_span.hh#L366) | `void set_all();` |
-| [BLI_bit_span.hh:L369](../../../../../source/blender/blenlib/BLI_bit_span.hh#L369) | `void reset_all();` |
-| [BLI_bit_span.hh:L371](../../../../../source/blender/blenlib/BLI_bit_span.hh#L371) | `void copy_from(const BitSpan other);` |
-| [BLI_bit_span.hh:L372](../../../../../source/blender/blenlib/BLI_bit_span.hh#L372) | `void copy_from(const BoundedBitSpan other);` |
-| [BLI_bit_span.hh:L375](../../../../../source/blender/blenlib/BLI_bit_span.hh#L375) | `void set_all(const bool value)` |
-| [BLI_bit_span.hh:L386](../../../../../source/blender/blenlib/BLI_bit_span.hh#L386) | `void fill(const bool value)` |
-| [BLI_bit_span.hh:L395](../../../../../source/blender/blenlib/BLI_bit_span.hh#L395) | `class MutableBoundedBitSpan : public MutableBitSpan` |
-| [BLI_bit_span.hh:L397](../../../../../source/blender/blenlib/BLI_bit_span.hh#L397) | `MutableBoundedBitSpan() = default;` |
-| [BLI_bit_span.hh:L399](../../../../../source/blender/blenlib/BLI_bit_span.hh#L399) | `MutableBoundedBitSpan(BitInt *data, const int64_t size) : MutableBitSpan(data, size)` |
-| [BLI_bit_span.hh:L404](../../../../../source/blender/blenlib/BLI_bit_span.hh#L404) | `MutableBoundedBitSpan(BitInt *data, const IndexRange bit_range) : MutableBitSpan(data, bit_range)` |
-| [BLI_bit_span.hh:L409](../../../../../source/blender/blenlib/BLI_bit_span.hh#L409) | `explicit MutableBoundedBitSpan(const MutableBitSpan other) : MutableBitSpan(other)` |
-| [BLI_bit_span.hh:L414](../../../../../source/blender/blenlib/BLI_bit_span.hh#L414) | `operator BoundedBitSpan() const` |
-| [BLI_bit_span.hh:L419](../../../../../source/blender/blenlib/BLI_bit_span.hh#L419) | `int64_t offset() const` |
-| [BLI_bit_span.hh:L424](../../../../../source/blender/blenlib/BLI_bit_span.hh#L424) | `int64_t full_ints_num() const` |
-| [BLI_bit_span.hh:L429](../../../../../source/blender/blenlib/BLI_bit_span.hh#L429) | `int64_t final_bits_num() const` |
-| [BLI_bit_span.hh:L434](../../../../../source/blender/blenlib/BLI_bit_span.hh#L434) | `MutableBoundedBitSpan take_front(const int64_t n) const` |
-| [BLI_bit_span.hh:L439](../../../../../source/blender/blenlib/BLI_bit_span.hh#L439) | `BoundedBitSpan as_span() const` |
-| [BLI_bit_span.hh:L444](../../../../../source/blender/blenlib/BLI_bit_span.hh#L444) | `void copy_from(const BitSpan other);` |
-| [BLI_bit_span.hh:L445](../../../../../source/blender/blenlib/BLI_bit_span.hh#L445) | `void copy_from(const BoundedBitSpan other);` |
-| [BLI_bit_span.hh:L448](../../../../../source/blender/blenlib/BLI_bit_span.hh#L448) | `inline std::optional<BoundedBitSpan> try_get_bounded_span(const BitSpan span)` |
-| [BLI_bit_span.hh:L464](../../../../../source/blender/blenlib/BLI_bit_span.hh#L464) | `template<typename T> inline T to_best_bit_span(const T &data)` |
-| [BLI_bit_vector.hh:L59](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L59) | `class BitVector` |
-| [BLI_bit_vector.hh:L61](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L61) | `static constexpr int64_t required_ints_for_bits(const int64_t number_of_bits)` |
-| [BLI_bit_vector.hh:L89](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L89) | `BitVector(Allocator allocator = {}) noexcept : allocator_(allocator)` |
-| [BLI_bit_vector.hh:L97](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L97) | `BitVector(NoExceptConstructor, Allocator allocator = {}) noexcept : BitVector(allocator) {}` |
-| [BLI_bit_vector.hh:L99](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L99) | `BitVector(const BoundedBitSpan span) : BitVector(NoExceptConstructor())` |
-| [BLI_bit_vector.hh:L117](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L117) | `BitVector(const BitVector &other) : BitVector(BoundedBitSpan(other))` |
-| [BLI_bit_vector.hh:L122](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L122) | `BitVector(BitVector &&other) noexcept : BitVector(NoExceptConstructor(), other.allocator_)` |
-| [BLI_bit_vector.hh:L152](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L152) | `BitVector(const int64_t size_in_bits, const bool value = false, Allocator allocator = {})` |
-| [BLI_bit_vector.hh:L153](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L153) | `: BitVector(NoExceptConstructor(), allocator)` |
-| [BLI_bit_vector.hh:L161](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L161) | `explicit BitVector(const Span<bool> values, Allocator allocator = {})` |
-| [BLI_bit_vector.hh:L162](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L162) | `: BitVector(NoExceptConstructor(), allocator)` |
-| [BLI_bit_vector.hh:L185](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L185) | `operator BoundedBitSpan() const` |
-| [BLI_bit_vector.hh:L190](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L190) | `operator MutableBoundedBitSpan()` |
-| [BLI_bit_vector.hh:L198](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L198) | `int64_t size() const` |
-| [BLI_bit_vector.hh:L206](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L206) | `int64_t capacity() const` |
-| [BLI_bit_vector.hh:L211](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L211) | `bool is_empty() const` |
-| [BLI_bit_vector.hh:L216](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L216) | `BitInt *data()` |
-| [BLI_bit_vector.hh:L221](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L221) | `const BitInt *data() const` |
-| [BLI_bit_vector.hh:L246](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L246) | `IndexRange index_range() const` |
-| [BLI_bit_vector.hh:L254](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L254) | `void append(const bool value)` |
-| [BLI_bit_vector.hh:L262](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L262) | `BitIterator begin() const` |
-| [BLI_bit_vector.hh:L267](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L267) | `BitIterator end() const` |
-| [BLI_bit_vector.hh:L272](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L272) | `MutableBitIterator begin()` |
-| [BLI_bit_vector.hh:L277](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L277) | `MutableBitIterator end()` |
-| [BLI_bit_vector.hh:L286](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L286) | `void resize(const int64_t new_size_in_bits, const bool value = false)` |
-| [BLI_bit_vector.hh:L295](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L295) | `MutableBitSpan(data_, IndexRange::from_begin_end(old_size_in_bits, new_size_in_bits))` |
-| [BLI_bit_vector.hh:L303](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L303) | `void fill(const bool value)` |
-| [BLI_bit_vector.hh:L305](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L305) | `MutableBitSpan(data_, size_in_bits_).set_all(value);` |
-| [BLI_bit_vector.hh:L312](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L312) | `void reserve(const int new_capacity_in_bits)` |
-| [BLI_bit_vector.hh:L321](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L321) | `void clear()` |
-| [BLI_bit_vector.hh:L329](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L329) | `void clear_and_shrink()` |
-| [BLI_bit_vector.hh:L340](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L340) | `void ensure_space_for_one()` |
-| [BLI_bit_vector.hh:L347](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L347) | `BLI_NOINLINE void realloc_to_at_least(const int64_t min_capacity_in_bits,` |
-| [BLI_bit_vector.hh:L379](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L379) | `bool is_inline() const` |
-| [BLI_bit_vector.hh:L384](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L384) | `int64_t used_ints_amount() const` |
-| [BLI_bit_vector.hh:L391](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L391) | `inline BoundedBitSpan to_best_bit_span(const BitVector<InlineBufferCapacity, Allocator> &data)` |
-| [BLI_bit_vector.hh:L397](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L397) | `inline MutableBoundedBitSpan to_best_bit_span(BitVector<InlineBufferCapacity, Allocator> &data)` |
-
-### 同名符号出现位置
-
-以下表提供跨文件阅读入口，包含声明、调用或测试使用；没有经过完整C++名称解析，不把它命名为已证明的运行时调用图。
-
-| 符号 | 位置 | 文本证据 |
-|---|---|---|
-| `begin` | [BKE_attribute_storage.hh:L271](../../../../../source/blender/blenkernel/BKE_attribute_storage.hh#L271) | `Iterator begin() const;` |
-| `begin` | [BKE_attribute_storage.hh:L274](../../../../../source/blender/blenkernel/BKE_attribute_storage.hh#L274) | `MutableIterator begin();` |
-| `begin` | [BKE_attribute_storage.hh:L317](../../../../../source/blender/blenkernel/BKE_attribute_storage.hh#L317) | `inline AttributeStorage::Iterator AttributeStorage::begin() const` |
-| `end` | [BKE_attribute_storage.hh:L272](../../../../../source/blender/blenkernel/BKE_attribute_storage.hh#L272) | `Iterator end() const;` |
-| `end` | [BKE_attribute_storage.hh:L275](../../../../../source/blender/blenkernel/BKE_attribute_storage.hh#L275) | `MutableIterator end();` |
-| `end` | [BKE_attribute_storage.hh:L322](../../../../../source/blender/blenkernel/BKE_attribute_storage.hh#L322) | `inline AttributeStorage::Iterator AttributeStorage::end() const` |
-| `size` | [BKE_curves.hh:L599](../../../../../source/blender/blenkernel/BKE_curves.hh#L599) | `return {curve_index + points.start(), points.size() + 1};` |
-| `size` | [BKE_curves.hh:L1085](../../../../../source/blender/blenkernel/BKE_curves.hh#L1085) | `return {start, curves::segments_num(points.size(), cyclic)};` |
-| `size` | [BKE_mesh.hh:L308](../../../../../source/blender/blenkernel/BKE_mesh.hh#L308) | `return corner - 1 + (corner == face.start()) * face.size();` |
-| `is_empty` | [BKE_attribute.hh:L780](../../../../../source/blender/blenkernel/BKE_attribute.hh#L780) | `if (name.is_empty()) {` |
-| `is_empty` | [BKE_attribute.hh:L798](../../../../../source/blender/blenkernel/BKE_attribute.hh#L798) | `if (name.is_empty()) {` |
-| `is_empty` | [BKE_curves.hh:L185](../../../../../source/blender/blenkernel/BKE_curves.hh#L185) | `bool is_empty() const;` |
-| `index_range` | [bvhutils.cc:L492](../../../../../source/blender/blenkernel/intern/bvhutils.cc#L492) | `for (const int i : faces.index_range()) {` |
-| `index_range` | [bvhutils.cc:L514](../../../../../source/blender/blenkernel/intern/bvhutils.cc#L514) | `for (const int tri : corner_tris.index_range()) {` |
-| `index_range` | [bvhutils.cc:L589](../../../../../source/blender/blenkernel/intern/bvhutils.cc#L589) | `for (const int i : edges.index_range()) {` |
-| `take_front` | [mesh.cc:L782](../../../../../source/blender/blenkernel/intern/mesh.cc#L782) | `face_indices.take_front(split),` |
-| `take_front` | [mesh.cc:L1048](../../../../../source/blender/blenkernel/intern/mesh.cc#L1048) | `face_offsets.take_front(face_sizes.size()).copy_from(face_sizes);` |
-| `take_front` | [mesh.cc:L1731](../../../../../source/blender/blenkernel/intern/mesh.cc#L1731) | `result.as_mutable_span().take_front(positions.size()).copy_from(positions);` |
-| `take_back` | [BLI_generic_span.hh:L133](../../../../../source/blender/blenlib/BLI_generic_span.hh#L133) | `GSpan take_back(const int64_t n) const` |
-| `take_back` | [BLI_generic_span.hh:L261](../../../../../source/blender/blenlib/BLI_generic_span.hh#L261) | `GMutableSpan take_back(const int64_t n) const` |
-| `take_back` | [BLI_index_range.hh:L339](../../../../../source/blender/blenlib/BLI_index_range.hh#L339) | `constexpr IndexRange take_back(int64_t n) const` |
-| `drop_front` | [mesh.cc:L790](../../../../../source/blender/blenkernel/intern/mesh.cc#L790) | `face_indices.drop_front(split),` |
-| `drop_front` | [mesh.cc:L1732](../../../../../source/blender/blenkernel/intern/mesh.cc#L1732) | `result.as_mutable_span().drop_front(positions.size()).fill(float3(0));` |
-| `drop_front` | [mesh_normals.cc:L1337](../../../../../source/blender/blenkernel/intern/mesh_normals.cc#L1337) | `BLI_assert(local_corner_visited.as_span().drop_front(start_local_corner).contains(false));` |
-| `drop_back` | [node_tree_reference_lifetimes.cc:L616](../../../../../source/blender/blenkernel/intern/node_tree_reference_lifetimes.cc#L616) | `const Span<const bNodeSocket *> sockets = group_output_node->input_sockets().drop_back(1);` |
-| `drop_back` | [node_tree_reference_lifetimes.cc:L667](../../../../../source/blender/blenkernel/intern/node_tree_reference_lifetimes.cc#L667) | `const Span<const bNodeSocket *> sockets = output_node.input_sockets().drop_back(1);` |
-| `drop_back` | [node_tree_reference_lifetimes.cc:L933](../../../../../source/blender/blenkernel/intern/node_tree_reference_lifetimes.cc#L933) | `group_output_node->input_sockets().drop_back(1))` |
-| `data` | [BKE_attribute.hh:L133](../../../../../source/blender/blenkernel/BKE_attribute.hh#L133) | `: AttributeInit(Type::Shared), data(data), sharing_info(&sharing_info)` |
-| `data` | [BKE_attribute_storage.hh:L112](../../../../../source/blender/blenkernel/BKE_attribute_storage.hh#L112) | `const DataVariant &data() const;` |
-| `data` | [BKE_attribute_storage.hh:L296](../../../../../source/blender/blenkernel/BKE_attribute_storage.hh#L296) | `inline const Attribute::DataVariant &Attribute::data() const` |
-
-### 生命周期推理图
-
-```mermaid
-flowchart LR
-  O["调用者或源数据拥有者"]:::input
-  V["BitSpan与BitVector的接口与状态"]:::abstraction
-  B["借用地址、引用或视图"]:::data
-  W["实际计算或修改"]:::compute
-  R["结果与清理责任"]:::result
-  O -->|"创建与配置"| V
-  O -->|"保障寿命"| B
-  B -->|"访问前验证"| W
-  V -->|"规定操作"| W
-  W -->|"交付或销毁"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+}  // namespace blender
 ```
 
-这是审查生命周期的通用模型。具体类是否拥有数据由本篇成员、构造、析构和调用者一起证明；任何箭头都不自动代表shared_ptr。
+</details>
 
-## 六、把代码放进具体数据中推演
+## 语法与相关类型
 
-本方向的共同数值模型如下。本篇的专门检查是：建立长度跨越字边界的位集合，验证首尾部分字和邻位保护。
+### 模板 template
 
-| 步骤 | 数据或状态 | 为什么需要这一步 |
-|---|---|---|
-| 初始 | size=0, capacity=4 | 只有存储，没有可读取的T元素 |
-| 追加A | size=1, capacity=4 | 在第0个位置构造A |
-| 追加到满 | size=4, capacity=4 | 四个位置均已构造 |
-| 请求第五个 | 需扩大存储 | 旧地址仍需被正确管理 |
-| 迁移成功 | 新缓冲含原4元素 | 提交新指针并释放旧存储 |
-| 追加E | size=5 | 只在成功构造后扩大有效区间 |
+模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
 
-```mermaid
-flowchart TB
-  T0["size=0, capacity=4"]:::input
-  T1["size=1, capacity=4"]:::compute
-  T2["size=4, capacity=4"]:::compute
-  T3["需扩大存储"]:::compute
-  T4["新缓冲含原4元素"]:::compute
-  T5["size=5"]:::result
-  T0 -->|"追加A"| T1
-  T1 -->|"追加到满"| T2
-  T2 -->|"请求第五个"| T3
-  T3 -->|"迁移成功"| T4
-  T4 -->|"追加E"| T5
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
+把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
 
-图是教学推演模型；精确分支与状态更新以本篇摘录及调用契约为准。
+### 依赖名称 typename
 
-### 本篇独立练习与参考思路
+typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+
+区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+
+### 约束 requires
+
+requires表达式或requires子句限制模板参与重载的条件。它提供编译期可用性检查，不是运行时if，不能指望输入到达程序后再被这一机制验证。
+
+构造满足和不满足约束的两个类型，观察候选被排除而不是在函数内返回错误。
+
+### 常量求值 constexpr
+
+constexpr声明允许相应实体参与常量求值，但constexpr函数仍可以在运行时执行。是否常量求值由调用场景和表达式合法性共同决定。
+
+比较constexpr变量初始化和从运行时输入调用同一函数。
+
+### 只读限定 const
+
+const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
+
+分别写T* const、const T*与const T* const，并画出不可修改的层次。
+
+### 移动转换 std::move
+
+std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
+
+记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
+
+### 异常约定 noexcept
+
+noexcept表达式可以依赖类型特征。违反不抛异常约定会终止程序；它不是自动捕获异常，也不是资源回滚代码。
+
+找出声明的条件与实际可能抛出的分配、构造操作是否一致。
+
+### 异常边界 try与catch
+
+try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
+
+在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
+
+### 显式静态转换 static_cast
+
+static_cast表达编译期允许的转换，不会自动验证运行时真实类型、指针寿命或索引边界。由void指针恢复T指针时，调用者仍须保证实际存储中确有合法T对象。
+
+标出转换前后的类型以及正确性依据来自哪里。
+
+### 限定转换 const_cast
+
+const_cast可以改变访问路径的限定，但不能让本来就是const的对象合法可写。常用于复用只读实现时，仍需检查底层对象是否实际可变。
+
+对非const对象的const引用与真正const对象分别分析修改是否合法。
+
+### 可选值 optional
+
+optional把不存在与存在的T区分开，T的构造和析构跟随engaged状态变化。访问前应由has_value或条件分支证明存在。
+
+把空Field状态与合法常量零区分，不能用某个普通值代替不存在。
+
+### 对齐 alignof
+
+alignof得到类型要求的地址对齐。分配足够字节后仍需把地址对齐到相应边界，内嵌缓冲也一样。
+
+对齐a为2的幂时可推导向上取整，但仍要考虑溢出与边界。
+
+### 对象表示 sizeof
+
+sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeof视图很小并不说明底层数组很小。
+
+分别统计容器对象、容量字节和元素拥有的间接资源。
+
+### 构造与new表达式
+
+普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
+
+追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
+
+### 内部断言 assert
+
+断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
+
+对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
+
+### 编译期分支 if constexpr
+
+条件在实例化时决定被保留的分支，这常用于不同类型的合法操作选择。它与运行时if有不同的实例化检查规则。
+
+找出每个分支依赖哪些类型特征，再使用满足与不满足条件的类型。
+
+### 受控访问 friend
+
+friend授予指定函数或类访问非公开成员的权限，并不意味着继承，也不自动扩展到友元的派生类。
+
+解释执行器为何需要访问包装器的内部映射，同时检查边界是否仍清楚。
+
+### 类型别名 using
+
+类型别名为已有类型建立名字，不创建运行期对象。它常把模板内部使用的类型统一暴露给泛型调用者。
+
+展开别名直到基础类型，区分类型别名和变量声明。
+
+## 实现练习与验证
 
 建立长度跨越字边界的位集合，验证首尾部分字和邻位保护。
 
-参考思路：一个机器字包含多个位，写入单个位往往是读改写；代理引用、边界掩码和并发写入需要单独推理。
+参考推理：按存储字划分并行范围或使用适当原子操作；检查末尾无效位掩码。
 
-将输入、预期结果和资源责任分成三张清单。先用最直接的实现给出可核对的答案，再替换成对应源码使用的表示；比较结果不变的条件，而不是只比较接口名字。
+构造成功次数减析构次数应等于当前存活对象数；异常之后资源计数应回到合法状态。
 
-验收依据：构造成功次数减析构次数应等于当前存活对象数；异常之后资源计数应回到合法状态。
-
-## 七、复杂度、设计取舍与其他基础库
+## 历史、跨库比较与证据
 
 对比std::vector、std::array、std::span与LLVM SmallVector、ArrayRef时，分别比较拥有关系、内嵌存储、大小是否属于类型和失效条件。不要根据同名方法推断完全相同契约。
 
-本篇的具体取舍：一个机器字包含多个位，写入单个位往往是读改写；代理引用、边界掩码和并发写入需要单独推理。
-
-| 观察维度 | 从源码取得证据的方法 | 本篇要避免的误判 |
-|---|---|---|
-| 时间 | 对循环次数、分派次数和重建频率分别计数 | 看到单次常数操作就断定整个操作序列是常数成本 |
-| 内存 | 区分对象本体、容量存储、间接资源和共享控制块 | 用sizeof代替总内存 |
-| 安全 | 沿构造、失败回滚、销毁与失效逐路径检查 | 把断言或非空指针当作完整安全证明 |
-| 并发 | 逐字段确认锁、发布顺序和借用寿命 | 把引用计数线程安全等同数据读写线程安全 |
-
-相关一手资料：
-
-- [C++公开工作草案](https://eel.is/c++draft/)：持续更新的工作草案；语言与标准库语义以相应章节为准。
-- [LLVM Programmer’s Manual](https://llvm.org/docs/ProgrammersManual.html)：在线版，2026-10-14查阅；仅比较设计思路，不保证与本地LLVM版本一致。
-
-资料用于核对契约和进一步阅读；这里没有声称外部库与Blender实现相同，也没有把上游性能数字当作本机实测。
-
-## 八、历史提交与设计演化
-
-本篇主要讲当前接口或辅助实现，方向导航给出相关架构演化提交；没有把不涉及本篇文件的提交硬写成该实现的引入证据。
-
-## 九、反例、测试入口与掌握标准
-
-仓库测试入口：
-
-- [BLI_bit_span_test.cc](../../../../../source/blender/blenlib/tests/BLI_bit_span_test.cc)：阅读输入、断言与覆盖边界；本篇不把“存在测试”写成“本轮已运行”。
-- [BLI_bit_vector_test.cc](../../../../../source/blender/blenlib/tests/BLI_bit_vector_test.cc)：阅读输入、断言与覆盖边界；本篇不把“存在测试”写成“本轮已运行”。
-
-需要实际构造的反例：
-
-- 空输入或没有结果需求：确认接口允许的空状态与不允许访问的操作。
-- 边界位置和退化结构：把长度为1、末尾位置、重复值或深链代入真实分支。
-- 生命周期结束或修改之后：检查保存的指针、引用、结果视图是否仍有效。
-- 与本篇核心不变量相冲突的输入：建立长度跨越字边界的位集合，验证首尾部分字和邻位保护。
-
-### 可运行的教学参考程序
-
-[reference_exercises.cc](../_tools/reference_exercises.cc)包含独立于Blender的C++20参考检查：视图、简化SmallVector、异常回滚、哈希碰撞与删除、偏移数组、拓扑映射、共享缓存、表达式、惰性分支、闭包和暴力最近邻。
-
-参考程序有意省略生产实现的完整能力。例如SmallVector禁止复制移动容器，不支持只能移动的元素，并禁止append参数别名到自身元素；TinyMap固定8槽，不提供增长。程序通过不能替代Blender实现测试。实际运行结果、编译器与命令见验收报告。
-
-掌握标准：离开源码解释“按位存储为什么不能像普通bool数组那样处理引用？”；独立完成上述练习；能指出一个会破坏拥有型容器相关约束的最小反例，并用具体代码行说明检查或修复应放在哪里。
+[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)

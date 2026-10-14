@@ -1,40 +1,40 @@
 # 03-09 CPPType复制移动重定位
 
-[方向导航](README.md) · [总目录](../README.md) · [覆盖索引](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
 
-> 阅读顺序：问题与数据模型 → 语法与类型 → 源码逐行 → 调用线索 → 历史与取舍 → 推演和练习。
-
-- 基准 HEAD：`cbda6b96c26c0dee3c3b5cbb93960c4ac06a6b30`。
-- 记录日期：2026-10-14。
-- 教学示例状态：正文中的推演不是本机性能实测；已运行练习见验收报告。
-
-## 一、从问题到设计
+## 从问题到实现
 
 移动构造和重定位为什么不能混为一谈？
 
 重定位还包含源对象生命周期结束；重复析构源或漏析构目标都会破坏所有权。
 
-本篇把语法、数据语义和系统取舍连接起来。把存储分配、对象构造、类型操作和最终清理拆开建模。
-
-### 本篇独立模型与设计推理
+**数据模型**
 
 移动构造后源仍是合法对象，重定位还需要按约定结束源寿命。
 
-设计取舍：对平凡类型可能用表示层优化，对拥有资源类型须保留对象操作语义。
+**设计取舍**
 
-最小反例：移动后又把源内资源当目标资源各释放一次。
+对平凡类型可能用表示层优化，对拥有资源类型须保留对象操作语义。
 
-推导与处理：用资源唯一编号追踪所有权，验证迁移前后只有一个最终拥有者。
+**最小反例**
+
+移动后又把源内资源当目标资源各释放一次。
+
+**推导**
+
+用资源唯一编号追踪所有权，验证迁移前后只有一个最终拥有者。
+
+## 阅读地图与执行推演
 
 ```mermaid
 flowchart TB
-  M["移动构造后源仍是合法对象，重定位还需要按<br/>约定结束源寿命。"]:::data
-  T["对平凡类型可能用表示层优化，对拥有资源类<br/>型须保留对象操作语义。"]:::abstraction
-  X["移动后又把源内资源当目标资源各释放一次。"]:::error
-  A["用资源唯一编号追踪所有权，验证迁移前后只<br/>有一个最终拥有者。"]:::result
-  M -->|"建立约束"| T
-  T -->|"构造反例"| X
-  X -->|"恢复不变量"| A
+  M["移动构造后源仍是合法对象，重定位还需要按约<br/>定结束源寿命。"]:::data
+  C["对平凡类型可能用表示层优化，对拥有资源类型<br/>须保留对象操作语义。"]:::abstraction
+  B["移动后又把源内资源当目标资源各释放一次。"]:::error
+  R["用资源唯一编号追踪所有权，验证迁移前后只有<br/>一个最终拥有者。"]:::result
+  M -->|"明确约束"| C
+  C -->|"检验边界"| B
+  B -->|"恢复正确性"| R
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -42,61 +42,17 @@ flowchart TB
   classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
-
-### 源码范围与相邻篇章
-
-| 文件 | 本篇逐行范围 | 基准SHA-256 |
-|---|---|---|
-| [source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) | L541—L808 | `c60368fa9ddd6891cb2063b203dc846355fc17d86f16005763354999d5beb1e2` |
-
-同一主讲文件可能分多篇覆盖；超出本篇范围的符号通过覆盖索引定位。空行与纯注释保留在源码摘录中，逐行表解释有效语句与语法边界；许可证头统一保留。
-
-前篇：[CPPType构造与析构](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md).
-
-后篇：[运行时到静态类型分派](10-%E8%BF%90%E8%A1%8C%E6%97%B6%E5%88%B0%E9%9D%99%E6%80%81%E7%B1%BB%E5%9E%8B%E5%88%86%E6%B4%BE.md).
-
-## 二、类型、数据与阅读地图
-
-```mermaid
-flowchart TB
-  Q["移动构造和重定位为什么不能混为一谈？"]:::input
-  C0["原始存储"]:::abstraction
-  C1["类型描述"]:::data
-  C2["对象操作"]:::data
-  C3["作用域清理"]:::data
-  R["CPPType复制移动重定位"]:::result
-  Q -->|"建立模型"| C0
-  C0 -->|"区分职责"| C1
-  C1 -->|"区分职责"| C2
-  C2 -->|"区分职责"| C3
-  C3 -->|"回到源码"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
-
-这是概念依赖图，边表示阅读关系，不声称是运行时调用顺序。
-
-### 直接编译依赖
 
 ```mermaid
 flowchart LR
-  S["BLI_cpp_type.hh"]:::abstraction
-  I0["BLI_dynamic_stack_buffer.hh"]:::data
-  I1["BLI_enum_flags.hh"]:::data
-  I2["BLI_hash.hh"]:::data
-  I3["BLI_index_mask_fwd.hh"]:::data
-  I4["BLI_map.hh"]:::data
-  I5["BLI_parameter_pack_utils.hh"]:::data
-  S -->|"直接include"| I0
-  S -->|"直接include"| I1
-  S -->|"直接include"| I2
-  S -->|"直接include"| I3
-  S -->|"直接include"| I4
-  S -->|"直接include"| I5
+  F0["blender::CPPType::value_initialize"]:::input
+  F1["blender::CPPType::value_initialize_n"]:::compute
+  F2["blender::CPPType::value_initialize_indices"]:::compute
+  F3["blender::CPPType::destruct"]:::compute
+  F4["blender::CPPType::destruct_n"]:::compute
+  F5["blender::CPPType::destruct_indices"]:::compute
+  F6["blender::CPPType::copy_assign"]:::compute
+  F7["blender::CPPType::copy_assign_n"]:::compute
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -105,380 +61,2010 @@ flowchart LR
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-箭头只表示头文件包含关系；完整调用线索见后面的符号定位表。
+```mermaid
+flowchart LR
+  P0["原始存储"]:::input
+  P1["类型描述"]:::data
+  P2["对象操作"]:::data
+  P3["作用域清理"]:::result
+  P0 -->|"分析关系"| P1
+  P1 -->|"分析关系"| P2
+  P2 -->|"分析关系"| P3
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-## 三、关键词、语法与类型角色
+```mermaid
+flowchart TB
+  S0["sizeof(T), alignof(T)"]:::input
+  S1["尚无一般意义上的已构造T"]:::compute
+  S2["T生命周期开始"]:::compute
+  S3["建立或更新另一个对象"]:::compute
+  S4["执行登记的析构"]:::compute
+  S5["释放缓冲"]:::result
+  S0 -->|"取得地址"| S1
+  S1 -->|"构造成功"| S2
+  S2 -->|"复制或移动"| S3
+  S3 -->|"作用域退出"| S4
+  S4 -->|"归还存储"| S5
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-### 模板 template
+图中的数值推演是本方向的教学模型；实际函数之间的调用边与概念分析边分别标注，不能把概念关系当作运行时调度顺序。
 
-模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
+## 完整源码单元与就地讲解
 
-具体检查：把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
+中文讲解直接放在相关代码旁，复杂机制在代码下展开。原文折叠区保留基准行号；不需要在行号表和函数之间来回查找。类布局可分段展示，函数实现不按固定行数切开。
 
-### 依赖名称 typename
-
-typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
-
-具体检查：区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
-
-### 只读限定 const
-
-const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
-
-具体检查：分别写T* const、const T*与const T* const，并画出不可修改的层次。
-
-### 异常边界 try与catch
-
-try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
-
-具体检查：在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
-
-### 内部断言 assert
-
-断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
-
-具体检查：对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
-
-### 类型别名 using
-
-类型别名为已有类型建立名字，不创建运行期对象。它常把模板内部使用的类型统一暴露给泛型调用者。
-
-具体检查：展开别名直到基础类型，区分类型别名和变量声明。
-
-## 四、真实源码与逐行讲解
-
-源码块保持原行内容，原始行号由小节标题及逐行表给出。表中的调用定位是静态阅读辅助；重载、模板实例化、宏展开和虚调用需结合完整声明，不能仅凭词法出现证明动态调用。
-
-### BLI_cpp_type.hh：L541—L585
-
-<!-- source:source/blender/blenlib/BLI_cpp_type.hh:541:585 -->
+<!-- annotated:cb29333fc0a707 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L541—L541</summary>
+
+<!-- original:cb29333fc0a707:source/blender/blenlib/BLI_cpp_type.hh:541:541 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-fbcaf2a7fa47e6a2"></a>
+
+### `blender::CPPType::value_initialize`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L542—L545。
+
+接口参数：
+
+- `void *ptr`
+
+**教学注释版**
+
+<!-- annotated:55d41a19b23173 -->
+
+```cpp
 inline void CPPType::value_initialize(void *ptr) const
 {
   value_initialize_(ptr);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L542—L545</summary>
+
+<!-- original:55d41a19b23173:source/blender/blenlib/BLI_cpp_type.hh:542:545 -->
+
+```cpp
+inline void CPPType::value_initialize(void *ptr) const
+{
+  value_initialize_(ptr);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `value_initialize_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L544。
+
+<!-- annotated:a7954a5366fa59 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L546—L546</summary>
+
+<!-- original:a7954a5366fa59:source/blender/blenlib/BLI_cpp_type.hh:546:546 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-151b9bad4e4ccf5e"></a>
+
+### `blender::CPPType::value_initialize_n`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L547—L550。
+
+接口参数：
+
+- `void *ptr`
+- `int64_t n`
+
+**教学注释版**
+
+<!-- annotated:72681d7701968a -->
+
+```cpp
 inline void CPPType::value_initialize_n(void *ptr, int64_t n) const
 {
   value_initialize_n_(ptr, n);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L547—L550</summary>
+
+<!-- original:72681d7701968a:source/blender/blenlib/BLI_cpp_type.hh:547:550 -->
+
+```cpp
+inline void CPPType::value_initialize_n(void *ptr, int64_t n) const
+{
+  value_initialize_n_(ptr, n);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `value_initialize_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L549。
+
+<!-- annotated:3930d414fd7394 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L551—L551</summary>
+
+<!-- original:3930d414fd7394:source/blender/blenlib/BLI_cpp_type.hh:551:551 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8a08e958708a4989"></a>
+
+### `blender::CPPType::value_initialize_indices`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L552—L555。
+
+接口参数：
+
+- `void *ptr`
+- `const IndexMask &mask`
+
+**教学注释版**
+
+<!-- annotated:1b282a84e6411e -->
+
+```cpp
 inline void CPPType::value_initialize_indices(void *ptr, const IndexMask &mask) const
 {
   value_initialize_indices_(ptr, mask);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L552—L555</summary>
+
+<!-- original:1b282a84e6411e:source/blender/blenlib/BLI_cpp_type.hh:552:555 -->
+
+```cpp
+inline void CPPType::value_initialize_indices(void *ptr, const IndexMask &mask) const
+{
+  value_initialize_indices_(ptr, mask);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `value_initialize_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L554。
+
+<!-- annotated:04cb08ae2f960b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L556—L556</summary>
+
+<!-- original:04cb08ae2f960b:source/blender/blenlib/BLI_cpp_type.hh:556:556 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-85f4f006e822b3c7"></a>
+
+### `blender::CPPType::destruct`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L557—L560。
+
+接口参数：
+
+- `void *ptr`
+
+**教学注释版**
+
+<!-- annotated:57be726a55f25e -->
+
+```cpp
 inline void CPPType::destruct(void *ptr) const
 {
   destruct_(ptr);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L557—L560</summary>
+
+<!-- original:57be726a55f25e:source/blender/blenlib/BLI_cpp_type.hh:557:560 -->
+
+```cpp
+inline void CPPType::destruct(void *ptr) const
+{
+  destruct_(ptr);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `destruct_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L559。
+
+<!-- annotated:796a9f56f85366 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L561—L561</summary>
+
+<!-- original:796a9f56f85366:source/blender/blenlib/BLI_cpp_type.hh:561:561 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-1858ea1d7f707a74"></a>
+
+### `blender::CPPType::destruct_n`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L562—L565。
+
+接口参数：
+
+- `void *ptr`
+- `int64_t n`
+
+**教学注释版**
+
+<!-- annotated:7680f645da5a1a -->
+
+```cpp
 inline void CPPType::destruct_n(void *ptr, int64_t n) const
 {
   destruct_n_(ptr, n);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L562—L565</summary>
+
+<!-- original:7680f645da5a1a:source/blender/blenlib/BLI_cpp_type.hh:562:565 -->
+
+```cpp
+inline void CPPType::destruct_n(void *ptr, int64_t n) const
+{
+  destruct_n_(ptr, n);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `destruct_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L564。
+
+<!-- annotated:a4709b7c39f2d4 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L566—L566</summary>
+
+<!-- original:a4709b7c39f2d4:source/blender/blenlib/BLI_cpp_type.hh:566:566 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-399974b7f6ab3ceb"></a>
+
+### `blender::CPPType::destruct_indices`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L567—L570。
+
+接口参数：
+
+- `void *ptr`
+- `const IndexMask &mask`
+
+**教学注释版**
+
+<!-- annotated:1c7fc8a768e0f6 -->
+
+```cpp
 inline void CPPType::destruct_indices(void *ptr, const IndexMask &mask) const
 {
   destruct_indices_(ptr, mask);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L567—L570</summary>
+
+<!-- original:1c7fc8a768e0f6:source/blender/blenlib/BLI_cpp_type.hh:567:570 -->
+
+```cpp
+inline void CPPType::destruct_indices(void *ptr, const IndexMask &mask) const
+{
+  destruct_indices_(ptr, mask);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `destruct_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L569。
+
+<!-- annotated:04613f5cc38cb5 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L571—L571</summary>
+
+<!-- original:04613f5cc38cb5:source/blender/blenlib/BLI_cpp_type.hh:571:571 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-08648460bfa418fe"></a>
+
+### `blender::CPPType::copy_assign`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L572—L575。
+
+接口参数：
+
+- `const void *src`
+- `void *dst`
+
+**教学注释版**
+
+<!-- annotated:44e5171a3f5752 -->
+
+```cpp
 inline void CPPType::copy_assign(const void *src, void *dst) const
 {
   copy_assign_(src, dst);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L572—L575</summary>
+
+<!-- original:44e5171a3f5752:source/blender/blenlib/BLI_cpp_type.hh:572:575 -->
+
+```cpp
+inline void CPPType::copy_assign(const void *src, void *dst) const
+{
+  copy_assign_(src, dst);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `copy_assign_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L574。
+
+<!-- annotated:4cfeb42e854066 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L576—L576</summary>
+
+<!-- original:4cfeb42e854066:source/blender/blenlib/BLI_cpp_type.hh:576:576 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-bdf812bca95da2b6"></a>
+
+### `blender::CPPType::copy_assign_n`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L577—L580。
+
+接口参数：
+
+- `const void *src`
+- `void *dst`
+- `int64_t n`
+
+**教学注释版**
+
+<!-- annotated:865925e26efc90 -->
+
+```cpp
 inline void CPPType::copy_assign_n(const void *src, void *dst, int64_t n) const
 {
   copy_assign_n_(src, dst, n);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L577—L580</summary>
+
+<!-- original:865925e26efc90:source/blender/blenlib/BLI_cpp_type.hh:577:580 -->
+
+```cpp
+inline void CPPType::copy_assign_n(const void *src, void *dst, int64_t n) const
+{
+  copy_assign_n_(src, dst, n);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `copy_assign_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L579。
+
+<!-- annotated:95270da1b52033 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L581—L581</summary>
+
+<!-- original:95270da1b52033:source/blender/blenlib/BLI_cpp_type.hh:581:581 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-c5ba85ee3070672a"></a>
+
+### `blender::CPPType::copy_assign_indices`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L582—L585。
+
+接口参数：
+
+- `const void *src`
+- `void *dst`
+- `const IndexMask &mask`
+
+**教学注释版**
+
+<!-- annotated:1c7104af948d50 -->
+
+```cpp
 inline void CPPType::copy_assign_indices(const void *src, void *dst, const IndexMask &mask) const
 {
   copy_assign_indices_(src, dst, mask);
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L582—L585</summary>
 
-- `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。
-- `value_initialize_n`：按值初始化对象；对基本类型的初始化行为不同于未初始化分配。
+<!-- original:1c7104af948d50:source/blender/blenlib/BLI_cpp_type.hh:582:585 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L542 | 出现调用或函数声明 `CPPType::value_initialize`，对应表达式为 `inline void CPPType::value_initialize(void *ptr) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L543 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L544 | 出现调用或函数声明 `value_initialize_`，对应表达式为 `value_initialize_(ptr);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L545 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L547 | 本行使用 `value_initialize_n`：按值初始化对象；对基本类型的初始化行为不同于未初始化分配。 |
-| L548 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L549 | 出现调用或函数声明 `value_initialize_n_`，对应表达式为 `value_initialize_n_(ptr, n);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L550 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L552 | 出现调用或函数声明 `CPPType::value_initialize_indices`，对应表达式为 `inline void CPPType::value_initialize_indices(void *ptr, const IndexMask &mask) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L553 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L554 | 出现调用或函数声明 `value_initialize_indices_`，对应表达式为 `value_initialize_indices_(ptr, mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L555 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L557 | 出现调用或函数声明 `CPPType::destruct`，对应表达式为 `inline void CPPType::destruct(void *ptr) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L558 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L559 | 出现调用或函数声明 `destruct_`，对应表达式为 `destruct_(ptr);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L560 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L562 | 本行使用 `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。 |
-| L563 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L564 | 出现调用或函数声明 `destruct_n_`，对应表达式为 `destruct_n_(ptr, n);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L565 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L567 | 出现调用或函数声明 `CPPType::destruct_indices`，对应表达式为 `inline void CPPType::destruct_indices(void *ptr, const IndexMask &mask) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L568 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L569 | 出现调用或函数声明 `destruct_indices_`，对应表达式为 `destruct_indices_(ptr, mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L570 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L572 | 出现调用或函数声明 `CPPType::copy_assign`，对应表达式为 `inline void CPPType::copy_assign(const void *src, void *dst) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L573 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L574 | 出现调用或函数声明 `copy_assign_`，对应表达式为 `copy_assign_(src, dst);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L575 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L577 | 出现调用或函数声明 `CPPType::copy_assign_n`，对应表达式为 `inline void CPPType::copy_assign_n(const void *src, void *dst, int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L578 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L579 | 出现调用或函数声明 `copy_assign_n_`，对应表达式为 `copy_assign_n_(src, dst, n);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L580 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L582 | 出现调用或函数声明 `CPPType::copy_assign_indices`，对应表达式为 `inline void CPPType::copy_assign_indices(const void *src, void *dst, const IndexMask &mask) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L583 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L584 | 出现调用或函数声明 `copy_assign_indices_`，对应表达式为 `copy_assign_indices_(src, dst, mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L585 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+inline void CPPType::copy_assign_indices(const void *src, void *dst, const IndexMask &mask) const
+{
+  copy_assign_indices_(src, dst, mask);
+}
+```
 
-### BLI_cpp_type.hh：L586—L631
+</details>
 
-<!-- source:source/blender/blenlib/BLI_cpp_type.hh:586:631 -->
+**继续追踪实现**
+
+- `copy_assign_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L584。
+
+<!-- annotated:19c38b0861d739 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L586—L586</summary>
+
+<!-- original:19c38b0861d739:source/blender/blenlib/BLI_cpp_type.hh:586:586 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9ac673adef57e5a6"></a>
+
+### `blender::CPPType::copy_assign_compressed`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L587—L592。
+
+接口参数：
+
+- `const void *src`
+- `void *dst`
+- `const IndexMask &mask`
+
+**教学注释版**
+
+<!-- annotated:84c07d116c47f4 -->
+
+```cpp
 inline void CPPType::copy_assign_compressed(const void *src,
                                             void *dst,
                                             const IndexMask &mask) const
 {
   copy_assign_compressed_(src, dst, mask);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L587—L592</summary>
+
+<!-- original:84c07d116c47f4:source/blender/blenlib/BLI_cpp_type.hh:587:592 -->
+
+```cpp
+inline void CPPType::copy_assign_compressed(const void *src,
+                                            void *dst,
+                                            const IndexMask &mask) const
+{
+  copy_assign_compressed_(src, dst, mask);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `copy_assign_compressed_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L591。
+
+<!-- annotated:fc9610d156cbf5 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L593—L593</summary>
+
+<!-- original:fc9610d156cbf5:source/blender/blenlib/BLI_cpp_type.hh:593:593 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-cfda413a9784073e"></a>
+
+### `blender::CPPType::copy_construct`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L594—L597。
+
+接口参数：
+
+- `const void *src`
+- `void *dst`
+
+**教学注释版**
+
+<!-- annotated:347dd23a1ba658 -->
+
+```cpp
 inline void CPPType::copy_construct(const void *src, void *dst) const
 {
   copy_construct_(src, dst);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L594—L597</summary>
+
+<!-- original:347dd23a1ba658:source/blender/blenlib/BLI_cpp_type.hh:594:597 -->
+
+```cpp
+inline void CPPType::copy_construct(const void *src, void *dst) const
+{
+  copy_construct_(src, dst);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `copy_construct_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L596。
+
+<!-- annotated:01688e3153fbae -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L598—L598</summary>
+
+<!-- original:01688e3153fbae:source/blender/blenlib/BLI_cpp_type.hh:598:598 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3676f00cc2bda6e3"></a>
+
+### `blender::CPPType::copy_construct_n`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L599—L602。
+
+接口参数：
+
+- `const void *src`
+- `void *dst`
+- `int64_t n`
+
+**教学注释版**
+
+<!-- annotated:cdbe5f22bcea0e -->
+
+```cpp
 inline void CPPType::copy_construct_n(const void *src, void *dst, int64_t n) const
 {
   copy_construct_n_(src, dst, n);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L599—L602</summary>
+
+<!-- original:cdbe5f22bcea0e:source/blender/blenlib/BLI_cpp_type.hh:599:602 -->
+
+```cpp
+inline void CPPType::copy_construct_n(const void *src, void *dst, int64_t n) const
+{
+  copy_construct_n_(src, dst, n);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `copy_construct_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L601。
+
+<!-- annotated:1c157aa07b8369 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L603—L603</summary>
+
+<!-- original:1c157aa07b8369:source/blender/blenlib/BLI_cpp_type.hh:603:603 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3a03a15dfd4d33a5"></a>
+
+### `blender::CPPType::copy_construct_indices`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L604—L609。
+
+接口参数：
+
+- `const void *src`
+- `void *dst`
+- `const IndexMask &mask`
+
+**教学注释版**
+
+<!-- annotated:98cfba22c62be1 -->
+
+```cpp
 inline void CPPType::copy_construct_indices(const void *src,
                                             void *dst,
                                             const IndexMask &mask) const
 {
   copy_construct_indices_(src, dst, mask);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L604—L609</summary>
+
+<!-- original:98cfba22c62be1:source/blender/blenlib/BLI_cpp_type.hh:604:609 -->
+
+```cpp
+inline void CPPType::copy_construct_indices(const void *src,
+                                            void *dst,
+                                            const IndexMask &mask) const
+{
+  copy_construct_indices_(src, dst, mask);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `copy_construct_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L608。
+
+<!-- annotated:94603475584263 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L610—L610</summary>
+
+<!-- original:94603475584263:source/blender/blenlib/BLI_cpp_type.hh:610:610 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a23ef52383d4378c"></a>
+
+### `blender::CPPType::copy_construct_compressed`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L611—L616。
+
+接口参数：
+
+- `const void *src`
+- `void *dst`
+- `const IndexMask &mask`
+
+**教学注释版**
+
+<!-- annotated:566f329049e046 -->
+
+```cpp
 inline void CPPType::copy_construct_compressed(const void *src,
                                                void *dst,
                                                const IndexMask &mask) const
 {
   copy_construct_compressed_(src, dst, mask);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L611—L616</summary>
+
+<!-- original:566f329049e046:source/blender/blenlib/BLI_cpp_type.hh:611:616 -->
+
+```cpp
+inline void CPPType::copy_construct_compressed(const void *src,
+                                               void *dst,
+                                               const IndexMask &mask) const
+{
+  copy_construct_compressed_(src, dst, mask);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `copy_construct_compressed_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L615。
+
+<!-- annotated:54c2f039201a47 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L617—L617</summary>
+
+<!-- original:54c2f039201a47:source/blender/blenlib/BLI_cpp_type.hh:617:617 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-6a7ee5d525710ef4"></a>
+
+### `blender::CPPType::move_assign`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L618—L621。
+
+接口参数：
+
+- `void *src`
+- `void *dst`
+
+**教学注释版**
+
+<!-- annotated:2a4980d68c000a -->
+
+```cpp
 inline void CPPType::move_assign(void *src, void *dst) const
 {
   move_assign_(src, dst);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L618—L621</summary>
+
+<!-- original:2a4980d68c000a:source/blender/blenlib/BLI_cpp_type.hh:618:621 -->
+
+```cpp
+inline void CPPType::move_assign(void *src, void *dst) const
+{
+  move_assign_(src, dst);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `move_assign_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L620。
+
+<!-- annotated:6451af58c6b9e8 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L622—L622</summary>
+
+<!-- original:6451af58c6b9e8:source/blender/blenlib/BLI_cpp_type.hh:622:622 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-954927155163eda8"></a>
+
+### `blender::CPPType::move_assign_n`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L623—L626。
+
+接口参数：
+
+- `void *src`
+- `void *dst`
+- `int64_t n`
+
+**教学注释版**
+
+<!-- annotated:f6e0b252010b20 -->
+
+```cpp
 inline void CPPType::move_assign_n(void *src, void *dst, int64_t n) const
 {
   move_assign_n_(src, dst, n);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L623—L626</summary>
+
+<!-- original:f6e0b252010b20:source/blender/blenlib/BLI_cpp_type.hh:623:626 -->
+
+```cpp
+inline void CPPType::move_assign_n(void *src, void *dst, int64_t n) const
+{
+  move_assign_n_(src, dst, n);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `move_assign_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L625。
+
+<!-- annotated:4d948eb4cc08f7 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L627—L627</summary>
+
+<!-- original:4d948eb4cc08f7:source/blender/blenlib/BLI_cpp_type.hh:627:627 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b5c72b351a0921ae"></a>
+
+### `blender::CPPType::move_assign_indices`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L628—L631。
+
+接口参数：
+
+- `void *src`
+- `void *dst`
+- `const IndexMask &mask`
+
+**教学注释版**
+
+<!-- annotated:2bfea51d581904 -->
+
+```cpp
 inline void CPPType::move_assign_indices(void *src, void *dst, const IndexMask &mask) const
 {
   move_assign_indices_(src, dst, mask);
 }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L587 | 出现调用或函数声明 `CPPType::copy_assign_compressed`，对应表达式为 `inline void CPPType::copy_assign_compressed(const void *src,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L588 | 本行是连续声明或表达式的一部分：`void *dst,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L589 | 本行是连续声明或表达式的一部分：`const IndexMask &mask) const`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L590 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L591 | 出现调用或函数声明 `copy_assign_compressed_`，对应表达式为 `copy_assign_compressed_(src, dst, mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L592 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L594 | 出现调用或函数声明 `CPPType::copy_construct`，对应表达式为 `inline void CPPType::copy_construct(const void *src, void *dst) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L595 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L596 | 出现调用或函数声明 `copy_construct_`，对应表达式为 `copy_construct_(src, dst);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L597 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L599 | 出现调用或函数声明 `CPPType::copy_construct_n`，对应表达式为 `inline void CPPType::copy_construct_n(const void *src, void *dst, int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L600 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L601 | 出现调用或函数声明 `copy_construct_n_`，对应表达式为 `copy_construct_n_(src, dst, n);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L602 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L604 | 出现调用或函数声明 `CPPType::copy_construct_indices`，对应表达式为 `inline void CPPType::copy_construct_indices(const void *src,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L605 | 本行是连续声明或表达式的一部分：`void *dst,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L606 | 本行是连续声明或表达式的一部分：`const IndexMask &mask) const`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L607 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L608 | 出现调用或函数声明 `copy_construct_indices_`，对应表达式为 `copy_construct_indices_(src, dst, mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L609 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L611 | 出现调用或函数声明 `CPPType::copy_construct_compressed`，对应表达式为 `inline void CPPType::copy_construct_compressed(const void *src,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L612 | 本行是连续声明或表达式的一部分：`void *dst,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L613 | 本行是连续声明或表达式的一部分：`const IndexMask &mask) const`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L614 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L615 | 出现调用或函数声明 `copy_construct_compressed_`，对应表达式为 `copy_construct_compressed_(src, dst, mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L616 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L618 | 出现调用或函数声明 `CPPType::move_assign`，对应表达式为 `inline void CPPType::move_assign(void *src, void *dst) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L619 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L620 | 出现调用或函数声明 `move_assign_`，对应表达式为 `move_assign_(src, dst);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L621 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L623 | 出现调用或函数声明 `CPPType::move_assign_n`，对应表达式为 `inline void CPPType::move_assign_n(void *src, void *dst, int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L624 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L625 | 出现调用或函数声明 `move_assign_n_`，对应表达式为 `move_assign_n_(src, dst, n);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L626 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L628 | 出现调用或函数声明 `CPPType::move_assign_indices`，对应表达式为 `inline void CPPType::move_assign_indices(void *src, void *dst, const IndexMask &mask) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L629 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L630 | 出现调用或函数声明 `move_assign_indices_`，对应表达式为 `move_assign_indices_(src, dst, mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L631 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L628—L631</summary>
 
-### BLI_cpp_type.hh：L632—L681
+<!-- original:2bfea51d581904:source/blender/blenlib/BLI_cpp_type.hh:628:631 -->
 
-<!-- source:source/blender/blenlib/BLI_cpp_type.hh:632:681 -->
+```cpp
+inline void CPPType::move_assign_indices(void *src, void *dst, const IndexMask &mask) const
+{
+  move_assign_indices_(src, dst, mask);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `move_assign_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L630。
+
+<!-- annotated:7273e672dba5ce -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L632—L632</summary>
+
+<!-- original:7273e672dba5ce:source/blender/blenlib/BLI_cpp_type.hh:632:632 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-12275cc6e59e9740"></a>
+
+### `blender::CPPType::move_construct`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L633—L636。
+
+接口参数：
+
+- `void *src`
+- `void *dst`
+
+**教学注释版**
+
+<!-- annotated:ea9b76fca5c390 -->
+
+```cpp
 inline void CPPType::move_construct(void *src, void *dst) const
 {
   move_construct_(src, dst);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L633—L636</summary>
+
+<!-- original:ea9b76fca5c390:source/blender/blenlib/BLI_cpp_type.hh:633:636 -->
+
+```cpp
+inline void CPPType::move_construct(void *src, void *dst) const
+{
+  move_construct_(src, dst);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `move_construct_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L635。
+
+<!-- annotated:ef08d88707ab13 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L637—L637</summary>
+
+<!-- original:ef08d88707ab13:source/blender/blenlib/BLI_cpp_type.hh:637:637 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-80ac9476a9ba29f9"></a>
+
+### `blender::CPPType::move_construct_n`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L638—L641。
+
+接口参数：
+
+- `void *src`
+- `void *dst`
+- `int64_t n`
+
+**教学注释版**
+
+<!-- annotated:28e9762ece46a1 -->
+
+```cpp
 inline void CPPType::move_construct_n(void *src, void *dst, int64_t n) const
 {
   move_construct_n_(src, dst, n);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L638—L641</summary>
+
+<!-- original:28e9762ece46a1:source/blender/blenlib/BLI_cpp_type.hh:638:641 -->
+
+```cpp
+inline void CPPType::move_construct_n(void *src, void *dst, int64_t n) const
+{
+  move_construct_n_(src, dst, n);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `move_construct_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L640。
+
+<!-- annotated:d32dc1c1cc675d -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L642—L642</summary>
+
+<!-- original:d32dc1c1cc675d:source/blender/blenlib/BLI_cpp_type.hh:642:642 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3243415a42c2b53f"></a>
+
+### `blender::CPPType::move_construct_indices`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L643—L646。
+
+接口参数：
+
+- `void *src`
+- `void *dst`
+- `const IndexMask &mask`
+
+**教学注释版**
+
+<!-- annotated:9098cd480eac53 -->
+
+```cpp
 inline void CPPType::move_construct_indices(void *src, void *dst, const IndexMask &mask) const
 {
   move_construct_indices_(src, dst, mask);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L643—L646</summary>
+
+<!-- original:9098cd480eac53:source/blender/blenlib/BLI_cpp_type.hh:643:646 -->
+
+```cpp
+inline void CPPType::move_construct_indices(void *src, void *dst, const IndexMask &mask) const
+{
+  move_construct_indices_(src, dst, mask);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `move_construct_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L645。
+
+<!-- annotated:e5f5d4b10567e4 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L647—L647</summary>
+
+<!-- original:e5f5d4b10567e4:source/blender/blenlib/BLI_cpp_type.hh:647:647 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-2e80f595092cf36e"></a>
+
+### `blender::CPPType::relocate_assign`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L648—L651。
+
+接口参数：
+
+- `void *src`
+- `void *dst`
+
+**教学注释版**
+
+<!-- annotated:a1fc982ba0c270 -->
+
+```cpp
 inline void CPPType::relocate_assign(void *src, void *dst) const
 {
   relocate_assign_(src, dst);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L648—L651</summary>
+
+<!-- original:a1fc982ba0c270:source/blender/blenlib/BLI_cpp_type.hh:648:651 -->
+
+```cpp
+inline void CPPType::relocate_assign(void *src, void *dst) const
+{
+  relocate_assign_(src, dst);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `relocate_assign_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L650。
+
+<!-- annotated:be4bb2c9872714 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L652—L652</summary>
+
+<!-- original:be4bb2c9872714:source/blender/blenlib/BLI_cpp_type.hh:652:652 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a9af541e1bc5b42f"></a>
+
+### `blender::CPPType::relocate_assign_n`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L653—L656。
+
+接口参数：
+
+- `void *src`
+- `void *dst`
+- `int64_t n`
+
+**教学注释版**
+
+<!-- annotated:33e9eb9e491a9b -->
+
+```cpp
 inline void CPPType::relocate_assign_n(void *src, void *dst, int64_t n) const
 {
   relocate_assign_n_(src, dst, n);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L653—L656</summary>
+
+<!-- original:33e9eb9e491a9b:source/blender/blenlib/BLI_cpp_type.hh:653:656 -->
+
+```cpp
+inline void CPPType::relocate_assign_n(void *src, void *dst, int64_t n) const
+{
+  relocate_assign_n_(src, dst, n);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `relocate_assign_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L655。
+
+<!-- annotated:8c3afcaf93faa8 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L657—L657</summary>
+
+<!-- original:8c3afcaf93faa8:source/blender/blenlib/BLI_cpp_type.hh:657:657 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-0c209a0835a6bf45"></a>
+
+### `blender::CPPType::relocate_assign_indices`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L658—L661。
+
+接口参数：
+
+- `void *src`
+- `void *dst`
+- `const IndexMask &mask`
+
+**教学注释版**
+
+<!-- annotated:2de5ed3852736d -->
+
+```cpp
 inline void CPPType::relocate_assign_indices(void *src, void *dst, const IndexMask &mask) const
 {
   relocate_assign_indices_(src, dst, mask);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L658—L661</summary>
+
+<!-- original:2de5ed3852736d:source/blender/blenlib/BLI_cpp_type.hh:658:661 -->
+
+```cpp
+inline void CPPType::relocate_assign_indices(void *src, void *dst, const IndexMask &mask) const
+{
+  relocate_assign_indices_(src, dst, mask);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `relocate_assign_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L660。
+
+<!-- annotated:5eedbd3d372a2b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L662—L662</summary>
+
+<!-- original:5eedbd3d372a2b:source/blender/blenlib/BLI_cpp_type.hh:662:662 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-0f702bbad84aaebb"></a>
+
+### `blender::CPPType::relocate_construct`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L663—L666。
+
+接口参数：
+
+- `void *src`
+- `void *dst`
+
+**教学注释版**
+
+<!-- annotated:c81947bae89276 -->
+
+```cpp
 inline void CPPType::relocate_construct(void *src, void *dst) const
 {
   relocate_construct_(src, dst);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L663—L666</summary>
+
+<!-- original:c81947bae89276:source/blender/blenlib/BLI_cpp_type.hh:663:666 -->
+
+```cpp
+inline void CPPType::relocate_construct(void *src, void *dst) const
+{
+  relocate_construct_(src, dst);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `relocate_construct_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L665。
+
+<!-- annotated:cd9bb487465123 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L667—L667</summary>
+
+<!-- original:cd9bb487465123:source/blender/blenlib/BLI_cpp_type.hh:667:667 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3febed5919e51ed4"></a>
+
+### `blender::CPPType::relocate_construct_n`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L668—L671。
+
+接口参数：
+
+- `void *src`
+- `void *dst`
+- `int64_t n`
+
+**教学注释版**
+
+<!-- annotated:f21440364a1483 -->
+
+```cpp
 inline void CPPType::relocate_construct_n(void *src, void *dst, int64_t n) const
 {
   relocate_construct_n_(src, dst, n);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L668—L671</summary>
+
+<!-- original:f21440364a1483:source/blender/blenlib/BLI_cpp_type.hh:668:671 -->
+
+```cpp
+inline void CPPType::relocate_construct_n(void *src, void *dst, int64_t n) const
+{
+  relocate_construct_n_(src, dst, n);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `relocate_construct_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L670。
+
+<!-- annotated:736a52a8d1b124 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L672—L672</summary>
+
+<!-- original:736a52a8d1b124:source/blender/blenlib/BLI_cpp_type.hh:672:672 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-bcebffa3275da567"></a>
+
+### `blender::CPPType::relocate_construct_indices`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L673—L676。
+
+接口参数：
+
+- `void *src`
+- `void *dst`
+- `const IndexMask &mask`
+
+**教学注释版**
+
+<!-- annotated:055ae5cce05f70 -->
+
+```cpp
 inline void CPPType::relocate_construct_indices(void *src, void *dst, const IndexMask &mask) const
 {
   relocate_construct_indices_(src, dst, mask);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L673—L676</summary>
+
+<!-- original:055ae5cce05f70:source/blender/blenlib/BLI_cpp_type.hh:673:676 -->
+
+```cpp
+inline void CPPType::relocate_construct_indices(void *src, void *dst, const IndexMask &mask) const
+{
+  relocate_construct_indices_(src, dst, mask);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `relocate_construct_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L675。
+
+<!-- annotated:9552a614384276 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L677—L677</summary>
+
+<!-- original:9552a614384276:source/blender/blenlib/BLI_cpp_type.hh:677:677 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-fd80e7c7f897917a"></a>
+
+### `blender::CPPType::fill_assign_n`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L678—L681。
+
+接口参数：
+
+- `const void *value`
+- `void *dst`
+- `int64_t n`
+
+**教学注释版**
+
+<!-- annotated:0da22c89b1f2a0 -->
+
+```cpp
 inline void CPPType::fill_assign_n(const void *value, void *dst, int64_t n) const
 {
   fill_assign_n_(value, dst, n);
 }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L633 | 出现调用或函数声明 `CPPType::move_construct`，对应表达式为 `inline void CPPType::move_construct(void *src, void *dst) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L634 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L635 | 出现调用或函数声明 `move_construct_`，对应表达式为 `move_construct_(src, dst);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L636 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L638 | 出现调用或函数声明 `CPPType::move_construct_n`，对应表达式为 `inline void CPPType::move_construct_n(void *src, void *dst, int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L639 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L640 | 出现调用或函数声明 `move_construct_n_`，对应表达式为 `move_construct_n_(src, dst, n);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L641 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L643 | 出现调用或函数声明 `CPPType::move_construct_indices`，对应表达式为 `inline void CPPType::move_construct_indices(void *src, void *dst, const IndexMask &mask) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L644 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L645 | 出现调用或函数声明 `move_construct_indices_`，对应表达式为 `move_construct_indices_(src, dst, mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L646 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L648 | 出现调用或函数声明 `CPPType::relocate_assign`，对应表达式为 `inline void CPPType::relocate_assign(void *src, void *dst) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L649 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L650 | 出现调用或函数声明 `relocate_assign_`，对应表达式为 `relocate_assign_(src, dst);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L651 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L653 | 出现调用或函数声明 `CPPType::relocate_assign_n`，对应表达式为 `inline void CPPType::relocate_assign_n(void *src, void *dst, int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L654 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L655 | 出现调用或函数声明 `relocate_assign_n_`，对应表达式为 `relocate_assign_n_(src, dst, n);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L656 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L658 | 出现调用或函数声明 `CPPType::relocate_assign_indices`，对应表达式为 `inline void CPPType::relocate_assign_indices(void *src, void *dst, const IndexMask &mask) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L659 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L660 | 出现调用或函数声明 `relocate_assign_indices_`，对应表达式为 `relocate_assign_indices_(src, dst, mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L661 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L663 | 出现调用或函数声明 `CPPType::relocate_construct`，对应表达式为 `inline void CPPType::relocate_construct(void *src, void *dst) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L664 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L665 | 出现调用或函数声明 `relocate_construct_`，对应表达式为 `relocate_construct_(src, dst);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L666 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L668 | 出现调用或函数声明 `CPPType::relocate_construct_n`，对应表达式为 `inline void CPPType::relocate_construct_n(void *src, void *dst, int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L669 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L670 | 出现调用或函数声明 `relocate_construct_n_`，对应表达式为 `relocate_construct_n_(src, dst, n);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L671 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L673 | 出现调用或函数声明 `CPPType::relocate_construct_indices`，对应表达式为 `inline void CPPType::relocate_construct_indices(void *src, void *dst, const IndexMask &mask) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L674 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L675 | 出现调用或函数声明 `relocate_construct_indices_`，对应表达式为 `relocate_construct_indices_(src, dst, mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L676 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L678 | 出现调用或函数声明 `CPPType::fill_assign_n`，对应表达式为 `inline void CPPType::fill_assign_n(const void *value, void *dst, int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L679 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L680 | 出现调用或函数声明 `fill_assign_n_`，对应表达式为 `fill_assign_n_(value, dst, n);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L681 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L678—L681</summary>
 
-### BLI_cpp_type.hh：L682—L728
+<!-- original:0da22c89b1f2a0:source/blender/blenlib/BLI_cpp_type.hh:678:681 -->
 
-<!-- source:source/blender/blenlib/BLI_cpp_type.hh:682:728 -->
+```cpp
+inline void CPPType::fill_assign_n(const void *value, void *dst, int64_t n) const
+{
+  fill_assign_n_(value, dst, n);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `fill_assign_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L680。
+
+<!-- annotated:42e0469cbb3bfb -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L682—L682</summary>
+
+<!-- original:42e0469cbb3bfb:source/blender/blenlib/BLI_cpp_type.hh:682:682 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-284e9603995c9aa1"></a>
+
+### `blender::CPPType::fill_assign_indices`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L683—L686。
+
+接口参数：
+
+- `const void *value`
+- `void *dst`
+- `const IndexMask &mask`
+
+**教学注释版**
+
+<!-- annotated:6f383deeb16fac -->
+
+```cpp
 inline void CPPType::fill_assign_indices(const void *value, void *dst, const IndexMask &mask) const
 {
   fill_assign_indices_(value, dst, mask);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L683—L686</summary>
+
+<!-- original:6f383deeb16fac:source/blender/blenlib/BLI_cpp_type.hh:683:686 -->
+
+```cpp
+inline void CPPType::fill_assign_indices(const void *value, void *dst, const IndexMask &mask) const
+{
+  fill_assign_indices_(value, dst, mask);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `fill_assign_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L685。
+
+<!-- annotated:769ab598bed5f8 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L687—L687</summary>
+
+<!-- original:769ab598bed5f8:source/blender/blenlib/BLI_cpp_type.hh:687:687 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-705024b9be263717"></a>
+
+### `blender::CPPType::fill_construct_n`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L688—L691。
+
+接口参数：
+
+- `const void *value`
+- `void *dst`
+- `int64_t n`
+
+**教学注释版**
+
+<!-- annotated:aeec259e56c5c9 -->
+
+```cpp
 inline void CPPType::fill_construct_n(const void *value, void *dst, int64_t n) const
 {
   fill_construct_n_(value, dst, n);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L688—L691</summary>
+
+<!-- original:aeec259e56c5c9:source/blender/blenlib/BLI_cpp_type.hh:688:691 -->
+
+```cpp
+inline void CPPType::fill_construct_n(const void *value, void *dst, int64_t n) const
+{
+  fill_construct_n_(value, dst, n);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `fill_construct_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L690。
+
+<!-- annotated:ab550af8bda7b9 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L692—L692</summary>
+
+<!-- original:ab550af8bda7b9:source/blender/blenlib/BLI_cpp_type.hh:692:692 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-76c7dd833335e68b"></a>
+
+### `blender::CPPType::fill_construct_indices`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L693—L698。
+
+接口参数：
+
+- `const void *value`
+- `void *dst`
+- `const IndexMask &mask`
+
+**教学注释版**
+
+<!-- annotated:5c92b7b50c8878 -->
+
+```cpp
 inline void CPPType::fill_construct_indices(const void *value,
                                             void *dst,
                                             const IndexMask &mask) const
 {
   fill_construct_indices_(value, dst, mask);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L693—L698</summary>
+
+<!-- original:5c92b7b50c8878:source/blender/blenlib/BLI_cpp_type.hh:693:698 -->
+
+```cpp
+inline void CPPType::fill_construct_indices(const void *value,
+                                            void *dst,
+                                            const IndexMask &mask) const
+{
+  fill_construct_indices_(value, dst, mask);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `fill_construct_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L697。
+
+<!-- annotated:b8e449f826a1df -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L699—L699</summary>
+
+<!-- original:b8e449f826a1df:source/blender/blenlib/BLI_cpp_type.hh:699:699 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b88c37f0bbabd288"></a>
+
+### `blender::CPPType::can_exist_in_buffer`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L700—L704。
+
+接口参数：
+
+- `const int64_t buffer_size`
+- `const int64_t buffer_alignment`
+
+**教学注释版**
+
+<!-- annotated:e4bde221401a25 -->
+
+```cpp
 inline bool CPPType::can_exist_in_buffer(const int64_t buffer_size,
                                          const int64_t buffer_alignment) const
 {
   return this->size <= buffer_size && this->alignment <= buffer_alignment;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L700—L704</summary>
+
+<!-- original:e4bde221401a25:source/blender/blenlib/BLI_cpp_type.hh:700:704 -->
+
+```cpp
+inline bool CPPType::can_exist_in_buffer(const int64_t buffer_size,
+                                         const int64_t buffer_alignment) const
+{
+  return this->size <= buffer_size && this->alignment <= buffer_alignment;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return this->size <= buffer_size && this->alignment <= buffer_alignment;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:0d833547f6a5f3 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L705—L705</summary>
+
+<!-- original:0d833547f6a5f3:source/blender/blenlib/BLI_cpp_type.hh:705:705 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-0792ac5627e8b049"></a>
+
+### `blender::CPPType::print`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L706—L710。
+
+接口参数：
+
+- `const void *value`
+- `std::stringstream &ss`
+
+**教学注释版**
+
+<!-- annotated:3196d2cf265c8d -->
+
+```cpp
 inline void CPPType::print(const void *value, std::stringstream &ss) const
 {
   BLI_assert(this->pointer_can_point_to_instance(value));
   print_(value, ss);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L706—L710</summary>
+
+<!-- original:3196d2cf265c8d:source/blender/blenlib/BLI_cpp_type.hh:706:710 -->
+
+```cpp
+inline void CPPType::print(const void *value, std::stringstream &ss) const
+{
+  BLI_assert(this->pointer_can_point_to_instance(value));
+  print_(value, ss);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->pointer_can_point_to_instance` → [blender::CPPType::pointer_can_point_to_instance · L522](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-2e5140a882358ea2)。
+- `print_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L709。
+
+<!-- annotated:78022de996d488 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L711—L711</summary>
+
+<!-- original:78022de996d488:source/blender/blenlib/BLI_cpp_type.hh:711:711 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-40e64570e7a3436a"></a>
+
+### `blender::CPPType::is_equal`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L712—L715。
+
+接口参数：
+
+- `const void *a`
+- `const void *b`
+
+**教学注释版**
+
+<!-- annotated:f680a18aacb3a6 -->
+
+```cpp
 inline bool CPPType::is_equal(const void *a, const void *b) const
 {
   return is_equal_(a, b);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L712—L715</summary>
+
+<!-- original:f680a18aacb3a6:source/blender/blenlib/BLI_cpp_type.hh:712:715 -->
+
+```cpp
+inline bool CPPType::is_equal(const void *a, const void *b) const
+{
+  return is_equal_(a, b);
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return is_equal_(a, b);`
+
+**继续追踪实现**
+
+- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L714。
+
+<!-- annotated:8a7eb6a34dccf1 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L716—L716</summary>
+
+<!-- original:8a7eb6a34dccf1:source/blender/blenlib/BLI_cpp_type.hh:716:716 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-0492816f8a6e1e91"></a>
+
+### `blender::CPPType::is_equal_or_false`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L717—L723。
+
+接口参数：
+
+- `const void *a`
+- `const void *b`
+
+**教学注释版**
+
+<!-- annotated:38be4a6ccadf6f -->
+
+```cpp
 inline bool CPPType::is_equal_or_false(const void *a, const void *b) const
 {
   if (this->is_equality_comparable()) {
@@ -486,65 +2072,128 @@ inline bool CPPType::is_equal_or_false(const void *a, const void *b) const
   }
   return false;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L717—L723</summary>
+
+<!-- original:38be4a6ccadf6f:source/blender/blenlib/BLI_cpp_type.hh:717:723 -->
+
+```cpp
+inline bool CPPType::is_equal_or_false(const void *a, const void *b) const
+{
+  if (this->is_equality_comparable()) {
+    return this->is_equal(a, b);
+  }
+  return false;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return this->is_equal(a, b);`
+- `return false;`
+
+**继续追踪实现**
+
+- `this->is_equality_comparable` → [blender::CPPType::is_equality_comparable · L507](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-ed982afd031c9775)。
+- `this->is_equal` → [blender::CPPType::is_equal · L712](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-40e64570e7a3436a)。
+
+<!-- annotated:e240a82131b961 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L724—L724</summary>
+
+<!-- original:e240a82131b961:source/blender/blenlib/BLI_cpp_type.hh:724:724 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-20cc5897cf92aa57"></a>
+
+### `blender::CPPType::hash`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L725—L728。
+
+接口参数：
+
+- `const void *value`
+
+**教学注释版**
+
+<!-- annotated:a1fdadd375d088 -->
+
+```cpp
 inline uint64_t CPPType::hash(const void *value) const
 {
   return hash_(value);
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L725—L728</summary>
 
-- 分支证据 `this->is_equality_comparable())`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:a1fdadd375d088:source/blender/blenlib/BLI_cpp_type.hh:725:728 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L683 | 出现调用或函数声明 `CPPType::fill_assign_indices`，对应表达式为 `inline void CPPType::fill_assign_indices(const void *value, void *dst, const IndexMask &mask) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L684 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L685 | 出现调用或函数声明 `fill_assign_indices_`，对应表达式为 `fill_assign_indices_(value, dst, mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L686 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L688 | 出现调用或函数声明 `CPPType::fill_construct_n`，对应表达式为 `inline void CPPType::fill_construct_n(const void *value, void *dst, int64_t n) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L689 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L690 | 出现调用或函数声明 `fill_construct_n_`，对应表达式为 `fill_construct_n_(value, dst, n);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L691 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L693 | 出现调用或函数声明 `CPPType::fill_construct_indices`，对应表达式为 `inline void CPPType::fill_construct_indices(const void *value,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L694 | 本行是连续声明或表达式的一部分：`void *dst,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L695 | 本行是连续声明或表达式的一部分：`const IndexMask &mask) const`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L696 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L697 | 出现调用或函数声明 `fill_construct_indices_`，对应表达式为 `fill_construct_indices_(value, dst, mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L698 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L700 | 出现调用或函数声明 `CPPType::can_exist_in_buffer`，对应表达式为 `inline bool CPPType::can_exist_in_buffer(const int64_t buffer_size,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L701 | 本行是连续声明或表达式的一部分：`const int64_t buffer_alignment) const`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L702 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L703 | 返回表达式 `this->size <= buffer_size && this->alignment <= buffer_alignment`。 |
-| L704 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L706 | 出现调用或函数声明 `CPPType::print`，对应表达式为 `inline void CPPType::print(const void *value, std::stringstream &ss) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L707 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L708 | 断言约束 `BLI_assert(this->pointer_can_point_to_instance(value));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L709 | 出现调用或函数声明 `print_`，对应表达式为 `print_(value, ss);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L710 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L712 | 出现调用或函数声明 `CPPType::is_equal`，对应表达式为 `inline bool CPPType::is_equal(const void *a, const void *b) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L713 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L714 | 返回表达式 `is_equal_(a, b)`。 |
-| L715 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L717 | 出现调用或函数声明 `CPPType::is_equal_or_false`，对应表达式为 `inline bool CPPType::is_equal_or_false(const void *a, const void *b) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L718 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L719 | 判断 `this->is_equality_comparable()`，成立时进入本分支，否则继续后续路径。 |
-| L720 | 返回表达式 `this->is_equal(a, b)`。 |
-| L721 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L722 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L723 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L725 | 出现调用或函数声明 `CPPType::hash`，对应表达式为 `inline uint64_t CPPType::hash(const void *value) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L726 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L727 | 返回表达式 `hash_(value)`。 |
-| L728 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+inline uint64_t CPPType::hash(const void *value) const
+{
+  return hash_(value);
+}
+```
 
-### BLI_cpp_type.hh：L729—L774
+</details>
 
-<!-- source:source/blender/blenlib/BLI_cpp_type.hh:729:774 -->
+**结果出口**
+
+- `return hash_(value);`
+
+**继续追踪实现**
+
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L727。
+
+<!-- annotated:5b154b61c5594a -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L729—L729</summary>
+
+<!-- original:5b154b61c5594a:source/blender/blenlib/BLI_cpp_type.hh:729:729 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-7de4a1ded0feb2bf"></a>
+
+### `blender::CPPType::hash_or_fallback`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L730—L736。
+
+接口参数：
+
+- `const void *value`
+- `uint64_t fallback_hash`
+
+**教学注释版**
+
+<!-- annotated:7adca985d691c3 -->
+
+```cpp
 inline uint64_t CPPType::hash_or_fallback(const void *value, uint64_t fallback_hash) const
 {
   if (this->is_hashable()) {
@@ -552,37 +2201,408 @@ inline uint64_t CPPType::hash_or_fallback(const void *value, uint64_t fallback_h
   }
   return fallback_hash;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L730—L736</summary>
+
+<!-- original:7adca985d691c3:source/blender/blenlib/BLI_cpp_type.hh:730:736 -->
+
+```cpp
+inline uint64_t CPPType::hash_or_fallback(const void *value, uint64_t fallback_hash) const
+{
+  if (this->is_hashable()) {
+    return this->hash(value);
+  }
+  return fallback_hash;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return this->hash(value);`
+- `return fallback_hash;`
+
+**继续追踪实现**
+
+- `this->is_hashable` → [blender::CPPType::is_hashable · L512](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-b34f129b9afb9992)。
+- `this->hash` → [blender::CPPType::hash · L725](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-20cc5897cf92aa57)；[blender::CPPType::hash · L748](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-01b52b46dca406ee)。同名重载需按实参类型选择。
+
+<!-- annotated:cc83eedbf3bd40 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L737—L737</summary>
+
+<!-- original:cc83eedbf3bd40:source/blender/blenlib/BLI_cpp_type.hh:737:737 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3a483970e4e17329"></a>
+
+### `blender::CPPType::hash_unique`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L738—L741。
+
+接口参数：
+
+- `const void *value`
+- `UniqueHashBytes &hash`
+
+**教学注释版**
+
+<!-- annotated:c59f4dcdff4952 -->
+
+```cpp
 inline void CPPType::hash_unique(const void *value, UniqueHashBytes &hash) const
 {
   this->hash_unique_(value, hash);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L738—L741</summary>
+
+<!-- original:c59f4dcdff4952:source/blender/blenlib/BLI_cpp_type.hh:738:741 -->
+
+```cpp
+inline void CPPType::hash_unique(const void *value, UniqueHashBytes &hash) const
+{
+  this->hash_unique_(value, hash);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->hash_unique_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L740。
+
+<!-- annotated:a6bf80fbcc765f -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L742—L742</summary>
+
+<!-- original:a6bf80fbcc765f:source/blender/blenlib/BLI_cpp_type.hh:742:742 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-95e76cbe74b383e8"></a>
+
+### `blender::CPPType::default_value`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L743—L746。
+
+**教学注释版**
+
+<!-- annotated:7b4b3076582d13 -->
+
+```cpp
 inline const void *CPPType::default_value() const
 {
   return default_value_;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L743—L746</summary>
+
+<!-- original:7b4b3076582d13:source/blender/blenlib/BLI_cpp_type.hh:743:746 -->
+
+```cpp
+inline const void *CPPType::default_value() const
+{
+  return default_value_;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return default_value_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:e57685ea54f67e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L747—L747</summary>
+
+<!-- original:e57685ea54f67e:source/blender/blenlib/BLI_cpp_type.hh:747:747 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-01b52b46dca406ee"></a>
+
+### `blender::CPPType::hash`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L748—L751。
+
+**教学注释版**
+
+<!-- annotated:52dfc18f1d1d5d -->
+
+```cpp
 inline uint64_t CPPType::hash() const
 {
   return get_default_hash(this);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L748—L751</summary>
+
+<!-- original:52dfc18f1d1d5d:source/blender/blenlib/BLI_cpp_type.hh:748:751 -->
+
+```cpp
+inline uint64_t CPPType::hash() const
+{
+  return get_default_hash(this);
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return get_default_hash(this);`
+
+**继续追踪实现**
+
+- `get_default_hash` → [blender::get_default_hash · L251](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/01-%E5%93%88%E5%B8%8C%E4%B8%8E%E7%9B%B8%E7%AD%89%E5%A5%91%E7%BA%A6.md#f-5f2c246aedf3dc0a)。
+
+<!-- annotated:365bd39a4c1d44 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L752—L752</summary>
+
+<!-- original:365bd39a4c1d44:source/blender/blenlib/BLI_cpp_type.hh:752:752 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-bcbb2d5e0b01917e"></a>
+
+### `blender::CPPType::destruct_fn`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L753—L756。
+
+接口参数：
+
+- `void *`
+
+**教学注释版**
+
+<!-- annotated:4612494f62bd60 -->
+
+```cpp
 inline void (*CPPType::destruct_fn() const)(void *)
 {
   return destruct_;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L753—L756</summary>
+
+<!-- original:4612494f62bd60:source/blender/blenlib/BLI_cpp_type.hh:753:756 -->
+
+```cpp
+inline void (*CPPType::destruct_fn() const)(void *)
+{
+  return destruct_;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return destruct_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:fefb61daef0d82 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L757—L757</summary>
+
+<!-- original:fefb61daef0d82:source/blender/blenlib/BLI_cpp_type.hh:757:757 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-2e2c3ee7602530a4"></a>
+
+### `blender::CPPType::is`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L758—L761。
+
+**教学注释版**
+
+<!-- annotated:e5a990076a8766 -->
+
+```cpp
 template<typename T> inline bool CPPType::is() const
 {
   return this == &CPPType::get<std::decay_t<T>>();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L758—L761</summary>
+
+<!-- original:e5a990076a8766:source/blender/blenlib/BLI_cpp_type.hh:758:761 -->
+
+```cpp
+template<typename T> inline bool CPPType::is() const
+{
+  return this == &CPPType::get<std::decay_t<T>>();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return this == &CPPType::get<std::decay_t<T>>();`
+
+**继续追踪实现**
+
+- `CPPType::get<std::decay_t<T>>` → [blender::CPPType::get · L481](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
+
+<!-- annotated:ebf4b0bbaa5083 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L762—L762</summary>
+
+<!-- original:ebf4b0bbaa5083:source/blender/blenlib/BLI_cpp_type.hh:762:762 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3076269297bb5d87"></a>
+
+### `blender::CPPType::is_any`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L763—L766。
+
+**教学注释版**
+
+<!-- annotated:6d1509b3033f79 -->
+
+```cpp
 template<typename... T> inline bool CPPType::is_any() const
 {
   return (this->is<T>() || ...);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L763—L766</summary>
+
+<!-- original:6d1509b3033f79:source/blender/blenlib/BLI_cpp_type.hh:763:766 -->
+
+```cpp
+template<typename... T> inline bool CPPType::is_any() const
+{
+  return (this->is<T>() || ...);
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return (this->is<T>() || ...);`
+
+**继续追踪实现**
+
+- `this->is<T>` → [blender::CPPType::is · L758](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-2e2c3ee7602530a4)。
+
+<!-- annotated:dc82588e5d010a -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L767—L767</summary>
+
+<!-- original:dc82588e5d010a:source/blender/blenlib/BLI_cpp_type.hh:767:767 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-c63e6d79f19ab075"></a>
+
+### `blender::CPPType::to_static_type`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L768—L774。
+
+接口参数：
+
+- `Fn &&fn`
+
+**教学注释版**
+
+<!-- annotated:2eafb38e709d22 -->
+
+```cpp
 template<typename... Types, typename Fn> inline void CPPType::to_static_type(Fn &&fn) const
 {
   if (this->to_static_type_try<Types...>(fn)) {
@@ -592,58 +2612,101 @@ template<typename... Types, typename Fn> inline void CPPType::to_static_type(Fn 
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L768—L774</summary>
 
-- 分支证据 `this->is_hashable())`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `this->to_static_type_try<Types...>(fn))`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:2eafb38e709d22:source/blender/blenlib/BLI_cpp_type.hh:768:774 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L730 | 出现调用或函数声明 `CPPType::hash_or_fallback`，对应表达式为 `inline uint64_t CPPType::hash_or_fallback(const void *value, uint64_t fallback_hash) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L731 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L732 | 判断 `this->is_hashable()`，成立时进入本分支，否则继续后续路径。 |
-| L733 | 返回表达式 `this->hash(value)`。 |
-| L734 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L735 | 返回表达式 `fallback_hash`。 |
-| L736 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L738 | 出现调用或函数声明 `CPPType::hash_unique`，对应表达式为 `inline void CPPType::hash_unique(const void *value, UniqueHashBytes &hash) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L739 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L740 | 出现调用或函数声明 `hash_unique_`，对应表达式为 `this->hash_unique_(value, hash);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L741 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L743 | 出现调用或函数声明 `CPPType::default_value`，对应表达式为 `inline const void *CPPType::default_value() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L744 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L745 | 返回表达式 `default_value_`。 |
-| L746 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L748 | 出现调用或函数声明 `CPPType::hash`，对应表达式为 `inline uint64_t CPPType::hash() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L749 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L750 | 返回表达式 `get_default_hash(this)`。 |
-| L751 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L753 | 出现调用或函数声明 `void`，对应表达式为 `inline void (*CPPType::destruct_fn() const)(void *)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L754 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L755 | 返回表达式 `destruct_`。 |
-| L756 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L758 | 声明模板参数 `template<typename T> inline bool CPPType::is() const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L759 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L760 | 返回表达式 `this == &CPPType::get<std::decay_t<T>>()`。 |
-| L761 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L763 | 声明模板参数 `template<typename... T> inline bool CPPType::is_any() const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L764 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L765 | 返回表达式 `(this->is<T>() &#124;&#124; ...)`。 |
-| L766 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L768 | 声明模板参数 `template<typename... Types, typename Fn> inline void CPPType::to_static_type(Fn &&fn) const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L769 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L770 | 判断 `this->to_static_type_try<Types...>(fn)`，成立时进入本分支，否则继续后续路径。 |
-| L771 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L772 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L773 | 断言约束 `BLI_assert_unreachable();`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L774 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+template<typename... Types, typename Fn> inline void CPPType::to_static_type(Fn &&fn) const
+{
+  if (this->to_static_type_try<Types...>(fn)) {
+    return;
+  }
+  BLI_assert_unreachable();
+}
+```
 
-### BLI_cpp_type.hh：L775—L808
+</details>
 
-<!-- source:source/blender/blenlib/BLI_cpp_type.hh:775:808 -->
+**继续追踪实现**
+
+- `this->to_static_type_try<Types...>` → [blender::CPPType::to_static_type_try · L776](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-bd7d5b1f468949e8)。
+- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
+
+<!-- annotated:b56557993fcd2a -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L775—L775</summary>
+
+<!-- original:b56557993fcd2a:source/blender/blenlib/BLI_cpp_type.hh:775:775 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-bd7d5b1f468949e8"></a>
+
+### `blender::CPPType::to_static_type_try`
+
+实现位置：[source/blender/blenlib/BLI_cpp_type.hh](../../../../../source/blender/blenlib/BLI_cpp_type.hh) · L776—L806。
+
+接口参数：
+
+- `Fn &&fn`
+
+**教学注释版**
+
+<!-- annotated:2af2bf2d72ee88 -->
+
+```cpp
+template<typename... Types, typename Fn> inline bool CPPType::to_static_type_try(Fn &&fn) const
+{
+  /* Strip any reference from Fn to normalize the type used for the static map, ensuring the
+   * same static is used regardless of whether fn is an lvalue or rvalue. */
+  using Fn_ = std::remove_reference_t<Fn>;
+  using Callback = void (*)(const Fn_ &);
+
+  /* Use an array indexed by #CPPType::type_index instead of a #Map for faster lookup and less
+   * generated code. The array can be quite a bit larger at run-time than the number of types but
+   * the total number of types is fairly limited, so that should be fine. */
+  static Array<Callback, 0> callback_array = [&]() {
+    /* This way to compute the max generates less code than using std::max with an initializer
+     * list. */
+    int max_type_index = 0;
+    // [讲解] std::max：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+    ((max_type_index = std::max(max_type_index, CPPType::get<Types>().type_index)), ...);
+    Array<Callback, 0> array(max_type_index + 1, nullptr);
+    /* Using call_with_type_impl_ instead of a lambda due to an MSVC bug.  */
+    ((array[CPPType::get<Types>().type_index] = call_with_type_impl_<Types, Fn_>), ...);
+    return array;
+  }();
+
+  // [讲解] callback_array.size：查询固定有效长度及其索引范围。
+  if (this->type_index >= callback_array.size()) {
+    return false;
+  }
+  const Callback callback = callback_array[this->type_index];
+  if (!callback) {
+    return false;
+  }
+  callback(fn);
+  return true;
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L776—L806</summary>
+
+<!-- original:2af2bf2d72ee88:source/blender/blenlib/BLI_cpp_type.hh:776:806 -->
+
+```cpp
 template<typename... Types, typename Fn> inline bool CPPType::to_static_type_try(Fn &&fn) const
 {
   /* Strip any reference from Fn to normalize the type used for the static map, ensuring the
@@ -675,267 +2738,93 @@ template<typename... Types, typename Fn> inline bool CPPType::to_static_type_try
   callback(fn);
   return true;
 }
+```
+
+</details>
+
+**结果出口**
+
+- `return array;`
+- `return false;`
+- `return true;`
+
+**继续追踪实现**
+
+- `[&]() { /* This way to compute the max generates less code than using std::max with an initializer * list. */ int max_type_index = 0; ((max_type_index = std::max(max_type_index, CP …（完整表达式见本函数源码）` → [blender::() · L390](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_vector_types-5b9874.md#f-26f597afed18e002)。
+- `std::max` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+- `CPPType::get<Types>` → [blender::CPPType::get · L481](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
+- `callback_array.size` → [blender::Array::size · L267](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-c13f1b5a44f423b2)。
+- `callback` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L804。
+
+### 类型布局、声明与编译条件 · BLI_cpp_type.hh L807—L808
+
+<!-- annotated:574b7024b00252 -->
+
+```cpp
 
 }  // namespace blender
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_cpp_type.hh · L807—L808</summary>
 
-- `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。
+<!-- original:574b7024b00252:source/blender/blenlib/BLI_cpp_type.hh:807:808 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L776 | 声明模板参数 `template<typename... Types, typename Fn> inline bool CPPType::to_static_type_try(Fn &&fn) const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L777 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L780 | 定义类型别名 `using Fn_ = std::remove_reference_t<Fn>`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L781 | 定义类型别名 `using Callback = void (*)(const Fn_ &)`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L786 | 把右侧 `[&]() {` 用于初始化或更新左侧 `static Array<Callback, 0> callback_array`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L789 | 把右侧 `0` 用于初始化或更新左侧 `int max_type_index`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L790 | 本行使用 `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。 |
-| L791 | 出现调用或函数声明 `array`，对应表达式为 `Array<Callback, 0> array(max_type_index + 1, nullptr);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L793 | 把右侧 `call_with_type_impl_<Types, Fn_>), ...)` 用于初始化或更新左侧 `((array[CPPType::get<Types>().type_index]`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L794 | 返回表达式 `array`。 |
-| L795 | 声明成员、局部对象或完成语句 `}()`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L797 | 判断 `this->type_index >= callback_array.size()`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L798 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L799 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L800 | 把右侧 `callback_array[this->type_index]` 用于初始化或更新左侧 `const Callback callback`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L801 | 判断 `!callback`，成立时进入本分支，否则继续后续路径。 |
-| L802 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L803 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L804 | 出现调用或函数声明 `callback`，对应表达式为 `callback(fn);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L805 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L806 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L808 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
 
-## 五、接口定位、调用线索与生命周期
-
-### 本篇声明与实现入口
-
-| 源码位置 | 实际声明片段 |
-|---|---|
-| [BLI_cpp_type.hh:L542](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L542) | `inline void CPPType::value_initialize(void *ptr) const` |
-| [BLI_cpp_type.hh:L547](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L547) | `inline void CPPType::value_initialize_n(void *ptr, int64_t n) const` |
-| [BLI_cpp_type.hh:L552](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L552) | `inline void CPPType::value_initialize_indices(void *ptr, const IndexMask &mask) const` |
-| [BLI_cpp_type.hh:L557](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L557) | `inline void CPPType::destruct(void *ptr) const` |
-| [BLI_cpp_type.hh:L562](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L562) | `inline void CPPType::destruct_n(void *ptr, int64_t n) const` |
-| [BLI_cpp_type.hh:L567](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L567) | `inline void CPPType::destruct_indices(void *ptr, const IndexMask &mask) const` |
-| [BLI_cpp_type.hh:L572](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L572) | `inline void CPPType::copy_assign(const void *src, void *dst) const` |
-| [BLI_cpp_type.hh:L577](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L577) | `inline void CPPType::copy_assign_n(const void *src, void *dst, int64_t n) const` |
-| [BLI_cpp_type.hh:L582](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L582) | `inline void CPPType::copy_assign_indices(const void *src, void *dst, const IndexMask &mask) const` |
-| [BLI_cpp_type.hh:L587](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L587) | `inline void CPPType::copy_assign_compressed(const void *src,` |
-| [BLI_cpp_type.hh:L594](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L594) | `inline void CPPType::copy_construct(const void *src, void *dst) const` |
-| [BLI_cpp_type.hh:L599](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L599) | `inline void CPPType::copy_construct_n(const void *src, void *dst, int64_t n) const` |
-| [BLI_cpp_type.hh:L604](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L604) | `inline void CPPType::copy_construct_indices(const void *src,` |
-| [BLI_cpp_type.hh:L611](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L611) | `inline void CPPType::copy_construct_compressed(const void *src,` |
-| [BLI_cpp_type.hh:L618](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L618) | `inline void CPPType::move_assign(void *src, void *dst) const` |
-| [BLI_cpp_type.hh:L623](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L623) | `inline void CPPType::move_assign_n(void *src, void *dst, int64_t n) const` |
-| [BLI_cpp_type.hh:L628](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L628) | `inline void CPPType::move_assign_indices(void *src, void *dst, const IndexMask &mask) const` |
-| [BLI_cpp_type.hh:L633](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L633) | `inline void CPPType::move_construct(void *src, void *dst) const` |
-| [BLI_cpp_type.hh:L638](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L638) | `inline void CPPType::move_construct_n(void *src, void *dst, int64_t n) const` |
-| [BLI_cpp_type.hh:L643](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L643) | `inline void CPPType::move_construct_indices(void *src, void *dst, const IndexMask &mask) const` |
-| [BLI_cpp_type.hh:L648](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L648) | `inline void CPPType::relocate_assign(void *src, void *dst) const` |
-| [BLI_cpp_type.hh:L653](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L653) | `inline void CPPType::relocate_assign_n(void *src, void *dst, int64_t n) const` |
-| [BLI_cpp_type.hh:L658](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L658) | `inline void CPPType::relocate_assign_indices(void *src, void *dst, const IndexMask &mask) const` |
-| [BLI_cpp_type.hh:L663](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L663) | `inline void CPPType::relocate_construct(void *src, void *dst) const` |
-| [BLI_cpp_type.hh:L668](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L668) | `inline void CPPType::relocate_construct_n(void *src, void *dst, int64_t n) const` |
-| [BLI_cpp_type.hh:L673](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L673) | `inline void CPPType::relocate_construct_indices(void *src, void *dst, const IndexMask &mask) const` |
-| [BLI_cpp_type.hh:L678](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L678) | `inline void CPPType::fill_assign_n(const void *value, void *dst, int64_t n) const` |
-| [BLI_cpp_type.hh:L683](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L683) | `inline void CPPType::fill_assign_indices(const void *value, void *dst, const IndexMask &mask) const` |
-| [BLI_cpp_type.hh:L688](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L688) | `inline void CPPType::fill_construct_n(const void *value, void *dst, int64_t n) const` |
-| [BLI_cpp_type.hh:L693](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L693) | `inline void CPPType::fill_construct_indices(const void *value,` |
-| [BLI_cpp_type.hh:L700](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L700) | `inline bool CPPType::can_exist_in_buffer(const int64_t buffer_size,` |
-| [BLI_cpp_type.hh:L706](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L706) | `inline void CPPType::print(const void *value, std::stringstream &ss) const` |
-| [BLI_cpp_type.hh:L712](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L712) | `inline bool CPPType::is_equal(const void *a, const void *b) const` |
-| [BLI_cpp_type.hh:L717](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L717) | `inline bool CPPType::is_equal_or_false(const void *a, const void *b) const` |
-| [BLI_cpp_type.hh:L725](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L725) | `inline uint64_t CPPType::hash(const void *value) const` |
-| [BLI_cpp_type.hh:L730](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L730) | `inline uint64_t CPPType::hash_or_fallback(const void *value, uint64_t fallback_hash) const` |
-| [BLI_cpp_type.hh:L738](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L738) | `inline void CPPType::hash_unique(const void *value, UniqueHashBytes &hash) const` |
-| [BLI_cpp_type.hh:L743](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L743) | `inline const void *CPPType::default_value() const` |
-| [BLI_cpp_type.hh:L748](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L748) | `inline uint64_t CPPType::hash() const` |
-| [BLI_cpp_type.hh:L753](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L753) | `inline void (*CPPType::destruct_fn() const)(void *)` |
-| [BLI_cpp_type.hh:L758](../../../../../source/blender/blenlib/BLI_cpp_type.hh#L758) | `template<typename T> inline bool CPPType::is() const` |
-
-### 同名符号出现位置
-
-以下表提供跨文件阅读入口，包含声明、调用或测试使用；没有经过完整C++名称解析，不把它命名为已证明的运行时调用图。
-
-| 符号 | 位置 | 文本证据 |
-|---|---|---|
-| `value_initialize` | [field_evaluation.cc:L511](../../../../../source/blender/functions/intern/field_evaluation.cc#L511) | `type.value_initialize(r_value);` |
-| `value_initialize_indices` | [geometry_fields.cc:L661](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L661) | `dst_array.type().value_initialize_indices(dst_array.data(), valid_mask.complement(mask, memory));` |
-| `value_initialize_indices` | [geometry_fields.cc:L745](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L745) | `type.value_initialize_indices(dst.data(), mask);` |
-| `value_initialize_indices` | [geometry_fields.cc:L753](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L753) | `dst.type().value_initialize_indices(dst.data(), valid_mask.complement(mask, memory));` |
-| `destruct` | [geometry_fields.cc:L440](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L440) | `BLI_SCOPED_DEFER([&]() { cpp_type.destruct(value); });` |
-| `destruct` | [geometry_fields.cc:L796](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L796) | `BLI_SCOPED_DEFER([&]() { cpp_type.destruct(value); });` |
-| `destruct` | [BLI_any.hh:L223](../../../../../source/blender/blenlib/BLI_any.hh#L223) | `info_->destruct(&buffer_);` |
-| `destruct_n` | [BLI_array.hh:L202](../../../../../source/blender/blenlib/BLI_array.hh#L202) | `destruct_n(data_, size_);` |
-| `destruct_n` | [BLI_array.hh:L435](../../../../../source/blender/blenlib/BLI_array.hh#L435) | `destruct_n(data_, size_);` |
-| `destruct_n` | [BLI_generic_array.hh:L123](../../../../../source/blender/blenlib/BLI_generic_array.hh#L123) | `type_->destruct_n(data_, size_);` |
-| `destruct_indices` | [field_evaluation.cc:L411](../../../../../source/blender/functions/intern/field_evaluation.cc#L411) | `[buffer, mask, &type]() { type.destruct_indices(buffer, mask); });` |
-| `destruct_indices` | [multi_function_params.cc:L21](../../../../../source/blender/functions/intern/multi_function_params.cc#L21) | `[&type, buffer, mask = mask_]() { type.destruct_indices(buffer, mask); });` |
-| `destruct_indices` | [multi_function_procedure_executor.cc:L715](../../../../../source/blender/functions/intern/multi_function_procedure_executor.cc#L715) | `type.destruct_indices(this->value_as<VariableValue_Span>()->data, mask);` |
-| `copy_assign` | [BLI_cpp_type_make.hh:L96](../../../../../source/blender/blenlib/BLI_cpp_type_make.hh#L96) | `index_mask::detail::copy_assign(static_cast<const T *>(src), mask, static_cast<T *>(dst));` |
-| `copy_assign` | [BLI_index_mask.hh:L613](../../../../../source/blender/blenlib/BLI_index_mask.hh#L613) | `inline void copy_assign(const Span<T> src, const IndexMask &mask, const MutableSpan<T> dst);` |
-| `copy_assign` | [BLI_index_mask.hh:L1232](../../../../../source/blender/blenlib/BLI_index_mask.hh#L1232) | `BLI_NOINLINE void copy_assign(const T *__restrict src, const IndexMask &mask, T *__restrict dst)` |
-| `copy_assign_n` | [BLI_generic_array.hh:L102](../../../../../source/blender/blenlib/BLI_generic_array.hh#L102) | `type_->copy_assign_n(span.data(), data_, size_);` |
-| `copy_assign_n` | [BLI_generic_span.hh:L277](../../../../../source/blender/blenlib/BLI_generic_span.hh#L277) | `type_->copy_assign_n(values.data(), data_, size_);` |
-| `copy_assign_n` | [generic_virtual_array.cc:L95](../../../../../source/blender/blenlib/intern/generic_virtual_array.cc#L95) | `type_->copy_assign_n(src, const_cast<void *>(info.data), size_);` |
-| `copy_assign_indices` | [generic_virtual_array.cc:L166](../../../../../source/blender/blenlib/intern/generic_virtual_array.cc#L166) | `type_->copy_assign_indices(data_, dst, mask);` |
-| `copy_assign_compressed` | [generic_virtual_array.cc:L178](../../../../../source/blender/blenlib/intern/generic_virtual_array.cc#L178) | `type_->copy_assign_compressed(data_, dst, mask);` |
-| `copy_construct` | [mesh.cc:L1006](../../../../../source/blender/blenkernel/intern/mesh.cc#L1006) | `type.copy_construct(attribute_data[old_face_idx], new_values[new_face_idx]);` |
-| `copy_construct` | [mesh.cc:L1020](../../../../../source/blender/blenkernel/intern/mesh.cc#L1020) | `type.copy_construct(attribute_data[old_vert_idx], new_values[new_vert_idx]);` |
-| `copy_construct` | [mesh.cc:L1036](../../../../../source/blender/blenkernel/intern/mesh.cc#L1036) | `type.copy_construct(attribute_data[old_corner_idx], new_values[new_corner_idx]);` |
-| `copy_construct_indices` | [generic_virtual_array.cc:L163](../../../../../source/blender/blenlib/intern/generic_virtual_array.cc#L163) | `type_->copy_construct_indices(data_, dst, mask);` |
-| `copy_construct_compressed` | [generic_virtual_array.cc:L175](../../../../../source/blender/blenlib/intern/generic_virtual_array.cc#L175) | `type_->copy_construct_compressed(data_, dst, mask);` |
-| `move_construct` | [BLI_any.hh:L189](../../../../../source/blender/blenlib/BLI_any.hh#L189) | `info_->move_construct(&buffer_, &other.buffer_);` |
-| `move_construct` | [generic_virtual_array.cc:L145](../../../../../source/blender/blenlib/intern/generic_virtual_array.cc#L145) | `type_->move_construct(value, POINTER_OFFSET(data_, element_size_ * index));` |
-| `move_construct` | [lazy_function_graph_executor_generic.hh:L702](../../../../../source/blender/functions/intern/lazy_function_graph_executor_generic.hh#L702) | `type.move_construct(input_data, buffer);` |
-| `relocate_assign` | [BLI_generic_pointer.hh:L71](../../../../../source/blender/blenlib/BLI_generic_pointer.hh#L71) | `type_->relocate_assign(data_, &value);` |
-| `relocate_assign` | [generic_virtual_array.cc:L150](../../../../../source/blender/blenlib/intern/generic_virtual_array.cc#L150) | `type_->relocate_assign(value, POINTER_OFFSET(data_, element_size_ * index));` |
-
-### 生命周期推理图
-
-```mermaid
-flowchart LR
-  O["调用者或源数据拥有者"]:::input
-  V["CPPType复制移动重定位的接口与状态"]:::abstraction
-  B["借用地址、引用或视图"]:::data
-  W["实际计算或修改"]:::compute
-  R["结果与清理责任"]:::result
-  O -->|"创建与配置"| V
-  O -->|"保障寿命"| B
-  B -->|"访问前验证"| W
-  V -->|"规定操作"| W
-  W -->|"交付或销毁"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+}  // namespace blender
 ```
 
-这是审查生命周期的通用模型。具体类是否拥有数据由本篇成员、构造、析构和调用者一起证明；任何箭头都不自动代表shared_ptr。
+</details>
 
-## 六、把代码放进具体数据中推演
+## 语法与相关类型
 
-本方向的共同数值模型如下。本篇的专门检查是：为拥有堆资源的类型列出复制、移动、重定位前后责任。
+### 模板 template
 
-| 步骤 | 数据或状态 | 为什么需要这一步 |
-|---|---|---|
-| 请求存储 | sizeof(T), alignof(T) | 空间和地址都满足类型要求 |
-| 取得地址 | 尚无一般意义上的已构造T | 不能先调用T成员 |
-| 构造成功 | T生命周期开始 | 登记相应清理责任 |
-| 复制或移动 | 建立或更新另一个对象 | 区分初始化和赋值 |
-| 作用域退出 | 执行登记的析构 | 只销毁已构造部分 |
-| 归还存储 | 释放缓冲 | 与分配器来源匹配 |
+模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
 
-```mermaid
-flowchart TB
-  T0["sizeof(T), alignof(T)"]:::input
-  T1["尚无一般意义上的已构造T"]:::compute
-  T2["T生命周期开始"]:::compute
-  T3["建立或更新另一个对象"]:::compute
-  T4["执行登记的析构"]:::compute
-  T5["释放缓冲"]:::result
-  T0 -->|"取得地址"| T1
-  T1 -->|"构造成功"| T2
-  T2 -->|"复制或移动"| T3
-  T3 -->|"作用域退出"| T4
-  T4 -->|"归还存储"| T5
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
+把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
 
-图是教学推演模型；精确分支与状态更新以本篇摘录及调用契约为准。
+### 依赖名称 typename
 
-### 本篇独立练习与参考思路
+typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+
+区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+
+### 只读限定 const
+
+const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
+
+分别写T* const、const T*与const T* const，并画出不可修改的层次。
+
+### 异常边界 try与catch
+
+try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
+
+在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
+
+### 内部断言 assert
+
+断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
+
+对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
+
+### 类型别名 using
+
+类型别名为已有类型建立名字，不创建运行期对象。它常把模板内部使用的类型统一暴露给泛型调用者。
+
+展开别名直到基础类型，区分类型别名和变量声明。
+
+## 实现练习与验证
 
 为拥有堆资源的类型列出复制、移动、重定位前后责任。
 
-参考思路：重定位还包含源对象生命周期结束；重复析构源或漏析构目标都会破坏所有权。
+参考推理：用资源唯一编号追踪所有权，验证迁移前后只有一个最终拥有者。
 
-将输入、预期结果和资源责任分成三张清单。先用最直接的实现给出可核对的答案，再替换成对应源码使用的表示；比较结果不变的条件，而不是只比较接口名字。
+所有存活对象地址满足对齐；构造失败不会被当作成功对象登记；所有资源均有唯一或明确共享的清理责任。
 
-验收依据：所有存活对象地址满足对齐；构造失败不会被当作成功对象登记；所有资源均有唯一或明确共享的清理责任。
-
-## 七、复杂度、设计取舍与其他基础库
+## 历史、跨库比较与证据
 
 与std::pmr::monotonic_buffer_resource比较批量存储回收，与std::any比较拥有型类型擦除；CPPType描述类型操作，本身不保存每个值。
 
-本篇的具体取舍：重定位还包含源对象生命周期结束；重复析构源或漏析构目标都会破坏所有权。
-
-| 观察维度 | 从源码取得证据的方法 | 本篇要避免的误判 |
-|---|---|---|
-| 时间 | 对循环次数、分派次数和重建频率分别计数 | 看到单次常数操作就断定整个操作序列是常数成本 |
-| 内存 | 区分对象本体、容量存储、间接资源和共享控制块 | 用sizeof代替总内存 |
-| 安全 | 沿构造、失败回滚、销毁与失效逐路径检查 | 把断言或非空指针当作完整安全证明 |
-| 并发 | 逐字段确认锁、发布顺序和借用寿命 | 把引用计数线程安全等同数据读写线程安全 |
-
-相关一手资料：
-
-- [C++公开工作草案](https://eel.is/c++draft/)：持续更新的工作草案；语言与标准库语义以相应章节为准。
-- [LLVM Programmer’s Manual](https://llvm.org/docs/ProgrammersManual.html)：在线版，2026-10-14查阅；仅比较设计思路，不保证与本地LLVM版本一致。
-
-资料用于核对契约和进一步阅读；这里没有声称外部库与Blender实现相同，也没有把上游性能数字当作本机实测。
-
-## 八、历史提交与设计演化
-
-### 2026-04-28 · Jacques Lucke
-
-[BLI: optimize CPPType::get and simplify registration](https://projects.blender.org/blender/blender/commit/0dce18612ad43fdce0d00c5be8ec1056905ef2d3)
-
-完整哈希：`0dce18612ad43fdce0d00c5be8ec1056905ef2d3`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-BLI: optimize CPPType::get and simplify registration
-
-This uses the fact that we require `BLI_CPP_TYPE_REGISTER` to be called before
-the corresponding `CPPType` is used. This allows the `CPPType::get` method to
-just return the pointer without having to optionally lazily initialize the type.
-This results in significantly less code and can potentially also improve
-performance.
-
-Due to the way this is implemented now with a global static variable, it is not
-necessary to have `BLI_CPP_TYPE_MAKE` now. So only a single line is necessary to
-create a `CPPType` now instead of two.
-
-Since the types are not lazily initialized anymore, it is important to call the
-register functions before tests start now. This was kind of a soft requirement
-before but often worked without. Now there is an assert that checks when the
-register call is missing.
-
-This results in a 472kb smaller stripped binary size.
-
-Pull Request: https://projects.blender.org/blender/blender/pulls/157760
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“移动构造和重定位为什么不能混为一谈？”判断方案改变的是表示、接口、生命周期还是调度。
-
-## 九、反例、测试入口与掌握标准
-
-仓库测试入口：
-
-- [BLI_cpp_type_test.cc](../../../../../source/blender/blenlib/tests/BLI_cpp_type_test.cc)：阅读输入、断言与覆盖边界；本篇不把“存在测试”写成“本轮已运行”。
-
-需要实际构造的反例：
-
-- 空输入或没有结果需求：确认接口允许的空状态与不允许访问的操作。
-- 边界位置和退化结构：把长度为1、末尾位置、重复值或深链代入真实分支。
-- 生命周期结束或修改之后：检查保存的指针、引用、结果视图是否仍有效。
-- 与本篇核心不变量相冲突的输入：为拥有堆资源的类型列出复制、移动、重定位前后责任。
-
-### 可运行的教学参考程序
-
-[reference_exercises.cc](../_tools/reference_exercises.cc)包含独立于Blender的C++20参考检查：视图、简化SmallVector、异常回滚、哈希碰撞与删除、偏移数组、拓扑映射、共享缓存、表达式、惰性分支、闭包和暴力最近邻。
-
-参考程序有意省略生产实现的完整能力。例如SmallVector禁止复制移动容器，不支持只能移动的元素，并禁止append参数别名到自身元素；TinyMap固定8槽，不提供增长。程序通过不能替代Blender实现测试。实际运行结果、编译器与命令见验收报告。
-
-掌握标准：离开源码解释“移动构造和重定位为什么不能混为一谈？”；独立完成上述练习；能指出一个会破坏原始存储相关约束的最小反例，并用具体代码行说明检查或修复应放在哪里。
+[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)

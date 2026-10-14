@@ -1,40 +1,40 @@
 # 08-05 FieldOperation运算节点
 
-[方向导航](README.md) · [总目录](../README.md) · [覆盖索引](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
 
-> 阅读顺序：问题与数据模型 → 语法与类型 → 源码逐行 → 调用线索 → 历史与取舍 → 推演和练习。
-
-- 基准 HEAD：`cbda6b96c26c0dee3c3b5cbb93960c4ac06a6b30`。
-- 记录日期：2026-10-14。
-- 教学示例状态：正文中的推演不是本机性能实测；已运行练习见验收报告。
-
-## 一、从问题到设计
+## 从问题到实现
 
 共享子表达式怎样连接多个输出？
 
 操作保存函数与输入表达式关系，某个输出索引选择结果；共享所有权图不能误当成互不相关的树。
 
-本篇把语法、数据语义和系统取舍连接起来。Field表达式、求值上下文、mask与结果存储各自有独立职责和生命周期。
-
-### 本篇独立模型与设计推理
+**数据模型**
 
 FieldOperation可被多个输出共同引用，图的所有权不一定是没有共享的树。
 
-设计取舍：共享节省计算潜力，析构和去重需考虑多引用。
+**设计取舍**
 
-最小反例：分别递归求两个输出，重复执行共同的昂贵子表达式。
+共享节省计算潜力，析构和去重需考虑多引用。
 
-推导与处理：集中分析多个输出，按真实身份或相等定义复用。
+**最小反例**
+
+分别递归求两个输出，重复执行共同的昂贵子表达式。
+
+**推导**
+
+集中分析多个输出，按真实身份或相等定义复用。
+
+## 阅读地图与执行推演
 
 ```mermaid
 flowchart TB
-  M["FieldOperation可被多个输出共同引用，图的<br/>所有权不一定是没有共享的树。"]:::data
-  T["共享节省计算潜力，析构和去重需考虑多引用<br/>。"]:::abstraction
-  X["分别递归求两个输出，重复执行共同的昂贵子<br/>表达式。"]:::error
-  A["集中分析多个输出，按真实身份或相等定义复<br/>用。"]:::result
-  M -->|"建立约束"| T
-  T -->|"构造反例"| X
-  X -->|"恢复不变量"| A
+  M["FieldOperation可被多个输出共同引用，图的所<br/>有权不一定是没有共享的树。"]:::data
+  C["共享节省计算潜力，析构和去重需考虑多引用。"]:::abstraction
+  B["分别递归求两个输出，重复执行共同的昂贵子表<br/>达式。"]:::error
+  R["集中分析多个输出，按真实身份或相等定义复用<br/>。"]:::result
+  M -->|"明确约束"| C
+  C -->|"检验边界"| B
+  B -->|"恢复正确性"| R
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -42,57 +42,26 @@ flowchart TB
   classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
-
-### 源码范围与相邻篇章
-
-| 文件 | 本篇逐行范围 | 基准SHA-256 |
-|---|---|---|
-| [source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) | L387—L715 | `4ce5d9b67e7b82f22293a3250ae787716e34c6a6b5f1afe561a000eeb6dfa112` |
-
-同一主讲文件可能分多篇覆盖；超出本篇范围的符号通过覆盖索引定位。空行与纯注释保留在源码摘录中，逐行表解释有效语句与语法边界；许可证头统一保留。
-
-前篇：[FieldInput输入节点](04-FieldInput%E8%BE%93%E5%85%A5%E8%8A%82%E7%82%B9.md).
-
-后篇：[FieldContext上下文](06-FieldContext%E4%B8%8A%E4%B8%8B%E6%96%87.md).
-
-## 二、类型、数据与阅读地图
-
-```mermaid
-flowchart TB
-  Q["共享子表达式怎样连接多个输出？"]:::input
-  C0["表达式"]:::abstraction
-  C1["上下文"]:::data
-  C2["选择集合"]:::data
-  C3["批量求值"]:::data
-  R["FieldOperation运算节点"]:::result
-  Q -->|"建立模型"| C0
-  C0 -->|"区分职责"| C1
-  C1 -->|"区分职责"| C2
-  C2 -->|"区分职责"| C3
-  C3 -->|"回到源码"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
-
-这是概念依赖图，边表示阅读关系，不声称是运行时调用顺序。
-
-### 直接编译依赖
 
 ```mermaid
 flowchart LR
-  S["FN_field.hh"]:::abstraction
-  I0["BLI_cache_mutex.hh"]:::data
-  I1["BLI_implicit_sharing_ptr.hh"]:::data
-  I2["BLI_vector_set.hh"]:::data
-  I3["FN_multi_function.hh"]:::data
-  S -->|"直接include"| I0
-  S -->|"直接include"| I1
-  S -->|"直接include"| I2
-  S -->|"直接include"| I3
+  F0["blender::fn::GField::GField"]:::input
+  F1["blender::fn::GField::GField"]:::compute
+  F2["blender::fn::GField::GField"]:::compute
+  F3["blender::fn::GField::GField"]:::compute
+  F4["blender::fn::GField::from_non_owning_ref"]:::compute
+  F5["blender::fn::GField::TrivialInlineConstant::cpp_type_supported"]:::compute
+  F6["blender::fn::GField::from_non_owning_constant"]:::compute
+  F7["blender::fn::Field＜T＞ Field＜T＞::<br/>from_non_owning_ref"]:::compute
+  F4 -->|"实现调用"| F0
+  F4 -->|"实现调用"| F1
+  F4 -->|"实现调用"| F2
+  F4 -->|"实现调用"| F3
+  F6 -->|"实现调用"| F0
+  F6 -->|"实现调用"| F1
+  F6 -->|"实现调用"| F2
+  F6 -->|"实现调用"| F3
+  F7 -->|"实现调用"| F4
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -101,299 +70,612 @@ flowchart LR
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-箭头只表示头文件包含关系；完整调用线索见后面的符号定位表。
-
-## 三、关键词、语法与类型角色
-
-### 模板 template
-
-模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
-
-具体检查：把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
-
-### 依赖名称 typename
-
-typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
-
-具体检查：区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
-
-### 常量求值 constexpr
-
-constexpr声明允许相应实体参与常量求值，但constexpr函数仍可以在运行时执行。是否常量求值由调用场景和表达式合法性共同决定。
-
-具体检查：比较constexpr变量初始化和从运行时输入调用同一函数。
-
-### 只读限定 const
-
-const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
-
-具体检查：分别写T* const、const T*与const T* const，并画出不可修改的层次。
-
-### 移动转换 std::move
-
-std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
-
-具体检查：记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
-
-### 完美转发 std::forward
-
-std::forward在转发引用模板中恢复调用者原来的值类别。它依赖推导出的模板实参；无条件move会改变左值调用者的语义。
-
-具体检查：对同一接口分别传入左值、临时对象和const左值，记录实际重载。
-
-### 异常约定 noexcept
-
-noexcept表达式可以依赖类型特征。违反不抛异常约定会终止程序；它不是自动捕获异常，也不是资源回滚代码。
-
-具体检查：找出声明的条件与实际可能抛出的分配、构造操作是否一致。
-
-### 显式静态转换 static_cast
-
-static_cast表达编译期允许的转换，不会自动验证运行时真实类型、指针寿命或索引边界。由void指针恢复T指针时，调用者仍须保证实际存储中确有合法T对象。
-
-具体检查：标出转换前后的类型以及正确性依据来自哪里。
-
-### 表示层转换 reinterpret_cast
-
-reinterpret_cast不能自动开始任意对象的生命周期，也不能豁免对齐和别名规则。读这类代码需要追溯原始分配与实际构造操作。
-
-具体检查：分别检查大小、对齐、生命周期和可访问类型，四项不能互相替代。
-
-### 覆写检查 override
-
-override要求函数确实覆盖基类虚函数，可捕获参数类型和const限定不匹配。它不改变基类规定的生命周期或线程约束。
-
-具体检查：故意改变一个参数或const，观察编译器如何拒绝误写的新函数。
-
-### 对象表示 sizeof
-
-sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeof视图很小并不说明底层数组很小。
-
-具体检查：分别统计容器对象、容量字节和元素拥有的间接资源。
-
-### 构造与new表达式
-
-普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
-
-具体检查：追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
-
-### 内部断言 assert
-
-断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
-
-具体检查：对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
-
-### 编译期分支 if constexpr
-
-条件在实例化时决定被保留的分支，这常用于不同类型的合法操作选择。它与运行时if有不同的实例化检查规则。
-
-具体检查：找出每个分支依赖哪些类型特征，再使用满足与不满足条件的类型。
-
-### 共享拥有 shared_ptr
-
-shared_ptr让控制块跟踪共享寿命，不自动使被指向对象的读写线程安全；循环拥有可能阻止销毁。
-
-具体检查：画出强引用环并考虑是否应改变所有权方向或引入弱引用。
-
-## 四、真实源码与逐行讲解
-
-源码块保持原行内容，原始行号由小节标题及逐行表给出。表中的调用定位是静态阅读辅助；重载、模板实例化、宏展开和虚调用需结合完整声明，不能仅凭词法出现证明动态调用。
-
-### FN_field.hh：L387—L434
-
-<!-- source:source/blender/functions/FN_field.hh:387:434 -->
-
-```cpp
-class FieldOperation : public ImplicitSharingMixin {
- private:
-  /** One #GField for every input of the multi-function. */
-  Vector<GField> inputs_;
-
-  /** Optionally owned multi-function. */
-  std::shared_ptr<const mf::MultiFunction> owned_fn_;
-  const mf::MultiFunction *fn_;
-
-  /** Cached field inputs. */
-  FieldInputsPtr field_inputs_;
-
- public:
-  /** Prefer `from*` constructor functions instead. */
-  FieldOperation(std::shared_ptr<const mf::MultiFunction> fn, Vector<GField> inputs);
-  FieldOperation(const mf::MultiFunction &fn, Vector<GField> inputs);
-
-  static FieldOperationPtr from(std::shared_ptr<const mf::MultiFunction> fn,
-                                Vector<GField> inputs);
-  static FieldOperationPtr from(const mf::MultiFunction &fn, Vector<GField> inputs);
-
-  /** Get the type of a specific output. */
-  const CPPType &output_cpp_type(int output_i) const;
-
-  const mf::MultiFunction &multi_function() const;
-  const FieldInputsPtr &field_inputs() const;
-  Span<GField> inputs() const;
-
-  void delete_self() override;
-
- private:
-  void delete_input_fields();
-};
-
-bool operator==(const GField &a, const GField &b);
-bool operator==(const GFieldRef &a, const GFieldRef &b);
-
-/** Type trait to detect field types. */
-template<typename T> constexpr bool is_field_v = false;
-template<typename T> constexpr bool is_field_v<Field<T>> = true;
-
-Field<bool> invert_boolean_field(const Field<bool> &field);
-
-class IndexFieldInput final : public FieldInput {
- public:
-  IndexFieldInput();
-
-  static GVArray get_index_varray(const IndexMask &mask);
+```mermaid
+flowchart LR
+  P0["表达式"]:::input
+  P1["上下文"]:::data
+  P2["选择集合"]:::data
+  P3["批量求值"]:::result
+  P0 -->|"分析关系"| P1
+  P1 -->|"分析关系"| P2
+  P2 -->|"分析关系"| P3
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L387 | 声明或定义类型 `class FieldOperation : public ImplicitSharingMixin`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L388 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L390 | 声明成员、局部对象或完成语句 `Vector<GField> inputs_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L393 | 声明成员、局部对象或完成语句 `std::shared_ptr<const mf::MultiFunction> owned_fn_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L394 | 声明成员、局部对象或完成语句 `const mf::MultiFunction *fn_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L397 | 声明成员、局部对象或完成语句 `FieldInputsPtr field_inputs_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L399 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L401 | 出现调用或函数声明 `FieldOperation`，对应表达式为 `FieldOperation(std::shared_ptr<const mf::MultiFunction> fn, Vector<GField> inputs);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L402 | 出现调用或函数声明 `FieldOperation`，对应表达式为 `FieldOperation(const mf::MultiFunction &fn, Vector<GField> inputs);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L404 | 出现调用或函数声明 `from`，对应表达式为 `static FieldOperationPtr from(std::shared_ptr<const mf::MultiFunction> fn,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L405 | 声明成员、局部对象或完成语句 `Vector<GField> inputs)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L406 | 声明接口 `static FieldOperationPtr from(const mf::MultiFunction &fn, Vector<GField> inputs)`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L409 | 声明接口 `const CPPType &output_cpp_type(int output_i) const`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L411 | 声明接口 `const mf::MultiFunction &multi_function() const`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L412 | 声明接口 `const FieldInputsPtr &field_inputs() const`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L413 | 声明接口 `Span<GField> inputs() const`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L415 | 声明接口 `void delete_self() override`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L417 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L418 | 声明接口 `void delete_input_fields()`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L419 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L421 | 运算符重载声明、定义或显式调用：`bool operator==(const GField &a, const GField &b);`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L422 | 运算符重载声明、定义或显式调用：`bool operator==(const GFieldRef &a, const GFieldRef &b);`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L425 | 声明模板参数 `template<typename T> constexpr bool is_field_v = false;`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L426 | 声明模板参数 `template<typename T> constexpr bool is_field_v<Field<T>> = true;`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L428 | 出现调用或函数声明 `invert_boolean_field`，对应表达式为 `Field<bool> invert_boolean_field(const Field<bool> &field);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L430 | 声明或定义类型 `class IndexFieldInput final : public FieldInput`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L431 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L432 | 出现调用或函数声明 `IndexFieldInput`，对应表达式为 `IndexFieldInput();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L434 | 声明接口 `static GVArray get_index_varray(const IndexMask &mask)`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
+```mermaid
+flowchart TB
+  S0["Position*2+1"]:::input
+  S1["Position=[0,3,5]"]:::compute
+  S2["{0,2}"]:::compute
+  S3["1与11"]:::compute
+  S4["Position=[4,7,9]"]:::compute
+  S5["9与19"]:::result
+  S0 -->|"上下文A"| S1
+  S1 -->|"选择"| S2
+  S2 -->|"结果A"| S3
+  S3 -->|"上下文B"| S4
+  S4 -->|"结果B"| S5
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-### FN_field.hh：L435—L480
+图中的数值推演是本方向的教学模型；实际函数之间的调用边与概念分析边分别标注，不能把概念关系当作运行时调度顺序。
 
-<!-- source:source/blender/functions/FN_field.hh:435:480 -->
+## 完整源码单元与就地讲解
+
+中文讲解直接放在相关代码旁，复杂机制在代码下展开。原文折叠区保留基准行号；不需要在行号表和函数之间来回查找。类布局可分段展示，函数实现不按固定行数切开。
+
+<a id="f-211db26b169f2f41"></a>
+
+### `blender::fn::GField::GField`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L450—L453。
+
+接口参数：
+
+- `const CPPType &type`
+
+**教学注释版**
+
+<!-- annotated:5fb2ae7547e5fb -->
 
 ```cpp
-
-  GVArray get_varray_for_context(const FieldContext &context,
-                                 const IndexMask &mask,
-                                 ResourceScope &scope) const final;
-
-  void hash_unique(UniqueHashBytes &hash, FieldHashDeep &deep_hash_cache) const override;
-
-  /** Cached index field to avoid allocating a new one every time. */
-  static const Field<int> &get_field();
-};
-
-/* -------------------------------------------------------------------- */
-/** \name Inline Methods
- * \{ */
-
 inline GField::GField(const CPPType &type) noexcept
     : variant_(ConstantRef{&type, type.default_value()})
 {
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L450—L453</summary>
+
+<!-- original:5fb2ae7547e5fb:source/blender/functions/FN_field.hh:450:453 -->
+
+```cpp
+inline GField::GField(const CPPType &type) noexcept
+    : variant_(ConstantRef{&type, type.default_value()})
+{
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<a id="f-7fdb26f58de14966"></a>
+
+### `blender::fn::GField::GField`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L454—L454。
+
+接口参数：
+
+- `FieldInputPtr node`
+
+**教学注释版**
+
+<!-- annotated:aabd76500c74da -->
+
+```cpp
 inline GField::GField(FieldInputPtr node) noexcept : variant_(Input{std::move(node)}) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L454—L454</summary>
+
+<!-- original:aabd76500c74da:source/blender/functions/FN_field.hh:454:454 -->
+
+```cpp
+inline GField::GField(FieldInputPtr node) noexcept : variant_(Input{std::move(node)}) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<a id="f-0f8304d195c6e071"></a>
+
+### `blender::fn::GField::GField`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L455—L455。
+
+接口参数：
+
+- `Variant variant`
+
+**教学注释版**
+
+<!-- annotated:237b864440ee28 -->
+
+```cpp
 inline GField::GField(Variant variant) noexcept : variant_(std::move(variant)) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L455—L455</summary>
+
+<!-- original:237b864440ee28:source/blender/functions/FN_field.hh:455:455 -->
+
+```cpp
+inline GField::GField(Variant variant) noexcept : variant_(std::move(variant)) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<a id="f-49cf4fb08737a047"></a>
+
+### `blender::fn::GField::GField`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L456—L459。
+
+接口参数：
+
+- `FieldOperationPtr node`
+- `const int output_i`
+
+**教学注释版**
+
+<!-- annotated:5d85a3a8ef33e8 -->
+
+```cpp
 inline GField::GField(FieldOperationPtr node, const int output_i) noexcept
     : variant_(MultiFn{std::move(node), output_i})
 {
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L456—L459</summary>
+
+<!-- original:5d85a3a8ef33e8:source/blender/functions/FN_field.hh:456:459 -->
+
+```cpp
+inline GField::GField(FieldOperationPtr node, const int output_i) noexcept
+    : variant_(MultiFn{std::move(node), output_i})
+{
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:db4af532ff12a5 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L460—L460</summary>
+
+<!-- original:db4af532ff12a5:source/blender/functions/FN_field.hh:460:460 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3418a2faa8f1c8c6"></a>
+
+### `blender::fn::GField::from_non_owning_ref`
+
+建立运算、常量或借用表示。
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L461—L464。
+
+接口参数：
+
+- `const GField &field`
+
+**教学注释版**
+
+<!-- annotated:e339a168eef4f3 -->
+
+```cpp
 inline GField GField::from_non_owning_ref(const GField &field)
 {
   return GField(FieldRef{&field});
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L461—L464</summary>
+
+<!-- original:e339a168eef4f3:source/blender/functions/FN_field.hh:461:464 -->
+
+```cpp
+inline GField GField::from_non_owning_ref(const GField &field)
+{
+  return GField(FieldRef{&field});
+}
+```
+
+</details>
+
+**接口与不变量**
+
+不同表示的拥有关系不同；静态引用路径要求被引用对象存活足够久。
+
+**结果出口**
+
+- `return GField(FieldRef{&field});`
+
+**继续追踪实现**
+
+- `GField` → [blender::fn::GField::GField · L450](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-211db26b169f2f41)；[blender::fn::GField::GField · L454](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-7fdb26f58de14966)；[blender::fn::GField::GField · L455](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-0f8304d195c6e071)；[blender::fn::GField::GField · L456](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-49cf4fb08737a047)。同名重载需按实参类型选择。
+
+<!-- annotated:d1c6cc9d9d1bbd -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L465—L465</summary>
+
+<!-- original:d1c6cc9d9d1bbd:source/blender/functions/FN_field.hh:465:465 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-d3dcf87f1fd371b9"></a>
+
+### `blender::fn::GField::TrivialInlineConstant::cpp_type_supported`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L466—L470。
+
+接口参数：
+
+- `const CPPType &type`
+
+**教学注释版**
+
+<!-- annotated:41dfa1cff850e3 -->
+
+```cpp
 inline bool GField::TrivialInlineConstant::cpp_type_supported(const CPPType &type)
 {
   return type.is_trivial && type.size <= TrivialInlineConstant::inline_size &&
          type.alignment <= TrivialInlineConstant::inline_alignment;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L466—L470</summary>
+
+<!-- original:41dfa1cff850e3:source/blender/functions/FN_field.hh:466:470 -->
+
+```cpp
+inline bool GField::TrivialInlineConstant::cpp_type_supported(const CPPType &type)
+{
+  return type.is_trivial && type.size <= TrivialInlineConstant::inline_size &&
+         type.alignment <= TrivialInlineConstant::inline_alignment;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return type.is_trivial && type.size <= TrivialInlineConstant::inline_size &&`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:1d9e81970c5348 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L471—L471</summary>
+
+<!-- original:1d9e81970c5348:source/blender/functions/FN_field.hh:471:471 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b7deb7357dcded50"></a>
+
+### `blender::fn::GField::from_non_owning_constant`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L472—L475。
+
+接口参数：
+
+- `const CPPType &type`
+- `const void *value`
+
+**教学注释版**
+
+<!-- annotated:8cb71dd4cd55aa -->
+
+```cpp
 inline GField GField::from_non_owning_constant(const CPPType &type, const void *value)
 {
   return GField(ConstantRef{&type, value});
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L472—L475</summary>
+
+<!-- original:8cb71dd4cd55aa:source/blender/functions/FN_field.hh:472:475 -->
+
+```cpp
+inline GField GField::from_non_owning_constant(const CPPType &type, const void *value)
+{
+  return GField(ConstantRef{&type, value});
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return GField(ConstantRef{&type, value});`
+
+**继续追踪实现**
+
+- `GField` → [blender::fn::GField::GField · L450](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-211db26b169f2f41)；[blender::fn::GField::GField · L454](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-7fdb26f58de14966)；[blender::fn::GField::GField · L455](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-0f8304d195c6e071)；[blender::fn::GField::GField · L456](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-49cf4fb08737a047)。同名重载需按实参类型选择。
+
+<!-- annotated:b592e579f378fa -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L476—L476</summary>
+
+<!-- original:b592e579f378fa:source/blender/functions/FN_field.hh:476:476 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-054313375a3ccf97"></a>
+
+### `blender::fn::Field<T> Field<T>::from_non_owning_ref`
+
+建立运算、常量或借用表示。
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L477—L480。
+
+接口参数：
+
+- `const Field &field`
+
+**教学注释版**
+
+<!-- annotated:63e1b32a660c6b -->
+
+```cpp
+template<typename T> inline Field<T> Field<T>::from_non_owning_ref(const Field &field)
+{
+  // [讲解] GField::from_non_owning_ref：建立运算、常量或借用表示。
+  return GField::from_non_owning_ref(field).template typed<T>();
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L477—L480</summary>
+
+<!-- original:63e1b32a660c6b:source/blender/functions/FN_field.hh:477:480 -->
+
+```cpp
 template<typename T> inline Field<T> Field<T>::from_non_owning_ref(const Field &field)
 {
   return GField::from_non_owning_ref(field).template typed<T>();
 }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L436 | 出现调用或函数声明 `get_varray_for_context`，对应表达式为 `GVArray get_varray_for_context(const FieldContext &context,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L437 | 本行是连续声明或表达式的一部分：`const IndexMask &mask,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L438 | 声明成员、局部对象或完成语句 `ResourceScope &scope) const final`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L440 | 声明接口 `void hash_unique(UniqueHashBytes &hash, FieldHashDeep &deep_hash_cache) const override`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L443 | 声明接口 `static const Field<int> &get_field()`，本行没有对应函数体；返回类型、参数限定和const/noexcept共同组成调用契约，实际行为需继续定位实现。 |
-| L444 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L450 | 出现调用或函数声明 `GField::GField`，对应表达式为 `inline GField::GField(const CPPType &type) noexcept`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L451 | 出现调用或函数声明 `variant_`，对应表达式为 `: variant_(ConstantRef{&type, type.default_value()})`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L452 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L453 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L454 | 出现调用或函数声明 `GField::GField`，对应表达式为 `inline GField::GField(FieldInputPtr node) noexcept : variant_(Input{std::move(node)}) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L455 | 出现调用或函数声明 `GField::GField`，对应表达式为 `inline GField::GField(Variant variant) noexcept : variant_(std::move(variant)) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L456 | 出现调用或函数声明 `GField::GField`，对应表达式为 `inline GField::GField(FieldOperationPtr node, const int output_i) noexcept`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L457 | 出现调用或函数声明 `variant_`，对应表达式为 `: variant_(MultiFn{std::move(node), output_i})`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L458 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L459 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L461 | 出现调用或函数声明 `GField::from_non_owning_ref`，对应表达式为 `inline GField GField::from_non_owning_ref(const GField &field)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L462 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L463 | 返回表达式 `GField(FieldRef{&field})`。 |
-| L464 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L466 | 出现调用或函数声明 `GField::TrivialInlineConstant::cpp_type_supported`，对应表达式为 `inline bool GField::TrivialInlineConstant::cpp_type_supported(const CPPType &type)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L467 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L468 | 返回表达式 `type.is_trivial && type.size <= TrivialInlineConstant::inline_size &&`。 |
-| L469 | 声明成员、局部对象或完成语句 `type.alignment <= TrivialInlineConstant::inline_alignment`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L470 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L472 | 出现调用或函数声明 `GField::from_non_owning_constant`，对应表达式为 `inline GField GField::from_non_owning_constant(const CPPType &type, const void *value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L473 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L474 | 返回表达式 `GField(ConstantRef{&type, value})`。 |
-| L475 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L477 | 声明模板参数 `template<typename T> inline Field<T> Field<T>::from_non_owning_ref(const Field &field)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L478 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L479 | 返回表达式 `GField::from_non_owning_ref(field).template typed<T>()`。 |
-| L480 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+</details>
 
-### FN_field.hh：L481—L539
+**接口与不变量**
 
-<!-- source:source/blender/functions/FN_field.hh:481:539 -->
+不同表示的拥有关系不同；静态引用路径要求被引用对象存活足够久。
+
+**结果出口**
+
+- `return GField::from_non_owning_ref(field).template typed<T>();`
+
+**继续追踪实现**
+
+- `GField::from_non_owning_ref(field).template typed<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L479。
+- `GField::from_non_owning_ref` → [blender::fn::GField::from_non_owning_ref · L461](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-3418a2faa8f1c8c6)。
+
+<!-- annotated:51f3bb29638f0e -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L481—L481</summary>
+
+<!-- original:51f3bb29638f0e:source/blender/functions/FN_field.hh:481:481 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-53eedc63fedfa749"></a>
+
+### `blender::fn::GField::from_input`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L482—L486。
+
+**教学注释版**
+
+<!-- annotated:91ca4dbc19c2fe -->
+
+```cpp
+template<typename InputT, typename... Args> inline GField GField::from_input(Args &&...args)
+{
+  // [讲解] std::forward<Args>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+  FieldInputPtr input{MEM_new<InputT>(__func__, std::forward<Args>(args)...)};
+  // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+  return GField(Input{std::move(input)});
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L482—L486</summary>
+
+<!-- original:91ca4dbc19c2fe:source/blender/functions/FN_field.hh:482:486 -->
+
+```cpp
 template<typename InputT, typename... Args> inline GField GField::from_input(Args &&...args)
 {
   FieldInputPtr input{MEM_new<InputT>(__func__, std::forward<Args>(args)...)};
   return GField(Input{std::move(input)});
 }
+```
+
+</details>
+
+**结果出口**
+
+- `return GField(Input{std::move(input)});`
+
+**继续追踪实现**
+
+- `MEM_new<InputT>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
+- `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `GField` → [blender::fn::GField::GField · L450](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-211db26b169f2f41)；[blender::fn::GField::GField · L454](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-7fdb26f58de14966)；[blender::fn::GField::GField · L455](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-0f8304d195c6e071)；[blender::fn::GField::GField · L456](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-49cf4fb08737a047)。同名重载需按实参类型选择。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+### 类型布局、声明与编译条件 · FN_field.hh L487—L488
+
+<!-- annotated:b886fb12c95361 -->
+
+```cpp
 
 template<typename T>
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L487—L488</summary>
+
+<!-- original:b886fb12c95361:source/blender/functions/FN_field.hh:487:488 -->
+
+```cpp
+
+template<typename T>
+```
+
+</details>
+
+<a id="f-f776b1001f6d77c2"></a>
+
+### `blender::fn::Field<T> Field<T>::from_input`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L489—L493。
+
+**教学注释版**
+
+<!-- annotated:a79d118d6bd8f1 -->
+
+```cpp
+template<typename InputT, typename... Args>
+inline Field<T> Field<T>::from_input(Args &&...args)
+{
+  // [讲解] std::forward<Args>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+  return GField::from_input<InputT>(std::forward<Args>(args)...).template typed<T>();
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L489—L493</summary>
+
+<!-- original:a79d118d6bd8f1:source/blender/functions/FN_field.hh:489:493 -->
+
+```cpp
 template<typename InputT, typename... Args>
 inline Field<T> Field<T>::from_input(Args &&...args)
 {
   return GField::from_input<InputT>(std::forward<Args>(args)...).template typed<T>();
 }
+```
 
+</details>
+
+**结果出口**
+
+- `return GField::from_input<InputT>(std::forward<Args>(args)...).template typed<T>();`
+
+**继续追踪实现**
+
+- `GField::from_input<InputT>(std::forward<Args>(args)...).template typed<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L492。
+- `GField::from_input<InputT>` → [blender::fn::GField::from_input · L482](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-53eedc63fedfa749)。
+- `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+
+<!-- annotated:a97a7c7408b882 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L494—L494</summary>
+
+<!-- original:a97a7c7408b882:source/blender/functions/FN_field.hh:494:494 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-0b2f3f4cecd8c44a"></a>
+
+### `blender::fn::Field<T>::Field`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L495—L511。
+
+接口参数：
+
+- `T value`
+
+**教学注释版**
+
+<!-- annotated:940cbab5242d2f -->
+
+```cpp
 template<typename T>
 inline Field<T>::Field(T value)
     : field_([&]() {
@@ -411,12 +693,156 @@ inline Field<T>::Field(T value)
       }())
 {
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L495—L511</summary>
+
+<!-- original:940cbab5242d2f:source/blender/functions/FN_field.hh:495:511 -->
+
+```cpp
+template<typename T>
+inline Field<T>::Field(T value)
+    : field_([&]() {
+        const CPPType &type = CPPType::get<T>();
+        if constexpr (GField::TrivialInlineConstant::type_supported_v<T>) {
+          GField::TrivialInlineConstant constant;
+          constant.type = &type;
+          new (constant.value.ptr()) T(std::move(value));
+          return GField(constant);
+        }
+        else {
+          T *new_value = MEM_new<T>(__func__, std::move(new_value));
+          return GField(GField::OwnedConstant{&type, new_value});
+        }
+      }())
+{
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:036542a114cd3d -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L512—L512</summary>
+
+<!-- original:036542a114cd3d:source/blender/functions/FN_field.hh:512:512 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-c0874f9733e45938"></a>
+
+### `blender::fn::Field<T>::depends_on_input`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L513—L516。
+
+**教学注释版**
+
+<!-- annotated:92a41d7b13df59 -->
+
+```cpp
 template<typename T> inline bool Field<T>::depends_on_input() const
 {
   return field_.depends_on_input();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L513—L516</summary>
+
+<!-- original:92a41d7b13df59:source/blender/functions/FN_field.hh:513:516 -->
+
+```cpp
+template<typename T> inline bool Field<T>::depends_on_input() const
+{
+  return field_.depends_on_input();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return field_.depends_on_input();`
+
+**继续追踪实现**
+
+- `field_.depends_on_input` → [blender::fn::GField::depends_on_input · L614](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-f9ec31f757d56a15)。
+
+<!-- annotated:ddc2bdf40f127b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L517—L517</summary>
+
+<!-- original:ddc2bdf40f127b:source/blender/functions/FN_field.hh:517:517 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-284e6a7a85c0110e"></a>
+
+### `blender::fn::GField::cpp_type`
+
+取得表达式结果的类型信息。
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L518—L539。
+
+**教学注释版**
+
+<!-- annotated:e5bdad7d94aad6 -->
+
+```cpp
+inline const CPPType &GField::cpp_type() const
+{
+  // [讲解] std::visit：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
+  return std::visit(
+      []<typename T>(const T &v) -> const CPPType & {
+        if constexpr (std::is_same_v<T, Input>) {
+          return v.node->cpp_type();
+        }
+        else if constexpr (std::is_same_v<T, MultiFn>) {
+          return v.node->output_cpp_type(v.output_i);
+        }
+        else if constexpr (std::is_same_v<T, FieldRef>) {
+          return v.field_ref->cpp_type();
+        }
+        else if constexpr (is_same_any_v<T, ConstantRef, TrivialInlineConstant, OwnedConstant>) {
+          return *v.type;
+        }
+        else {
+          BLI_assert_unreachable_static_t(T);
+        }
+      },
+      this->variant_);
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L518—L539</summary>
+
+<!-- original:e5bdad7d94aad6:source/blender/functions/FN_field.hh:518:539 -->
+
+```cpp
 inline const CPPType &GField::cpp_type() const
 {
   return std::visit(
@@ -441,73 +867,56 @@ inline const CPPType &GField::cpp_type() const
 }
 ```
 
-本段语义重点：
+</details>
 
-- `std::visit`：根据variant当前活动类型执行对应操作；每个候选分支都必须满足访客约定。
+**接口与不变量**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L482 | 声明模板参数 `template<typename InputT, typename... Args> inline GField GField::from_input(Args &&...args)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L483 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L484 | 出现调用或函数声明 `MEM_new`，对应表达式为 `FieldInputPtr input{MEM_new<InputT>(__func__, std::forward<Args>(args)...)};`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L485 | 返回表达式 `GField(Input{std::move(input)})`。 |
-| L486 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L488 | 声明模板参数 `template<typename T>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L489 | 声明模板参数 `template<typename InputT, typename... Args>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L490 | 出现调用或函数声明 `::from_input`，对应表达式为 `inline Field<T> Field<T>::from_input(Args &&...args)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L491 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L492 | 返回表达式 `GField::from_input<InputT>(std::forward<Args>(args)...).template typed<T>()`。 |
-| L493 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L495 | 声明模板参数 `template<typename T>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L496 | 出现调用或函数声明 `::Field`，对应表达式为 `inline Field<T>::Field(T value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L497 | 出现调用或函数声明 `field_`，对应表达式为 `: field_([&]() {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L498 | 把右侧 `CPPType::get<T>()` 用于初始化或更新左侧 `const CPPType &type`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L499 | 编译期条件分支 `if constexpr (GField::TrivialInlineConstant::type_supported_v<T>)`。按实例化类型选择相应实现；被舍弃分支和运行期if具有不同检查规则，不能当作运行时输入验证。 |
-| L500 | 声明成员、局部对象或完成语句 `GField::TrivialInlineConstant constant`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L501 | 把右侧 `&type` 用于初始化或更新左侧 `constant.type`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L502 | 出现调用或函数声明 `new`，对应表达式为 `new (constant.value.ptr()) T(std::move(value));`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L503 | 返回表达式 `GField(constant)`。 |
-| L504 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L505 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L506 | 把右侧 `MEM_new<T>(__func__, std::move(new_value))` 用于初始化或更新左侧 `T *new_value`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L507 | 返回表达式 `GField(GField::OwnedConstant{&type, new_value})`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L508 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L509 | 本行是连续声明或表达式的一部分：`}())`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L510 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L511 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L513 | 声明模板参数 `template<typename T> inline bool Field<T>::depends_on_input() const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L514 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L515 | 返回表达式 `field_.depends_on_input()`。 |
-| L516 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L518 | 出现调用或函数声明 `GField::cpp_type`，对应表达式为 `inline const CPPType &GField::cpp_type() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L519 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L520 | 返回表达式 `std::visit(`。 |
-| L521 | 本行是连续声明或表达式的一部分：`[]<typename T>(const T &v) -> const CPPType & {`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L522 | 编译期条件分支 `if constexpr (std::is_same_v<T, Input>)`。按实例化类型选择相应实现；被舍弃分支和运行期if具有不同检查规则，不能当作运行时输入验证。 |
-| L523 | 返回表达式 `v.node->cpp_type()`。 |
-| L524 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L525 | 出现调用或函数声明 `constexpr`，对应表达式为 `else if constexpr (std::is_same_v<T, MultiFn>) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L526 | 返回表达式 `v.node->output_cpp_type(v.output_i)`。 |
-| L527 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L528 | 出现调用或函数声明 `constexpr`，对应表达式为 `else if constexpr (std::is_same_v<T, FieldRef>) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L529 | 返回表达式 `v.field_ref->cpp_type()`。 |
-| L530 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L531 | 出现调用或函数声明 `constexpr`，对应表达式为 `else if constexpr (is_same_any_v<T, ConstantRef, TrivialInlineConstant, OwnedConstant>) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L532 | 返回表达式 `*v.type`。 |
-| L533 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L534 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L535 | 断言约束 `BLI_assert_unreachable_static_t(T);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L536 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L537 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L538 | 声明成员、局部对象或完成语句 `this->variant_)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L539 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+类型描述与某一具体求值结果的地址分开；恢复静态类型时需要真实类型一致。
 
-### FN_field.hh：L540—L589
+**结果出口**
 
-<!-- source:source/blender/functions/FN_field.hh:540:589 -->
+- `return std::visit(`
+- `return v.node->cpp_type();`
+- `return v.node->output_cpp_type(v.output_i);`
+- `return v.field_ref->cpp_type();`
+- `return *v.type;`
+
+**继续追踪实现**
+
+- `std::visit` → [外部契约](https://eel.is/c++draft/variant.visit)：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
+- `v.node->cpp_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L523。
+- `v.node->output_cpp_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L526。
+- `v.field_ref->cpp_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L529。
+- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-368120c7952b)。宏定义由构建条件选择。
+
+<!-- annotated:d63886d7e96209 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L540—L540</summary>
+
+<!-- original:d63886d7e96209:source/blender/functions/FN_field.hh:540:540 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a19407c284f28fcf"></a>
+
+### `blender::fn::GField::deref_field_ref`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L541—L547。
+
+**教学注释版**
+
+<!-- annotated:34e15cb668516b -->
+
+```cpp
 inline const GField &GField::deref_field_ref() const
 {
   if (const auto *field_ref = std::get_if<FieldRef>(&this->variant_)) {
@@ -515,42 +924,488 @@ inline const GField &GField::deref_field_ref() const
   }
   return *this;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L541—L547</summary>
+
+<!-- original:34e15cb668516b:source/blender/functions/FN_field.hh:541:547 -->
+
+```cpp
+inline const GField &GField::deref_field_ref() const
+{
+  if (const auto *field_ref = std::get_if<FieldRef>(&this->variant_)) {
+    return field_ref->field_ref->deref_field_ref();
+  }
+  return *this;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return field_ref->field_ref->deref_field_ref();`
+- `return *this;`
+
+**继续追踪实现**
+
+- `std::get_if<FieldRef>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
+- `field_ref->field_ref->deref_field_ref` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L544。
+
+<!-- annotated:abac138aeeeebb -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L548—L548</summary>
+
+<!-- original:abac138aeeeebb:source/blender/functions/FN_field.hh:548:548 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-902838a06abfecea"></a>
+
+### `blender::fn::operator==`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L549—L552。
+
+接口参数：
+
+- `const Field<T> &a`
+- `const Field<T> &b`
+
+**教学注释版**
+
+<!-- annotated:7986dbc5b5633a -->
+
+```cpp
 template<typename T> inline bool operator==(const Field<T> &a, const Field<T> &b)
 {
   return static_cast<const GField &>(a) == static_cast<const GField &>(b);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L549—L552</summary>
+
+<!-- original:7986dbc5b5633a:source/blender/functions/FN_field.hh:549:552 -->
+
+```cpp
+template<typename T> inline bool operator==(const Field<T> &a, const Field<T> &b)
+{
+  return static_cast<const GField &>(a) == static_cast<const GField &>(b);
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return static_cast<const GField &>(a) == static_cast<const GField &>(b);`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:c68bf4f16761f9 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L553—L553</summary>
+
+<!-- original:c68bf4f16761f9:source/blender/functions/FN_field.hh:553:553 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-cf906dac4510906c"></a>
+
+### `blender::fn::Field<T>::hash`
+
+为表达式比较或去重提供身份信息。
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L554—L557。
+
+**教学注释版**
+
+<!-- annotated:7c4129b56a7345 -->
+
+```cpp
+template<typename T> inline uint64_t Field<T>::hash() const
+{
+  // [讲解] field_.hash：为表达式比较或去重提供身份信息。
+  return field_.hash();
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L554—L557</summary>
+
+<!-- original:7c4129b56a7345:source/blender/functions/FN_field.hh:554:557 -->
+
+```cpp
 template<typename T> inline uint64_t Field<T>::hash() const
 {
   return field_.hash();
 }
+```
 
+</details>
+
+**接口与不变量**
+
+浅身份、内容相等与深层表达式等价不是同一个问题，不能沿用旧版本的定义。
+
+**结果出口**
+
+- `return field_.hash();`
+
+**继续追踪实现**
+
+- `field_.hash` → [blender::fn::GField::hash · L87](06-FieldContext%E4%B8%8A%E4%B8%8B%E6%96%87.md#f-032ec4a1ea6ba9ad)。
+
+<!-- annotated:1c807d766fd69a -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L558—L558</summary>
+
+<!-- original:1c807d766fd69a:source/blender/functions/FN_field.hh:558:558 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-fd32b5474fd78eee"></a>
+
+### `blender::fn::FieldInput::cpp_type`
+
+取得表达式结果的类型信息。
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L559—L562。
+
+**教学注释版**
+
+<!-- annotated:727c88e4a77794 -->
+
+```cpp
 inline const CPPType &FieldInput::cpp_type() const
 {
   return *this->type_;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L559—L562</summary>
+
+<!-- original:727c88e4a77794:source/blender/functions/FN_field.hh:559:562 -->
+
+```cpp
+inline const CPPType &FieldInput::cpp_type() const
+{
+  return *this->type_;
+}
+```
+
+</details>
+
+**接口与不变量**
+
+类型描述与某一具体求值结果的地址分开；恢复静态类型时需要真实类型一致。
+
+**结果出口**
+
+- `return *this->type_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:2904c1b5c7526b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L563—L563</summary>
+
+<!-- original:2904c1b5c7526b:source/blender/functions/FN_field.hh:563:563 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-cf4ea6a3da6247fa"></a>
+
+### `blender::fn::FieldOperation::field_inputs`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L564—L567。
+
+**教学注释版**
+
+<!-- annotated:8db6aad4b289ad -->
+
+```cpp
 inline const FieldInputsPtr &FieldOperation::field_inputs() const
 {
   return field_inputs_;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L564—L567</summary>
+
+<!-- original:8db6aad4b289ad:source/blender/functions/FN_field.hh:564:567 -->
+
+```cpp
+inline const FieldInputsPtr &FieldOperation::field_inputs() const
+{
+  return field_inputs_;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return field_inputs_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:1e38c7b427c3dc -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L568—L568</summary>
+
+<!-- original:1e38c7b427c3dc:source/blender/functions/FN_field.hh:568:568 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-fa0a83004ce05d59"></a>
+
+### `blender::fn::FieldInput::debug_name`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L569—L572。
+
+**教学注释版**
+
+<!-- annotated:d5fe28ec5042fc -->
+
+```cpp
 inline StringRefNull FieldInput::debug_name() const
 {
   return debug_name_;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L569—L572</summary>
+
+<!-- original:d5fe28ec5042fc:source/blender/functions/FN_field.hh:569:572 -->
+
+```cpp
+inline StringRefNull FieldInput::debug_name() const
+{
+  return debug_name_;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return debug_name_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:2ba0f16ed6786e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L573—L573</summary>
+
+<!-- original:2ba0f16ed6786e:source/blender/functions/FN_field.hh:573:573 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-cdb28d30b6850ce2"></a>
+
+### `blender::fn::FieldInput::socket_inspection_name`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L574—L577。
+
+**教学注释版**
+
+<!-- annotated:d26833de416f0c -->
+
+```cpp
 inline std::string FieldInput::socket_inspection_name() const
 {
   return debug_name_;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L574—L577</summary>
+
+<!-- original:d26833de416f0c:source/blender/functions/FN_field.hh:574:577 -->
+
+```cpp
+inline std::string FieldInput::socket_inspection_name() const
+{
+  return debug_name_;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return debug_name_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:779ed07298b105 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L578—L578</summary>
+
+<!-- original:779ed07298b105:source/blender/functions/FN_field.hh:578:578 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-642c6ea7bfcae8fe"></a>
+
+### `blender::fn::() const`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L579—L582。
+
+**教学注释版**
+
+<!-- annotated:dc13f2eb9c129b -->
+
+```cpp
 template<typename T> inline Field<T>::operator const GField &() const
 {
   return field_;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L579—L582</summary>
+
+<!-- original:dc13f2eb9c129b:source/blender/functions/FN_field.hh:579:582 -->
+
+```cpp
+template<typename T> inline Field<T>::operator const GField &() const
+{
+  return field_;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return field_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:8cd7807d0da6ca -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L583—L583</summary>
+
+<!-- original:8cd7807d0da6ca:source/blender/functions/FN_field.hh:583:583 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-14b7d34a50f6f754"></a>
+
+### `blender::fn::GField::typed`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L584—L589。
+
+**教学注释版**
+
+<!-- annotated:7e413dacadf216 -->
+
+```cpp
+template<typename T> inline const Field<T> &GField::typed() const
+{
+  static_assert(sizeof(GField) == sizeof(Field<T>));
+  // [讲解] this->cpp_type：取得表达式结果的类型信息。
+  BLI_assert(this->cpp_type().is<T>());
+  return reinterpret_cast<const Field<T> &>(*this);
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L584—L589</summary>
+
+<!-- original:7e413dacadf216:source/blender/functions/FN_field.hh:584:589 -->
+
+```cpp
 template<typename T> inline const Field<T> &GField::typed() const
 {
   static_assert(sizeof(GField) == sizeof(Field<T>));
@@ -559,83 +1414,307 @@ template<typename T> inline const Field<T> &GField::typed() const
 }
 ```
 
-本段语义重点：
+</details>
 
-- 分支证据 `const auto *field_ref = std::get_if<FieldRef>(&this->variant_))`：分别推演条件成立与不成立，核对相同出口处的状态。
+**结果出口**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L541 | 出现调用或函数声明 `GField::deref_field_ref`，对应表达式为 `inline const GField &GField::deref_field_ref() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L542 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L543 | 判断 `const auto *field_ref = std::get_if<FieldRef>(&this->variant_)`，成立时进入本分支，否则继续后续路径。 |
-| L544 | 返回表达式 `field_ref->field_ref->deref_field_ref()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L545 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L546 | 返回表达式 `*this`。返回当前对象；返回类型决定它是引用还是值，不能仅凭表达式假定复制。 |
-| L547 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L549 | 运算符重载声明、定义或显式调用：`template<typename T> inline bool operator==(const Field<T> &a, const Field<T> &b)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L550 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L551 | 返回表达式 `static_cast<const GField &>(a) == static_cast<const GField &>(b)`。 |
-| L552 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L554 | 声明模板参数 `template<typename T> inline uint64_t Field<T>::hash() const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L555 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L556 | 返回表达式 `field_.hash()`。 |
-| L557 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L559 | 出现调用或函数声明 `FieldInput::cpp_type`，对应表达式为 `inline const CPPType &FieldInput::cpp_type() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L560 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L561 | 返回表达式 `*this->type_`。 |
-| L562 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L564 | 出现调用或函数声明 `FieldOperation::field_inputs`，对应表达式为 `inline const FieldInputsPtr &FieldOperation::field_inputs() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L565 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L566 | 返回表达式 `field_inputs_`。 |
-| L567 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L569 | 出现调用或函数声明 `FieldInput::debug_name`，对应表达式为 `inline StringRefNull FieldInput::debug_name() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L570 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L571 | 返回表达式 `debug_name_`。 |
-| L572 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L574 | 出现调用或函数声明 `FieldInput::socket_inspection_name`，对应表达式为 `inline std::string FieldInput::socket_inspection_name() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L575 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L576 | 返回表达式 `debug_name_`。 |
-| L577 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L579 | 运算符重载声明、定义或显式调用：`template<typename T> inline Field<T>::operator const GField &() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L580 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L581 | 返回表达式 `field_`。 |
-| L582 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L584 | 声明模板参数 `template<typename T> inline const Field<T> &GField::typed() const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L585 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L586 | 在编译期检查 `static_assert(sizeof(GField) == sizeof(Field<T>));`；条件失败导致编译错误，不存在运行时错误恢复路径。 |
-| L587 | 断言约束 `BLI_assert(this->cpp_type().is<T>());`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L588 | 返回表达式 `reinterpret_cast<const Field<T> &>(*this)`。 |
-| L589 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `return reinterpret_cast<const Field<T> &>(*this);`
 
-### FN_field.hh：L590—L630
+**继续追踪实现**
 
-<!-- source:source/blender/functions/FN_field.hh:590:630 -->
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->cpp_type().is<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L587。
+- `this->cpp_type` → [blender::fn::GField::cpp_type · L518](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-284e6a7a85c0110e)。
+
+<!-- annotated:5c7806bf9189b5 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L590—L590</summary>
+
+<!-- original:5c7806bf9189b5:source/blender/functions/FN_field.hh:590:590 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-f2a9fa08827bea89"></a>
+
+### `blender::fn::GField::typed`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L591—L596。
+
+**教学注释版**
+
+<!-- annotated:e60cae336e95e2 -->
+
+```cpp
+template<typename T> inline Field<T> &GField::typed()
+{
+  static_assert(sizeof(GField) == sizeof(Field<T>));
+  // [讲解] this->cpp_type：取得表达式结果的类型信息。
+  BLI_assert(this->cpp_type().is<T>());
+  return reinterpret_cast<Field<T> &>(*this);
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L591—L596</summary>
+
+<!-- original:e60cae336e95e2:source/blender/functions/FN_field.hh:591:596 -->
+
+```cpp
 template<typename T> inline Field<T> &GField::typed()
 {
   static_assert(sizeof(GField) == sizeof(Field<T>));
   BLI_assert(this->cpp_type().is<T>());
   return reinterpret_cast<Field<T> &>(*this);
 }
+```
 
+</details>
+
+**结果出口**
+
+- `return reinterpret_cast<Field<T> &>(*this);`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->cpp_type().is<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L594。
+- `this->cpp_type` → [blender::fn::GField::cpp_type · L518](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-284e6a7a85c0110e)。
+
+<!-- annotated:1e64006b88caa2 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L597—L597</summary>
+
+<!-- original:1e64006b88caa2:source/blender/functions/FN_field.hh:597:597 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8f429c3ff862c024"></a>
+
+### `blender::fn::GField::variant`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L598—L601。
+
+**教学注释版**
+
+<!-- annotated:dfe36cca059597 -->
+
+```cpp
 inline const GField::Variant &GField::variant() const
 {
   return variant_;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L598—L601</summary>
+
+<!-- original:dfe36cca059597:source/blender/functions/FN_field.hh:598:601 -->
+
+```cpp
+inline const GField::Variant &GField::variant() const
+{
+  return variant_;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return variant_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:939761fc4b6919 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L602—L602</summary>
+
+<!-- original:939761fc4b6919:source/blender/functions/FN_field.hh:602:602 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-6fbbe0144f689448"></a>
+
+### `blender::fn::Field<T>::Field`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L603—L603。
+
+**教学注释版**
+
+<!-- annotated:aeacf15bfed056 -->
+
+```cpp
 template<typename T> inline Field<T>::Field() : field_(CPPType::get<T>()) {}
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L603—L603</summary>
+
+<!-- original:aeacf15bfed056:source/blender/functions/FN_field.hh:603:603 -->
+
+```cpp
+template<typename T> inline Field<T>::Field() : field_(CPPType::get<T>()) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:356e04230e6e9a -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L604—L604</summary>
+
+<!-- original:356e04230e6e9a:source/blender/functions/FN_field.hh:604:604 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b9fadbb0d8465bfe"></a>
+
+### `blender::fn::Field<T>::Field`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L605—L607。
+
+接口参数：
+
+- `FieldInputPtr node`
+
+**教学注释版**
+
+<!-- annotated:d9f2761a8d1809 -->
+
+```cpp
 template<typename T> inline Field<T>::Field(FieldInputPtr node) : field_(GField(std::move(node)))
 {
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L605—L607</summary>
+
+<!-- original:d9f2761a8d1809:source/blender/functions/FN_field.hh:605:607 -->
+
+```cpp
+template<typename T> inline Field<T>::Field(FieldInputPtr node) : field_(GField(std::move(node)))
+{
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<a id="f-be75a0525262720c"></a>
+
+### `blender::fn::Field<T>::Field`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L608—L612。
+
+接口参数：
+
+- `FieldOperationPtr node`
+- `const int output_i`
+
+**教学注释版**
+
+<!-- annotated:4dbe464048952d -->
+
+```cpp
 template<typename T>
 inline Field<T>::Field(FieldOperationPtr node, const int output_i)
     : field_(GField(std::move(node), output_i))
 {
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L608—L612</summary>
+
+<!-- original:4dbe464048952d:source/blender/functions/FN_field.hh:608:612 -->
+
+```cpp
+template<typename T>
+inline Field<T>::Field(FieldOperationPtr node, const int output_i)
+    : field_(GField(std::move(node), output_i))
+{
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:3641fd2fd60c5c -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L613—L613</summary>
+
+<!-- original:3641fd2fd60c5c:source/blender/functions/FN_field.hh:613:613 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-f9ec31f757d56a15"></a>
+
+### `blender::fn::GField::depends_on_input`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L614—L621。
+
+**教学注释版**
+
+<!-- annotated:4b76ec472c63d6 -->
+
+```cpp
 inline bool GField::depends_on_input() const
 {
   const FieldInputsPtr &inputs = this->field_inputs();
@@ -644,7 +1723,64 @@ inline bool GField::depends_on_input() const
   }
   return !inputs->inputs.is_empty();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L614—L621</summary>
+
+<!-- original:4b76ec472c63d6:source/blender/functions/FN_field.hh:614:621 -->
+
+```cpp
+inline bool GField::depends_on_input() const
+{
+  const FieldInputsPtr &inputs = this->field_inputs();
+  if (!inputs) {
+    return false;
+  }
+  return !inputs->inputs.is_empty();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return false;`
+- `return !inputs->inputs.is_empty();`
+
+**继续追踪实现**
+
+- `this->field_inputs` → [blender::fn::GField::field_inputs · L504](12-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E9%94%80%E6%AF%81.md#f-38d3beaa39d9b6e4)。
+- `inputs->inputs.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L620。
+
+<!-- annotated:23bdc5a007d3c3 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L622—L622</summary>
+
+<!-- original:23bdc5a007d3c3:source/blender/functions/FN_field.hh:622:622 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-38e9a387769f7559"></a>
+
+### `blender::fn::GField::get_input_if`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L623—L630。
+
+**教学注释版**
+
+<!-- annotated:d97ed61978109b -->
+
+```cpp
 template<typename InputT> inline const InputT *GField::get_input_if() const
 {
   const GField &deref_field = this->deref_field_ref();
@@ -655,55 +1791,89 @@ template<typename InputT> inline const InputT *GField::get_input_if() const
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L623—L630</summary>
 
-- 分支证据 `!inputs)`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `const auto *input = std::get_if<Input>(&deref_field.variant()))`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:d97ed61978109b:source/blender/functions/FN_field.hh:623:630 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L591 | 声明模板参数 `template<typename T> inline Field<T> &GField::typed()`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L592 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L593 | 在编译期检查 `static_assert(sizeof(GField) == sizeof(Field<T>));`；条件失败导致编译错误，不存在运行时错误恢复路径。 |
-| L594 | 断言约束 `BLI_assert(this->cpp_type().is<T>());`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L595 | 返回表达式 `reinterpret_cast<Field<T> &>(*this)`。 |
-| L596 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L598 | 出现调用或函数声明 `GField::variant`，对应表达式为 `inline const GField::Variant &GField::variant() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L599 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L600 | 返回表达式 `variant_`。 |
-| L601 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L603 | 声明模板参数 `template<typename T> inline Field<T>::Field() : field_(CPPType::get<T>()) {}`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L605 | 声明模板参数 `template<typename T> inline Field<T>::Field(FieldInputPtr node) : field_(GField(std::move(node)))`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L606 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L607 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L608 | 声明模板参数 `template<typename T>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L609 | 出现调用或函数声明 `::Field`，对应表达式为 `inline Field<T>::Field(FieldOperationPtr node, const int output_i)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L610 | 出现调用或函数声明 `field_`，对应表达式为 `: field_(GField(std::move(node), output_i))`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L611 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L612 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L614 | 出现调用或函数声明 `GField::depends_on_input`，对应表达式为 `inline bool GField::depends_on_input() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L615 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L616 | 把右侧 `this->field_inputs()` 用于初始化或更新左侧 `const FieldInputsPtr &inputs`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L617 | 判断 `!inputs`，成立时进入本分支，否则继续后续路径。 |
-| L618 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L619 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L620 | 返回表达式 `!inputs->inputs.is_empty()`。 |
-| L621 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L623 | 声明模板参数 `template<typename InputT> inline const InputT *GField::get_input_if() const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L624 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L625 | 把右侧 `this->deref_field_ref()` 用于初始化或更新左侧 `const GField &deref_field`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L626 | 判断 `const auto *input = std::get_if<Input>(&deref_field.variant())`，成立时进入本分支，否则继续后续路径。 |
-| L627 | 返回表达式 `dynamic_cast<const InputT *>(input->node.get())`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L628 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L629 | 返回表达式 `nullptr`。 |
-| L630 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+template<typename InputT> inline const InputT *GField::get_input_if() const
+{
+  const GField &deref_field = this->deref_field_ref();
+  if (const auto *input = std::get_if<Input>(&deref_field.variant())) {
+    return dynamic_cast<const InputT *>(input->node.get());
+  }
+  return nullptr;
+}
+```
 
-### FN_field.hh：L631—L676
+</details>
 
-<!-- source:source/blender/functions/FN_field.hh:631:676 -->
+**结果出口**
+
+- `return dynamic_cast<const InputT *>(input->node.get());`
+- `return nullptr;`
+
+**继续追踪实现**
+
+- `this->deref_field_ref` → [blender::fn::GField::deref_field_ref · L541](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-a19407c284f28fcf)。
+- `std::get_if<Input>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
+- `deref_field.variant` → [blender::fn::GField::variant · L598](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-8f429c3ff862c024)。
+- `input->node.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L627。
+
+<!-- annotated:109a510d4dae15 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L631—L631</summary>
+
+<!-- original:109a510d4dae15:source/blender/functions/FN_field.hh:631:631 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-ccb799dec3f9ae8b"></a>
+
+### `blender::fn::GField::get_if_constant`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L632—L647。
+
+**教学注释版**
+
+<!-- annotated:715b3e214f1505 -->
+
+```cpp
+inline const void *GField::get_if_constant() const
+{
+  // [讲解] std::visit：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
+  return std::visit(
+      []<typename T>(const T &v) -> const void * {
+        if constexpr (is_same_any_v<T, Input, MultiFn>) {
+          return nullptr;
+        }
+        else if constexpr (std::is_same_v<T, FieldRef>) {
+          return v.field_ref->get_if_constant();
+        }
+        else {
+          return v.value;
+        }
+      },
+      variant_);
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L632—L647</summary>
+
+<!-- original:715b3e214f1505:source/blender/functions/FN_field.hh:632:647 -->
+
+```cpp
 inline const void *GField::get_if_constant() const
 {
   return std::visit(
@@ -720,93 +1890,520 @@ inline const void *GField::get_if_constant() const
       },
       variant_);
 }
+```
 
+</details>
+
+**结果出口**
+
+- `return std::visit(`
+- `return nullptr;`
+- `return v.field_ref->get_if_constant();`
+- `return v.value;`
+
+**继续追踪实现**
+
+- `std::visit` → [外部契约](https://eel.is/c++draft/variant.visit)：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
+- `v.field_ref->get_if_constant` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L640。
+
+<!-- annotated:5447e264ae121a -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L648—L648</summary>
+
+<!-- original:5447e264ae121a:source/blender/functions/FN_field.hh:648:648 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-cc6fc1999773d702"></a>
+
+### `blender::fn::Field<T>::get_input_if`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L649—L652。
+
+**教学注释版**
+
+<!-- annotated:1ec5bc73a771d9 -->
+
+```cpp
 template<typename T> template<typename InputT> inline const InputT *Field<T>::get_input_if() const
 {
   return field_.get_input_if<InputT>();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L649—L652</summary>
+
+<!-- original:1ec5bc73a771d9:source/blender/functions/FN_field.hh:649:652 -->
+
+```cpp
+template<typename T> template<typename InputT> inline const InputT *Field<T>::get_input_if() const
+{
+  return field_.get_input_if<InputT>();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return field_.get_input_if<InputT>();`
+
+**继续追踪实现**
+
+- `field_.get_input_if<InputT>` → [blender::fn::GField::get_input_if · L623](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-38e9a387769f7559)。
+
+<!-- annotated:42e8fa5fd3ae06 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L653—L653</summary>
+
+<!-- original:42e8fa5fd3ae06:source/blender/functions/FN_field.hh:653:653 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-f12207436a4ae11f"></a>
+
+### `blender::fn::FieldOperation::inputs`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L654—L657。
+
+**教学注释版**
+
+<!-- annotated:19468ee2dc210a -->
+
+```cpp
 inline Span<GField> FieldOperation::inputs() const
 {
   return inputs_;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L654—L657</summary>
+
+<!-- original:19468ee2dc210a:source/blender/functions/FN_field.hh:654:657 -->
+
+```cpp
+inline Span<GField> FieldOperation::inputs() const
+{
+  return inputs_;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return inputs_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:4462d66dd31817 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L658—L658</summary>
+
+<!-- original:4462d66dd31817:source/blender/functions/FN_field.hh:658:658 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-7c3c61754c76e5b3"></a>
+
+### `blender::fn::GFieldRef::GFieldRef`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L659—L659。
+
+接口参数：
+
+- `const FieldInput &field_input`
+
+**教学注释版**
+
+<!-- annotated:09a3260b5482d1 -->
+
+```cpp
 inline GFieldRef::GFieldRef(const FieldInput &field_input) : variant_(Input{&field_input}) {}
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L659—L659</summary>
+
+<!-- original:09a3260b5482d1:source/blender/functions/FN_field.hh:659:659 -->
+
+```cpp
+inline GFieldRef::GFieldRef(const FieldInput &field_input) : variant_(Input{&field_input}) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:f29c4a591e874f -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L660—L660</summary>
+
+<!-- original:f29c4a591e874f:source/blender/functions/FN_field.hh:660:660 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-15ef31dab45d2b47"></a>
+
+### `blender::fn::GFieldRef::GFieldRef`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L661—L664。
+
+接口参数：
+
+- `const FieldOperation &field_multi_fn`
+- `int output_i`
+
+**教学注释版**
+
+<!-- annotated:d5b00f8eb5b782 -->
+
+```cpp
 inline GFieldRef::GFieldRef(const FieldOperation &field_multi_fn, int output_i)
     : variant_(MultiFn{&field_multi_fn, output_i})
 {
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L661—L664</summary>
+
+<!-- original:d5b00f8eb5b782:source/blender/functions/FN_field.hh:661:664 -->
+
+```cpp
+inline GFieldRef::GFieldRef(const FieldOperation &field_multi_fn, int output_i)
+    : variant_(MultiFn{&field_multi_fn, output_i})
+{
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:8c1a8ad0c9af8a -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L665—L665</summary>
+
+<!-- original:8c1a8ad0c9af8a:source/blender/functions/FN_field.hh:665:665 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-484aa20064f4a61a"></a>
+
+### `blender::fn::GFieldRef::GFieldRef`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L666—L666。
+
+接口参数：
+
+- `Variant variant`
+
+**教学注释版**
+
+<!-- annotated:6cbd1bb6d20ce1 -->
+
+```cpp
 inline GFieldRef::GFieldRef(Variant variant) : variant_(std::move(variant)) {}
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L666—L666</summary>
+
+<!-- original:6cbd1bb6d20ce1:source/blender/functions/FN_field.hh:666:666 -->
+
+```cpp
+inline GFieldRef::GFieldRef(Variant variant) : variant_(std::move(variant)) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:28a3cf37cf7143 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L667—L667</summary>
+
+<!-- original:28a3cf37cf7143:source/blender/functions/FN_field.hh:667:667 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a6b928050c1a3157"></a>
+
+### `blender::fn::GFieldRef::from_constant`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L668—L671。
+
+接口参数：
+
+- `const CPPType &type`
+- `const void *value`
+
+**教学注释版**
+
+<!-- annotated:5bd6ac69cb5feb -->
+
+```cpp
 inline GFieldRef GFieldRef::from_constant(const CPPType &type, const void *value)
 {
   return GFieldRef(Value{&type, value});
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L668—L671</summary>
+
+<!-- original:5bd6ac69cb5feb:source/blender/functions/FN_field.hh:668:671 -->
+
+```cpp
+inline GFieldRef GFieldRef::from_constant(const CPPType &type, const void *value)
+{
+  return GFieldRef(Value{&type, value});
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return GFieldRef(Value{&type, value});`
+
+**继续追踪实现**
+
+- `GFieldRef` → [blender::fn::GFieldRef::GFieldRef · L659](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-7c3c61754c76e5b3)；[blender::fn::GFieldRef::GFieldRef · L661](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-15ef31dab45d2b47)；[blender::fn::GFieldRef::GFieldRef · L666](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-484aa20064f4a61a)；[blender::fn::GFieldRef::GFieldRef · L673](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-e54eebdf61c69d0c)。同名重载需按实参类型选择。
+
+<!-- annotated:f3ba99d8ecf30f -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L672—L672</summary>
+
+<!-- original:f3ba99d8ecf30f:source/blender/functions/FN_field.hh:672:672 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-e54eebdf61c69d0c"></a>
+
+### `blender::fn::GFieldRef::GFieldRef`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L673—L676。
+
+接口参数：
+
+- `const Field<T> &field`
+
+**教学注释版**
+
+<!-- annotated:0731820d224198 -->
+
+```cpp
 template<typename T>
 inline GFieldRef::GFieldRef(const Field<T> &field) : GFieldRef(static_cast<const GField &>(field))
 {
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L673—L676</summary>
 
-- `std::visit`：根据variant当前活动类型执行对应操作；每个候选分支都必须满足访客约定。
+<!-- original:0731820d224198:source/blender/functions/FN_field.hh:673:676 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L632 | 出现调用或函数声明 `GField::get_if_constant`，对应表达式为 `inline const void *GField::get_if_constant() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L633 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L634 | 返回表达式 `std::visit(`。 |
-| L635 | 本行是连续声明或表达式的一部分：`[]<typename T>(const T &v) -> const void * {`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L636 | 编译期条件分支 `if constexpr (is_same_any_v<T, Input, MultiFn>)`。按实例化类型选择相应实现；被舍弃分支和运行期if具有不同检查规则，不能当作运行时输入验证。 |
-| L637 | 返回表达式 `nullptr`。 |
-| L638 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L639 | 出现调用或函数声明 `constexpr`，对应表达式为 `else if constexpr (std::is_same_v<T, FieldRef>) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L640 | 返回表达式 `v.field_ref->get_if_constant()`。 |
-| L641 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L642 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L643 | 返回表达式 `v.value`。 |
-| L644 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L645 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L646 | 声明成员、局部对象或完成语句 `variant_)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L647 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L649 | 声明模板参数 `template<typename T> template<typename InputT> inline const InputT *Field<T>::get_input_if() const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L650 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L651 | 返回表达式 `field_.get_input_if<InputT>()`。 |
-| L652 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L654 | 出现调用或函数声明 `FieldOperation::inputs`，对应表达式为 `inline Span<GField> FieldOperation::inputs() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L655 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L656 | 返回表达式 `inputs_`。 |
-| L657 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L659 | 出现调用或函数声明 `GFieldRef::GFieldRef`，对应表达式为 `inline GFieldRef::GFieldRef(const FieldInput &field_input) : variant_(Input{&field_input}) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L661 | 出现调用或函数声明 `GFieldRef::GFieldRef`，对应表达式为 `inline GFieldRef::GFieldRef(const FieldOperation &field_multi_fn, int output_i)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L662 | 出现调用或函数声明 `variant_`，对应表达式为 `: variant_(MultiFn{&field_multi_fn, output_i})`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L663 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L664 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L666 | 出现调用或函数声明 `GFieldRef::GFieldRef`，对应表达式为 `inline GFieldRef::GFieldRef(Variant variant) : variant_(std::move(variant)) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L668 | 出现调用或函数声明 `GFieldRef::from_constant`，对应表达式为 `inline GFieldRef GFieldRef::from_constant(const CPPType &type, const void *value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L669 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L670 | 返回表达式 `GFieldRef(Value{&type, value})`。 |
-| L671 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L673 | 声明模板参数 `template<typename T>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L674 | 出现调用或函数声明 `GFieldRef::GFieldRef`，对应表达式为 `inline GFieldRef::GFieldRef(const Field<T> &field) : GFieldRef(static_cast<const GField &>(field))`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L675 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L676 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+template<typename T>
+inline GFieldRef::GFieldRef(const Field<T> &field) : GFieldRef(static_cast<const GField &>(field))
+{
+}
+```
 
-### FN_field.hh：L677—L715
+</details>
 
-<!-- source:source/blender/functions/FN_field.hh:677:715 -->
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:b641204a5d34a9 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L677—L677</summary>
+
+<!-- original:b641204a5d34a9:source/blender/functions/FN_field.hh:677:677 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-0658bc405899b72d"></a>
+
+### `blender::fn::GFieldRef::variant`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L678—L681。
+
+**教学注释版**
+
+<!-- annotated:84ba79a7528ff9 -->
+
+```cpp
 inline const GFieldRef::Variant &GFieldRef::variant() const
 {
   return variant_;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L678—L681</summary>
+
+<!-- original:84ba79a7528ff9:source/blender/functions/FN_field.hh:678:681 -->
+
+```cpp
+inline const GFieldRef::Variant &GFieldRef::variant() const
+{
+  return variant_;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return variant_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:d22ea6304423bc -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L682—L682</summary>
+
+<!-- original:d22ea6304423bc:source/blender/functions/FN_field.hh:682:682 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-1aef155d79027564"></a>
+
+### `blender::fn::GFieldRef::cpp_type`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L683—L701。
+
+**教学注释版**
+
+<!-- annotated:8b2b1771ec3a6b -->
+
+```cpp
+inline const CPPType &GFieldRef::cpp_type() const
+{
+  // [讲解] std::visit：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
+  return std::visit(
+      []<typename T>(const T &v) -> const CPPType & {
+        if constexpr (std::is_same_v<T, Value>) {
+          return *v.type;
+        }
+        else if constexpr (std::is_same_v<T, Input>) {
+          return v.node->cpp_type();
+        }
+        else if constexpr (std::is_same_v<T, MultiFn>) {
+          return v.node->output_cpp_type(v.output_i);
+        }
+        else {
+          BLI_assert_unreachable_static_t(T);
+        }
+      },
+      variant_);
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L683—L701</summary>
+
+<!-- original:8b2b1771ec3a6b:source/blender/functions/FN_field.hh:683:701 -->
+
+```cpp
 inline const CPPType &GFieldRef::cpp_type() const
 {
   return std::visit(
@@ -826,372 +2423,256 @@ inline const CPPType &GFieldRef::cpp_type() const
       },
       variant_);
 }
+```
 
+</details>
+
+**结果出口**
+
+- `return std::visit(`
+- `return *v.type;`
+- `return v.node->cpp_type();`
+- `return v.node->output_cpp_type(v.output_i);`
+
+**继续追踪实现**
+
+- `std::visit` → [外部契约](https://eel.is/c++draft/variant.visit)：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
+- `v.node->cpp_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L691。
+- `v.node->output_cpp_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L694。
+- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-368120c7952b)。宏定义由构建条件选择。
+
+<!-- annotated:fe697652f67aa4 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L702—L702</summary>
+
+<!-- original:fe697652f67aa4:source/blender/functions/FN_field.hh:702:702 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9ad8861ba5ef7030"></a>
+
+### `blender::fn::operator==`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L703—L706。
+
+接口参数：
+
+- `const FieldInput &a`
+- `const FieldInput &b`
+
+**教学注释版**
+
+<!-- annotated:331d4dca6a35b0 -->
+
+```cpp
 inline bool operator==(const FieldInput &a, const FieldInput &b)
 {
   return &a == &b;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L703—L706</summary>
+
+<!-- original:331d4dca6a35b0:source/blender/functions/FN_field.hh:703:706 -->
+
+```cpp
+inline bool operator==(const FieldInput &a, const FieldInput &b)
+{
+  return &a == &b;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return &a == &b;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:e0d31e579bc469 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L707—L707</summary>
+
+<!-- original:e0d31e579bc469:source/blender/functions/FN_field.hh:707:707 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-153d145518f644fe"></a>
+
+### `blender::fn::FieldOperation::multi_function`
+
+实现位置：[source/blender/functions/FN_field.hh](../../../../../source/blender/functions/FN_field.hh) · L708—L711。
+
+**教学注释版**
+
+<!-- annotated:5bc3a1c47fb4d2 -->
+
+```cpp
 inline const mf::MultiFunction &FieldOperation::multi_function() const
 {
   return *this->fn_;
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L708—L711</summary>
+
+<!-- original:5bc3a1c47fb4d2:source/blender/functions/FN_field.hh:708:711 -->
+
+```cpp
+inline const mf::MultiFunction &FieldOperation::multi_function() const
+{
+  return *this->fn_;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return *this->fn_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · FN_field.hh L712—L715
+
+<!-- annotated:09d60c3eadd53c -->
+
+```cpp
 
 /** \} */
 
 }  // namespace blender::fn
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/functions/FN_field.hh · L712—L715</summary>
 
-- `std::visit`：根据variant当前活动类型执行对应操作；每个候选分支都必须满足访客约定。
+<!-- original:09d60c3eadd53c:source/blender/functions/FN_field.hh:712:715 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L678 | 出现调用或函数声明 `GFieldRef::variant`，对应表达式为 `inline const GFieldRef::Variant &GFieldRef::variant() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L679 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L680 | 返回表达式 `variant_`。 |
-| L681 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L683 | 出现调用或函数声明 `GFieldRef::cpp_type`，对应表达式为 `inline const CPPType &GFieldRef::cpp_type() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L684 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L685 | 返回表达式 `std::visit(`。 |
-| L686 | 本行是连续声明或表达式的一部分：`[]<typename T>(const T &v) -> const CPPType & {`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L687 | 编译期条件分支 `if constexpr (std::is_same_v<T, Value>)`。按实例化类型选择相应实现；被舍弃分支和运行期if具有不同检查规则，不能当作运行时输入验证。 |
-| L688 | 返回表达式 `*v.type`。 |
-| L689 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L690 | 出现调用或函数声明 `constexpr`，对应表达式为 `else if constexpr (std::is_same_v<T, Input>) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L691 | 返回表达式 `v.node->cpp_type()`。 |
-| L692 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L693 | 出现调用或函数声明 `constexpr`，对应表达式为 `else if constexpr (std::is_same_v<T, MultiFn>) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L694 | 返回表达式 `v.node->output_cpp_type(v.output_i)`。 |
-| L695 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L696 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L697 | 断言约束 `BLI_assert_unreachable_static_t(T);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L698 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L699 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L700 | 声明成员、局部对象或完成语句 `variant_)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L701 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L703 | 运算符重载声明、定义或显式调用：`inline bool operator==(const FieldInput &a, const FieldInput &b)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L704 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L705 | 返回表达式 `&a == &b`。 |
-| L706 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L708 | 出现调用或函数声明 `FieldOperation::multi_function`，对应表达式为 `inline const mf::MultiFunction &FieldOperation::multi_function() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L709 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L710 | 返回表达式 `*this->fn_`。 |
-| L711 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L715 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
 
-## 五、接口定位、调用线索与生命周期
+/** \} */
 
-### 本篇声明与实现入口
-
-| 源码位置 | 实际声明片段 |
-|---|---|
-| [FN_field.hh:L387](../../../../../source/blender/functions/FN_field.hh#L387) | `class FieldOperation : public ImplicitSharingMixin` |
-| [FN_field.hh:L401](../../../../../source/blender/functions/FN_field.hh#L401) | `FieldOperation(std::shared_ptr<const mf::MultiFunction> fn, Vector<GField> inputs);` |
-| [FN_field.hh:L402](../../../../../source/blender/functions/FN_field.hh#L402) | `FieldOperation(const mf::MultiFunction &fn, Vector<GField> inputs);` |
-| [FN_field.hh:L404](../../../../../source/blender/functions/FN_field.hh#L404) | `static FieldOperationPtr from(std::shared_ptr<const mf::MultiFunction> fn,` |
-| [FN_field.hh:L406](../../../../../source/blender/functions/FN_field.hh#L406) | `static FieldOperationPtr from(const mf::MultiFunction &fn, Vector<GField> inputs);` |
-| [FN_field.hh:L409](../../../../../source/blender/functions/FN_field.hh#L409) | `const CPPType &output_cpp_type(int output_i) const;` |
-| [FN_field.hh:L411](../../../../../source/blender/functions/FN_field.hh#L411) | `const mf::MultiFunction &multi_function() const;` |
-| [FN_field.hh:L412](../../../../../source/blender/functions/FN_field.hh#L412) | `const FieldInputsPtr &field_inputs() const;` |
-| [FN_field.hh:L413](../../../../../source/blender/functions/FN_field.hh#L413) | `Span<GField> inputs() const;` |
-| [FN_field.hh:L415](../../../../../source/blender/functions/FN_field.hh#L415) | `void delete_self() override;` |
-| [FN_field.hh:L418](../../../../../source/blender/functions/FN_field.hh#L418) | `void delete_input_fields();` |
-| [FN_field.hh:L428](../../../../../source/blender/functions/FN_field.hh#L428) | `Field<bool> invert_boolean_field(const Field<bool> &field);` |
-| [FN_field.hh:L430](../../../../../source/blender/functions/FN_field.hh#L430) | `class IndexFieldInput final : public FieldInput` |
-| [FN_field.hh:L432](../../../../../source/blender/functions/FN_field.hh#L432) | `IndexFieldInput();` |
-| [FN_field.hh:L434](../../../../../source/blender/functions/FN_field.hh#L434) | `static GVArray get_index_varray(const IndexMask &mask);` |
-| [FN_field.hh:L436](../../../../../source/blender/functions/FN_field.hh#L436) | `GVArray get_varray_for_context(const FieldContext &context,` |
-| [FN_field.hh:L440](../../../../../source/blender/functions/FN_field.hh#L440) | `void hash_unique(UniqueHashBytes &hash, FieldHashDeep &deep_hash_cache) const override;` |
-| [FN_field.hh:L443](../../../../../source/blender/functions/FN_field.hh#L443) | `static const Field<int> &get_field();` |
-| [FN_field.hh:L450](../../../../../source/blender/functions/FN_field.hh#L450) | `inline GField::GField(const CPPType &type) noexcept` |
-| [FN_field.hh:L451](../../../../../source/blender/functions/FN_field.hh#L451) | `: variant_(ConstantRef{&type, type.default_value()})` |
-| [FN_field.hh:L454](../../../../../source/blender/functions/FN_field.hh#L454) | `inline GField::GField(FieldInputPtr node) noexcept : variant_(Input{std::move(node)}) {}` |
-| [FN_field.hh:L455](../../../../../source/blender/functions/FN_field.hh#L455) | `inline GField::GField(Variant variant) noexcept : variant_(std::move(variant)) {}` |
-| [FN_field.hh:L456](../../../../../source/blender/functions/FN_field.hh#L456) | `inline GField::GField(FieldOperationPtr node, const int output_i) noexcept` |
-| [FN_field.hh:L457](../../../../../source/blender/functions/FN_field.hh#L457) | `: variant_(MultiFn{std::move(node), output_i})` |
-| [FN_field.hh:L461](../../../../../source/blender/functions/FN_field.hh#L461) | `inline GField GField::from_non_owning_ref(const GField &field)` |
-| [FN_field.hh:L466](../../../../../source/blender/functions/FN_field.hh#L466) | `inline bool GField::TrivialInlineConstant::cpp_type_supported(const CPPType &type)` |
-| [FN_field.hh:L472](../../../../../source/blender/functions/FN_field.hh#L472) | `inline GField GField::from_non_owning_constant(const CPPType &type, const void *value)` |
-| [FN_field.hh:L497](../../../../../source/blender/functions/FN_field.hh#L497) | `: field_([&]()` |
-| [FN_field.hh:L518](../../../../../source/blender/functions/FN_field.hh#L518) | `inline const CPPType &GField::cpp_type() const` |
-| [FN_field.hh:L525](../../../../../source/blender/functions/FN_field.hh#L525) | `else if constexpr (std::is_same_v<T, MultiFn>)` |
-| [FN_field.hh:L528](../../../../../source/blender/functions/FN_field.hh#L528) | `else if constexpr (std::is_same_v<T, FieldRef>)` |
-| [FN_field.hh:L531](../../../../../source/blender/functions/FN_field.hh#L531) | `else if constexpr (is_same_any_v<T, ConstantRef, TrivialInlineConstant, OwnedConstant>)` |
-| [FN_field.hh:L541](../../../../../source/blender/functions/FN_field.hh#L541) | `inline const GField &GField::deref_field_ref() const` |
-| [FN_field.hh:L559](../../../../../source/blender/functions/FN_field.hh#L559) | `inline const CPPType &FieldInput::cpp_type() const` |
-| [FN_field.hh:L564](../../../../../source/blender/functions/FN_field.hh#L564) | `inline const FieldInputsPtr &FieldOperation::field_inputs() const` |
-| [FN_field.hh:L569](../../../../../source/blender/functions/FN_field.hh#L569) | `inline StringRefNull FieldInput::debug_name() const` |
-| [FN_field.hh:L574](../../../../../source/blender/functions/FN_field.hh#L574) | `inline std::string FieldInput::socket_inspection_name() const` |
-| [FN_field.hh:L584](../../../../../source/blender/functions/FN_field.hh#L584) | `template<typename T> inline const Field<T> &GField::typed() const` |
-| [FN_field.hh:L591](../../../../../source/blender/functions/FN_field.hh#L591) | `template<typename T> inline Field<T> &GField::typed()` |
-| [FN_field.hh:L598](../../../../../source/blender/functions/FN_field.hh#L598) | `inline const GField::Variant &GField::variant() const` |
-| [FN_field.hh:L610](../../../../../source/blender/functions/FN_field.hh#L610) | `: field_(GField(std::move(node), output_i))` |
-| [FN_field.hh:L614](../../../../../source/blender/functions/FN_field.hh#L614) | `inline bool GField::depends_on_input() const` |
-| [FN_field.hh:L623](../../../../../source/blender/functions/FN_field.hh#L623) | `template<typename InputT> inline const InputT *GField::get_input_if() const` |
-| [FN_field.hh:L632](../../../../../source/blender/functions/FN_field.hh#L632) | `inline const void *GField::get_if_constant() const` |
-| [FN_field.hh:L639](../../../../../source/blender/functions/FN_field.hh#L639) | `else if constexpr (std::is_same_v<T, FieldRef>)` |
-| [FN_field.hh:L654](../../../../../source/blender/functions/FN_field.hh#L654) | `inline Span<GField> FieldOperation::inputs() const` |
-| [FN_field.hh:L659](../../../../../source/blender/functions/FN_field.hh#L659) | `inline GFieldRef::GFieldRef(const FieldInput &field_input) : variant_(Input{&field_input}) {}` |
-| [FN_field.hh:L661](../../../../../source/blender/functions/FN_field.hh#L661) | `inline GFieldRef::GFieldRef(const FieldOperation &field_multi_fn, int output_i)` |
-| [FN_field.hh:L662](../../../../../source/blender/functions/FN_field.hh#L662) | `: variant_(MultiFn{&field_multi_fn, output_i})` |
-| [FN_field.hh:L666](../../../../../source/blender/functions/FN_field.hh#L666) | `inline GFieldRef::GFieldRef(Variant variant) : variant_(std::move(variant)) {}` |
-| [FN_field.hh:L668](../../../../../source/blender/functions/FN_field.hh#L668) | `inline GFieldRef GFieldRef::from_constant(const CPPType &type, const void *value)` |
-| [FN_field.hh:L674](../../../../../source/blender/functions/FN_field.hh#L674) | `inline GFieldRef::GFieldRef(const Field<T> &field) : GFieldRef(static_cast<const GField &>(field))` |
-| [FN_field.hh:L678](../../../../../source/blender/functions/FN_field.hh#L678) | `inline const GFieldRef::Variant &GFieldRef::variant() const` |
-| [FN_field.hh:L683](../../../../../source/blender/functions/FN_field.hh#L683) | `inline const CPPType &GFieldRef::cpp_type() const` |
-| [FN_field.hh:L690](../../../../../source/blender/functions/FN_field.hh#L690) | `else if constexpr (std::is_same_v<T, Input>)` |
-| [FN_field.hh:L693](../../../../../source/blender/functions/FN_field.hh#L693) | `else if constexpr (std::is_same_v<T, MultiFn>)` |
-| [FN_field.hh:L708](../../../../../source/blender/functions/FN_field.hh#L708) | `inline const mf::MultiFunction &FieldOperation::multi_function() const` |
-
-### 同名符号出现位置
-
-以下表提供跨文件阅读入口，包含声明、调用或测试使用；没有经过完整C++名称解析，不把它命名为已证明的运行时调用图。
-
-| 符号 | 位置 | 文本证据 |
-|---|---|---|
-| `FieldOperation` | [field.cc:L476](../../../../../source/blender/functions/intern/field.cc#L476) | `FieldOperation::FieldOperation(std::shared_ptr<const mf::MultiFunction> fn, Vector<GField> inputs)` |
-| `FieldOperation` | [field.cc:L477](../../../../../source/blender/functions/intern/field.cc#L477) | `: FieldOperation(*fn, std::move(inputs))` |
-| `FieldOperation` | [field.cc:L482](../../../../../source/blender/functions/intern/field.cc#L482) | `FieldOperation::FieldOperation(const mf::MultiFunction &fn, Vector<GField> inputs)` |
-| `from` | [BKE_geometry_fields.hh:L324](../../../../../source/blender/blenkernel/BKE_geometry_fields.hh#L324) | `static fn::GField from(std::string name,` |
-| `from` | [BKE_geometry_fields.hh:L332](../../../../../source/blender/blenkernel/BKE_geometry_fields.hh#L332) | `static fn::Field<T> from(std::string name,` |
-| `from` | [BKE_geometry_fields.hh:L335](../../../../../source/blender/blenkernel/BKE_geometry_fields.hh#L335) | `return from(std::move(name), CPPType::get<T>(), std::move(socket_inspection_name))` |
-| `output_cpp_type` | [field.cc:L488](../../../../../source/blender/functions/intern/field.cc#L488) | `const CPPType &FieldOperation::output_cpp_type(const int output_i) const` |
-| `multi_function` | [field.cc:L144](../../../../../source/blender/functions/intern/field.cc#L144) | `v.node->multi_function().hash_unique(hash_context);` |
-| `multi_function` | [field_evaluation.cc:L213](../../../../../source/blender/functions/intern/field_evaluation.cc#L213) | `const mf::MultiFunction &multi_function = field_multi_fn.multi_function();` |
-| `field_inputs` | [geometry_fields.cc:L1205](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L1205) | `const fn::FieldInputsPtr &field_inputs = field.field_inputs();` |
-| `field_inputs` | [geometry_fields.cc:L1255](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L1255) | `const fn::FieldInputsPtr &field_inputs = field.field_inputs();` |
-| `field_inputs` | [field.cc:L175](../../../../../source/blender/functions/intern/field.cc#L175) | `const FieldInputsPtr &FieldInput::field_inputs() const` |
-| `inputs` | [FN_lazy_function.hh:L290](../../../../../source/blender/functions/FN_lazy_function.hh#L290) | `Span<Input> inputs() const;` |
-| `inputs` | [FN_lazy_function.hh:L331](../../../../../source/blender/functions/FN_lazy_function.hh#L331) | `inline Span<Input> LazyFunction::inputs() const` |
-| `inputs` | [FN_lazy_function.hh:L368](../../../../../source/blender/functions/FN_lazy_function.hh#L368) | `BLI_assert(index >= 0 && index < fn_.inputs().size());` |
-| `delete_self` | [BKE_geometry_set.hh:L125](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L125) | `void delete_self() override;` |
-| `delete_self` | [geometry_set.cc:L96](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L96) | `void GeometryComponent::delete_self()` |
-| `delete_self` | [BLI_implicit_sharing.hh:L203](../../../../../source/blender/blenlib/BLI_implicit_sharing.hh#L203) | `this->delete_self();` |
-| `delete_input_fields` | [field.cc:L218](../../../../../source/blender/functions/intern/field.cc#L218) | `this->delete_input_fields();` |
-| `delete_input_fields` | [field.cc:L222](../../../../../source/blender/functions/intern/field.cc#L222) | `void FieldOperation::delete_input_fields()` |
-| `invert_boolean_field` | [field.cc:L564](../../../../../source/blender/functions/intern/field.cc#L564) | `Field<bool> invert_boolean_field(const Field<bool> &field)` |
-| `IndexFieldInput` | [field.cc:L534](../../../../../source/blender/functions/intern/field.cc#L534) | `IndexFieldInput::IndexFieldInput() : FieldInput(CPPType::get<int>(), "Index") {}` |
-| `get_index_varray` | [geometry_fields.cc:L559](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L559) | `return fn::IndexFieldInput::get_index_varray(mask);` |
-| `get_index_varray` | [field.cc:L536](../../../../../source/blender/functions/intern/field.cc#L536) | `GVArray IndexFieldInput::get_index_varray(const IndexMask &mask)` |
-| `get_index_varray` | [field.cc:L547](../../../../../source/blender/functions/intern/field.cc#L547) | `return get_index_varray(mask);` |
-| `get_varray_for_context` | [BKE_geometry_fields.hh:L255](../../../../../source/blender/blenkernel/BKE_geometry_fields.hh#L255) | `GVArray get_varray_for_context(const fn::FieldContext &context,` |
-| `get_varray_for_context` | [BKE_geometry_fields.hh:L258](../../../../../source/blender/blenkernel/BKE_geometry_fields.hh#L258) | `virtual GVArray get_varray_for_context(const GeometryFieldContext &context,` |
-| `get_varray_for_context` | [BKE_geometry_fields.hh:L267](../../../../../source/blender/blenkernel/BKE_geometry_fields.hh#L267) | `GVArray get_varray_for_context(const fn::FieldContext &context,` |
-| `hash_unique` | [BKE_geometry_fields.hh:L349](../../../../../source/blender/blenkernel/BKE_geometry_fields.hh#L349) | `void hash_unique(UniqueHashBytes &hash, fn::FieldHashDeep &deep_hash_cache) const override;` |
-| `hash_unique` | [BKE_geometry_fields.hh:L381](../../../../../source/blender/blenkernel/BKE_geometry_fields.hh#L381) | `void hash_unique(UniqueHashBytes &hash, fn::FieldHashDeep &deep_hash_cache) const override;` |
-| `hash_unique` | [BKE_geometry_fields.hh:L398](../../../../../source/blender/blenkernel/BKE_geometry_fields.hh#L398) | `void hash_unique(UniqueHashBytes &hash, fn::FieldHashDeep &deep_hash_cache) const override;` |
-
-### 生命周期推理图
-
-```mermaid
-flowchart LR
-  O["调用者或源数据拥有者"]:::input
-  V["FieldOperation运算节点的接口与状态"]:::abstraction
-  B["借用地址、引用或视图"]:::data
-  W["实际计算或修改"]:::compute
-  R["结果与清理责任"]:::result
-  O -->|"创建与配置"| V
-  O -->|"保障寿命"| B
-  B -->|"访问前验证"| W
-  V -->|"规定操作"| W
-  W -->|"交付或销毁"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+}  // namespace blender::fn
 ```
 
-这是审查生命周期的通用模型。具体类是否拥有数据由本篇成员、构造、析构和调用者一起证明；任何箭头都不自动代表shared_ptr。
+</details>
 
-## 六、把代码放进具体数据中推演
+## 语法与相关类型
 
-本方向的共同数值模型如下。本篇的专门检查是：构造共同乘法子表达式和两个加法输出，统计求值次数。
+### 模板 template
 
-| 步骤 | 数据或状态 | 为什么需要这一步 |
-|---|---|---|
-| 表达式 | Position*2+1 | 尚未绑定具体数组 |
-| 上下文A | Position=[0,3,5] | 输入有3个元素 |
-| 选择 | {0,2} | 只要求元素0和2 |
-| 结果A | 1与11 | 元素1不属于本轮要求 |
-| 上下文B | Position=[4,7,9] | 复用表达式而改变环境 |
-| 结果B | 9与19 | 结果由表达式和上下文共同决定 |
+模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
 
-```mermaid
-flowchart TB
-  T0["Position*2+1"]:::input
-  T1["Position=[0,3,5]"]:::compute
-  T2["{0,2}"]:::compute
-  T3["1与11"]:::compute
-  T4["Position=[4,7,9]"]:::compute
-  T5["9与19"]:::result
-  T0 -->|"上下文A"| T1
-  T1 -->|"选择"| T2
-  T2 -->|"结果A"| T3
-  T3 -->|"上下文B"| T4
-  T4 -->|"结果B"| T5
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
+把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
 
-图是教学推演模型；精确分支与状态更新以本篇摘录及调用契约为准。
+### 依赖名称 typename
 
-### 本篇独立练习与参考思路
+typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+
+区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+
+### 常量求值 constexpr
+
+constexpr声明允许相应实体参与常量求值，但constexpr函数仍可以在运行时执行。是否常量求值由调用场景和表达式合法性共同决定。
+
+比较constexpr变量初始化和从运行时输入调用同一函数。
+
+### 只读限定 const
+
+const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
+
+分别写T* const、const T*与const T* const，并画出不可修改的层次。
+
+### 移动转换 std::move
+
+std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
+
+记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
+
+### 完美转发 std::forward
+
+std::forward在转发引用模板中恢复调用者原来的值类别。它依赖推导出的模板实参；无条件move会改变左值调用者的语义。
+
+对同一接口分别传入左值、临时对象和const左值，记录实际重载。
+
+### 异常约定 noexcept
+
+noexcept表达式可以依赖类型特征。违反不抛异常约定会终止程序；它不是自动捕获异常，也不是资源回滚代码。
+
+找出声明的条件与实际可能抛出的分配、构造操作是否一致。
+
+### 显式静态转换 static_cast
+
+static_cast表达编译期允许的转换，不会自动验证运行时真实类型、指针寿命或索引边界。由void指针恢复T指针时，调用者仍须保证实际存储中确有合法T对象。
+
+标出转换前后的类型以及正确性依据来自哪里。
+
+### 表示层转换 reinterpret_cast
+
+reinterpret_cast不能自动开始任意对象的生命周期，也不能豁免对齐和别名规则。读这类代码需要追溯原始分配与实际构造操作。
+
+分别检查大小、对齐、生命周期和可访问类型，四项不能互相替代。
+
+### 对象表示 sizeof
+
+sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeof视图很小并不说明底层数组很小。
+
+分别统计容器对象、容量字节和元素拥有的间接资源。
+
+### 构造与new表达式
+
+普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
+
+追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
+
+### 内部断言 assert
+
+断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
+
+对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
+
+### 编译期分支 if constexpr
+
+条件在实例化时决定被保留的分支，这常用于不同类型的合法操作选择。它与运行时if有不同的实例化检查规则。
+
+找出每个分支依赖哪些类型特征，再使用满足与不满足条件的类型。
+
+## 实现练习与验证
 
 构造共同乘法子表达式和两个加法输出，统计求值次数。
 
-参考思路：操作保存函数与输入表达式关系，某个输出索引选择结果；共享所有权图不能误当成互不相关的树。
+参考推理：集中分析多个输出，按真实身份或相等定义复用。
 
-将输入、预期结果和资源责任分成三张清单。先用最直接的实现给出可核对的答案，再替换成对应源码使用的表示；比较结果不变的条件，而不是只比较接口名字。
+结果与直接计算一致；多个输出共享子表达式时不改变语义；深链构造、执行、销毁三个阶段分别检查。
 
-验收依据：结果与直接计算一致；多个输出共享子表达式时不改变语义；深链构造、执行、销毁三个阶段分别检查。
-
-## 七、复杂度、设计取舍与其他基础库
+## 历史、跨库比较与证据
 
 与表达式模板、AST和闭包比较：Field可在运行时组合并对不同上下文批量求值；不要把Field对象误当作固定几何的结果数组。
 
-本篇的具体取舍：操作保存函数与输入表达式关系，某个输出索引选择结果；共享所有权图不能误当成互不相关的树。
-
-| 观察维度 | 从源码取得证据的方法 | 本篇要避免的误判 |
-|---|---|---|
-| 时间 | 对循环次数、分派次数和重建频率分别计数 | 看到单次常数操作就断定整个操作序列是常数成本 |
-| 内存 | 区分对象本体、容量存储、间接资源和共享控制块 | 用sizeof代替总内存 |
-| 安全 | 沿构造、失败回滚、销毁与失效逐路径检查 | 把断言或非空指针当作完整安全证明 |
-| 并发 | 逐字段确认锁、发布顺序和借用寿命 | 把引用计数线程安全等同数据读写线程安全 |
-
-相关一手资料：
-
-- [C++公开工作草案](https://eel.is/c++draft/)：持续更新的工作草案；语言与标准库语义以相应章节为准。
-- [Blender依赖图设计](https://developer.blender.org/docs/features/core/depsgraph/)：包含历史设计背景，当前行为以本地源码为准。
-
-资料用于核对契约和进一步阅读；这里没有声称外部库与Blender实现相同，也没有把上游性能数字当作本机实测。
-
-## 八、历史提交与设计演化
-
-### 2021-09-09 · Jacques Lucke
-
-[Geometry Nodes: fields and anonymous attributes](https://projects.blender.org/blender/blender/commit/bf47fb40fd6f0ee9386e9936cf213a1049c55b61)
-
-完整哈希：`bf47fb40fd6f0ee9386e9936cf213a1049c55b61`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-Geometry Nodes: fields and anonymous attributes
-
-This implements the initial core framework for fields and anonymous
-attributes (also see T91274).
-
-The new functionality is hidden behind the "Geometry Nodes Fields"
-feature flag. When enabled in the user preferences, the following
-new nodes become available: `Position`, `Index`, `Normal`,
-`Set Position` and `Attribute Capture`.
-
-Socket inspection has not been updated to work with fields yet.
-
-Besides these changes at the user level, this patch contains the
-ground work for:
-* building and evaluating fields at run-time (`FN_fields.hh`) and
-* creating and accessing anonymous attributes on geometry
-  (`BKE_anonymous_attribute.h`).
-
-For evaluating fields we use a new so called multi-function procedure
-(`FN_multi_function_procedure.hh`). It allows composing multi-functions
-in arbitrary ways and supports efficient evaluation as is required by
-fields. See `FN_multi_function_procedure.hh` for more details on how
-this evaluation mechanism can be used.
-
-A new `AttributeIDRef` has been added which allows handling named
-and anonymous attributes in the same way in many places.
-
-Hans and I worked on this patch together.
-
-Differential Revision: https://developer.blender.org/D12414
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“共享子表达式怎样连接多个输出？”判断方案改变的是表示、接口、生命周期还是调度。
-
-### 2026-04-02 · Jacques Lucke
-
-[Refactor: Functions: update field storage and API](https://projects.blender.org/blender/blender/commit/66bee9561ba6b7ce89f0f95f4ed0420360c69924)
-
-完整哈希：`66bee9561ba6b7ce89f0f95f4ed0420360c69924`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-Refactor: Functions: update field storage and API
-
-This reimplements the entire field API. Large parts of the API surface is the
-same, but how a field is stored has change significantly.
-
-The main motivating goals for this refactor were:
-* Support storing single value fields without doing an allocation.
-* Support referencing common fields without doing reference counting (e.g. the
-  position field).
-
-On top of these goals, a few other improvements were done:
-* Field types are not nullable anymore. So one needs to use `std::optional` in
-  such cases. This also implies that `GField` can't be default-constructed
-  anymore because then it wouldn't have a type.
-* Field comparisons are shallow now. Previously one could easily do a deep
-  comparison of nested field inputs.
-* `GField` now stores a `std::variant` to support different internal storage
-  types, making it more easily extensible.
-
-In my test file that is adapted from #156308 I get a speedup from 60ms to 54ms
-of the modifier evaluation time.
-
-Pull Request: https://projects.blender.org/blender/blender/pulls/156723
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“共享子表达式怎样连接多个输出？”判断方案改变的是表示、接口、生命周期还是调度。
-
-### 2026-06-01 · Jacques Lucke
-
-[Fix #157485: avoid deep recursion when freeing field trees](https://projects.blender.org/blender/blender/commit/32f550c35ab3ffd89a8e8a602e4045e4091e044c)
-
-完整哈希：`32f550c35ab3ffd89a8e8a602e4045e4091e044c`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-Fix #157485: avoid deep recursion when freeing field trees
-
-Destructing large fields could result in deep call stacks because of
-long ownership chains. This could result in stack overflows leading
-to crashes. The fix is to customize the destruction code a bit so that
-it becomes more iterative instead of recursive.
-
-Pull Request: https://projects.blender.org/blender/blender/pulls/159375
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“共享子表达式怎样连接多个输出？”判断方案改变的是表示、接口、生命周期还是调度。
-
-## 九、反例、测试入口与掌握标准
-
-仓库测试入口：
-
-- [FN_field_test.cc](../../../../../source/blender/functions/tests/FN_field_test.cc)：阅读输入、断言与覆盖边界；本篇不把“存在测试”写成“本轮已运行”。
-
-需要实际构造的反例：
-
-- 空输入或没有结果需求：确认接口允许的空状态与不允许访问的操作。
-- 边界位置和退化结构：把长度为1、末尾位置、重复值或深链代入真实分支。
-- 生命周期结束或修改之后：检查保存的指针、引用、结果视图是否仍有效。
-- 与本篇核心不变量相冲突的输入：构造共同乘法子表达式和两个加法输出，统计求值次数。
-
-### 可运行的教学参考程序
-
-[reference_exercises.cc](../_tools/reference_exercises.cc)包含独立于Blender的C++20参考检查：视图、简化SmallVector、异常回滚、哈希碰撞与删除、偏移数组、拓扑映射、共享缓存、表达式、惰性分支、闭包和暴力最近邻。
-
-参考程序有意省略生产实现的完整能力。例如SmallVector禁止复制移动容器，不支持只能移动的元素，并禁止append参数别名到自身元素；TinyMap固定8槽，不提供增长。程序通过不能替代Blender实现测试。实际运行结果、编译器与命令见验收报告。
-
-掌握标准：离开源码解释“共享子表达式怎样连接多个输出？”；独立完成上述练习；能指出一个会破坏表达式相关约束的最小反例，并用具体代码行说明检查或修复应放在哪里。
+[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)

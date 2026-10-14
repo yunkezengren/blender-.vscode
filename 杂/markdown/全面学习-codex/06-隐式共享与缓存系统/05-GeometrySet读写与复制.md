@@ -1,40 +1,40 @@
 # 06-05 GeometrySet读写与复制
 
-[方向导航](README.md) · [总目录](../README.md) · [覆盖索引](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
 
-> 阅读顺序：问题与数据模型 → 语法与类型 → 源码逐行 → 调用线索 → 历史与取舍 → 推演和练习。
-
-- 基准 HEAD：`cbda6b96c26c0dee3c3b5cbb93960c4ac06a6b30`。
-- 记录日期：2026-10-14。
-- 教学示例状态：正文中的推演不是本机性能实测；已运行练习见验收报告。
-
-## 一、从问题到设计
+## 从问题到实现
 
 get_for_write怎样连接共享与可变访问？
 
 写接口需要确保返回的可变数据符合独占条件；可写引用的有效期仍受后续修改影响。
 
-本篇把语法、数据语义和系统取舍连接起来。共享计数回答谁还活着，缓存依赖回答结果是否仍正确，两者不能互相替代。
-
-### 本篇独立模型与设计推理
+**数据模型**
 
 get_mesh_for_write不只是返回非const指针，还进入对应可变准备路径。
 
-设计取舍：公开读写接口让调用者表达意图，避免把写时复制散落在算法里。
+**设计取舍**
 
-最小反例：长期保存可写引用，再对集合替换或移除组件。
+公开读写接口让调用者表达意图，避免把写时复制散落在算法里。
 
-推导与处理：把引用使用限制在不改变相应拥有关系的范围。
+**最小反例**
+
+长期保存可写引用，再对集合替换或移除组件。
+
+**推导**
+
+把引用使用限制在不改变相应拥有关系的范围。
+
+## 阅读地图与执行推演
 
 ```mermaid
 flowchart TB
-  M["get_mesh_for_write不只是返回非const指针<br/>，还进入对应可变准备路径。"]:::data
-  T["公开读写接口让调用者表达意图，避免把写时<br/>复制散落在算法里。"]:::abstraction
-  X["长期保存可写引用，再对集合替换或移除组件<br/>。"]:::error
-  A["把引用使用限制在不改变相应拥有关系的范围<br/>。"]:::result
-  M -->|"建立约束"| T
-  T -->|"构造反例"| X
-  X -->|"恢复不变量"| A
+  M["get_mesh_for_write不只是返回非const指针，<br/>还进入对应可变准备路径。"]:::data
+  C["公开读写接口让调用者表达意图，避免把写时复<br/>制散落在算法里。"]:::abstraction
+  B["长期保存可写引用，再对集合替换或移除组件。"]:::error
+  R["把引用使用限制在不改变相应拥有关系的范围。"]:::result
+  M -->|"明确约束"| C
+  C -->|"检验边界"| B
+  B -->|"恢复正确性"| R
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -42,61 +42,19 @@ flowchart TB
   classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
-
-### 源码范围与相邻篇章
-
-| 文件 | 本篇逐行范围 | 基准SHA-256 |
-|---|---|---|
-| [source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) | L1—L846 | `6f68495e64575d625d7a84f32e4118d3fca1c6a223c57f2d5f7489b269e80c6d` |
-
-同一主讲文件可能分多篇覆盖；超出本篇范围的符号通过覆盖索引定位。空行与纯注释保留在源码摘录中，逐行表解释有效语句与语法边界；许可证头统一保留。
-
-前篇：[GeometryComponent共享](04-GeometryComponent%E5%85%B1%E4%BA%AB.md).
-
-后篇：[CacheMutex惰性初始化](06-CacheMutex%E6%83%B0%E6%80%A7%E5%88%9D%E5%A7%8B%E5%8C%96.md).
-
-## 二、类型、数据与阅读地图
-
-```mermaid
-flowchart TB
-  Q["get_for_write怎样连接共享与可变访问？"]:::input
-  C0["共享源数据"]:::abstraction
-  C1["独占写入"]:::data
-  C2["派生缓存"]:::data
-  C3["精确失效"]:::data
-  R["GeometrySet读写与复制"]:::result
-  Q -->|"建立模型"| C0
-  C0 -->|"区分职责"| C1
-  C1 -->|"区分职责"| C2
-  C2 -->|"区分职责"| C3
-  C3 -->|"回到源码"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
-
-这是概念依赖图，边表示阅读关系，不声称是运行时调用顺序。
-
-### 直接编译依赖
 
 ```mermaid
 flowchart LR
-  S["geometry_set.cc"]:::abstraction
-  I0["BLI_bounds.hh"]:::data
-  I1["BLI_map.hh"]:::data
-  I2["BLI_memory_counter.hh"]:::data
-  I3["BLI_task.hh"]:::data
-  I4["BKE_attribute.hh"]:::data
-  I5["BKE_curves.hh"]:::data
-  S -->|"直接include"| I0
-  S -->|"直接include"| I1
-  S -->|"直接include"| I2
-  S -->|"直接include"| I3
-  S -->|"直接include"| I4
-  S -->|"直接include"| I5
+  F0["blender::bke::GeometryComponent::GeometryComponent"]:::input
+  F1["blender::bke::GeometryComponent::create"]:::compute
+  F2["blender::bke::GeometryComponent::attribute_domain_size"]:::compute
+  F3["blender::bke::GeometryComponent::attributes"]:::compute
+  F4["blender::bke::GeometryComponent::attributes_for_write"]:::compute
+  F5["blender::bke::GeometryComponent::count_memory"]:::compute
+  F6["blender::bke::GeometryComponent::type"]:::compute
+  F7["blender::bke::GeometryComponent::is_empty"]:::compute
+  F2 -->|"实现调用"| F7
+  F2 -->|"实现调用"| F3
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -105,65 +63,53 @@ flowchart LR
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-箭头只表示头文件包含关系；完整调用线索见后面的符号定位表。
+```mermaid
+flowchart LR
+  P0["共享源数据"]:::input
+  P1["独占写入"]:::data
+  P2["派生缓存"]:::data
+  P3["精确失效"]:::result
+  P0 -->|"分析关系"| P1
+  P1 -->|"分析关系"| P2
+  P2 -->|"分析关系"| P3
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-## 三、关键词、语法与类型角色
+```mermaid
+flowchart TB
+  S0["源位置P，缓存C"]:::input
+  S1["B与A共享P和C"]:::compute
+  S2["任一副本触发"]:::compute
+  S3["位置拓扑不变"]:::compute
+  S4["B分离对应数据与缓存"]:::compute
+  S5["需要旧结果时保留副本"]:::result
+  S0 -->|"复制B"| S1
+  S1 -->|"求C"| S2
+  S2 -->|"改无关属性"| S3
+  S3 -->|"B改位置"| S4
+  S4 -->|"局部更新"| S5
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-### 只读限定 const
+图中的数值推演是本方向的教学模型；实际函数之间的调用边与概念分析边分别标注，不能把概念关系当作运行时调度顺序。
 
-const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
+## 完整源码单元与就地讲解
 
-具体检查：分别写T* const、const T*与const T* const，并画出不可修改的层次。
+中文讲解直接放在相关代码旁，复杂机制在代码下展开。原文折叠区保留基准行号；不需要在行号表和函数之间来回查找。类布局可分段展示，函数实现不按固定行数切开。
 
-### 移动转换 std::move
+### 类型布局、声明与编译条件 · geometry_set.cc L1—L38
 
-std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
-
-具体检查：记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
-
-### 异常边界 try与catch
-
-try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
-
-具体检查：在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
-
-### 限定转换 const_cast
-
-const_cast可以改变访问路径的限定，但不能让本来就是const的对象合法可写。常用于复用只读实现时，仍需检查底层对象是否实际可变。
-
-具体检查：对非const对象的const引用与真正const对象分别分析修改是否合法。
-
-### 可选值 optional
-
-optional把不存在与存在的T区分开，T的构造和析构跟随engaged状态变化。访问前应由has_value或条件分支证明存在。
-
-具体检查：把空Field状态与合法常量零区分，不能用某个普通值代替不存在。
-
-### 构造与new表达式
-
-普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
-
-具体检查：追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
-
-### 内部断言 assert
-
-断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
-
-具体检查：对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
-
-### 独占拥有 unique_ptr
-
-unique_ptr通过移动转移拥有关系，默认删除策略必须与资源来源匹配。get返回借用指针，release交出责任而不销毁。
-
-具体检查：区分move、get、release和reset后谁负责销毁。
-
-## 四、真实源码与逐行讲解
-
-源码块保持原行内容，原始行号由小节标题及逐行表给出。表中的调用定位是静态阅读辅助；重载、模板实例化、宏展开和虚调用需结合完整声明，不能仅凭词法出现证明动态调用。
-
-### geometry_set.cc：L1—L39
-
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:1:39 -->
+<!-- annotated:200b3626941da7 -->
 
 ```cpp
 /* SPDX-FileCopyrightText: 2023 Blender Authors
@@ -204,39 +150,121 @@ namespace blender::bke {
 /** \name Geometry Component
  * \{ */
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L1—L38</summary>
+
+<!-- original:200b3626941da7:source/blender/blenkernel/intern/geometry_set.cc:1:38 -->
+
+```cpp
+/* SPDX-FileCopyrightText: 2023 Blender Authors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
+/** \file
+ * \ingroup bke
+ */
+
+#include <fmt/format.h>
+
+#include "BLI_bounds.hh"
+#include "BLI_map.hh"
+#include "BLI_memory_counter.hh"
+#include "BLI_task.hh"
+
+#include "BKE_attribute.hh"
+#include "BKE_curves.hh"
+#include "BKE_geometry_set.hh"
+#include "BKE_geometry_set_instances.hh"
+#include "BKE_grease_pencil.hh"
+#include "BKE_instances.hh"
+#include "BKE_mesh.hh"
+#include "BKE_modifier.hh"
+#include "BKE_object_types.hh"
+#include "BKE_subdiv_modifier.hh"
+#include "BKE_volume.hh"
+
+#include "NOD_geometry_nodes_bundle.hh"
+
+#include "DNA_object_types.h"
+#include "DNA_pointcloud_types.h"
+
+namespace blender::bke {
+
+/* -------------------------------------------------------------------- */
+/** \name Geometry Component
+ * \{ */
+
+```
+
+</details>
+
+<a id="f-c8e333a95aef5a99"></a>
+
+### `blender::bke::GeometryComponent::GeometryComponent`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L39—L39。
+
+接口参数：
+
+- `Type type`
+
+**教学注释版**
+
+<!-- annotated:da4708e02749ce -->
+
+```cpp
 GeometryComponent::GeometryComponent(Type type) : type_(type) {}
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L9 | 引入编译依赖 <fmt/format.h>；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L11 | 引入编译依赖 "BLI_bounds.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L12 | 引入编译依赖 "BLI_map.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L13 | 引入编译依赖 "BLI_memory_counter.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L14 | 引入编译依赖 "BLI_task.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L16 | 引入编译依赖 "BKE_attribute.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L17 | 引入编译依赖 "BKE_curves.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L18 | 引入编译依赖 "BKE_geometry_set.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L19 | 引入编译依赖 "BKE_geometry_set_instances.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L20 | 引入编译依赖 "BKE_grease_pencil.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L21 | 引入编译依赖 "BKE_instances.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L22 | 引入编译依赖 "BKE_mesh.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L23 | 引入编译依赖 "BKE_modifier.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L24 | 引入编译依赖 "BKE_object_types.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L25 | 引入编译依赖 "BKE_subdiv_modifier.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L26 | 引入编译依赖 "BKE_volume.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L28 | 引入编译依赖 "NOD_geometry_nodes_bundle.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L30 | 引入编译依赖 "DNA_object_types.h"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L31 | 引入编译依赖 "DNA_pointcloud_types.h"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L33 | 把后续声明放入 blender::bke 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L39 | 出现调用或函数声明 `GeometryComponent::GeometryComponent`，对应表达式为 `GeometryComponent::GeometryComponent(Type type) : type_(type) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L39—L39</summary>
 
-### geometry_set.cc：L40—L89
+<!-- original:da4708e02749ce:source/blender/blenkernel/intern/geometry_set.cc:39:39 -->
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:40:89 -->
+```cpp
+GeometryComponent::GeometryComponent(Type type) : type_(type) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:288d49f06f19b1 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L40—L40</summary>
+
+<!-- original:288d49f06f19b1:source/blender/blenkernel/intern/geometry_set.cc:40:40 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-057aed72adfa658c"></a>
+
+### `blender::bke::GeometryComponent::create`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L41—L61。
+
+接口参数：
+
+- `Type component_type`
+
+**教学注释版**
+
+<!-- annotated:0cb219b60c7672 -->
+
+```cpp
 GeometryComponentPtr GeometryComponent::create(Type component_type)
 {
   switch (component_type) {
@@ -258,7 +286,87 @@ GeometryComponentPtr GeometryComponent::create(Type component_type)
   BLI_assert_unreachable();
   return {};
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L41—L61</summary>
+
+<!-- original:0cb219b60c7672:source/blender/blenkernel/intern/geometry_set.cc:41:61 -->
+
+```cpp
+GeometryComponentPtr GeometryComponent::create(Type component_type)
+{
+  switch (component_type) {
+    case Type::Mesh:
+      return GeometryComponentPtr(new MeshComponent());
+    case Type::PointCloud:
+      return GeometryComponentPtr(new PointCloudComponent());
+    case Type::Instance:
+      return GeometryComponentPtr(new InstancesComponent());
+    case Type::Volume:
+      return GeometryComponentPtr(new VolumeComponent());
+    case Type::Curve:
+      return GeometryComponentPtr(new CurveComponent());
+    case Type::Edit:
+      return GeometryComponentPtr(new GeometryComponentEditData());
+    case Type::GreasePencil:
+      return GeometryComponentPtr(new GreasePencilComponent());
+  }
+  BLI_assert_unreachable();
+  return {};
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return GeometryComponentPtr(new MeshComponent());`
+- `return GeometryComponentPtr(new PointCloudComponent());`
+- `return GeometryComponentPtr(new InstancesComponent());`
+- `return GeometryComponentPtr(new VolumeComponent());`
+- `return GeometryComponentPtr(new CurveComponent());`
+- `return GeometryComponentPtr(new GeometryComponentEditData());`
+- `return GeometryComponentPtr(new GreasePencilComponent());`
+- `return {};`
+
+**继续追踪实现**
+
+- `GeometryComponentPtr` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L45。
+- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
+
+<!-- annotated:6df6b52290fe71 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L62—L62</summary>
+
+<!-- original:6df6b52290fe71:source/blender/blenkernel/intern/geometry_set.cc:62:62 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3cb3765f59e14900"></a>
+
+### `blender::bke::GeometryComponent::attribute_domain_size`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L63—L73。
+
+接口参数：
+
+- `const AttrDomain domain`
+
+**教学注释版**
+
+<!-- annotated:4a858b159e71e9 -->
+
+```cpp
 int GeometryComponent::attribute_domain_size(const AttrDomain domain) const
 {
   if (this->is_empty()) {
@@ -270,97 +378,407 @@ int GeometryComponent::attribute_domain_size(const AttrDomain domain) const
   }
   return 0;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L63—L73</summary>
+
+<!-- original:4a858b159e71e9:source/blender/blenkernel/intern/geometry_set.cc:63:73 -->
+
+```cpp
+int GeometryComponent::attribute_domain_size(const AttrDomain domain) const
+{
+  if (this->is_empty()) {
+    return 0;
+  }
+  const std::optional<AttributeAccessor> attributes = this->attributes();
+  if (attributes.has_value()) {
+    return attributes->domain_size(domain);
+  }
+  return 0;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return 0;`
+- `return attributes->domain_size(domain);`
+
+**继续追踪实现**
+
+- `this->is_empty` → [blender::bke::GeometryComponent::is_empty · L91](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b4b017a3f04968a2)。
+- `this->attributes` → [blender::bke::GeometryComponent::attributes · L75](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-d58a41ede5a46f2c)。
+- `attributes.has_value` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
+- `attributes->domain_size` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
+
+<!-- annotated:fe492ac0324deb -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L74—L74</summary>
+
+<!-- original:fe492ac0324deb:source/blender/blenkernel/intern/geometry_set.cc:74:74 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-d58a41ede5a46f2c"></a>
+
+### `blender::bke::GeometryComponent::attributes`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L75—L78。
+
+**教学注释版**
+
+<!-- annotated:11d481d93be804 -->
+
+```cpp
 std::optional<AttributeAccessor> GeometryComponent::attributes() const
 {
   return std::nullopt;
 };
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L75—L78</summary>
+
+<!-- original:11d481d93be804:source/blender/blenkernel/intern/geometry_set.cc:75:78 -->
+
+```cpp
+std::optional<AttributeAccessor> GeometryComponent::attributes() const
+{
+  return std::nullopt;
+};
+```
+
+</details>
+
+**结果出口**
+
+- `return std::nullopt;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<a id="f-c68ee72f71fc3179"></a>
+
+### `blender::bke::GeometryComponent::attributes_for_write`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L79—L82。
+
+**教学注释版**
+
+<!-- annotated:a1ed60068660fa -->
+
+```cpp
 std::optional<MutableAttributeAccessor> GeometryComponent::attributes_for_write()
 {
   return std::nullopt;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L79—L82</summary>
+
+<!-- original:a1ed60068660fa:source/blender/blenkernel/intern/geometry_set.cc:79:82 -->
+
+```cpp
+std::optional<MutableAttributeAccessor> GeometryComponent::attributes_for_write()
+{
+  return std::nullopt;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return std::nullopt;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:74cc339c18f67e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L83—L83</summary>
+
+<!-- original:74cc339c18f67e:source/blender/blenkernel/intern/geometry_set.cc:83:83 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-169cceaa62075506"></a>
+
+### `blender::bke::GeometryComponent::count_memory`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L84—L84。
+
+接口参数：
+
+- `MemoryCounter &`
+
+**教学注释版**
+
+<!-- annotated:cf5d89064f8661 -->
+
+```cpp
 void GeometryComponent::count_memory(MemoryCounter & /*memory*/) const {}
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L84—L84</summary>
+
+<!-- original:cf5d89064f8661:source/blender/blenkernel/intern/geometry_set.cc:84:84 -->
+
+```cpp
+void GeometryComponent::count_memory(MemoryCounter & /*memory*/) const {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:6ade5559ed9b5f -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L85—L85</summary>
+
+<!-- original:6ade5559ed9b5f:source/blender/blenkernel/intern/geometry_set.cc:85:85 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-f73336c224943890"></a>
+
+### `blender::bke::GeometryComponent::type`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L86—L89。
+
+**教学注释版**
+
+<!-- annotated:a46f085b1efa13 -->
+
+```cpp
 GeometryComponent::Type GeometryComponent::type() const
 {
   return type_;
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L86—L89</summary>
 
-- 分支证据 `this->is_empty())`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `attributes.has_value())`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:a46f085b1efa13:source/blender/blenkernel/intern/geometry_set.cc:86:89 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L41 | 出现调用或函数声明 `GeometryComponent::create`，对应表达式为 `GeometryComponentPtr GeometryComponent::create(Type component_type)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L42 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L43 | 按 switch (component_type) 选择状态处理路径；每个case的break、return或贯穿行为决定下一步。 |
-| L44 | 进入枚举或判别值对应分支 case Type::Mesh:；结合状态定义和后续更新判断允许的转移。 |
-| L45 | 返回表达式 `GeometryComponentPtr(new MeshComponent())`。 |
-| L46 | 进入枚举或判别值对应分支 case Type::PointCloud:；结合状态定义和后续更新判断允许的转移。 |
-| L47 | 返回表达式 `GeometryComponentPtr(new PointCloudComponent())`。 |
-| L48 | 进入枚举或判别值对应分支 case Type::Instance:；结合状态定义和后续更新判断允许的转移。 |
-| L49 | 返回表达式 `GeometryComponentPtr(new InstancesComponent())`。 |
-| L50 | 进入枚举或判别值对应分支 case Type::Volume:；结合状态定义和后续更新判断允许的转移。 |
-| L51 | 返回表达式 `GeometryComponentPtr(new VolumeComponent())`。 |
-| L52 | 进入枚举或判别值对应分支 case Type::Curve:；结合状态定义和后续更新判断允许的转移。 |
-| L53 | 返回表达式 `GeometryComponentPtr(new CurveComponent())`。 |
-| L54 | 进入枚举或判别值对应分支 case Type::Edit:；结合状态定义和后续更新判断允许的转移。 |
-| L55 | 返回表达式 `GeometryComponentPtr(new GeometryComponentEditData())`。 |
-| L56 | 进入枚举或判别值对应分支 case Type::GreasePencil:；结合状态定义和后续更新判断允许的转移。 |
-| L57 | 返回表达式 `GeometryComponentPtr(new GreasePencilComponent())`。 |
-| L58 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L59 | 断言约束 `BLI_assert_unreachable();`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L60 | 返回表达式 `{}`。 |
-| L61 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L63 | 出现调用或函数声明 `GeometryComponent::attribute_domain_size`，对应表达式为 `int GeometryComponent::attribute_domain_size(const AttrDomain domain) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L64 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L65 | 判断 `this->is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L66 | 返回表达式 `0`。 |
-| L67 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L68 | 把右侧 `this->attributes()` 用于初始化或更新左侧 `const std::optional<AttributeAccessor> attributes`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L69 | 判断 `attributes.has_value()`，成立时进入本分支，否则继续后续路径。 |
-| L70 | 返回表达式 `attributes->domain_size(domain)`。 |
-| L71 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L72 | 返回表达式 `0`。 |
-| L73 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L75 | 出现调用或函数声明 `GeometryComponent::attributes`，对应表达式为 `std::optional<AttributeAccessor> GeometryComponent::attributes() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L76 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L77 | 返回表达式 `std::nullopt`。 |
-| L78 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L79 | 出现调用或函数声明 `GeometryComponent::attributes_for_write`，对应表达式为 `std::optional<MutableAttributeAccessor> GeometryComponent::attributes_for_write()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L80 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L81 | 返回表达式 `std::nullopt`。 |
-| L82 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L84 | 出现调用或函数声明 `GeometryComponent::count_memory`，对应表达式为 `void GeometryComponent::count_memory(MemoryCounter & ) const {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L86 | 出现调用或函数声明 `GeometryComponent::type`，对应表达式为 `GeometryComponent::Type GeometryComponent::type() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L87 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L88 | 返回表达式 `type_`。 |
-| L89 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+GeometryComponent::Type GeometryComponent::type() const
+{
+  return type_;
+}
+```
 
-### geometry_set.cc：L90—L135
+</details>
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:90:135 -->
+**结果出口**
+
+- `return type_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:43e1c5c6d07eed -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L90—L90</summary>
+
+<!-- original:43e1c5c6d07eed:source/blender/blenkernel/intern/geometry_set.cc:90:90 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b4b017a3f04968a2"></a>
+
+### `blender::bke::GeometryComponent::is_empty`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L91—L94。
+
+**教学注释版**
+
+<!-- annotated:eb12e1d4df4892 -->
+
+```cpp
 bool GeometryComponent::is_empty() const
 {
   return false;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L91—L94</summary>
+
+<!-- original:eb12e1d4df4892:source/blender/blenkernel/intern/geometry_set.cc:91:94 -->
+
+```cpp
+bool GeometryComponent::is_empty() const
+{
+  return false;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return false;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:ae899785b7c402 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L95—L95</summary>
+
+<!-- original:ae899785b7c402:source/blender/blenkernel/intern/geometry_set.cc:95:95 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-083a51a6b1b055eb"></a>
+
+### `blender::bke::GeometryComponent::delete_self`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L96—L99。
+
+**教学注释版**
+
+<!-- annotated:660438fc2cef1a -->
+
+```cpp
 void GeometryComponent::delete_self()
 {
   delete this;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L96—L99</summary>
+
+<!-- original:660438fc2cef1a:source/blender/blenkernel/intern/geometry_set.cc:96:99 -->
+
+```cpp
+void GeometryComponent::delete_self()
+{
+  delete this;
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:2a716f42619cd4 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L100—L100</summary>
+
+<!-- original:2a716f42619cd4:source/blender/blenkernel/intern/geometry_set.cc:100:100 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-d85e807e1acf3676"></a>
+
+### `blender::bke::GeometryComponent::delete_data_only`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L101—L104。
+
+**教学注释版**
+
+<!-- annotated:056b1ad3f17db5 -->
+
+```cpp
 void GeometryComponent::delete_data_only()
 {
   this->clear();
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L101—L104</summary>
+
+<!-- original:056b1ad3f17db5:source/blender/blenkernel/intern/geometry_set.cc:101:104 -->
+
+```cpp
+void GeometryComponent::delete_data_only()
+{
+  this->clear();
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->clear` → [blender::bke::GeometrySet::clear · L265](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-8c0f2e9da85aab58)。
+
+### 类型布局、声明与编译条件 · geometry_set.cc L105—L111
+
+<!-- annotated:3bdf22d7436b3c -->
+
+```cpp
 
 /** \} */
 
@@ -368,13 +786,187 @@ void GeometryComponent::delete_data_only()
 /** \name Geometry Set
  * \{ */
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L105—L111</summary>
+
+<!-- original:3bdf22d7436b3c:source/blender/blenkernel/intern/geometry_set.cc:105:111 -->
+
+```cpp
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Geometry Set
+ * \{ */
+
+```
+
+</details>
+
+<a id="f-5c04c744356a3105"></a>
+
+### `blender::bke::GeometrySet`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L112—L112。
+
+**教学注释版**
+
+<!-- annotated:acc74c8cdd9c98 -->
+
+```cpp
 GeometrySet::GeometrySet() = default;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L112—L112</summary>
+
+<!-- original:acc74c8cdd9c98:source/blender/blenkernel/intern/geometry_set.cc:112:112 -->
+
+```cpp
+GeometrySet::GeometrySet() = default;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<a id="f-2cad26a0ad85d09a"></a>
+
+### `blender::bke::GeometrySet`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L113—L113。
+
+接口参数：
+
+- `const GeometrySet &other`
+
+**教学注释版**
+
+<!-- annotated:d8e4ab1da76775 -->
+
+```cpp
 GeometrySet::GeometrySet(const GeometrySet &other) = default;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L113—L113</summary>
+
+<!-- original:d8e4ab1da76775:source/blender/blenkernel/intern/geometry_set.cc:113:113 -->
+
+```cpp
+GeometrySet::GeometrySet(const GeometrySet &other) = default;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<a id="f-3f67f0b978a84929"></a>
+
+### `blender::bke::GeometrySet`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L114—L114。
+
+接口参数：
+
+- `GeometrySet &&other`
+
+**教学注释版**
+
+<!-- annotated:6d6ea27a40e303 -->
+
+```cpp
 GeometrySet::GeometrySet(GeometrySet &&other) = default;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L114—L114</summary>
+
+<!-- original:6d6ea27a40e303:source/blender/blenkernel/intern/geometry_set.cc:114:114 -->
+
+```cpp
+GeometrySet::GeometrySet(GeometrySet &&other) = default;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<a id="f-0d3215503e9b73fe"></a>
+
+### `blender::bke::~GeometrySet`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L115—L115。
+
+**教学注释版**
+
+<!-- annotated:5bd1df7908d5d0 -->
+
+```cpp
 GeometrySet::~GeometrySet() = default;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L115—L115</summary>
+
+<!-- original:5bd1df7908d5d0:source/blender/blenkernel/intern/geometry_set.cc:115:115 -->
+
+```cpp
+GeometrySet::~GeometrySet() = default;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · geometry_set.cc L116—L118
+
+<!-- annotated:ec6baca8007b8d -->
+
+```cpp
 GeometrySet &GeometrySet::operator=(const GeometrySet &other) = default;
 GeometrySet &GeometrySet::operator=(GeometrySet &&other) = default;
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L116—L118</summary>
+
+<!-- original:ec6baca8007b8d:source/blender/blenkernel/intern/geometry_set.cc:116:118 -->
+
+```cpp
+GeometrySet &GeometrySet::operator=(const GeometrySet &other) = default;
+GeometrySet &GeometrySet::operator=(GeometrySet &&other) = default;
+
+```
+
+</details>
+
+<a id="f-21eccb196f5b9a78"></a>
+
+### `blender::bke::GeometrySet::get_component_for_write`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L119—L127。
+
+接口参数：
+
+- `GeometryComponent::Type component_type`
+
+**教学注释版**
+
+<!-- annotated:5bbd80cc7c1de4 -->
+
+```cpp
 GeometryComponent &GeometrySet::get_component_for_write(GeometryComponent::Type component_type)
 {
   GeometryComponentPtr &component_ptr = components_[size_t(component_type)];
@@ -384,7 +976,72 @@ GeometryComponent &GeometrySet::get_component_for_write(GeometryComponent::Type 
   }
   return component_ptr.ensure_mutable_inplace();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L119—L127</summary>
+
+<!-- original:5bbd80cc7c1de4:source/blender/blenkernel/intern/geometry_set.cc:119:127 -->
+
+```cpp
+GeometryComponent &GeometrySet::get_component_for_write(GeometryComponent::Type component_type)
+{
+  GeometryComponentPtr &component_ptr = components_[size_t(component_type)];
+  if (!component_ptr) {
+    /* If the component did not exist before, create a new one. */
+    component_ptr = GeometryComponent::create(component_type);
+  }
+  return component_ptr.ensure_mutable_inplace();
+}
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `component_ptr = GeometryComponent::create(component_type);`
+
+**结果出口**
+
+- `return component_ptr.ensure_mutable_inplace();`
+
+**继续追踪实现**
+
+- `GeometryComponent::create` → [blender::bke::GeometryComponent::create · L41](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-057aed72adfa658c)。
+- `component_ptr.ensure_mutable_inplace` → [blender::ImplicitSharingPtr::ensure_mutable_inplace · L144](03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-d9e9b25281edf91a)。
+
+<!-- annotated:8bcfef2d4226cb -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L128—L128</summary>
+
+<!-- original:8bcfef2d4226cb:source/blender/blenkernel/intern/geometry_set.cc:128:128 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b077f987c95b3425"></a>
+
+### `blender::bke::GeometrySet::get_component_for_write_ptr`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L129—L135。
+
+接口参数：
+
+- `GeometryComponent::Type type`
+
+**教学注释版**
+
+<!-- annotated:f6b4e888ef3fcc -->
+
+```cpp
 GeometryComponent *GeometrySet::get_component_for_write_ptr(GeometryComponent::Type type)
 {
   if (this->has(type)) {
@@ -394,69 +1051,244 @@ GeometryComponent *GeometrySet::get_component_for_write_ptr(GeometryComponent::T
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L129—L135</summary>
 
-- 分支证据 `!component_ptr)`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `this->has(type))`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:f6b4e888ef3fcc:source/blender/blenkernel/intern/geometry_set.cc:129:135 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L91 | 出现调用或函数声明 `GeometryComponent::is_empty`，对应表达式为 `bool GeometryComponent::is_empty() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L92 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L93 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L94 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L96 | 出现调用或函数声明 `GeometryComponent::delete_self`，对应表达式为 `void GeometryComponent::delete_self()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L97 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L98 | 声明成员、局部对象或完成语句 `delete this`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L99 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L101 | 出现调用或函数声明 `GeometryComponent::delete_data_only`，对应表达式为 `void GeometryComponent::delete_data_only()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L102 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L103 | 出现调用或函数声明 `clear`，对应表达式为 `this->clear();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L104 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L112 | 显式采用编译器生成的特殊成员行为：`GeometrySet::GeometrySet() = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L113 | 显式采用编译器生成的特殊成员行为：`GeometrySet::GeometrySet(const GeometrySet &other) = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L114 | 显式采用编译器生成的特殊成员行为：`GeometrySet::GeometrySet(GeometrySet &&other) = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L115 | 显式采用编译器生成的特殊成员行为：`GeometrySet::~GeometrySet() = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L116 | 显式采用编译器生成的特殊成员行为：`GeometrySet &GeometrySet::operator=(const GeometrySet &other) = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L117 | 显式采用编译器生成的特殊成员行为：`GeometrySet &GeometrySet::operator=(GeometrySet &&other) = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L119 | 出现调用或函数声明 `GeometrySet::get_component_for_write`，对应表达式为 `GeometryComponent &GeometrySet::get_component_for_write(GeometryComponent::Type component_type)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L120 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L121 | 把右侧 `components_[size_t(component_type)]` 用于初始化或更新左侧 `GeometryComponentPtr &component_ptr`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L122 | 判断 `!component_ptr`，成立时进入本分支，否则继续后续路径。 |
-| L124 | 把右侧 `GeometryComponent::create(component_type)` 用于初始化或更新左侧 `component_ptr`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L125 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L126 | 返回表达式 `component_ptr.ensure_mutable_inplace()`。 |
-| L127 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L129 | 出现调用或函数声明 `GeometrySet::get_component_for_write_ptr`，对应表达式为 `GeometryComponent *GeometrySet::get_component_for_write_ptr(GeometryComponent::Type type)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L130 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L131 | 判断 `this->has(type)`，成立时进入本分支，否则继续后续路径。 |
-| L132 | 返回表达式 `&this->get_component_for_write(type)`。 |
-| L133 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L134 | 返回表达式 `nullptr`。 |
-| L135 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+GeometryComponent *GeometrySet::get_component_for_write_ptr(GeometryComponent::Type type)
+{
+  if (this->has(type)) {
+    return &this->get_component_for_write(type);
+  }
+  return nullptr;
+}
+```
 
-### geometry_set.cc：L136—L181
+</details>
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:136:181 -->
+**结果出口**
+
+- `return &this->get_component_for_write(type);`
+- `return nullptr;`
+
+**继续追踪实现**
+
+- `this->has` → [blender::bke::GeometrySet::has · L142](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-5777be605a5451b6)。
+- `this->get_component_for_write` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
+
+<!-- annotated:8ac5bddf9c7fba -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L136—L136</summary>
+
+<!-- original:8ac5bddf9c7fba:source/blender/blenkernel/intern/geometry_set.cc:136:136 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-26f915a73bb3d7e8"></a>
+
+### `blender::bke::GeometrySet::get_component`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L137—L140。
+
+接口参数：
+
+- `GeometryComponent::Type component_type`
+
+**教学注释版**
+
+<!-- annotated:6a194926297ff9 -->
+
+```cpp
 const GeometryComponent *GeometrySet::get_component(GeometryComponent::Type component_type) const
 {
   return components_[size_t(component_type)].get();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L137—L140</summary>
+
+<!-- original:6a194926297ff9:source/blender/blenkernel/intern/geometry_set.cc:137:140 -->
+
+```cpp
+const GeometryComponent *GeometrySet::get_component(GeometryComponent::Type component_type) const
+{
+  return components_[size_t(component_type)].get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return components_[size_t(component_type)].get();`
+
+**继续追踪实现**
+
+- `components_[size_t(component_type)].get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L139。
+
+<!-- annotated:d0e69d0d860c74 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L141—L141</summary>
+
+<!-- original:d0e69d0d860c74:source/blender/blenkernel/intern/geometry_set.cc:141:141 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-5777be605a5451b6"></a>
+
+### `blender::bke::GeometrySet::has`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L142—L146。
+
+接口参数：
+
+- `const GeometryComponent::Type component_type`
+
+**教学注释版**
+
+<!-- annotated:69f369e56be215 -->
+
+```cpp
 bool GeometrySet::has(const GeometryComponent::Type component_type) const
 {
   const GeometryComponentPtr &component = components_[size_t(component_type)];
   return component.has_value() && !component->is_empty();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L142—L146</summary>
+
+<!-- original:69f369e56be215:source/blender/blenkernel/intern/geometry_set.cc:142:146 -->
+
+```cpp
+bool GeometrySet::has(const GeometryComponent::Type component_type) const
+{
+  const GeometryComponentPtr &component = components_[size_t(component_type)];
+  return component.has_value() && !component->is_empty();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return component.has_value() && !component->is_empty();`
+
+**继续追踪实现**
+
+- `component.has_value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L145。
+- `component->is_empty` → [blender::bke::GeometryComponent::is_empty · L91](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b4b017a3f04968a2)；[blender::bke::GeometrySet::is_empty · L421](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-20c815c1f8a499ee)。同名重载需按实参类型选择。
+
+<!-- annotated:719603edb98545 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L147—L147</summary>
+
+<!-- original:719603edb98545:source/blender/blenkernel/intern/geometry_set.cc:147:147 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-32c960ae92da98ca"></a>
+
+### `blender::bke::GeometrySet::remove`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L148—L151。
+
+接口参数：
+
+- `const GeometryComponent::Type component_type`
+
+**教学注释版**
+
+<!-- annotated:4cfe7068ebd9f7 -->
+
+```cpp
 void GeometrySet::remove(const GeometryComponent::Type component_type)
 {
   components_[size_t(component_type)].reset();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L148—L151</summary>
+
+<!-- original:4cfe7068ebd9f7:source/blender/blenkernel/intern/geometry_set.cc:148:151 -->
+
+```cpp
+void GeometrySet::remove(const GeometryComponent::Type component_type)
+{
+  components_[size_t(component_type)].reset();
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `components_[size_t(component_type)].reset` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L150。
+
+<!-- annotated:9ad552234ee4d9 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L152—L152</summary>
+
+<!-- original:9ad552234ee4d9:source/blender/blenkernel/intern/geometry_set.cc:152:152 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3342295c6e1df386"></a>
+
+### `blender::bke::GeometrySet::keep_only`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L153—L162。
+
+接口参数：
+
+- `const Span<GeometryComponent::Type> component_types`
+
+**教学注释版**
+
+<!-- annotated:69e90b44486b5a -->
+
+```cpp
 void GeometrySet::keep_only(const Span<GeometryComponent::Type> component_types)
 {
   for (GeometryComponentPtr &component_ptr : components_) {
@@ -467,7 +1299,66 @@ void GeometrySet::keep_only(const Span<GeometryComponent::Type> component_types)
     }
   }
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L153—L162</summary>
+
+<!-- original:69e90b44486b5a:source/blender/blenkernel/intern/geometry_set.cc:153:162 -->
+
+```cpp
+void GeometrySet::keep_only(const Span<GeometryComponent::Type> component_types)
+{
+  for (GeometryComponentPtr &component_ptr : components_) {
+    if (component_ptr) {
+      if (!component_types.contains(component_ptr->type())) {
+        component_ptr.reset();
+      }
+    }
+  }
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `component_types.contains` → [blender::Span::contains · L281](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-7caee498c984f2c0)。
+- `component_ptr->type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L157。
+- `component_ptr.reset` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L158。
+
+<!-- annotated:25f0be3384ac5a -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L163—L163</summary>
+
+<!-- original:25f0be3384ac5a:source/blender/blenkernel/intern/geometry_set.cc:163:163 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-818cd8e6e071a477"></a>
+
+### `blender::bke::GeometrySet::add`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L164—L170。
+
+接口参数：
+
+- `const GeometryComponent &component`
+
+**教学注释版**
+
+<!-- annotated:62cb586b646347 -->
+
+```cpp
 void GeometrySet::add(const GeometryComponent &component)
 {
   BLI_assert(!components_[size_t(component.type())]);
@@ -475,7 +1366,79 @@ void GeometrySet::add(const GeometryComponent &component)
   components_[size_t(component.type())] = GeometryComponentPtr(
       const_cast<GeometryComponent *>(&component));
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L164—L170</summary>
+
+<!-- original:62cb586b646347:source/blender/blenkernel/intern/geometry_set.cc:164:170 -->
+
+```cpp
+void GeometrySet::add(const GeometryComponent &component)
+{
+  BLI_assert(!components_[size_t(component.type())]);
+  component.add_user();
+  components_[size_t(component.type())] = GeometryComponentPtr(
+      const_cast<GeometryComponent *>(&component));
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `component.type` → [blender::bke::GeometryComponent::type · L86](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-f73336c224943890)。
+- `component.add_user` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L167。
+- `GeometryComponentPtr` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L168。
+
+<!-- annotated:b671843943b9b6 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L171—L171</summary>
+
+<!-- original:b671843943b9b6:source/blender/blenkernel/intern/geometry_set.cc:171:171 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-cc37b529b336a65e"></a>
+
+### `blender::bke::GeometrySet::get_components`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L172—L181。
+
+**教学注释版**
+
+<!-- annotated:273014184775ea -->
+
+```cpp
+Vector<const GeometryComponent *> GeometrySet::get_components() const
+{
+  Vector<const GeometryComponent *> components;
+  for (const GeometryComponentPtr &component_ptr : components_) {
+    if (component_ptr) {
+      // [讲解] components.append：在尾部建立新元素，必要时先扩大存储。
+      components.append(component_ptr.get());
+    }
+  }
+  return components;
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L172—L181</summary>
+
+<!-- original:273014184775ea:source/blender/blenkernel/intern/geometry_set.cc:172:181 -->
+
+```cpp
 Vector<const GeometryComponent *> GeometrySet::get_components() const
 {
   Vector<const GeometryComponent *> components;
@@ -488,59 +1451,50 @@ Vector<const GeometryComponent *> GeometrySet::get_components() const
 }
 ```
 
-本段语义重点：
+</details>
 
-- `add_user`：增加共享使用计数，必须与未来相应释放配对。
+**结果出口**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L137 | 出现调用或函数声明 `GeometrySet::get_component`，对应表达式为 `const GeometryComponent *GeometrySet::get_component(GeometryComponent::Type component_type) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L138 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L139 | 返回表达式 `components_[size_t(component_type)].get()`。 |
-| L140 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L142 | 出现调用或函数声明 `GeometrySet::has`，对应表达式为 `bool GeometrySet::has(const GeometryComponent::Type component_type) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L143 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L144 | 把右侧 `components_[size_t(component_type)]` 用于初始化或更新左侧 `const GeometryComponentPtr &component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L145 | 返回表达式 `component.has_value() && !component->is_empty()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L146 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L148 | 出现调用或函数声明 `GeometrySet::remove`，对应表达式为 `void GeometrySet::remove(const GeometryComponent::Type component_type)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L149 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L150 | 出现调用或函数声明 `size_t`，对应表达式为 `components_[size_t(component_type)].reset();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L151 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L153 | 出现调用或函数声明 `GeometrySet::keep_only`，对应表达式为 `void GeometrySet::keep_only(const Span<GeometryComponent::Type> component_types)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L154 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L155 | 按 `for (GeometryComponentPtr &component_ptr : components_)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L156 | 判断 `component_ptr`，成立时进入本分支，否则继续后续路径。 |
-| L157 | 判断 `!component_types.contains(component_ptr->type())`，成立时进入本分支，否则继续后续路径。 |
-| L158 | 出现调用或函数声明 `reset`，对应表达式为 `component_ptr.reset();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L159 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L160 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L161 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L162 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L164 | 出现调用或函数声明 `GeometrySet::add`，对应表达式为 `void GeometrySet::add(const GeometryComponent &component)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L165 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L166 | 断言约束 `BLI_assert(!components_[size_t(component.type())]);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L167 | 本行使用 `add_user`：增加共享使用计数，必须与未来相应释放配对。 |
-| L168 | 把右侧 `GeometryComponentPtr(` 用于初始化或更新左侧 `components_[size_t(component.type())]`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L169 | 出现调用或函数声明 `const_cast`，对应表达式为 `const_cast<GeometryComponent *>(&component));`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L170 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L172 | 出现调用或函数声明 `GeometrySet::get_components`，对应表达式为 `Vector<const GeometryComponent *> GeometrySet::get_components() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L173 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L174 | 声明成员、局部对象或完成语句 `Vector<const GeometryComponent *> components`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L175 | 按 `for (const GeometryComponentPtr &component_ptr : components_)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L176 | 判断 `component_ptr`，成立时进入本分支，否则继续后续路径。 |
-| L177 | 出现调用或函数声明 `append`，对应表达式为 `components.append(component_ptr.get());`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L178 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L179 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L180 | 返回表达式 `components`。 |
-| L181 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `return components;`
 
-### geometry_set.cc：L182—L209
+**继续追踪实现**
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:182:209 -->
+- `components.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `component_ptr.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L177。
+
+<!-- annotated:60a1d9ee16872a -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L182—L182</summary>
+
+<!-- original:60a1d9ee16872a:source/blender/blenkernel/intern/geometry_set.cc:182:182 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9006a5875efaaa6b"></a>
+
+### `blender::bke::GeometrySet::compute_boundbox_without_instances`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L183—L209。
+
+接口参数：
+
+- `const bool use_radius`
+- `const bool use_subdiv`
+
+**教学注释版**
+
+<!-- annotated:b92c49b2fbdeb0 -->
+
+```cpp
 std::optional<Bounds<float3>> GeometrySet::compute_boundbox_without_instances(
     const bool use_radius, const bool use_subdiv) const
 {
@@ -570,46 +1524,168 @@ std::optional<Bounds<float3>> GeometrySet::compute_boundbox_without_instances(
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L183—L209</summary>
 
-- 分支证据 `const PointCloud *pointcloud = this->get_pointcloud())`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `const Mesh *mesh = this->get_mesh())`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:b92c49b2fbdeb0:source/blender/blenkernel/intern/geometry_set.cc:183:209 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L183 | 出现调用或函数声明 `GeometrySet::compute_boundbox_without_instances`，对应表达式为 `std::optional<Bounds<float3>> GeometrySet::compute_boundbox_without_instances(`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L184 | 本行是连续声明或表达式的一部分：`const bool use_radius, const bool use_subdiv) const`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L185 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L186 | 声明成员、局部对象或完成语句 `std::optional<Bounds<float3>> bounds`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L187 | 判断 `const PointCloud *pointcloud = this->get_pointcloud()`，成立时进入本分支，否则继续后续路径。 |
-| L188 | 把右侧 `bounds::merge(bounds, pointcloud->bounds_min_max(use_radius))` 用于初始化或更新左侧 `bounds`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L189 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L190 | 判断 `const Mesh *mesh = this->get_mesh()`，成立时进入本分支，否则继续后续路径。 |
-| L192 | 判断 `use_subdiv && mesh->runtime->mesh_eval`，成立时进入本分支，否则继续后续路径。 |
-| L193 | 把右侧 `bounds::merge(bounds, mesh->runtime->mesh_eval->bounds_min_max())` 用于初始化或更新左侧 `bounds`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L194 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L195 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L196 | 把右侧 `bounds::merge(bounds, mesh->bounds_min_max())` 用于初始化或更新左侧 `bounds`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L197 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L198 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L199 | 判断 `const Volume *volume = this->get_volume()`，成立时进入本分支，否则继续后续路径。 |
-| L200 | 把右侧 `bounds::merge(bounds, BKE_volume_min_max(volume))` 用于初始化或更新左侧 `bounds`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L201 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L202 | 判断 `const Curves *curves_id = this->get_curves()`，成立时进入本分支，否则继续后续路径。 |
-| L203 | 把右侧 `bounds::merge(bounds, curves_id->geometry.wrap().bounds_min_max(use_radius))` 用于初始化或更新左侧 `bounds`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L204 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L205 | 判断 `const GreasePencil *grease_pencil = this->get_grease_pencil()`，成立时进入本分支，否则继续后续路径。 |
-| L206 | 把右侧 `bounds::merge(bounds, grease_pencil->bounds_min_max_eval(use_radius))` 用于初始化或更新左侧 `bounds`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L207 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L208 | 返回表达式 `bounds`。 |
-| L209 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+std::optional<Bounds<float3>> GeometrySet::compute_boundbox_without_instances(
+    const bool use_radius, const bool use_subdiv) const
+{
+  std::optional<Bounds<float3>> bounds;
+  if (const PointCloud *pointcloud = this->get_pointcloud()) {
+    bounds = bounds::merge(bounds, pointcloud->bounds_min_max(use_radius));
+  }
+  if (const Mesh *mesh = this->get_mesh()) {
+    /* Use tessellated subdivision mesh if it exists. */
+    if (use_subdiv && mesh->runtime->mesh_eval) {
+      bounds = bounds::merge(bounds, mesh->runtime->mesh_eval->bounds_min_max());
+    }
+    else {
+      bounds = bounds::merge(bounds, mesh->bounds_min_max());
+    }
+  }
+  if (const Volume *volume = this->get_volume()) {
+    bounds = bounds::merge(bounds, BKE_volume_min_max(volume));
+  }
+  if (const Curves *curves_id = this->get_curves()) {
+    bounds = bounds::merge(bounds, curves_id->geometry.wrap().bounds_min_max(use_radius));
+  }
+  if (const GreasePencil *grease_pencil = this->get_grease_pencil()) {
+    bounds = bounds::merge(bounds, grease_pencil->bounds_min_max_eval(use_radius));
+  }
+  return bounds;
+}
+```
 
-### geometry_set.cc：L210—L263
+</details>
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:210:263 -->
+**沿实际写入检查状态**
+
+- `bounds = bounds::merge(bounds, pointcloud->bounds_min_max(use_radius));`
+- `bounds = bounds::merge(bounds, mesh->runtime->mesh_eval->bounds_min_max());`
+- `bounds = bounds::merge(bounds, mesh->bounds_min_max());`
+- `bounds = bounds::merge(bounds, BKE_volume_min_max(volume));`
+- `bounds = bounds::merge(bounds, curves_id->geometry.wrap().bounds_min_max(use_radius));`
+- `bounds = bounds::merge(bounds, grease_pencil->bounds_min_max_eval(use_radius));`
+
+**结果出口**
+
+- `return bounds;`
+
+**继续追踪实现**
+
+- `this->get_pointcloud` → [blender::bke::GeometrySet::get_pointcloud · L327](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e9c60234d315f635)。
+- `bounds::merge` → [blender::bounds::merge · L27](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-26dade32771df176)；[blender::bounds::merge · L32](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
+- `pointcloud->bounds_min_max` → [blender::PointCloud::bounds_min_max · L261](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-pointcloud-49a366.md#f-608e12c4a3f505af)。
+- `this->get_mesh` → [blender::bke::GeometrySet::get_mesh · L315](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-25151145065d998b)。
+- `mesh->runtime->mesh_eval->bounds_min_max` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L193。
+- `mesh->bounds_min_max` → [Mesh::bounds_min_max · L1942](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-1a7c466d855d52a6)。
+- `this->get_volume` → [blender::bke::GeometrySet::get_volume · L333](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e4dddefabca41664)。
+- `BKE_volume_min_max` → [blender::BKE_volume_min_max · L627](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-volume-8dd0eb.md#f-0fcf2afc72eedde9)。
+- `this->get_curves` → [blender::bke::GeometrySet::get_curves · L339](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-1d7b3a3ddbc6c57b)。
+- `curves_id->geometry.wrap().bounds_min_max` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L203。
+- `curves_id->geometry.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L203。
+- `this->get_grease_pencil` → [blender::bke::GeometrySet::get_grease_pencil · L369](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-4c73d7995c66f8bf)。
+- `grease_pencil->bounds_min_max_eval` → [blender::GreasePencil::bounds_min_max_eval · L3942](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-f2b961f319385dd6)。
+
+<!-- annotated:0a7018eed8f187 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L210—L210</summary>
+
+<!-- original:0a7018eed8f187:source/blender/blenkernel/intern/geometry_set.cc:210:210 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8e9d66f8103c7871"></a>
+
+### `blender::bke::operator<<`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L211—L263。
+
+接口参数：
+
+- `std::ostream &stream`
+- `const GeometrySet &geometry_set`
+
+**教学注释版**
+
+<!-- annotated:cadac3741ea1f2 -->
+
+```cpp
+std::ostream &operator<<(std::ostream &stream, const GeometrySet &geometry_set)
+{
+  Vector<std::string> parts;
+  if (!geometry_set.name().is_empty()) {
+    // [讲解] parts.append：在尾部建立新元素，必要时先扩大存储。
+    parts.append(fmt::format("\"{}\"", geometry_set.name()));
+  }
+  if (const Mesh *mesh = geometry_set.get_mesh()) {
+    parts.append(std::to_string(mesh->verts_num) + " verts");
+    parts.append(std::to_string(mesh->edges_num) + " edges");
+    parts.append(std::to_string(mesh->faces_num) + " faces");
+    parts.append(std::to_string(mesh->corners_num) + " corners");
+    if (mesh->runtime->subsurf_runtime_data) {
+      const int resolution = mesh->runtime->subsurf_runtime_data->resolution;
+      if (is_power_of_2_i(resolution - 1)) {
+        /* Display the resolution as subdiv levels if possible because that's more common. */
+        const int level = log2_floor(resolution - 1);
+        parts.append(std::to_string(level) + " subdiv levels");
+      }
+      else {
+        parts.append(std::to_string(resolution) + " subdiv resolution");
+      }
+    }
+  }
+  if (const Curves *curves = geometry_set.get_curves()) {
+    parts.append(std::to_string(curves->geometry.point_num) + " control points");
+    parts.append(std::to_string(curves->geometry.curve_num) + " curves");
+  }
+  if (const GreasePencil *grease_pencil = geometry_set.get_grease_pencil()) {
+    parts.append(std::to_string(grease_pencil->layers().size()) + " Grease Pencil layers");
+  }
+  if (const PointCloud *pointcloud = geometry_set.get_pointcloud()) {
+    parts.append(std::to_string(pointcloud->totpoint) + " points");
+  }
+  if (const Volume *volume = geometry_set.get_volume()) {
+    parts.append(std::to_string(BKE_volume_num_grids(volume)) + " volume grids");
+  }
+  if (geometry_set.has_instances()) {
+    parts.append(std::to_string(geometry_set.get_instances()->instances_num()) + " instances");
+  }
+  if (geometry_set.get_curve_edit_hints()) {
+    parts.append("curve edit hints");
+  }
+
+  stream << "<GeometrySet: ";
+  for (const int i : parts.index_range()) {
+    stream << parts[i];
+    // [讲解] parts.size：用end_减begin_得到活元素数量。
+    if (i < parts.size() - 1) {
+      stream << ", ";
+    }
+  }
+  stream << ">";
+  return stream;
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L211—L263</summary>
+
+<!-- original:cadac3741ea1f2:source/blender/blenkernel/intern/geometry_set.cc:211:263 -->
+
+```cpp
 std::ostream &operator<<(std::ostream &stream, const GeometrySet &geometry_set)
 {
   Vector<std::string> parts;
@@ -665,78 +1741,120 @@ std::ostream &operator<<(std::ostream &stream, const GeometrySet &geometry_set)
 }
 ```
 
-本段语义重点：
+</details>
 
-- 分支证据 `!geometry_set.name().is_empty())`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `const Mesh *mesh = geometry_set.get_mesh())`：分别推演条件成立与不成立，核对相同出口处的状态。
+**结果出口**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L211 | 运算符重载声明、定义或显式调用：`std::ostream &operator<<(std::ostream &stream, const GeometrySet &geometry_set)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L212 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L213 | 声明成员、局部对象或完成语句 `Vector<std::string> parts`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L214 | 判断 `!geometry_set.name().is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L215 | 出现调用或函数声明 `append`，对应表达式为 `parts.append(fmt::format("\"{}\"", geometry_set.name()));`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L216 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L217 | 判断 `const Mesh *mesh = geometry_set.get_mesh()`，成立时进入本分支，否则继续后续路径。 |
-| L218 | 出现调用或函数声明 `append`，对应表达式为 `parts.append(std::to_string(mesh->verts_num) + " verts");`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L219 | 出现调用或函数声明 `append`，对应表达式为 `parts.append(std::to_string(mesh->edges_num) + " edges");`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L220 | 出现调用或函数声明 `append`，对应表达式为 `parts.append(std::to_string(mesh->faces_num) + " faces");`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L221 | 出现调用或函数声明 `append`，对应表达式为 `parts.append(std::to_string(mesh->corners_num) + " corners");`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L222 | 判断 `mesh->runtime->subsurf_runtime_data`，成立时进入本分支，否则继续后续路径。 |
-| L223 | 把右侧 `mesh->runtime->subsurf_runtime_data->resolution` 用于初始化或更新左侧 `const int resolution`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L224 | 判断 `is_power_of_2_i(resolution - 1)`，成立时进入本分支，否则继续后续路径。 |
-| L226 | 把右侧 `log2_floor(resolution - 1)` 用于初始化或更新左侧 `const int level`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L227 | 出现调用或函数声明 `append`，对应表达式为 `parts.append(std::to_string(level) + " subdiv levels");`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L228 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L229 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L230 | 出现调用或函数声明 `append`，对应表达式为 `parts.append(std::to_string(resolution) + " subdiv resolution");`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L231 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L232 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L233 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L234 | 判断 `const Curves *curves = geometry_set.get_curves()`，成立时进入本分支，否则继续后续路径。 |
-| L235 | 出现调用或函数声明 `append`，对应表达式为 `parts.append(std::to_string(curves->geometry.point_num) + " control points");`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L236 | 出现调用或函数声明 `append`，对应表达式为 `parts.append(std::to_string(curves->geometry.curve_num) + " curves");`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L237 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L238 | 判断 `const GreasePencil *grease_pencil = geometry_set.get_grease_pencil()`，成立时进入本分支，否则继续后续路径。 |
-| L239 | 出现调用或函数声明 `append`，对应表达式为 `parts.append(std::to_string(grease_pencil->layers().size()) + " Grease Pencil layers");`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L240 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L241 | 判断 `const PointCloud *pointcloud = geometry_set.get_pointcloud()`，成立时进入本分支，否则继续后续路径。 |
-| L242 | 出现调用或函数声明 `append`，对应表达式为 `parts.append(std::to_string(pointcloud->totpoint) + " points");`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L243 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L244 | 判断 `const Volume *volume = geometry_set.get_volume()`，成立时进入本分支，否则继续后续路径。 |
-| L245 | 出现调用或函数声明 `append`，对应表达式为 `parts.append(std::to_string(BKE_volume_num_grids(volume)) + " volume grids");`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L246 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L247 | 判断 `geometry_set.has_instances()`，成立时进入本分支，否则继续后续路径。 |
-| L248 | 出现调用或函数声明 `append`，对应表达式为 `parts.append(std::to_string(geometry_set.get_instances()->instances_num()) + " instances");`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L249 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L250 | 判断 `geometry_set.get_curve_edit_hints()`，成立时进入本分支，否则继续后续路径。 |
-| L251 | 出现调用或函数声明 `append`，对应表达式为 `parts.append("curve edit hints");`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L252 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L254 | 声明成员、局部对象或完成语句 `stream << "<GeometrySet: "`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L255 | 按 `for (const int i : parts.index_range())` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L256 | 声明成员、局部对象或完成语句 `stream << parts[i]`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L257 | 判断 `i < parts.size() - 1`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L258 | 声明成员、局部对象或完成语句 `stream << ", "`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L259 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L260 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L261 | 声明成员、局部对象或完成语句 `stream << ">"`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L262 | 返回表达式 `stream`。 |
-| L263 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `return stream;`
 
-### geometry_set.cc：L264—L313
+**继续追踪实现**
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:264:313 -->
+- `geometry_set.name().is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L214。
+- `geometry_set.name` → [blender::bke::GeometrySet::name · L810](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-8cf6870c2e71a4aa)。
+- `parts.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `fmt::format` → [外部契约](https://fmt.dev/latest/api/)：按fmt接口的格式字符串与参数类型契约使用，格式化不改变被格式化对象的拥有关系。
+- `geometry_set.get_mesh` → [blender::bke::GeometrySet::get_mesh · L315](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-25151145065d998b)。
+- `std::to_string` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
+- `is_power_of_2_i` → [blender::is_power_of_2_i · L105](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_base_inline-546b00.md#f-122f291f1e7250f2)。
+- `log2_floor` → [blender::log2_floor · L176](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#f-6156427b768ba020)。
+- `geometry_set.get_curves` → [blender::bke::GeometrySet::get_curves · L339](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-1d7b3a3ddbc6c57b)。
+- `geometry_set.get_grease_pencil` → [blender::bke::GeometrySet::get_grease_pencil · L369](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-4c73d7995c66f8bf)。
+- `grease_pencil->layers().size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L239。
+- `grease_pencil->layers` → [blender::GreasePencil::layers · L3983](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-15d64ed11a2babc0)。
+- `geometry_set.get_pointcloud` → [blender::bke::GeometrySet::get_pointcloud · L327](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e9c60234d315f635)。
+- `geometry_set.get_volume` → [blender::bke::GeometrySet::get_volume · L333](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e4dddefabca41664)。
+- `BKE_volume_num_grids` → [blender::BKE_volume_num_grids · L856](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-volume-8dd0eb.md#f-bba3632a80fe4c9d)。
+- `geometry_set.has_instances` → [blender::bke::GeometrySet::has_instances · L381](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-96f474fc46f602f1)。
+- `geometry_set.get_instances()->instances_num` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L248。
+- `geometry_set.get_instances` → [blender::bke::GeometrySet::get_instances · L345](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-75fcc67a0b3c0fa1)。
+- `geometry_set.get_curve_edit_hints` → [blender::bke::GeometrySet::get_curve_edit_hints · L351](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-0f0a70818546603c)。
+- `parts.index_range` → [blender::Vector::index_range · L1026](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-ac29cf36ef185ab9)。
+- `parts.size` → [blender::Vector::size · L780](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+
+<!-- annotated:07be0a0ba45a25 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L264—L264</summary>
+
+<!-- original:07be0a0ba45a25:source/blender/blenkernel/intern/geometry_set.cc:264:264 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8c0f2e9da85aab58"></a>
+
+### `blender::bke::GeometrySet::clear`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L265—L270。
+
+**教学注释版**
+
+<!-- annotated:ea2838d5a11343 -->
+
+```cpp
 void GeometrySet::clear()
 {
   for (GeometryComponentPtr &component_ptr : components_) {
     component_ptr.reset();
   }
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L265—L270</summary>
+
+<!-- original:ea2838d5a11343:source/blender/blenkernel/intern/geometry_set.cc:265:270 -->
+
+```cpp
+void GeometrySet::clear()
+{
+  for (GeometryComponentPtr &component_ptr : components_) {
+    component_ptr.reset();
+  }
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `component_ptr.reset` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L268。
+
+<!-- annotated:43eee5726440a5 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L271—L271</summary>
+
+<!-- original:43eee5726440a5:source/blender/blenkernel/intern/geometry_set.cc:271:271 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9626a230081195a6"></a>
+
+### `blender::bke::GeometrySet::ensure_owns_direct_data`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L272—L284。
+
+**教学注释版**
+
+<!-- annotated:f6081c7362213c -->
+
+```cpp
 void GeometrySet::ensure_owns_direct_data()
 {
   for (GeometryComponentPtr &component_ptr : components_) {
@@ -750,7 +1868,66 @@ void GeometrySet::ensure_owns_direct_data()
     component_for_write.ensure_owns_direct_data();
   }
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L272—L284</summary>
+
+<!-- original:f6081c7362213c:source/blender/blenkernel/intern/geometry_set.cc:272:284 -->
+
+```cpp
+void GeometrySet::ensure_owns_direct_data()
+{
+  for (GeometryComponentPtr &component_ptr : components_) {
+    if (!component_ptr) {
+      continue;
+    }
+    if (component_ptr->owns_direct_data()) {
+      continue;
+    }
+    GeometryComponent &component_for_write = this->get_component_for_write(component_ptr->type());
+    component_for_write.ensure_owns_direct_data();
+  }
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `component_ptr->owns_direct_data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L278。
+- `this->get_component_for_write` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
+- `component_ptr->type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L281。
+- `component_for_write.ensure_owns_direct_data` → [blender::bke::GeometrySet::ensure_owns_direct_data · L272](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-9626a230081195a6)。
+
+<!-- annotated:494b8077cd7b2e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L285—L285</summary>
+
+<!-- original:494b8077cd7b2e:source/blender/blenkernel/intern/geometry_set.cc:285:285 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-80fb9cda8ab985dc"></a>
+
+### `blender::bke::GeometrySet::ensure_owns_all_data`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L286—L292。
+
+**教学注释版**
+
+<!-- annotated:118dd8830e8372 -->
+
+```cpp
 void GeometrySet::ensure_owns_all_data()
 {
   if (Instances *instances = this->get_instances_for_write()) {
@@ -758,7 +1935,59 @@ void GeometrySet::ensure_owns_all_data()
   }
   this->ensure_owns_direct_data();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L286—L292</summary>
+
+<!-- original:118dd8830e8372:source/blender/blenkernel/intern/geometry_set.cc:286:292 -->
+
+```cpp
+void GeometrySet::ensure_owns_all_data()
+{
+  if (Instances *instances = this->get_instances_for_write()) {
+    instances->ensure_geometry_instances();
+  }
+  this->ensure_owns_direct_data();
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->get_instances_for_write` → [blender::bke::GeometrySet::get_instances_for_write · L586](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e2fefbfed77f753f)。
+- `instances->ensure_geometry_instances` → [blender::bke::Instances::ensure_geometry_instances · L111](%E4%BE%9D%E8%B5%96-geometry_set_instances-cb6843.md#f-c6c307192970c4f3)。
+- `this->ensure_owns_direct_data` → [blender::bke::GeometrySet::ensure_owns_direct_data · L272](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-9626a230081195a6)。
+
+<!-- annotated:244f4c7a1bf031 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L293—L293</summary>
+
+<!-- original:244f4c7a1bf031:source/blender/blenkernel/intern/geometry_set.cc:293:293 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-fa1220837e627b58"></a>
+
+### `blender::bke::GeometrySet::owns_direct_data`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L294—L304。
+
+**教学注释版**
+
+<!-- annotated:ba597737961460 -->
+
+```cpp
 bool GeometrySet::owns_direct_data() const
 {
   for (const GeometryComponentPtr &component_ptr : components_) {
@@ -770,7 +1999,66 @@ bool GeometrySet::owns_direct_data() const
   }
   return true;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L294—L304</summary>
+
+<!-- original:ba597737961460:source/blender/blenkernel/intern/geometry_set.cc:294:304 -->
+
+```cpp
+bool GeometrySet::owns_direct_data() const
+{
+  for (const GeometryComponentPtr &component_ptr : components_) {
+    if (component_ptr) {
+      if (!component_ptr->owns_direct_data()) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return false;`
+- `return true;`
+
+**继续追踪实现**
+
+- `component_ptr->owns_direct_data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L298。
+
+<!-- annotated:535b18906eea6b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L305—L305</summary>
+
+<!-- original:535b18906eea6b:source/blender/blenkernel/intern/geometry_set.cc:305:305 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9731dcbe6940b104"></a>
+
+### `blender::bke::GeometrySet::ensure_no_shared_components`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L306—L313。
+
+**教学注释版**
+
+<!-- annotated:49dd1e1dcfe5ba -->
+
+```cpp
 void GeometrySet::ensure_no_shared_components()
 {
   for (const int i : IndexRange(this->components_.size())) {
@@ -781,107 +2069,472 @@ void GeometrySet::ensure_no_shared_components()
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L306—L313</summary>
 
-- 分支证据 `!component_ptr)`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `component_ptr->owns_direct_data())`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:49dd1e1dcfe5ba:source/blender/blenkernel/intern/geometry_set.cc:306:313 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L265 | 出现调用或函数声明 `GeometrySet::clear`，对应表达式为 `void GeometrySet::clear()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L266 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L267 | 按 `for (GeometryComponentPtr &component_ptr : components_)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L268 | 出现调用或函数声明 `reset`，对应表达式为 `component_ptr.reset();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L269 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L270 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L272 | 出现调用或函数声明 `GeometrySet::ensure_owns_direct_data`，对应表达式为 `void GeometrySet::ensure_owns_direct_data()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L273 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L274 | 按 `for (GeometryComponentPtr &component_ptr : components_)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L275 | 判断 `!component_ptr`，成立时进入本分支，否则继续后续路径。 |
-| L276 | 结束本轮循环并进入下一轮；核对本轮已经取得的资源是否由作用域或显式代码清理。 |
-| L277 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L278 | 判断 `component_ptr->owns_direct_data()`，成立时进入本分支，否则继续后续路径。 |
-| L279 | 结束本轮循环并进入下一轮；核对本轮已经取得的资源是否由作用域或显式代码清理。 |
-| L280 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L281 | 把右侧 `this->get_component_for_write(component_ptr->type())` 用于初始化或更新左侧 `GeometryComponent &component_for_write`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L282 | 出现调用或函数声明 `ensure_owns_direct_data`，对应表达式为 `component_for_write.ensure_owns_direct_data();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L283 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L284 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L286 | 出现调用或函数声明 `GeometrySet::ensure_owns_all_data`，对应表达式为 `void GeometrySet::ensure_owns_all_data()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L287 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L288 | 判断 `Instances *instances = this->get_instances_for_write()`，成立时进入本分支，否则继续后续路径。 |
-| L289 | 出现调用或函数声明 `ensure_geometry_instances`，对应表达式为 `instances->ensure_geometry_instances();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L290 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L291 | 出现调用或函数声明 `ensure_owns_direct_data`，对应表达式为 `this->ensure_owns_direct_data();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L292 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L294 | 出现调用或函数声明 `GeometrySet::owns_direct_data`，对应表达式为 `bool GeometrySet::owns_direct_data() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L295 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L296 | 按 `for (const GeometryComponentPtr &component_ptr : components_)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L297 | 判断 `component_ptr`，成立时进入本分支，否则继续后续路径。 |
-| L298 | 判断 `!component_ptr->owns_direct_data()`，成立时进入本分支，否则继续后续路径。 |
-| L299 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L300 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L301 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L302 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L303 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L304 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L306 | 出现调用或函数声明 `GeometrySet::ensure_no_shared_components`，对应表达式为 `void GeometrySet::ensure_no_shared_components()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L307 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L308 | 按 `for (const int i : IndexRange(this->components_.size()))` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L309 | 判断 `components_[i]`，成立时进入本分支，否则继续后续路径。 |
-| L310 | 出现调用或函数声明 `get_component_for_write`，对应表达式为 `this->get_component_for_write(GeometryComponent::Type(i));`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L311 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L312 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L313 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+void GeometrySet::ensure_no_shared_components()
+{
+  for (const int i : IndexRange(this->components_.size())) {
+    if (components_[i]) {
+      this->get_component_for_write(GeometryComponent::Type(i));
+    }
+  }
+}
+```
 
-### geometry_set.cc：L314—L361
+</details>
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:314:361 -->
+**继续追踪实现**
+
+- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+- `this->components_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L308。
+- `this->get_component_for_write` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
+- `GeometryComponent::Type` → [blender::animrig::Strip::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-ANIM_action-8e402f.md#t-29906b03c516)；[TextureMapping::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-shader_nodes-5bcedf.md#t-9c57c6f722bf)；[blender::ed::asset::index::ReadingResult::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-asset_index-66abf0.md#t-c221900abec9)；[blender::index_mask::CoarseSegment::Type](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/%E4%BE%9D%E8%B5%96-index_mask_expression-5c3c91.md#t-428fd56d68ee)；[blender::index_mask::EvaluatedSegment::Type](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/%E4%BE%9D%E8%B5%96-index_mask_expression-5c3c91.md#t-054feedeb190)；[blender::CommonVArrayInfo::Type](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/%E4%BE%9D%E8%B5%96-BLI_virtual_array-6ba937.md#t-04df5f3c724c)；[blender::threading::TaskSizeHints::Type](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_task_size_hints-5d752d.md#t-91f12014c9c0)；[blender::index_mask::Expr::Type](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/%E4%BE%9D%E8%B5%96-BLI_index_mask_expression-5ed666.md#t-e9daffc6d81d)；[blender::bke::pbvh::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_paint_bvh-80f563.md#t-577732ca584f)；[blender::bke::InstanceReference::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_instances-b32a94.md#t-017105a1b260)；[blender::bke::GeometryComponent::Type](%E4%BE%9D%E8%B5%96-BKE_geometry_set-0a0da4.md#t-f8bb9559f14a)；[blender::bke::AttributeInit::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_attribute-eeea72.md#t-a7c00c9714bd)；[blender::nodes::materialx::NodeItem::Type](../09-LazyFunction%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E6%9E%B6%E6%9E%84/%E4%BE%9D%E8%B5%96-node_item-b3dda6.md#t-ae3b6f3dd627)；[blender::ed::AnimTransformable::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-ED_anim_transformable-359a00.md#t-fd930519ca3c)；[blender::ed::space_node::flat_item::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_draw-1281fc.md#t-004436df6e09)；[blender::draw::command::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-draw_command-8da745.md#t-55fee021105a)；[blender::draw::command::ResourceBind::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-draw_command-8da745.md#t-d5622322174c)；[blender::draw::command::PushConstant::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-draw_command-8da745.md#t-bbbd52482021)；[blender::draw::command::SpecializeConstant::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-draw_command-8da745.md#t-ea902994ca69)；[blender::gpu::BindSpaceStorageBuffers::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-vk_state_manager-1261e9.md#t-e8e5b0e224e8)；[blender::gpu::BindSpaceTextures::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-vk_state_manager-1261e9.md#t-ddfccdb4e21c)；[blender::gpu::shader::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GPU_common_types-5aca01.md#t-5085282c1968)；[blender::gpu::shader::metadata::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-metadata-87b831.md#t-06393d8b3356)；[bsl::SymbolScope::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-symbol_scope-47b254.md#t-90c7c3cd8bbf)；[bsl::SymbolFunction::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-symbol_function-c29cbb.md#t-a24e73036996)；[bsl::ConstexprValue::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-constexpr-0326d6.md#t-dad1ce3a0df3)；[blender::ed::sculpt_paint::undo::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-sculpt_undo-b1770a.md#t-1ae7ec966b3f)；[blender::ed::sculpt_paint::undo::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-sculpt_intern-9e9479.md#t-6c19b049a733)；[blender::ed::sculpt_paint::undo::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-sculpt_filter-b9a899.md#t-63b907e5dbc2)；[SocketType::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_type-22d623.md#t-27ad60951e7a)；[NodeType::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_type-22d623.md#t-8d45d96bad39)；[blender::fn::multi_function::InstructionCursor::Type](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/%E4%BE%9D%E8%B5%96-FN_multi_function_procedure-70e3b3.md#t-22831e82eae2)；[GPUVertAttr::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GPU_vertex_format-ef1cca.md#t-462926d0d19f)；[DeviceKernelArguments::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-queue-9648eb.md#t-b7b205962403)；[blender::gpu::ShaderSourceHeader::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-gl_compilation_subprocess-10c771.md#t-ca988b710609)。
+
+<!-- annotated:f692687a6af895 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L314—L314</summary>
+
+<!-- original:f692687a6af895:source/blender/blenkernel/intern/geometry_set.cc:314:314 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-25151145065d998b"></a>
+
+### `blender::bke::GeometrySet::get_mesh`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L315—L319。
+
+**教学注释版**
+
+<!-- annotated:738d75ca55f97d -->
+
+```cpp
 const Mesh *GeometrySet::get_mesh() const
 {
   const MeshComponent *component = this->get_component<MeshComponent>();
   return (component == nullptr) ? nullptr : component->get();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L315—L319</summary>
+
+<!-- original:738d75ca55f97d:source/blender/blenkernel/intern/geometry_set.cc:315:319 -->
+
+```cpp
+const Mesh *GeometrySet::get_mesh() const
+{
+  const MeshComponent *component = this->get_component<MeshComponent>();
+  return (component == nullptr) ? nullptr : component->get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return (component == nullptr) ? nullptr : component->get();`
+
+**继续追踪实现**
+
+- `this->get_component<MeshComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::MeshComponent::get · L78](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_mesh-de716f.md#f-10a41ea54073cd9c)。
+
+<!-- annotated:ad64479406d30c -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L320—L320</summary>
+
+<!-- original:ad64479406d30c:source/blender/blenkernel/intern/geometry_set.cc:320:320 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8d9a6e8a3a3c9006"></a>
+
+### `blender::bke::GeometrySet::has_mesh`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L321—L325。
+
+**教学注释版**
+
+<!-- annotated:cc01ffe2ba4d85 -->
+
+```cpp
 bool GeometrySet::has_mesh() const
 {
   const MeshComponent *component = this->get_component<MeshComponent>();
   return component != nullptr && component->has_mesh();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L321—L325</summary>
+
+<!-- original:cc01ffe2ba4d85:source/blender/blenkernel/intern/geometry_set.cc:321:325 -->
+
+```cpp
+bool GeometrySet::has_mesh() const
+{
+  const MeshComponent *component = this->get_component<MeshComponent>();
+  return component != nullptr && component->has_mesh();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return component != nullptr && component->has_mesh();`
+
+**继续追踪实现**
+
+- `this->get_component<MeshComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->has_mesh` → [blender::bke::MeshComponent::has_mesh · L57](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_mesh-de716f.md#f-21df30703362b529)。
+
+<!-- annotated:5670b856aceee6 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L326—L326</summary>
+
+<!-- original:5670b856aceee6:source/blender/blenkernel/intern/geometry_set.cc:326:326 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-e9c60234d315f635"></a>
+
+### `blender::bke::GeometrySet::get_pointcloud`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L327—L331。
+
+**教学注释版**
+
+<!-- annotated:4059077f80b4fb -->
+
+```cpp
 const PointCloud *GeometrySet::get_pointcloud() const
 {
   const PointCloudComponent *component = this->get_component<PointCloudComponent>();
   return (component == nullptr) ? nullptr : component->get();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L327—L331</summary>
+
+<!-- original:4059077f80b4fb:source/blender/blenkernel/intern/geometry_set.cc:327:331 -->
+
+```cpp
+const PointCloud *GeometrySet::get_pointcloud() const
+{
+  const PointCloudComponent *component = this->get_component<PointCloudComponent>();
+  return (component == nullptr) ? nullptr : component->get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return (component == nullptr) ? nullptr : component->get();`
+
+**继续追踪实现**
+
+- `this->get_component<PointCloudComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::PointCloudComponent::get · L77](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_pointcloud-0caac6.md#f-fe39c478efa2050c)。
+
+<!-- annotated:a8c19c65f1cd04 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L332—L332</summary>
+
+<!-- original:a8c19c65f1cd04:source/blender/blenkernel/intern/geometry_set.cc:332:332 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-e4dddefabca41664"></a>
+
+### `blender::bke::GeometrySet::get_volume`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L333—L337。
+
+**教学注释版**
+
+<!-- annotated:9aff34a7fe5b66 -->
+
+```cpp
 const Volume *GeometrySet::get_volume() const
 {
   const VolumeComponent *component = this->get_component<VolumeComponent>();
   return (component == nullptr) ? nullptr : component->get();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L333—L337</summary>
+
+<!-- original:9aff34a7fe5b66:source/blender/blenkernel/intern/geometry_set.cc:333:337 -->
+
+```cpp
+const Volume *GeometrySet::get_volume() const
+{
+  const VolumeComponent *component = this->get_component<VolumeComponent>();
+  return (component == nullptr) ? nullptr : component->get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return (component == nullptr) ? nullptr : component->get();`
+
+**继续追踪实现**
+
+- `this->get_component<VolumeComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::VolumeComponent::get · L68](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_volume-b14dd5.md#f-f542e2b53c8bf289)。
+
+<!-- annotated:c8956876b816b1 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L338—L338</summary>
+
+<!-- original:c8956876b816b1:source/blender/blenkernel/intern/geometry_set.cc:338:338 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-1d7b3a3ddbc6c57b"></a>
+
+### `blender::bke::GeometrySet::get_curves`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L339—L343。
+
+**教学注释版**
+
+<!-- annotated:4acbcb662e2d2d -->
+
+```cpp
 const Curves *GeometrySet::get_curves() const
 {
   const CurveComponent *component = this->get_component<CurveComponent>();
   return (component == nullptr) ? nullptr : component->get();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L339—L343</summary>
+
+<!-- original:4acbcb662e2d2d:source/blender/blenkernel/intern/geometry_set.cc:339:343 -->
+
+```cpp
+const Curves *GeometrySet::get_curves() const
+{
+  const CurveComponent *component = this->get_component<CurveComponent>();
+  return (component == nullptr) ? nullptr : component->get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return (component == nullptr) ? nullptr : component->get();`
+
+**继续追踪实现**
+
+- `this->get_component<CurveComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::CurveComponent::get · L85](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_curves-b84d24.md#f-dcafa3852e73eb1e)。
+
+<!-- annotated:66ddeb0477d5d7 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L344—L344</summary>
+
+<!-- original:66ddeb0477d5d7:source/blender/blenkernel/intern/geometry_set.cc:344:344 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-75fcc67a0b3c0fa1"></a>
+
+### `blender::bke::GeometrySet::get_instances`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L345—L349。
+
+**教学注释版**
+
+<!-- annotated:70be7d2422ae85 -->
+
+```cpp
 const Instances *GeometrySet::get_instances() const
 {
   const InstancesComponent *component = this->get_component<InstancesComponent>();
   return (component == nullptr) ? nullptr : component->get();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L345—L349</summary>
+
+<!-- original:70be7d2422ae85:source/blender/blenkernel/intern/geometry_set.cc:345:349 -->
+
+```cpp
+const Instances *GeometrySet::get_instances() const
+{
+  const InstancesComponent *component = this->get_component<InstancesComponent>();
+  return (component == nullptr) ? nullptr : component->get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return (component == nullptr) ? nullptr : component->get();`
+
+**继续追踪实现**
+
+- `this->get_component<InstancesComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::InstancesComponent::get · L74](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_instances-4b1341.md#f-4c08d16e1f4a620c)。
+
+<!-- annotated:2527fe6aa9e4e4 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L350—L350</summary>
+
+<!-- original:2527fe6aa9e4e4:source/blender/blenkernel/intern/geometry_set.cc:350:350 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-0f0a70818546603c"></a>
+
+### `blender::bke::GeometrySet::get_curve_edit_hints`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L351—L355。
+
+**教学注释版**
+
+<!-- annotated:448aff062b30b4 -->
+
+```cpp
 const CurvesEditHints *GeometrySet::get_curve_edit_hints() const
 {
   const GeometryComponentEditData *component = this->get_component<GeometryComponentEditData>();
   return (component == nullptr) ? nullptr : component->curves_edit_hints_.get();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L351—L355</summary>
+
+<!-- original:448aff062b30b4:source/blender/blenkernel/intern/geometry_set.cc:351:355 -->
+
+```cpp
+const CurvesEditHints *GeometrySet::get_curve_edit_hints() const
+{
+  const GeometryComponentEditData *component = this->get_component<GeometryComponentEditData>();
+  return (component == nullptr) ? nullptr : component->curves_edit_hints_.get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return (component == nullptr) ? nullptr : component->curves_edit_hints_.get();`
+
+**继续追踪实现**
+
+- `this->get_component<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->curves_edit_hints_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L354。
+
+<!-- annotated:dc695bfad04f2d -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L356—L356</summary>
+
+<!-- original:dc695bfad04f2d:source/blender/blenkernel/intern/geometry_set.cc:356:356 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a0bc0fbf238aff4c"></a>
+
+### `blender::bke::GeometrySet::get_grease_pencil_edit_hints`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L357—L361。
+
+**教学注释版**
+
+<!-- annotated:fa34582d19845d -->
+
+```cpp
 const GreasePencilEditHints *GeometrySet::get_grease_pencil_edit_hints() const
 {
   const GeometryComponentEditData *component = this->get_component<GeometryComponentEditData>();
@@ -889,92 +2542,415 @@ const GreasePencilEditHints *GeometrySet::get_grease_pencil_edit_hints() const
 }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L315 | 出现调用或函数声明 `GeometrySet::get_mesh`，对应表达式为 `const Mesh *GeometrySet::get_mesh() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L316 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L317 | 把右侧 `this->get_component<MeshComponent>()` 用于初始化或更新左侧 `const MeshComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L318 | 返回表达式 `(component == nullptr) ? nullptr : component->get()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L319 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L321 | 出现调用或函数声明 `GeometrySet::has_mesh`，对应表达式为 `bool GeometrySet::has_mesh() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L322 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L323 | 把右侧 `this->get_component<MeshComponent>()` 用于初始化或更新左侧 `const MeshComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L324 | 返回表达式 `component != nullptr && component->has_mesh()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L325 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L327 | 出现调用或函数声明 `GeometrySet::get_pointcloud`，对应表达式为 `const PointCloud *GeometrySet::get_pointcloud() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L328 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L329 | 把右侧 `this->get_component<PointCloudComponent>()` 用于初始化或更新左侧 `const PointCloudComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L330 | 返回表达式 `(component == nullptr) ? nullptr : component->get()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L331 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L333 | 出现调用或函数声明 `GeometrySet::get_volume`，对应表达式为 `const Volume *GeometrySet::get_volume() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L334 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L335 | 把右侧 `this->get_component<VolumeComponent>()` 用于初始化或更新左侧 `const VolumeComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L336 | 返回表达式 `(component == nullptr) ? nullptr : component->get()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L337 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L339 | 出现调用或函数声明 `GeometrySet::get_curves`，对应表达式为 `const Curves *GeometrySet::get_curves() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L340 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L341 | 把右侧 `this->get_component<CurveComponent>()` 用于初始化或更新左侧 `const CurveComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L342 | 返回表达式 `(component == nullptr) ? nullptr : component->get()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L343 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L345 | 出现调用或函数声明 `GeometrySet::get_instances`，对应表达式为 `const Instances *GeometrySet::get_instances() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L346 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L347 | 把右侧 `this->get_component<InstancesComponent>()` 用于初始化或更新左侧 `const InstancesComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L348 | 返回表达式 `(component == nullptr) ? nullptr : component->get()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L349 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L351 | 出现调用或函数声明 `GeometrySet::get_curve_edit_hints`，对应表达式为 `const CurvesEditHints *GeometrySet::get_curve_edit_hints() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L352 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L353 | 把右侧 `this->get_component<GeometryComponentEditData>()` 用于初始化或更新左侧 `const GeometryComponentEditData *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L354 | 返回表达式 `(component == nullptr) ? nullptr : component->curves_edit_hints_.get()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L355 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L357 | 出现调用或函数声明 `GeometrySet::get_grease_pencil_edit_hints`，对应表达式为 `const GreasePencilEditHints *GeometrySet::get_grease_pencil_edit_hints() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L358 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L359 | 把右侧 `this->get_component<GeometryComponentEditData>()` 用于初始化或更新左侧 `const GeometryComponentEditData *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L360 | 返回表达式 `(component == nullptr) ? nullptr : component->grease_pencil_edit_hints_.get()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L361 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L357—L361</summary>
 
-### geometry_set.cc：L362—L413
+<!-- original:fa34582d19845d:source/blender/blenkernel/intern/geometry_set.cc:357:361 -->
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:362:413 -->
+```cpp
+const GreasePencilEditHints *GeometrySet::get_grease_pencil_edit_hints() const
+{
+  const GeometryComponentEditData *component = this->get_component<GeometryComponentEditData>();
+  return (component == nullptr) ? nullptr : component->grease_pencil_edit_hints_.get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return (component == nullptr) ? nullptr : component->grease_pencil_edit_hints_.get();`
+
+**继续追踪实现**
+
+- `this->get_component<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->grease_pencil_edit_hints_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L360。
+
+<!-- annotated:e9ee0435b7a53c -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L362—L362</summary>
+
+<!-- original:e9ee0435b7a53c:source/blender/blenkernel/intern/geometry_set.cc:362:362 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-702d54afe2f330b8"></a>
+
+### `blender::bke::GeometrySet::get_gizmo_edit_hints`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L363—L367。
+
+**教学注释版**
+
+<!-- annotated:de9fbdf4a8f2a1 -->
+
+```cpp
 const GizmoEditHints *GeometrySet::get_gizmo_edit_hints() const
 {
   const GeometryComponentEditData *component = this->get_component<GeometryComponentEditData>();
   return (component == nullptr) ? nullptr : component->gizmo_edit_hints_.get();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L363—L367</summary>
+
+<!-- original:de9fbdf4a8f2a1:source/blender/blenkernel/intern/geometry_set.cc:363:367 -->
+
+```cpp
+const GizmoEditHints *GeometrySet::get_gizmo_edit_hints() const
+{
+  const GeometryComponentEditData *component = this->get_component<GeometryComponentEditData>();
+  return (component == nullptr) ? nullptr : component->gizmo_edit_hints_.get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return (component == nullptr) ? nullptr : component->gizmo_edit_hints_.get();`
+
+**继续追踪实现**
+
+- `this->get_component<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->gizmo_edit_hints_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L366。
+
+<!-- annotated:bb71e425388b5d -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L368—L368</summary>
+
+<!-- original:bb71e425388b5d:source/blender/blenkernel/intern/geometry_set.cc:368:368 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-4c73d7995c66f8bf"></a>
+
+### `blender::bke::GeometrySet::get_grease_pencil`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L369—L373。
+
+**教学注释版**
+
+<!-- annotated:ce5574563a1d73 -->
+
+```cpp
 const GreasePencil *GeometrySet::get_grease_pencil() const
 {
   const GreasePencilComponent *component = this->get_component<GreasePencilComponent>();
   return (component == nullptr) ? nullptr : component->get();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L369—L373</summary>
+
+<!-- original:ce5574563a1d73:source/blender/blenkernel/intern/geometry_set.cc:369:373 -->
+
+```cpp
+const GreasePencil *GeometrySet::get_grease_pencil() const
+{
+  const GreasePencilComponent *component = this->get_component<GreasePencilComponent>();
+  return (component == nullptr) ? nullptr : component->get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return (component == nullptr) ? nullptr : component->get();`
+
+**继续追踪实现**
+
+- `this->get_component<GreasePencilComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::GreasePencilComponent::get · L72](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_grease_pencil-01c648.md#f-5a16e7ffc6574319)。
+
+<!-- annotated:3474118f0d1079 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L374—L374</summary>
+
+<!-- original:3474118f0d1079:source/blender/blenkernel/intern/geometry_set.cc:374:374 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9760ce952821b1a7"></a>
+
+### `blender::bke::GeometrySet::has_pointcloud`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L375—L379。
+
+**教学注释版**
+
+<!-- annotated:e145bdd7e84426 -->
+
+```cpp
 bool GeometrySet::has_pointcloud() const
 {
   const PointCloudComponent *component = this->get_component<PointCloudComponent>();
   return component != nullptr && component->has_pointcloud();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L375—L379</summary>
+
+<!-- original:e145bdd7e84426:source/blender/blenkernel/intern/geometry_set.cc:375:379 -->
+
+```cpp
+bool GeometrySet::has_pointcloud() const
+{
+  const PointCloudComponent *component = this->get_component<PointCloudComponent>();
+  return component != nullptr && component->has_pointcloud();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return component != nullptr && component->has_pointcloud();`
+
+**继续追踪实现**
+
+- `this->get_component<PointCloudComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->has_pointcloud` → [blender::bke::PointCloudComponent::has_pointcloud · L56](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_pointcloud-0caac6.md#f-0421dfc034083b44)。
+
+<!-- annotated:3eb27817edf0fc -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L380—L380</summary>
+
+<!-- original:3eb27817edf0fc:source/blender/blenkernel/intern/geometry_set.cc:380:380 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-96f474fc46f602f1"></a>
+
+### `blender::bke::GeometrySet::has_instances`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L381—L386。
+
+**教学注释版**
+
+<!-- annotated:70a7fa9efad677 -->
+
+```cpp
 bool GeometrySet::has_instances() const
 {
   const InstancesComponent *component = this->get_component<InstancesComponent>();
   return component != nullptr && component->get() != nullptr &&
          component->get()->instances_num() >= 1;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L381—L386</summary>
+
+<!-- original:70a7fa9efad677:source/blender/blenkernel/intern/geometry_set.cc:381:386 -->
+
+```cpp
+bool GeometrySet::has_instances() const
+{
+  const InstancesComponent *component = this->get_component<InstancesComponent>();
+  return component != nullptr && component->get() != nullptr &&
+         component->get()->instances_num() >= 1;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return component != nullptr && component->get() != nullptr &&`
+
+**继续追踪实现**
+
+- `this->get_component<InstancesComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::InstancesComponent::get · L74](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_instances-4b1341.md#f-4c08d16e1f4a620c)。
+- `component->get()->instances_num` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L385。
+
+<!-- annotated:8c3c00f7f54df8 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L387—L387</summary>
+
+<!-- original:8c3c00f7f54df8:source/blender/blenkernel/intern/geometry_set.cc:387:387 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b4653e73439de63b"></a>
+
+### `blender::bke::GeometrySet::has_volume`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L388—L392。
+
+**教学注释版**
+
+<!-- annotated:001ebe2e76f3fa -->
+
+```cpp
 bool GeometrySet::has_volume() const
 {
   const VolumeComponent *component = this->get_component<VolumeComponent>();
   return component != nullptr && component->has_volume();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L388—L392</summary>
+
+<!-- original:001ebe2e76f3fa:source/blender/blenkernel/intern/geometry_set.cc:388:392 -->
+
+```cpp
+bool GeometrySet::has_volume() const
+{
+  const VolumeComponent *component = this->get_component<VolumeComponent>();
+  return component != nullptr && component->has_volume();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return component != nullptr && component->has_volume();`
+
+**继续追踪实现**
+
+- `this->get_component<VolumeComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->has_volume` → [blender::bke::VolumeComponent::has_volume · L47](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_volume-b14dd5.md#f-8c678e4bb96e6d5f)。
+
+<!-- annotated:a4f9fd9423e930 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L393—L393</summary>
+
+<!-- original:a4f9fd9423e930:source/blender/blenkernel/intern/geometry_set.cc:393:393 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-56204772a0e108bd"></a>
+
+### `blender::bke::GeometrySet::has_curves`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L394—L398。
+
+**教学注释版**
+
+<!-- annotated:60aada8c97427d -->
+
+```cpp
 bool GeometrySet::has_curves() const
 {
   const CurveComponent *component = this->get_component<CurveComponent>();
   return component != nullptr && component->has_curves();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L394—L398</summary>
+
+<!-- original:60aada8c97427d:source/blender/blenkernel/intern/geometry_set.cc:394:398 -->
+
+```cpp
+bool GeometrySet::has_curves() const
+{
+  const CurveComponent *component = this->get_component<CurveComponent>();
+  return component != nullptr && component->has_curves();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return component != nullptr && component->has_curves();`
+
+**继续追踪实现**
+
+- `this->get_component<CurveComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->has_curves` → [blender::bke::CurveComponent::has_curves · L64](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_curves-b84d24.md#f-129378f4a9769c06)。
+
+<!-- annotated:0ac5c6a8ce0016 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L399—L399</summary>
+
+<!-- original:0ac5c6a8ce0016:source/blender/blenkernel/intern/geometry_set.cc:399:399 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-3fef05062f1b2a03"></a>
+
+### `blender::bke::GeometrySet::has_realized_data`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L400—L413。
+
+**教学注释版**
+
+<!-- annotated:b3ff352f585cfb -->
+
+```cpp
 bool GeometrySet::has_realized_data() const
 {
   for (const GeometryComponentPtr &component_ptr : components_) {
@@ -991,105 +2967,455 @@ bool GeometrySet::has_realized_data() const
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L400—L413</summary>
 
-- 分支证据 `component_ptr)`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `!ELEM(component_ptr->type(),`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:b3ff352f585cfb:source/blender/blenkernel/intern/geometry_set.cc:400:413 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L363 | 出现调用或函数声明 `GeometrySet::get_gizmo_edit_hints`，对应表达式为 `const GizmoEditHints *GeometrySet::get_gizmo_edit_hints() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L364 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L365 | 把右侧 `this->get_component<GeometryComponentEditData>()` 用于初始化或更新左侧 `const GeometryComponentEditData *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L366 | 返回表达式 `(component == nullptr) ? nullptr : component->gizmo_edit_hints_.get()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L367 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L369 | 出现调用或函数声明 `GeometrySet::get_grease_pencil`，对应表达式为 `const GreasePencil *GeometrySet::get_grease_pencil() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L370 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L371 | 把右侧 `this->get_component<GreasePencilComponent>()` 用于初始化或更新左侧 `const GreasePencilComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L372 | 返回表达式 `(component == nullptr) ? nullptr : component->get()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L373 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L375 | 出现调用或函数声明 `GeometrySet::has_pointcloud`，对应表达式为 `bool GeometrySet::has_pointcloud() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L376 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L377 | 把右侧 `this->get_component<PointCloudComponent>()` 用于初始化或更新左侧 `const PointCloudComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L378 | 返回表达式 `component != nullptr && component->has_pointcloud()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L379 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L381 | 出现调用或函数声明 `GeometrySet::has_instances`，对应表达式为 `bool GeometrySet::has_instances() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L382 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L383 | 把右侧 `this->get_component<InstancesComponent>()` 用于初始化或更新左侧 `const InstancesComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L384 | 返回表达式 `component != nullptr && component->get() != nullptr &&`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L385 | 出现调用或函数声明 `get`，对应表达式为 `component->get()->instances_num() >= 1;`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L386 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L388 | 出现调用或函数声明 `GeometrySet::has_volume`，对应表达式为 `bool GeometrySet::has_volume() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L389 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L390 | 把右侧 `this->get_component<VolumeComponent>()` 用于初始化或更新左侧 `const VolumeComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L391 | 返回表达式 `component != nullptr && component->has_volume()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L392 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L394 | 出现调用或函数声明 `GeometrySet::has_curves`，对应表达式为 `bool GeometrySet::has_curves() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L395 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L396 | 把右侧 `this->get_component<CurveComponent>()` 用于初始化或更新左侧 `const CurveComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L397 | 返回表达式 `component != nullptr && component->has_curves()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L398 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L400 | 出现调用或函数声明 `GeometrySet::has_realized_data`，对应表达式为 `bool GeometrySet::has_realized_data() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L401 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L402 | 按 `for (const GeometryComponentPtr &component_ptr : components_)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L403 | 判断 `component_ptr`，成立时进入本分支，否则继续后续路径。 |
-| L404 | 判断 `!ELEM(component_ptr->type(`，成立时进入本分支，否则继续后续路径。 |
-| L405 | 本行是连续声明或表达式的一部分：`GeometryComponent::Type::Instance,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L406 | 本行是连续声明或表达式的一部分：`GeometryComponent::Type::Edit))`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L407 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L408 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L409 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L410 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L411 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L412 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L413 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+bool GeometrySet::has_realized_data() const
+{
+  for (const GeometryComponentPtr &component_ptr : components_) {
+    if (component_ptr) {
+      if (!ELEM(component_ptr->type(),
+                GeometryComponent::Type::Instance,
+                GeometryComponent::Type::Edit))
+      {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+```
 
-### geometry_set.cc：L414—L460
+</details>
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:414:460 -->
+**结果出口**
+
+- `return true;`
+- `return false;`
+
+**继续追踪实现**
+
+- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `component_ptr->type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L404。
+
+<!-- annotated:dcf5bea57e3744 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L414—L414</summary>
+
+<!-- original:dcf5bea57e3744:source/blender/blenkernel/intern/geometry_set.cc:414:414 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-357bcb62da7a8afd"></a>
+
+### `blender::bke::GeometrySet::has_grease_pencil`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L415—L419。
+
+**教学注释版**
+
+<!-- annotated:d39838a051a70c -->
+
+```cpp
 bool GeometrySet::has_grease_pencil() const
 {
   const GreasePencilComponent *component = this->get_component<GreasePencilComponent>();
   return component != nullptr && component->has_grease_pencil();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L415—L419</summary>
+
+<!-- original:d39838a051a70c:source/blender/blenkernel/intern/geometry_set.cc:415:419 -->
+
+```cpp
+bool GeometrySet::has_grease_pencil() const
+{
+  const GreasePencilComponent *component = this->get_component<GreasePencilComponent>();
+  return component != nullptr && component->has_grease_pencil();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return component != nullptr && component->has_grease_pencil();`
+
+**继续追踪实现**
+
+- `this->get_component<GreasePencilComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component->has_grease_pencil` → [blender::bke::GreasePencilComponent::has_grease_pencil · L51](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_grease_pencil-01c648.md#f-1f40b37cc4921df2)。
+
+<!-- annotated:9167ceaba6923b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L420—L420</summary>
+
+<!-- original:9167ceaba6923b:source/blender/blenkernel/intern/geometry_set.cc:420:420 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-20c815c1f8a499ee"></a>
+
+### `blender::bke::GeometrySet::is_empty`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L421—L425。
+
+**教学注释版**
+
+<!-- annotated:90589c7b2393ef -->
+
+```cpp
 bool GeometrySet::is_empty() const
 {
   return !(this->has_mesh() || this->has_curves() || this->has_pointcloud() ||
            this->has_volume() || this->has_instances() || this->has_grease_pencil());
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L421—L425</summary>
+
+<!-- original:90589c7b2393ef:source/blender/blenkernel/intern/geometry_set.cc:421:425 -->
+
+```cpp
+bool GeometrySet::is_empty() const
+{
+  return !(this->has_mesh() || this->has_curves() || this->has_pointcloud() ||
+           this->has_volume() || this->has_instances() || this->has_grease_pencil());
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return !(this->has_mesh() || this->has_curves() || this->has_pointcloud() ||`
+
+**继续追踪实现**
+
+- `this->has_mesh` → [blender::bke::GeometrySet::has_mesh · L321](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-8d9a6e8a3a3c9006)。
+- `this->has_curves` → [blender::bke::GeometrySet::has_curves · L394](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-56204772a0e108bd)。
+- `this->has_pointcloud` → [blender::bke::GeometrySet::has_pointcloud · L375](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-9760ce952821b1a7)。
+- `this->has_volume` → [blender::bke::GeometrySet::has_volume · L388](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b4653e73439de63b)。
+- `this->has_instances` → [blender::bke::GeometrySet::has_instances · L381](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-96f474fc46f602f1)。
+- `this->has_grease_pencil` → [blender::bke::GeometrySet::has_grease_pencil · L415](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-357bcb62da7a8afd)。
+
+<!-- annotated:4c7d2ad0280792 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L426—L426</summary>
+
+<!-- original:4c7d2ad0280792:source/blender/blenkernel/intern/geometry_set.cc:426:426 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-2a5e9b771a337510"></a>
+
+### `blender::bke::GeometrySet::from_mesh`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L427—L432。
+
+接口参数：
+
+- `Mesh *mesh`
+- `GeometryOwnershipType ownership`
+
+**教学注释版**
+
+<!-- annotated:e0333710f363fb -->
+
+```cpp
 GeometrySet GeometrySet::from_mesh(Mesh *mesh, GeometryOwnershipType ownership)
 {
   GeometrySet geometry_set;
   geometry_set.replace_mesh(mesh, ownership);
   return geometry_set;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L427—L432</summary>
+
+<!-- original:e0333710f363fb:source/blender/blenkernel/intern/geometry_set.cc:427:432 -->
+
+```cpp
+GeometrySet GeometrySet::from_mesh(Mesh *mesh, GeometryOwnershipType ownership)
+{
+  GeometrySet geometry_set;
+  geometry_set.replace_mesh(mesh, ownership);
+  return geometry_set;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return geometry_set;`
+
+**继续追踪实现**
+
+- `geometry_set.replace_mesh` → [blender::bke::GeometrySet::replace_mesh · L477](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-bf82c30bb38f2007)。
+
+<!-- annotated:d0ed1d319e0950 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L433—L433</summary>
+
+<!-- original:d0ed1d319e0950:source/blender/blenkernel/intern/geometry_set.cc:433:433 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-415a45cfe9cafe5a"></a>
+
+### `blender::bke::GeometrySet::from_volume`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L434—L439。
+
+接口参数：
+
+- `Volume *volume`
+- `GeometryOwnershipType ownership`
+
+**教学注释版**
+
+<!-- annotated:e758915c7ebb00 -->
+
+```cpp
 GeometrySet GeometrySet::from_volume(Volume *volume, GeometryOwnershipType ownership)
 {
   GeometrySet geometry_set;
   geometry_set.replace_volume(volume, ownership);
   return geometry_set;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L434—L439</summary>
+
+<!-- original:e758915c7ebb00:source/blender/blenkernel/intern/geometry_set.cc:434:439 -->
+
+```cpp
+GeometrySet GeometrySet::from_volume(Volume *volume, GeometryOwnershipType ownership)
+{
+  GeometrySet geometry_set;
+  geometry_set.replace_volume(volume, ownership);
+  return geometry_set;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return geometry_set;`
+
+**继续追踪实现**
+
+- `geometry_set.replace_volume` → [blender::bke::GeometrySet::replace_volume · L533](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-9abc34c3f65e4d7c)。
+
+<!-- annotated:c8f2351f30c74d -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L440—L440</summary>
+
+<!-- original:c8f2351f30c74d:source/blender/blenkernel/intern/geometry_set.cc:440:440 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-2552789cec99aad0"></a>
+
+### `blender::bke::GeometrySet::from_pointcloud`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L441—L446。
+
+接口参数：
+
+- `PointCloud *pointcloud`
+- `GeometryOwnershipType ownership`
+
+**教学注释版**
+
+<!-- annotated:ba5815fc1b9b04 -->
+
+```cpp
 GeometrySet GeometrySet::from_pointcloud(PointCloud *pointcloud, GeometryOwnershipType ownership)
 {
   GeometrySet geometry_set;
   geometry_set.replace_pointcloud(pointcloud, ownership);
   return geometry_set;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L441—L446</summary>
+
+<!-- original:ba5815fc1b9b04:source/blender/blenkernel/intern/geometry_set.cc:441:446 -->
+
+```cpp
+GeometrySet GeometrySet::from_pointcloud(PointCloud *pointcloud, GeometryOwnershipType ownership)
+{
+  GeometrySet geometry_set;
+  geometry_set.replace_pointcloud(pointcloud, ownership);
+  return geometry_set;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return geometry_set;`
+
+**继续追踪实现**
+
+- `geometry_set.replace_pointcloud` → [blender::bke::GeometrySet::replace_pointcloud · L519](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-02414356dff40c94)。
+
+<!-- annotated:0299c900e728f7 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L447—L447</summary>
+
+<!-- original:0299c900e728f7:source/blender/blenkernel/intern/geometry_set.cc:447:447 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-4a638adc47cc3b9f"></a>
+
+### `blender::bke::GeometrySet::from_curves`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L448—L453。
+
+接口参数：
+
+- `Curves *curves`
+- `GeometryOwnershipType ownership`
+
+**教学注释版**
+
+<!-- annotated:9d3d80595178d9 -->
+
+```cpp
 GeometrySet GeometrySet::from_curves(Curves *curves, GeometryOwnershipType ownership)
 {
   GeometrySet geometry_set;
   geometry_set.replace_curves(curves, ownership);
   return geometry_set;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L448—L453</summary>
+
+<!-- original:9d3d80595178d9:source/blender/blenkernel/intern/geometry_set.cc:448:453 -->
+
+```cpp
+GeometrySet GeometrySet::from_curves(Curves *curves, GeometryOwnershipType ownership)
+{
+  GeometrySet geometry_set;
+  geometry_set.replace_curves(curves, ownership);
+  return geometry_set;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return geometry_set;`
+
+**继续追踪实现**
+
+- `geometry_set.replace_curves` → [blender::bke::GeometrySet::replace_curves · L491](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-2ca8a73c1f6ef2f1)。
+
+<!-- annotated:4321c8e25d1cbb -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L454—L454</summary>
+
+<!-- original:4321c8e25d1cbb:source/blender/blenkernel/intern/geometry_set.cc:454:454 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-0c23a168248fb2cb"></a>
+
+### `blender::bke::GeometrySet::from_instances`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L455—L460。
+
+接口参数：
+
+- `Instances *instances`
+- `GeometryOwnershipType ownership`
+
+**教学注释版**
+
+<!-- annotated:4a2755decf0fde -->
+
+```cpp
 GeometrySet GeometrySet::from_instances(Instances *instances, GeometryOwnershipType ownership)
 {
   GeometrySet geometry_set;
@@ -1098,62 +3424,128 @@ GeometrySet GeometrySet::from_instances(Instances *instances, GeometryOwnershipT
 }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L415 | 出现调用或函数声明 `GeometrySet::has_grease_pencil`，对应表达式为 `bool GeometrySet::has_grease_pencil() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L416 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L417 | 把右侧 `this->get_component<GreasePencilComponent>()` 用于初始化或更新左侧 `const GreasePencilComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L418 | 返回表达式 `component != nullptr && component->has_grease_pencil()`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L419 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L421 | 出现调用或函数声明 `GeometrySet::is_empty`，对应表达式为 `bool GeometrySet::is_empty() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L422 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L423 | 返回表达式 `!(this->has_mesh() &#124;&#124; this->has_curves() &#124;&#124; this->has_pointcloud() &#124;&#124;`。 |
-| L424 | 出现调用或函数声明 `has_volume`，对应表达式为 `this->has_volume() &#124;&#124; this->has_instances() &#124;&#124; this->has_grease_pencil());`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L425 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L427 | 出现调用或函数声明 `GeometrySet::from_mesh`，对应表达式为 `GeometrySet GeometrySet::from_mesh(Mesh *mesh, GeometryOwnershipType ownership)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L428 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L429 | 声明成员、局部对象或完成语句 `GeometrySet geometry_set`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L430 | 出现调用或函数声明 `replace_mesh`，对应表达式为 `geometry_set.replace_mesh(mesh, ownership);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L431 | 返回表达式 `geometry_set`。 |
-| L432 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L434 | 出现调用或函数声明 `GeometrySet::from_volume`，对应表达式为 `GeometrySet GeometrySet::from_volume(Volume *volume, GeometryOwnershipType ownership)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L435 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L436 | 声明成员、局部对象或完成语句 `GeometrySet geometry_set`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L437 | 出现调用或函数声明 `replace_volume`，对应表达式为 `geometry_set.replace_volume(volume, ownership);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L438 | 返回表达式 `geometry_set`。 |
-| L439 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L441 | 出现调用或函数声明 `GeometrySet::from_pointcloud`，对应表达式为 `GeometrySet GeometrySet::from_pointcloud(PointCloud *pointcloud, GeometryOwnershipType ownership)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L442 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L443 | 声明成员、局部对象或完成语句 `GeometrySet geometry_set`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L444 | 出现调用或函数声明 `replace_pointcloud`，对应表达式为 `geometry_set.replace_pointcloud(pointcloud, ownership);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L445 | 返回表达式 `geometry_set`。 |
-| L446 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L448 | 出现调用或函数声明 `GeometrySet::from_curves`，对应表达式为 `GeometrySet GeometrySet::from_curves(Curves *curves, GeometryOwnershipType ownership)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L449 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L450 | 声明成员、局部对象或完成语句 `GeometrySet geometry_set`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L451 | 出现调用或函数声明 `replace_curves`，对应表达式为 `geometry_set.replace_curves(curves, ownership);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L452 | 返回表达式 `geometry_set`。 |
-| L453 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L455 | 出现调用或函数声明 `GeometrySet::from_instances`，对应表达式为 `GeometrySet GeometrySet::from_instances(Instances *instances, GeometryOwnershipType ownership)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L456 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L457 | 声明成员、局部对象或完成语句 `GeometrySet geometry_set`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L458 | 出现调用或函数声明 `replace_instances`，对应表达式为 `geometry_set.replace_instances(instances, ownership);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L459 | 返回表达式 `geometry_set`。 |
-| L460 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L455—L460</summary>
 
-### geometry_set.cc：L461—L503
+<!-- original:4a2755decf0fde:source/blender/blenkernel/intern/geometry_set.cc:455:460 -->
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:461:503 -->
+```cpp
+GeometrySet GeometrySet::from_instances(Instances *instances, GeometryOwnershipType ownership)
+{
+  GeometrySet geometry_set;
+  geometry_set.replace_instances(instances, ownership);
+  return geometry_set;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return geometry_set;`
+
+**继续追踪实现**
+
+- `geometry_set.replace_instances` → [blender::bke::GeometrySet::replace_instances · L505](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b26122377a17a66c)。
+
+<!-- annotated:6a356106b45cba -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L461—L461</summary>
+
+<!-- original:6a356106b45cba:source/blender/blenkernel/intern/geometry_set.cc:461:461 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-447a100ea7cfda47"></a>
+
+### `blender::bke::GeometrySet::from_instances`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L462—L467。
+
+接口参数：
+
+- `std::unique_ptr<Instances> instances`
+
+**教学注释版**
+
+<!-- annotated:6b0b3ce5f10ba3 -->
+
+```cpp
 GeometrySet GeometrySet::from_instances(std::unique_ptr<Instances> instances)
 {
   GeometrySet geometry_set;
   geometry_set.replace_instances(instances.release(), GeometryOwnershipType::Owned);
   return geometry_set;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L462—L467</summary>
+
+<!-- original:6b0b3ce5f10ba3:source/blender/blenkernel/intern/geometry_set.cc:462:467 -->
+
+```cpp
+GeometrySet GeometrySet::from_instances(std::unique_ptr<Instances> instances)
+{
+  GeometrySet geometry_set;
+  geometry_set.replace_instances(instances.release(), GeometryOwnershipType::Owned);
+  return geometry_set;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return geometry_set;`
+
+**继续追踪实现**
+
+- `geometry_set.replace_instances` → [blender::bke::GeometrySet::replace_instances · L505](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b26122377a17a66c)。
+- `instances.release` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
+
+<!-- annotated:b3a6931075082a -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L468—L468</summary>
+
+<!-- original:b3a6931075082a:source/blender/blenkernel/intern/geometry_set.cc:468:468 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-748482c32524fe31"></a>
+
+### `blender::bke::GeometrySet::from_grease_pencil`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L469—L475。
+
+接口参数：
+
+- `GreasePencil *grease_pencil`
+- `GeometryOwnershipType ownership`
+
+**教学注释版**
+
+<!-- annotated:d52ef563d774c1 -->
+
+```cpp
 GeometrySet GeometrySet::from_grease_pencil(GreasePencil *grease_pencil,
                                             GeometryOwnershipType ownership)
 {
@@ -1161,7 +3553,66 @@ GeometrySet GeometrySet::from_grease_pencil(GreasePencil *grease_pencil,
   geometry_set.replace_grease_pencil(grease_pencil, ownership);
   return geometry_set;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L469—L475</summary>
+
+<!-- original:d52ef563d774c1:source/blender/blenkernel/intern/geometry_set.cc:469:475 -->
+
+```cpp
+GeometrySet GeometrySet::from_grease_pencil(GreasePencil *grease_pencil,
+                                            GeometryOwnershipType ownership)
+{
+  GeometrySet geometry_set;
+  geometry_set.replace_grease_pencil(grease_pencil, ownership);
+  return geometry_set;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return geometry_set;`
+
+**继续追踪实现**
+
+- `geometry_set.replace_grease_pencil` → [blender::bke::GeometrySet::replace_grease_pencil · L547](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-4e75c59c90c26e32)。
+
+<!-- annotated:76c54d111eb362 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L476—L476</summary>
+
+<!-- original:76c54d111eb362:source/blender/blenkernel/intern/geometry_set.cc:476:476 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-bf82c30bb38f2007"></a>
+
+### `blender::bke::GeometrySet::replace_mesh`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L477—L489。
+
+接口参数：
+
+- `Mesh *mesh`
+- `GeometryOwnershipType ownership`
+
+**教学注释版**
+
+<!-- annotated:b333c6b02608d0 -->
+
+```cpp
 void GeometrySet::replace_mesh(Mesh *mesh, GeometryOwnershipType ownership)
 {
   if (mesh == nullptr) {
@@ -1175,7 +3626,71 @@ void GeometrySet::replace_mesh(Mesh *mesh, GeometryOwnershipType ownership)
   MeshComponent &component = this->get_component_for_write<MeshComponent>();
   component.replace(mesh, ownership);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L477—L489</summary>
+
+<!-- original:b333c6b02608d0:source/blender/blenkernel/intern/geometry_set.cc:477:489 -->
+
+```cpp
+void GeometrySet::replace_mesh(Mesh *mesh, GeometryOwnershipType ownership)
+{
+  if (mesh == nullptr) {
+    this->remove<MeshComponent>();
+    return;
+  }
+  if (mesh == this->get_mesh()) {
+    return;
+  }
+  this->remove<MeshComponent>();
+  MeshComponent &component = this->get_component_for_write<MeshComponent>();
+  component.replace(mesh, ownership);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->remove<MeshComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32c960ae92da98ca)。
+- `this->get_mesh` → [blender::bke::GeometrySet::get_mesh · L315](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-25151145065d998b)。
+- `this->get_component_for_write<MeshComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
+- `component.replace` → [blender::bke::MeshComponent::replace · L62](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_mesh-de716f.md#f-625ad7d7cc6f2308)。
+
+<!-- annotated:d5d30312aa7bf8 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L490—L490</summary>
+
+<!-- original:d5d30312aa7bf8:source/blender/blenkernel/intern/geometry_set.cc:490:490 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-2ca8a73c1f6ef2f1"></a>
+
+### `blender::bke::GeometrySet::replace_curves`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L491—L503。
+
+接口参数：
+
+- `Curves *curves`
+- `GeometryOwnershipType ownership`
+
+**教学注释版**
+
+<!-- annotated:d147bfbbd4224d -->
+
+```cpp
 void GeometrySet::replace_curves(Curves *curves, GeometryOwnershipType ownership)
 {
   if (curves == nullptr) {
@@ -1191,59 +3706,69 @@ void GeometrySet::replace_curves(Curves *curves, GeometryOwnershipType ownership
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L491—L503</summary>
 
-- 分支证据 `mesh == nullptr)`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `mesh == this->get_mesh())`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:d147bfbbd4224d:source/blender/blenkernel/intern/geometry_set.cc:491:503 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L462 | 出现调用或函数声明 `GeometrySet::from_instances`，对应表达式为 `GeometrySet GeometrySet::from_instances(std::unique_ptr<Instances> instances)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L463 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L464 | 声明成员、局部对象或完成语句 `GeometrySet geometry_set`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L465 | 出现调用或函数声明 `replace_instances`，对应表达式为 `geometry_set.replace_instances(instances.release(), GeometryOwnershipType::Owned);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L466 | 返回表达式 `geometry_set`。 |
-| L467 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L469 | 出现调用或函数声明 `GeometrySet::from_grease_pencil`，对应表达式为 `GeometrySet GeometrySet::from_grease_pencil(GreasePencil *grease_pencil,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L470 | 本行是连续声明或表达式的一部分：`GeometryOwnershipType ownership)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L471 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L472 | 声明成员、局部对象或完成语句 `GeometrySet geometry_set`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L473 | 出现调用或函数声明 `replace_grease_pencil`，对应表达式为 `geometry_set.replace_grease_pencil(grease_pencil, ownership);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L474 | 返回表达式 `geometry_set`。 |
-| L475 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L477 | 出现调用或函数声明 `GeometrySet::replace_mesh`，对应表达式为 `void GeometrySet::replace_mesh(Mesh *mesh, GeometryOwnershipType ownership)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L478 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L479 | 判断 `mesh == nullptr`，成立时进入本分支，否则继续后续路径。这里区分空地址与可用地址，但非空本身仍不能证明对象存活。 |
-| L480 | 出现调用或函数声明 `remove`，对应表达式为 `this->remove<MeshComponent>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L481 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L482 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L483 | 判断 `mesh == this->get_mesh()`，成立时进入本分支，否则继续后续路径。 |
-| L484 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L485 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L486 | 出现调用或函数声明 `remove`，对应表达式为 `this->remove<MeshComponent>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L487 | 把右侧 `this->get_component_for_write<MeshComponent>()` 用于初始化或更新左侧 `MeshComponent &component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L488 | 出现调用或函数声明 `replace`，对应表达式为 `component.replace(mesh, ownership);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L489 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L491 | 出现调用或函数声明 `GeometrySet::replace_curves`，对应表达式为 `void GeometrySet::replace_curves(Curves *curves, GeometryOwnershipType ownership)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L492 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L493 | 判断 `curves == nullptr`，成立时进入本分支，否则继续后续路径。这里区分空地址与可用地址，但非空本身仍不能证明对象存活。 |
-| L494 | 出现调用或函数声明 `remove`，对应表达式为 `this->remove<CurveComponent>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L495 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L496 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L497 | 判断 `curves == this->get_curves()`，成立时进入本分支，否则继续后续路径。 |
-| L498 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L499 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L500 | 出现调用或函数声明 `remove`，对应表达式为 `this->remove<CurveComponent>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L501 | 把右侧 `this->get_component_for_write<CurveComponent>()` 用于初始化或更新左侧 `CurveComponent &component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L502 | 出现调用或函数声明 `replace`，对应表达式为 `component.replace(curves, ownership);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L503 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+void GeometrySet::replace_curves(Curves *curves, GeometryOwnershipType ownership)
+{
+  if (curves == nullptr) {
+    this->remove<CurveComponent>();
+    return;
+  }
+  if (curves == this->get_curves()) {
+    return;
+  }
+  this->remove<CurveComponent>();
+  CurveComponent &component = this->get_component_for_write<CurveComponent>();
+  component.replace(curves, ownership);
+}
+```
 
-### geometry_set.cc：L504—L545
+</details>
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:504:545 -->
+**继续追踪实现**
+
+- `this->remove<CurveComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32c960ae92da98ca)。
+- `this->get_curves` → [blender::bke::GeometrySet::get_curves · L339](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-1d7b3a3ddbc6c57b)。
+- `this->get_component_for_write<CurveComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
+- `component.replace` → [blender::bke::CurveComponent::replace · L69](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_curves-b84d24.md#f-b53b6e068bec94b6)。
+
+<!-- annotated:f41671d09b5531 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L504—L504</summary>
+
+<!-- original:f41671d09b5531:source/blender/blenkernel/intern/geometry_set.cc:504:504 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b26122377a17a66c"></a>
+
+### `blender::bke::GeometrySet::replace_instances`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L505—L517。
+
+接口参数：
+
+- `Instances *instances`
+- `GeometryOwnershipType ownership`
+
+**教学注释版**
+
+<!-- annotated:af0ed16ab3e9ca -->
+
+```cpp
 void GeometrySet::replace_instances(Instances *instances, GeometryOwnershipType ownership)
 {
   if (instances == nullptr) {
@@ -1257,7 +3782,71 @@ void GeometrySet::replace_instances(Instances *instances, GeometryOwnershipType 
   InstancesComponent &component = this->get_component_for_write<InstancesComponent>();
   component.replace(instances, ownership);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L505—L517</summary>
+
+<!-- original:af0ed16ab3e9ca:source/blender/blenkernel/intern/geometry_set.cc:505:517 -->
+
+```cpp
+void GeometrySet::replace_instances(Instances *instances, GeometryOwnershipType ownership)
+{
+  if (instances == nullptr) {
+    this->remove<InstancesComponent>();
+    return;
+  }
+  if (instances == this->get_instances()) {
+    return;
+  }
+  this->remove<InstancesComponent>();
+  InstancesComponent &component = this->get_component_for_write<InstancesComponent>();
+  component.replace(instances, ownership);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->remove<InstancesComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32c960ae92da98ca)。
+- `this->get_instances` → [blender::bke::GeometrySet::get_instances · L345](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-75fcc67a0b3c0fa1)。
+- `this->get_component_for_write<InstancesComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
+- `component.replace` → [blender::bke::InstancesComponent::replace · L89](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_instances-4b1341.md#f-8cc31b6fbb24a242)。
+
+<!-- annotated:b690c84e5a9754 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L518—L518</summary>
+
+<!-- original:b690c84e5a9754:source/blender/blenkernel/intern/geometry_set.cc:518:518 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-02414356dff40c94"></a>
+
+### `blender::bke::GeometrySet::replace_pointcloud`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L519—L531。
+
+接口参数：
+
+- `PointCloud *pointcloud`
+- `GeometryOwnershipType ownership`
+
+**教学注释版**
+
+<!-- annotated:e1d61c1e396e70 -->
+
+```cpp
 void GeometrySet::replace_pointcloud(PointCloud *pointcloud, GeometryOwnershipType ownership)
 {
   if (pointcloud == nullptr) {
@@ -1271,7 +3860,71 @@ void GeometrySet::replace_pointcloud(PointCloud *pointcloud, GeometryOwnershipTy
   PointCloudComponent &component = this->get_component_for_write<PointCloudComponent>();
   component.replace(pointcloud, ownership);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L519—L531</summary>
+
+<!-- original:e1d61c1e396e70:source/blender/blenkernel/intern/geometry_set.cc:519:531 -->
+
+```cpp
+void GeometrySet::replace_pointcloud(PointCloud *pointcloud, GeometryOwnershipType ownership)
+{
+  if (pointcloud == nullptr) {
+    this->remove<PointCloudComponent>();
+    return;
+  }
+  if (pointcloud == this->get_pointcloud()) {
+    return;
+  }
+  this->remove<PointCloudComponent>();
+  PointCloudComponent &component = this->get_component_for_write<PointCloudComponent>();
+  component.replace(pointcloud, ownership);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->remove<PointCloudComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32c960ae92da98ca)。
+- `this->get_pointcloud` → [blender::bke::GeometrySet::get_pointcloud · L327](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e9c60234d315f635)。
+- `this->get_component_for_write<PointCloudComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
+- `component.replace` → [blender::bke::PointCloudComponent::replace · L61](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_pointcloud-0caac6.md#f-3ec2070a3f242dfc)。
+
+<!-- annotated:fbdf2051098d9c -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L532—L532</summary>
+
+<!-- original:fbdf2051098d9c:source/blender/blenkernel/intern/geometry_set.cc:532:532 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9abc34c3f65e4d7c"></a>
+
+### `blender::bke::GeometrySet::replace_volume`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L533—L545。
+
+接口参数：
+
+- `Volume *volume`
+- `GeometryOwnershipType ownership`
+
+**教学注释版**
+
+<!-- annotated:d2016324522009 -->
+
+```cpp
 void GeometrySet::replace_volume(Volume *volume, GeometryOwnershipType ownership)
 {
   if (volume == nullptr) {
@@ -1287,59 +3940,69 @@ void GeometrySet::replace_volume(Volume *volume, GeometryOwnershipType ownership
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L533—L545</summary>
 
-- 分支证据 `instances == nullptr)`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `instances == this->get_instances())`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:d2016324522009:source/blender/blenkernel/intern/geometry_set.cc:533:545 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L505 | 出现调用或函数声明 `GeometrySet::replace_instances`，对应表达式为 `void GeometrySet::replace_instances(Instances *instances, GeometryOwnershipType ownership)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L506 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L507 | 判断 `instances == nullptr`，成立时进入本分支，否则继续后续路径。这里区分空地址与可用地址，但非空本身仍不能证明对象存活。 |
-| L508 | 出现调用或函数声明 `remove`，对应表达式为 `this->remove<InstancesComponent>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L509 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L510 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L511 | 判断 `instances == this->get_instances()`，成立时进入本分支，否则继续后续路径。 |
-| L512 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L513 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L514 | 出现调用或函数声明 `remove`，对应表达式为 `this->remove<InstancesComponent>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L515 | 把右侧 `this->get_component_for_write<InstancesComponent>()` 用于初始化或更新左侧 `InstancesComponent &component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L516 | 出现调用或函数声明 `replace`，对应表达式为 `component.replace(instances, ownership);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L517 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L519 | 出现调用或函数声明 `GeometrySet::replace_pointcloud`，对应表达式为 `void GeometrySet::replace_pointcloud(PointCloud *pointcloud, GeometryOwnershipType ownership)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L520 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L521 | 判断 `pointcloud == nullptr`，成立时进入本分支，否则继续后续路径。这里区分空地址与可用地址，但非空本身仍不能证明对象存活。 |
-| L522 | 出现调用或函数声明 `remove`，对应表达式为 `this->remove<PointCloudComponent>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L523 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L524 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L525 | 判断 `pointcloud == this->get_pointcloud()`，成立时进入本分支，否则继续后续路径。 |
-| L526 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L527 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L528 | 出现调用或函数声明 `remove`，对应表达式为 `this->remove<PointCloudComponent>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L529 | 把右侧 `this->get_component_for_write<PointCloudComponent>()` 用于初始化或更新左侧 `PointCloudComponent &component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L530 | 出现调用或函数声明 `replace`，对应表达式为 `component.replace(pointcloud, ownership);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L531 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L533 | 出现调用或函数声明 `GeometrySet::replace_volume`，对应表达式为 `void GeometrySet::replace_volume(Volume *volume, GeometryOwnershipType ownership)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L534 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L535 | 判断 `volume == nullptr`，成立时进入本分支，否则继续后续路径。这里区分空地址与可用地址，但非空本身仍不能证明对象存活。 |
-| L536 | 出现调用或函数声明 `remove`，对应表达式为 `this->remove<VolumeComponent>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L537 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L538 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L539 | 判断 `volume == this->get_volume()`，成立时进入本分支，否则继续后续路径。 |
-| L540 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L541 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L542 | 出现调用或函数声明 `remove`，对应表达式为 `this->remove<VolumeComponent>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L543 | 把右侧 `this->get_component_for_write<VolumeComponent>()` 用于初始化或更新左侧 `VolumeComponent &component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L544 | 出现调用或函数声明 `replace`，对应表达式为 `component.replace(volume, ownership);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L545 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+void GeometrySet::replace_volume(Volume *volume, GeometryOwnershipType ownership)
+{
+  if (volume == nullptr) {
+    this->remove<VolumeComponent>();
+    return;
+  }
+  if (volume == this->get_volume()) {
+    return;
+  }
+  this->remove<VolumeComponent>();
+  VolumeComponent &component = this->get_component_for_write<VolumeComponent>();
+  component.replace(volume, ownership);
+}
+```
 
-### geometry_set.cc：L546—L590
+</details>
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:546:590 -->
+**继续追踪实现**
+
+- `this->remove<VolumeComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32c960ae92da98ca)。
+- `this->get_volume` → [blender::bke::GeometrySet::get_volume · L333](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e4dddefabca41664)。
+- `this->get_component_for_write<VolumeComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
+- `component.replace` → [blender::bke::VolumeComponent::replace · L52](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_volume-b14dd5.md#f-88828f1924564921)。
+
+<!-- annotated:49df01388545b7 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L546—L546</summary>
+
+<!-- original:49df01388545b7:source/blender/blenkernel/intern/geometry_set.cc:546:546 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-4e75c59c90c26e32"></a>
+
+### `blender::bke::GeometrySet::replace_grease_pencil`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L547—L560。
+
+接口参数：
+
+- `GreasePencil *grease_pencil`
+- `GeometryOwnershipType ownership`
+
+**教学注释版**
+
+<!-- annotated:7279fc764a67ff -->
+
+```cpp
 void GeometrySet::replace_grease_pencil(GreasePencil *grease_pencil,
                                         GeometryOwnershipType ownership)
 {
@@ -1354,31 +4017,303 @@ void GeometrySet::replace_grease_pencil(GreasePencil *grease_pencil,
   GreasePencilComponent &component = this->get_component_for_write<GreasePencilComponent>();
   component.replace(grease_pencil, ownership);
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L547—L560</summary>
+
+<!-- original:7279fc764a67ff:source/blender/blenkernel/intern/geometry_set.cc:547:560 -->
+
+```cpp
+void GeometrySet::replace_grease_pencil(GreasePencil *grease_pencil,
+                                        GeometryOwnershipType ownership)
+{
+  if (grease_pencil == nullptr) {
+    this->remove<GreasePencilComponent>();
+    return;
+  }
+  if (grease_pencil == this->get_grease_pencil()) {
+    return;
+  }
+  this->remove<GreasePencilComponent>();
+  GreasePencilComponent &component = this->get_component_for_write<GreasePencilComponent>();
+  component.replace(grease_pencil, ownership);
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->remove<GreasePencilComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32c960ae92da98ca)。
+- `this->get_grease_pencil` → [blender::bke::GeometrySet::get_grease_pencil · L369](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-4c73d7995c66f8bf)。
+- `this->get_component_for_write<GreasePencilComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
+- `component.replace` → [blender::bke::GreasePencilComponent::replace · L56](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_grease_pencil-01c648.md#f-7a8bec90d2a1aa61)。
+
+<!-- annotated:7a7a7aa6fdad1b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L561—L561</summary>
+
+<!-- original:7a7a7aa6fdad1b:source/blender/blenkernel/intern/geometry_set.cc:561:561 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-0988a6845ad4e207"></a>
+
+### `blender::bke::GeometrySet::get_mesh_for_write`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L562—L566。
+
+**教学注释版**
+
+<!-- annotated:257a6651f6bafc -->
+
+```cpp
 Mesh *GeometrySet::get_mesh_for_write()
 {
   MeshComponent *component = this->get_component_for_write_ptr<MeshComponent>();
   return component == nullptr ? nullptr : component->get_for_write();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L562—L566</summary>
+
+<!-- original:257a6651f6bafc:source/blender/blenkernel/intern/geometry_set.cc:562:566 -->
+
+```cpp
+Mesh *GeometrySet::get_mesh_for_write()
+{
+  MeshComponent *component = this->get_component_for_write_ptr<MeshComponent>();
+  return component == nullptr ? nullptr : component->get_for_write();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return component == nullptr ? nullptr : component->get_for_write();`
+
+**继续追踪实现**
+
+- `this->get_component_for_write_ptr<MeshComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b077f987c95b3425)。
+- `component->get_for_write` → [blender::bke::MeshComponent::get_for_write · L83](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_mesh-de716f.md#f-ef827f2b2d08d953)。
+
+<!-- annotated:b4474c2fe10b1e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L567—L567</summary>
+
+<!-- original:b4474c2fe10b1e:source/blender/blenkernel/intern/geometry_set.cc:567:567 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-eae41fb2ed3be0d5"></a>
+
+### `blender::bke::GeometrySet::get_pointcloud_for_write`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L568—L572。
+
+**教学注释版**
+
+<!-- annotated:f346750345f3e5 -->
+
+```cpp
 PointCloud *GeometrySet::get_pointcloud_for_write()
 {
   PointCloudComponent *component = this->get_component_for_write_ptr<PointCloudComponent>();
   return component == nullptr ? nullptr : component->get_for_write();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L568—L572</summary>
+
+<!-- original:f346750345f3e5:source/blender/blenkernel/intern/geometry_set.cc:568:572 -->
+
+```cpp
+PointCloud *GeometrySet::get_pointcloud_for_write()
+{
+  PointCloudComponent *component = this->get_component_for_write_ptr<PointCloudComponent>();
+  return component == nullptr ? nullptr : component->get_for_write();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return component == nullptr ? nullptr : component->get_for_write();`
+
+**继续追踪实现**
+
+- `this->get_component_for_write_ptr<PointCloudComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b077f987c95b3425)。
+- `component->get_for_write` → [blender::bke::PointCloudComponent::get_for_write · L82](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_pointcloud-0caac6.md#f-e5ce259db1290094)。
+
+<!-- annotated:7409d9de8c3227 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L573—L573</summary>
+
+<!-- original:7409d9de8c3227:source/blender/blenkernel/intern/geometry_set.cc:573:573 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9a13760c4934e3d8"></a>
+
+### `blender::bke::GeometrySet::get_volume_for_write`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L574—L578。
+
+**教学注释版**
+
+<!-- annotated:e773c0174d410e -->
+
+```cpp
 Volume *GeometrySet::get_volume_for_write()
 {
   VolumeComponent *component = this->get_component_for_write_ptr<VolumeComponent>();
   return component == nullptr ? nullptr : component->get_for_write();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L574—L578</summary>
+
+<!-- original:e773c0174d410e:source/blender/blenkernel/intern/geometry_set.cc:574:578 -->
+
+```cpp
+Volume *GeometrySet::get_volume_for_write()
+{
+  VolumeComponent *component = this->get_component_for_write_ptr<VolumeComponent>();
+  return component == nullptr ? nullptr : component->get_for_write();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return component == nullptr ? nullptr : component->get_for_write();`
+
+**继续追踪实现**
+
+- `this->get_component_for_write_ptr<VolumeComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b077f987c95b3425)。
+- `component->get_for_write` → [blender::bke::VolumeComponent::get_for_write · L73](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_volume-b14dd5.md#f-7ea19c03e5ff914b)。
+
+<!-- annotated:bb265894fd6e94 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L579—L579</summary>
+
+<!-- original:bb265894fd6e94:source/blender/blenkernel/intern/geometry_set.cc:579:579 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-95199063db32b8f7"></a>
+
+### `blender::bke::GeometrySet::get_curves_for_write`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L580—L584。
+
+**教学注释版**
+
+<!-- annotated:a8bdd88742ce34 -->
+
+```cpp
 Curves *GeometrySet::get_curves_for_write()
 {
   CurveComponent *component = this->get_component_for_write_ptr<CurveComponent>();
   return component == nullptr ? nullptr : component->get_for_write();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L580—L584</summary>
+
+<!-- original:a8bdd88742ce34:source/blender/blenkernel/intern/geometry_set.cc:580:584 -->
+
+```cpp
+Curves *GeometrySet::get_curves_for_write()
+{
+  CurveComponent *component = this->get_component_for_write_ptr<CurveComponent>();
+  return component == nullptr ? nullptr : component->get_for_write();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return component == nullptr ? nullptr : component->get_for_write();`
+
+**继续追踪实现**
+
+- `this->get_component_for_write_ptr<CurveComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b077f987c95b3425)。
+- `component->get_for_write` → [blender::bke::CurveComponent::get_for_write · L90](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_curves-b84d24.md#f-b977e455f03f4551)。
+
+<!-- annotated:1108f4e2bec377 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L585—L585</summary>
+
+<!-- original:1108f4e2bec377:source/blender/blenkernel/intern/geometry_set.cc:585:585 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-e2fefbfed77f753f"></a>
+
+### `blender::bke::GeometrySet::get_instances_for_write`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L586—L590。
+
+**教学注释版**
+
+<!-- annotated:5fec0a7183e3b2 -->
+
+```cpp
 Instances *GeometrySet::get_instances_for_write()
 {
   InstancesComponent *component = this->get_component_for_write_ptr<InstancesComponent>();
@@ -1386,58 +4321,58 @@ Instances *GeometrySet::get_instances_for_write()
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L586—L590</summary>
 
-- `get_for_write`：进入可变访问边界，需落实共享数据分离；不要通过读取接口强转绕过。
+<!-- original:5fec0a7183e3b2:source/blender/blenkernel/intern/geometry_set.cc:586:590 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L547 | 出现调用或函数声明 `GeometrySet::replace_grease_pencil`，对应表达式为 `void GeometrySet::replace_grease_pencil(GreasePencil *grease_pencil,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L548 | 本行是连续声明或表达式的一部分：`GeometryOwnershipType ownership)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L549 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L550 | 判断 `grease_pencil == nullptr`，成立时进入本分支，否则继续后续路径。这里区分空地址与可用地址，但非空本身仍不能证明对象存活。 |
-| L551 | 出现调用或函数声明 `remove`，对应表达式为 `this->remove<GreasePencilComponent>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L552 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L553 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L554 | 判断 `grease_pencil == this->get_grease_pencil()`，成立时进入本分支，否则继续后续路径。 |
-| L555 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L556 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L557 | 出现调用或函数声明 `remove`，对应表达式为 `this->remove<GreasePencilComponent>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L558 | 把右侧 `this->get_component_for_write<GreasePencilComponent>()` 用于初始化或更新左侧 `GreasePencilComponent &component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L559 | 出现调用或函数声明 `replace`，对应表达式为 `component.replace(grease_pencil, ownership);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L560 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L562 | 出现调用或函数声明 `GeometrySet::get_mesh_for_write`，对应表达式为 `Mesh *GeometrySet::get_mesh_for_write()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L563 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L564 | 把右侧 `this->get_component_for_write_ptr<MeshComponent>()` 用于初始化或更新左侧 `MeshComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L565 | 本行使用 `get_for_write`：进入可变访问边界，需落实共享数据分离；不要通过读取接口强转绕过。 |
-| L566 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L568 | 出现调用或函数声明 `GeometrySet::get_pointcloud_for_write`，对应表达式为 `PointCloud *GeometrySet::get_pointcloud_for_write()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L569 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L570 | 把右侧 `this->get_component_for_write_ptr<PointCloudComponent>()` 用于初始化或更新左侧 `PointCloudComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L571 | 本行使用 `get_for_write`：进入可变访问边界，需落实共享数据分离；不要通过读取接口强转绕过。 |
-| L572 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L574 | 出现调用或函数声明 `GeometrySet::get_volume_for_write`，对应表达式为 `Volume *GeometrySet::get_volume_for_write()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L575 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L576 | 把右侧 `this->get_component_for_write_ptr<VolumeComponent>()` 用于初始化或更新左侧 `VolumeComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L577 | 本行使用 `get_for_write`：进入可变访问边界，需落实共享数据分离；不要通过读取接口强转绕过。 |
-| L578 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L580 | 出现调用或函数声明 `GeometrySet::get_curves_for_write`，对应表达式为 `Curves *GeometrySet::get_curves_for_write()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L581 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L582 | 把右侧 `this->get_component_for_write_ptr<CurveComponent>()` 用于初始化或更新左侧 `CurveComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L583 | 本行使用 `get_for_write`：进入可变访问边界，需落实共享数据分离；不要通过读取接口强转绕过。 |
-| L584 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L586 | 出现调用或函数声明 `GeometrySet::get_instances_for_write`，对应表达式为 `Instances *GeometrySet::get_instances_for_write()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L587 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L588 | 把右侧 `this->get_component_for_write_ptr<InstancesComponent>()` 用于初始化或更新左侧 `InstancesComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L589 | 本行使用 `get_for_write`：进入可变访问边界，需落实共享数据分离；不要通过读取接口强转绕过。 |
-| L590 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+Instances *GeometrySet::get_instances_for_write()
+{
+  InstancesComponent *component = this->get_component_for_write_ptr<InstancesComponent>();
+  return component == nullptr ? nullptr : component->get_for_write();
+}
+```
 
-### geometry_set.cc：L591—L637
+</details>
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:591:637 -->
+**结果出口**
+
+- `return component == nullptr ? nullptr : component->get_for_write();`
+
+**继续追踪实现**
+
+- `this->get_component_for_write_ptr<InstancesComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b077f987c95b3425)。
+- `component->get_for_write` → [blender::bke::InstancesComponent::get_for_write · L79](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_instances-4b1341.md#f-4489915c6bc73234)。
+
+<!-- annotated:3e1a707a540d0f -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L591—L591</summary>
+
+<!-- original:3e1a707a540d0f:source/blender/blenkernel/intern/geometry_set.cc:591:591 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-dad8cce84be02774"></a>
+
+### `blender::bke::GeometrySet::get_curve_edit_hints_for_write`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L592—L600。
+
+**教学注释版**
+
+<!-- annotated:7552fbcfabf303 -->
+
+```cpp
 CurvesEditHints *GeometrySet::get_curve_edit_hints_for_write()
 {
   if (!this->has<GeometryComponentEditData>()) {
@@ -1447,7 +4382,66 @@ CurvesEditHints *GeometrySet::get_curve_edit_hints_for_write()
       this->get_component_for_write<GeometryComponentEditData>();
   return component.curves_edit_hints_.get();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L592—L600</summary>
+
+<!-- original:7552fbcfabf303:source/blender/blenkernel/intern/geometry_set.cc:592:600 -->
+
+```cpp
+CurvesEditHints *GeometrySet::get_curve_edit_hints_for_write()
+{
+  if (!this->has<GeometryComponentEditData>()) {
+    return nullptr;
+  }
+  GeometryComponentEditData &component =
+      this->get_component_for_write<GeometryComponentEditData>();
+  return component.curves_edit_hints_.get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return nullptr;`
+- `return component.curves_edit_hints_.get();`
+
+**继续追踪实现**
+
+- `this->has<GeometryComponentEditData>` → [blender::bke::GeometrySet::has · L142](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-5777be605a5451b6)。
+- `this->get_component_for_write<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
+- `component.curves_edit_hints_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L599。
+
+<!-- annotated:ef02c655b5576d -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L601—L601</summary>
+
+<!-- original:ef02c655b5576d:source/blender/blenkernel/intern/geometry_set.cc:601:601 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-5c60e7ee2e177a47"></a>
+
+### `blender::bke::GeometrySet::get_grease_pencil_edit_hints_for_write`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L602—L610。
+
+**教学注释版**
+
+<!-- annotated:ca1dd540a60ae2 -->
+
+```cpp
 GreasePencilEditHints *GeometrySet::get_grease_pencil_edit_hints_for_write()
 {
   if (!this->has<GeometryComponentEditData>()) {
@@ -1457,7 +4451,66 @@ GreasePencilEditHints *GeometrySet::get_grease_pencil_edit_hints_for_write()
       this->get_component_for_write<GeometryComponentEditData>();
   return component.grease_pencil_edit_hints_.get();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L602—L610</summary>
+
+<!-- original:ca1dd540a60ae2:source/blender/blenkernel/intern/geometry_set.cc:602:610 -->
+
+```cpp
+GreasePencilEditHints *GeometrySet::get_grease_pencil_edit_hints_for_write()
+{
+  if (!this->has<GeometryComponentEditData>()) {
+    return nullptr;
+  }
+  GeometryComponentEditData &component =
+      this->get_component_for_write<GeometryComponentEditData>();
+  return component.grease_pencil_edit_hints_.get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return nullptr;`
+- `return component.grease_pencil_edit_hints_.get();`
+
+**继续追踪实现**
+
+- `this->has<GeometryComponentEditData>` → [blender::bke::GeometrySet::has · L142](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-5777be605a5451b6)。
+- `this->get_component_for_write<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
+- `component.grease_pencil_edit_hints_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L609。
+
+<!-- annotated:6ea5d8f7099013 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L611—L611</summary>
+
+<!-- original:6ea5d8f7099013:source/blender/blenkernel/intern/geometry_set.cc:611:611 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-407a3c1a97ae8f2e"></a>
+
+### `blender::bke::GeometrySet::get_gizmo_edit_hints_for_write`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L612—L620。
+
+**教学注释版**
+
+<!-- annotated:8664d5436d88fa -->
+
+```cpp
 GizmoEditHints *GeometrySet::get_gizmo_edit_hints_for_write()
 {
   if (!this->has<GeometryComponentEditData>()) {
@@ -1467,13 +4520,129 @@ GizmoEditHints *GeometrySet::get_gizmo_edit_hints_for_write()
       this->get_component_for_write<GeometryComponentEditData>();
   return component.gizmo_edit_hints_.get();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L612—L620</summary>
+
+<!-- original:8664d5436d88fa:source/blender/blenkernel/intern/geometry_set.cc:612:620 -->
+
+```cpp
+GizmoEditHints *GeometrySet::get_gizmo_edit_hints_for_write()
+{
+  if (!this->has<GeometryComponentEditData>()) {
+    return nullptr;
+  }
+  GeometryComponentEditData &component =
+      this->get_component_for_write<GeometryComponentEditData>();
+  return component.gizmo_edit_hints_.get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return nullptr;`
+- `return component.gizmo_edit_hints_.get();`
+
+**继续追踪实现**
+
+- `this->has<GeometryComponentEditData>` → [blender::bke::GeometrySet::has · L142](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-5777be605a5451b6)。
+- `this->get_component_for_write<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
+- `component.gizmo_edit_hints_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L619。
+
+<!-- annotated:4a8499d28d8bc0 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L621—L621</summary>
+
+<!-- original:4a8499d28d8bc0:source/blender/blenkernel/intern/geometry_set.cc:621:621 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-bfc5e891a352651b"></a>
+
+### `blender::bke::GeometrySet::get_grease_pencil_for_write`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L622—L626。
+
+**教学注释版**
+
+<!-- annotated:04e38f80ece860 -->
+
+```cpp
 GreasePencil *GeometrySet::get_grease_pencil_for_write()
 {
   GreasePencilComponent *component = this->get_component_for_write_ptr<GreasePencilComponent>();
   return component == nullptr ? nullptr : component->get_for_write();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L622—L626</summary>
+
+<!-- original:04e38f80ece860:source/blender/blenkernel/intern/geometry_set.cc:622:626 -->
+
+```cpp
+GreasePencil *GeometrySet::get_grease_pencil_for_write()
+{
+  GreasePencilComponent *component = this->get_component_for_write_ptr<GreasePencilComponent>();
+  return component == nullptr ? nullptr : component->get_for_write();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return component == nullptr ? nullptr : component->get_for_write();`
+
+**继续追踪实现**
+
+- `this->get_component_for_write_ptr<GreasePencilComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b077f987c95b3425)。
+- `component->get_for_write` → [blender::bke::GreasePencilComponent::get_for_write · L77](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_grease_pencil-01c648.md#f-b399cde6e81f49c4)。
+
+<!-- annotated:5e2159587a3e90 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L627—L627</summary>
+
+<!-- original:5e2159587a3e90:source/blender/blenkernel/intern/geometry_set.cc:627:627 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-e7e91962b52d3318"></a>
+
+### `blender::bke::GeometrySet::count_memory`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L628—L637。
+
+接口参数：
+
+- `MemoryCounter &memory`
+
+**教学注释版**
+
+<!-- annotated:1c0cc85d524371 -->
+
+```cpp
 void GeometrySet::count_memory(MemoryCounter &memory) const
 {
   for (const GeometryComponentPtr &component : components_) {
@@ -1486,61 +4655,66 @@ void GeometrySet::count_memory(MemoryCounter &memory) const
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L628—L637</summary>
 
-- `get_for_write`：进入可变访问边界，需落实共享数据分离；不要通过读取接口强转绕过。
+<!-- original:1c0cc85d524371:source/blender/blenkernel/intern/geometry_set.cc:628:637 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L592 | 出现调用或函数声明 `GeometrySet::get_curve_edit_hints_for_write`，对应表达式为 `CurvesEditHints *GeometrySet::get_curve_edit_hints_for_write()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L593 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L594 | 判断 `!this->has<GeometryComponentEditData>()`，成立时进入本分支，否则继续后续路径。 |
-| L595 | 返回表达式 `nullptr`。 |
-| L596 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L597 | 把右侧 `` 用于初始化或更新左侧 `GeometryComponentEditData &component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L598 | 出现调用或函数声明 `get_component_for_write`，对应表达式为 `this->get_component_for_write<GeometryComponentEditData>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L599 | 返回表达式 `component.curves_edit_hints_.get()`。 |
-| L600 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L602 | 出现调用或函数声明 `GeometrySet::get_grease_pencil_edit_hints_for_write`，对应表达式为 `GreasePencilEditHints *GeometrySet::get_grease_pencil_edit_hints_for_write()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L603 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L604 | 判断 `!this->has<GeometryComponentEditData>()`，成立时进入本分支，否则继续后续路径。 |
-| L605 | 返回表达式 `nullptr`。 |
-| L606 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L607 | 把右侧 `` 用于初始化或更新左侧 `GeometryComponentEditData &component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L608 | 出现调用或函数声明 `get_component_for_write`，对应表达式为 `this->get_component_for_write<GeometryComponentEditData>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L609 | 返回表达式 `component.grease_pencil_edit_hints_.get()`。 |
-| L610 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L612 | 出现调用或函数声明 `GeometrySet::get_gizmo_edit_hints_for_write`，对应表达式为 `GizmoEditHints *GeometrySet::get_gizmo_edit_hints_for_write()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L613 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L614 | 判断 `!this->has<GeometryComponentEditData>()`，成立时进入本分支，否则继续后续路径。 |
-| L615 | 返回表达式 `nullptr`。 |
-| L616 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L617 | 把右侧 `` 用于初始化或更新左侧 `GeometryComponentEditData &component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L618 | 出现调用或函数声明 `get_component_for_write`，对应表达式为 `this->get_component_for_write<GeometryComponentEditData>();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L619 | 返回表达式 `component.gizmo_edit_hints_.get()`。 |
-| L620 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L622 | 出现调用或函数声明 `GeometrySet::get_grease_pencil_for_write`，对应表达式为 `GreasePencil *GeometrySet::get_grease_pencil_for_write()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L623 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L624 | 把右侧 `this->get_component_for_write_ptr<GreasePencilComponent>()` 用于初始化或更新左侧 `GreasePencilComponent *component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L625 | 本行使用 `get_for_write`：进入可变访问边界，需落实共享数据分离；不要通过读取接口强转绕过。 |
-| L626 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L628 | 出现调用或函数声明 `GeometrySet::count_memory`，对应表达式为 `void GeometrySet::count_memory(MemoryCounter &memory) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L629 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L630 | 按 `for (const GeometryComponentPtr &component : components_)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L631 | 判断 `component`，成立时进入本分支，否则继续后续路径。 |
-| L632 | 出现调用或函数声明 `add_shared`，对应表达式为 `memory.add_shared(component.get(), [&](MemoryCounter &shared_memory) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L633 | 出现调用或函数声明 `count_memory`，对应表达式为 `component->count_memory(shared_memory);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L634 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L635 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L636 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L637 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+void GeometrySet::count_memory(MemoryCounter &memory) const
+{
+  for (const GeometryComponentPtr &component : components_) {
+    if (component) {
+      memory.add_shared(component.get(), [&](MemoryCounter &shared_memory) {
+        component->count_memory(shared_memory);
+      });
+    }
+  }
+}
+```
 
-### geometry_set.cc：L638—L673
+</details>
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:638:673 -->
+**继续追踪实现**
+
+- `memory.add_shared` → [blender::memory_counter::MemoryCounter::add_shared · L20](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-memory_counter-6403e6.md#f-0a7db687f64344cf)；[blender::memory_counter::MemoryCounter::add_shared · L38](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-memory_counter-6403e6.md#f-63a65a1c4c176990)。同名重载需按实参类型选择。
+- `component.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L632。
+- `component->count_memory` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L633。
+
+<!-- annotated:ad035c7af47949 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L638—L638</summary>
+
+<!-- original:ad035c7af47949:source/blender/blenkernel/intern/geometry_set.cc:638:638 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-80d996c309d0e8b2"></a>
+
+### `blender::bke::GeometrySet::attribute_foreach`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L639—L673。
+
+接口参数：
+
+- `const Span<GeometryComponent::Type> component_types`
+- `const bool include_instances`
+- `const AttributeForeachCallback callback`
+
+**教学注释版**
+
+<!-- annotated:81e555744a7266 -->
+
+```cpp
 void GeometrySet::attribute_foreach(const Span<GeometryComponent::Type> component_types,
                                     const bool include_instances,
                                     const AttributeForeachCallback callback) const
@@ -1578,54 +4752,103 @@ void GeometrySet::attribute_foreach(const Span<GeometryComponent::Type> componen
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L639—L673</summary>
 
-- 分支证据 `!this->has(component_type))`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `attributes.has_value())`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:81e555744a7266:source/blender/blenkernel/intern/geometry_set.cc:639:673 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L639 | 出现调用或函数声明 `GeometrySet::attribute_foreach`，对应表达式为 `void GeometrySet::attribute_foreach(const Span<GeometryComponent::Type> component_types,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L640 | 本行是连续声明或表达式的一部分：`const bool include_instances,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L641 | 本行是连续声明或表达式的一部分：`const AttributeForeachCallback callback) const`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L642 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L643 | 按 `for (const GeometryComponent::Type component_type : component_types)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L644 | 判断 `!this->has(component_type)`，成立时进入本分支，否则继续后续路径。 |
-| L645 | 结束本轮循环并进入下一轮；核对本轮已经取得的资源是否由作用域或显式代码清理。 |
-| L646 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L647 | 把右侧 `*this->get_component(component_type)` 用于初始化或更新左侧 `const GeometryComponent &component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L648 | 把右侧 `component.attributes()` 用于初始化或更新左侧 `const std::optional<AttributeAccessor> attributes`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L649 | 判断 `attributes.has_value()`，成立时进入本分支，否则继续后续路径。 |
-| L650 | 出现调用或函数声明 `foreach_attribute`，对应表达式为 `attributes->foreach_attribute([&](const AttributeIter &iter) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L651 | 出现调用或函数声明 `callback`，对应表达式为 `callback(iter.name, {iter.domain, iter.data_type}, component);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L652 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L653 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L655 | 判断 `component_type == GeometryComponent::Type::GreasePencil`，成立时进入本分支，否则继续后续路径。 |
-| L656 | 把右侧 `*this->get_grease_pencil()` 用于初始化或更新左侧 `const GreasePencil &grease_pencil`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L657 | 按 `for (const bke::greasepencil::Layer *layer : grease_pencil.layers())` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L658 | 判断 `const bke::greasepencil::Drawing *drawing = grease_pencil.get_eval_drawing(*layer)`，成立时进入本分支，否则继续后续路径。 |
-| L659 | 把右侧 `drawing->strokes().attributes()` 用于初始化或更新左侧 `const AttributeAccessor attributes`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L660 | 出现调用或函数声明 `foreach_attribute`，对应表达式为 `attributes.foreach_attribute([&](const AttributeIter &iter) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L661 | 出现调用或函数声明 `callback`，对应表达式为 `callback(iter.name, {iter.domain, iter.data_type}, component);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L662 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L663 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L664 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L665 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L666 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L667 | 判断 `include_instances && this->has_instances()`，成立时进入本分支，否则继续后续路径。 |
-| L668 | 把右侧 `*this->get_instances()` 用于初始化或更新左侧 `const Instances &instances`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L669 | 出现调用或函数声明 `foreach_referenced_geometry`，对应表达式为 `instances.foreach_referenced_geometry([&](const GeometrySet &instance_geometry_set) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L670 | 出现调用或函数声明 `attribute_foreach`，对应表达式为 `instance_geometry_set.attribute_foreach(component_types, include_instances, callback);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L671 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L672 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L673 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+void GeometrySet::attribute_foreach(const Span<GeometryComponent::Type> component_types,
+                                    const bool include_instances,
+                                    const AttributeForeachCallback callback) const
+{
+  for (const GeometryComponent::Type component_type : component_types) {
+    if (!this->has(component_type)) {
+      continue;
+    }
+    const GeometryComponent &component = *this->get_component(component_type);
+    const std::optional<AttributeAccessor> attributes = component.attributes();
+    if (attributes.has_value()) {
+      attributes->foreach_attribute([&](const AttributeIter &iter) {
+        callback(iter.name, {iter.domain, iter.data_type}, component);
+      });
+    }
+    /* For Grease Pencil, we also need to iterate over the attributes of the evaluated drawings. */
+    if (component_type == GeometryComponent::Type::GreasePencil) {
+      const GreasePencil &grease_pencil = *this->get_grease_pencil();
+      for (const bke::greasepencil::Layer *layer : grease_pencil.layers()) {
+        if (const bke::greasepencil::Drawing *drawing = grease_pencil.get_eval_drawing(*layer)) {
+          const AttributeAccessor attributes = drawing->strokes().attributes();
+          attributes.foreach_attribute([&](const AttributeIter &iter) {
+            callback(iter.name, {iter.domain, iter.data_type}, component);
+          });
+        }
+      }
+    }
+  }
+  if (include_instances && this->has_instances()) {
+    const Instances &instances = *this->get_instances();
+    instances.foreach_referenced_geometry([&](const GeometrySet &instance_geometry_set) {
+      instance_geometry_set.attribute_foreach(component_types, include_instances, callback);
+    });
+  }
+}
+```
 
-### geometry_set.cc：L674—L723
+</details>
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:674:723 -->
+**继续追踪实现**
+
+- `this->has` → [blender::bke::GeometrySet::has · L142](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-5777be605a5451b6)。
+- `this->get_component` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
+- `component.attributes` → [blender::bke::GeometryComponent::attributes · L75](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-d58a41ede5a46f2c)。
+- `attributes.has_value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L649。
+- `attributes->foreach_attribute` → [blender::bke::AttributeAccessor::foreach_attribute · L687](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-44723ac57e0d1fa4)。
+- `callback` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L651。
+- `this->get_grease_pencil` → [blender::bke::GeometrySet::get_grease_pencil · L369](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-4c73d7995c66f8bf)。
+- `grease_pencil.layers` → [blender::GreasePencil::layers · L3983](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-15d64ed11a2babc0)。
+- `grease_pencil.get_eval_drawing` → [blender::GreasePencil::get_eval_drawing · L3877](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-90fc4aad8697fbb6)；[blender::GreasePencil::get_eval_drawing · L3883](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-c0c3d7e7fffac861)。同名重载需按实参类型选择。
+- `drawing->strokes().attributes` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L659。
+- `drawing->strokes` → [blender::bke::greasepencil::Drawing::strokes · L1007](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-59e6522a8e8ac409)。
+- `attributes.foreach_attribute` → [blender::bke::AttributeAccessor::foreach_attribute · L687](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-44723ac57e0d1fa4)。
+- `this->has_instances` → [blender::bke::GeometrySet::has_instances · L381](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-96f474fc46f602f1)。
+- `this->get_instances` → [blender::bke::GeometrySet::get_instances · L345](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-75fcc67a0b3c0fa1)。
+- `instances.foreach_referenced_geometry` → [blender::bke::Instances::foreach_referenced_geometry · L79](%E4%BE%9D%E8%B5%96-geometry_set_instances-cb6843.md#f-f22fd0d0114d3f20)。
+- `instance_geometry_set.attribute_foreach` → [blender::bke::GeometrySet::attribute_foreach · L639](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-80d996c309d0e8b2)。
+
+<!-- annotated:a8bf3b9814195c -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L674—L674</summary>
+
+<!-- original:a8bf3b9814195c:source/blender/blenkernel/intern/geometry_set.cc:674:674 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a5af9d8dd89a0797"></a>
+
+### `blender::bke::attribute_is_builtin_on_component_type`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L675—L709。
+
+接口参数：
+
+- `const GeometryComponent::Type type`
+- `const StringRef name`
+
+**教学注释版**
+
+<!-- annotated:a9abee9f491721 -->
+
+```cpp
 bool attribute_is_builtin_on_component_type(const GeometryComponent::Type type,
                                             const StringRef name)
 {
@@ -1661,7 +4884,103 @@ bool attribute_is_builtin_on_component_type(const GeometryComponent::Type type,
   BLI_assert_unreachable();
   return false;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L675—L709</summary>
+
+<!-- original:a9abee9f491721:source/blender/blenkernel/intern/geometry_set.cc:675:709 -->
+
+```cpp
+bool attribute_is_builtin_on_component_type(const GeometryComponent::Type type,
+                                            const StringRef name)
+{
+  switch (type) {
+    case GeometryComponent::Type::Mesh: {
+      static auto component = GeometryComponent::create(type);
+      return component->attributes()->is_builtin(name);
+    }
+    case GeometryComponent::Type::PointCloud: {
+      static auto component = GeometryComponent::create(type);
+      return component->attributes()->is_builtin(name);
+    }
+    case GeometryComponent::Type::Instance: {
+      static auto component = GeometryComponent::create(type);
+      return component->attributes()->is_builtin(name);
+    }
+    case GeometryComponent::Type::Curve: {
+      static auto component = GeometryComponent::create(type);
+      return component->attributes()->is_builtin(name);
+    }
+    case GeometryComponent::Type::GreasePencil: {
+      static auto grease_pencil_component = GeometryComponent::create(
+          GeometryComponent::Type::GreasePencil);
+      static auto curves_component = GeometryComponent::create(GeometryComponent::Type::Curve);
+      return grease_pencil_component->attributes()->is_builtin(name) ||
+             curves_component->attributes()->is_builtin(name);
+    }
+    case GeometryComponent::Type::Volume:
+    case GeometryComponent::Type::Edit: {
+      return false;
+    }
+  }
+  BLI_assert_unreachable();
+  return false;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return component->attributes()->is_builtin(name);`
+- `return grease_pencil_component->attributes()->is_builtin(name) ||`
+- `return false;`
+
+**继续追踪实现**
+
+- `GeometryComponent::create` → [blender::bke::GeometryComponent::create · L41](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-057aed72adfa658c)。
+- `component->attributes()->is_builtin` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L681。
+- `component->attributes` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L681。
+- `grease_pencil_component->attributes()->is_builtin` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L699。
+- `grease_pencil_component->attributes` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L699。
+- `curves_component->attributes()->is_builtin` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L700。
+- `curves_component->attributes` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L700。
+- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
+
+<!-- annotated:7bb693659c166b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L710—L710</summary>
+
+<!-- original:7bb693659c166b:source/blender/blenkernel/intern/geometry_set.cc:710:710 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-df0701c2f420bf1b"></a>
+
+### `blender::bke::GeometrySet::GatheredAttributes::add`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L711—L723。
+
+接口参数：
+
+- `const StringRef name`
+- `const AttributeDomainAndType &kind`
+
+**教学注释版**
+
+<!-- annotated:2f20864cbf7cd3 -->
+
+```cpp
 void GeometrySet::GatheredAttributes::add(const StringRef name, const AttributeDomainAndType &kind)
 {
   const int index = this->names.index_of_or_add(name);
@@ -1677,67 +4996,77 @@ void GeometrySet::GatheredAttributes::add(const StringRef name, const AttributeD
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L711—L723</summary>
 
-- 分支证据 `index >= this->kinds.size())`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:2f20864cbf7cd3:source/blender/blenkernel/intern/geometry_set.cc:711:723 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L675 | 出现调用或函数声明 `attribute_is_builtin_on_component_type`，对应表达式为 `bool attribute_is_builtin_on_component_type(const GeometryComponent::Type type,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L676 | 本行是连续声明或表达式的一部分：`const StringRef name)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L677 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L678 | 按 switch (type) 选择状态处理路径；每个case的break、return或贯穿行为决定下一步。 |
-| L679 | 进入枚举或判别值对应分支 case GeometryComponent::Type::Mesh: {；结合状态定义和后续更新判断允许的转移。 |
-| L680 | 把右侧 `GeometryComponent::create(type)` 用于初始化或更新左侧 `static auto component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L681 | 返回表达式 `component->attributes()->is_builtin(name)`。 |
-| L682 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L683 | 进入枚举或判别值对应分支 case GeometryComponent::Type::PointCloud: {；结合状态定义和后续更新判断允许的转移。 |
-| L684 | 把右侧 `GeometryComponent::create(type)` 用于初始化或更新左侧 `static auto component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L685 | 返回表达式 `component->attributes()->is_builtin(name)`。 |
-| L686 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L687 | 进入枚举或判别值对应分支 case GeometryComponent::Type::Instance: {；结合状态定义和后续更新判断允许的转移。 |
-| L688 | 把右侧 `GeometryComponent::create(type)` 用于初始化或更新左侧 `static auto component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L689 | 返回表达式 `component->attributes()->is_builtin(name)`。 |
-| L690 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L691 | 进入枚举或判别值对应分支 case GeometryComponent::Type::Curve: {；结合状态定义和后续更新判断允许的转移。 |
-| L692 | 把右侧 `GeometryComponent::create(type)` 用于初始化或更新左侧 `static auto component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L693 | 返回表达式 `component->attributes()->is_builtin(name)`。 |
-| L694 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L695 | 进入枚举或判别值对应分支 case GeometryComponent::Type::GreasePencil: {；结合状态定义和后续更新判断允许的转移。 |
-| L696 | 把右侧 `GeometryComponent::create(` 用于初始化或更新左侧 `static auto grease_pencil_component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L697 | 声明成员、局部对象或完成语句 `GeometryComponent::Type::GreasePencil)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L698 | 把右侧 `GeometryComponent::create(GeometryComponent::Type::Curve)` 用于初始化或更新左侧 `static auto curves_component`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L699 | 返回表达式 `grease_pencil_component->attributes()->is_builtin(name) &#124;&#124;`。 |
-| L700 | 出现调用或函数声明 `attributes`，对应表达式为 `curves_component->attributes()->is_builtin(name);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L701 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L702 | 进入枚举或判别值对应分支 case GeometryComponent::Type::Volume:；结合状态定义和后续更新判断允许的转移。 |
-| L703 | 进入枚举或判别值对应分支 case GeometryComponent::Type::Edit: {；结合状态定义和后续更新判断允许的转移。 |
-| L704 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L705 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L706 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L707 | 断言约束 `BLI_assert_unreachable();`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L708 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L709 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L711 | 出现调用或函数声明 `GeometrySet::GatheredAttributes::add`，对应表达式为 `void GeometrySet::GatheredAttributes::add(const StringRef name, const AttributeDomainAndType &kind)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L712 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L713 | 把右侧 `this->names.index_of_or_add(name)` 用于初始化或更新左侧 `const int index`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L714 | 判断 `index >= this->kinds.size()`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L715 | 出现调用或函数声明 `append`，对应表达式为 `this->kinds.append(AttributeDomainAndType{kind.domain, kind.data_type});`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L716 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L717 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L718 | 把右侧 `bke::attribute_domain_highest_priority(` 用于初始化或更新左侧 `this->kinds[index].domain`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L719 | 声明成员、局部对象或完成语句 `{this->kinds[index].domain, kind.domain})`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L720 | 把右侧 `bke::attribute_data_type_highest_complexity(` 用于初始化或更新左侧 `this->kinds[index].data_type`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L721 | 声明成员、局部对象或完成语句 `{this->kinds[index].data_type, kind.data_type})`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L722 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L723 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+void GeometrySet::GatheredAttributes::add(const StringRef name, const AttributeDomainAndType &kind)
+{
+  const int index = this->names.index_of_or_add(name);
+  if (index >= this->kinds.size()) {
+    this->kinds.append(AttributeDomainAndType{kind.domain, kind.data_type});
+  }
+  else {
+    this->kinds[index].domain = bke::attribute_domain_highest_priority(
+        {this->kinds[index].domain, kind.domain});
+    this->kinds[index].data_type = bke::attribute_data_type_highest_complexity(
+        {this->kinds[index].data_type, kind.data_type});
+  }
+}
+```
 
-### geometry_set.cc：L724—L772
+</details>
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:724:772 -->
+**沿实际写入检查状态**
+
+- `this->kinds[index].domain = bke::attribute_domain_highest_priority(`
+- `this->kinds[index].data_type = bke::attribute_data_type_highest_complexity(`
+
+**继续追踪实现**
+
+- `this->names.index_of_or_add` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L713。
+- `this->kinds.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L714。
+- `this->kinds.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L715。
+- `bke::attribute_domain_highest_priority` → [blender::bke::attribute_domain_highest_priority · L327](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-4577347bd2fe8cf9)。
+- `bke::attribute_data_type_highest_complexity` → [blender::bke::attribute_data_type_highest_complexity · L283](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-c82c512ea46b8658)。
+
+<!-- annotated:98c5774915a65c -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L724—L724</summary>
+
+<!-- original:98c5774915a65c:source/blender/blenkernel/intern/geometry_set.cc:724:724 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-1c207465a47ea46b"></a>
+
+### `blender::bke::gather_component_types_recursive`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L725—L749。
+
+接口参数：
+
+- `const GeometrySet &geometry_set`
+- `const bool include_instances`
+- `const bool ignore_empty`
+- `Vector<GeometryComponent::Type> &r_types`
+
+**教学注释版**
+
+<!-- annotated:c08ef58116e53b -->
+
+```cpp
 static void gather_component_types_recursive(const GeometrySet &geometry_set,
                                              const bool include_instances,
                                              const bool ignore_empty,
@@ -1763,7 +5092,86 @@ static void gather_component_types_recursive(const GeometrySet &geometry_set,
         instance_geometry_set, include_instances, ignore_empty, r_types);
   });
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L725—L749</summary>
+
+<!-- original:c08ef58116e53b:source/blender/blenkernel/intern/geometry_set.cc:725:749 -->
+
+```cpp
+static void gather_component_types_recursive(const GeometrySet &geometry_set,
+                                             const bool include_instances,
+                                             const bool ignore_empty,
+                                             Vector<GeometryComponent::Type> &r_types)
+{
+  for (const GeometryComponent *component : geometry_set.get_components()) {
+    if (ignore_empty) {
+      if (component->is_empty()) {
+        continue;
+      }
+    }
+    r_types.append_non_duplicates(component->type());
+  }
+  if (!include_instances) {
+    return;
+  }
+  const Instances *instances = geometry_set.get_instances();
+  if (instances == nullptr) {
+    return;
+  }
+  instances->foreach_referenced_geometry([&](const GeometrySet &instance_geometry_set) {
+    gather_component_types_recursive(
+        instance_geometry_set, include_instances, ignore_empty, r_types);
+  });
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `geometry_set.get_components` → [blender::bke::GeometrySet::get_components · L172](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-cc37b529b336a65e)。
+- `component->is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L732。
+- `r_types.append_non_duplicates` → [blender::Vector::append_non_duplicates · L537](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-7741238254851c96)。
+- `component->type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L736。
+- `geometry_set.get_instances` → [blender::bke::GeometrySet::get_instances · L345](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-75fcc67a0b3c0fa1)。
+- `instances->foreach_referenced_geometry` → [blender::bke::Instances::foreach_referenced_geometry · L79](%E4%BE%9D%E8%B5%96-geometry_set_instances-cb6843.md#f-f22fd0d0114d3f20)。
+- `gather_component_types_recursive` → [blender::bke::gather_component_types_recursive · L725](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-1c207465a47ea46b)。
+
+<!-- annotated:b021494e604050 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L750—L750</summary>
+
+<!-- original:b021494e604050:source/blender/blenkernel/intern/geometry_set.cc:750:750 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-4e435cce666ede4e"></a>
+
+### `blender::bke::GeometrySet::gather_component_types`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L751—L757。
+
+接口参数：
+
+- `const bool include_instances`
+- `bool ignore_empty`
+
+**教学注释版**
+
+<!-- annotated:b9c8ad3f62508b -->
+
+```cpp
 Vector<GeometryComponent::Type> GeometrySet::gather_component_types(const bool include_instances,
                                                                     bool ignore_empty) const
 {
@@ -1771,86 +5179,285 @@ Vector<GeometryComponent::Type> GeometrySet::gather_component_types(const bool i
   gather_component_types_recursive(*this, include_instances, ignore_empty, types);
   return types;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L751—L757</summary>
+
+<!-- original:b9c8ad3f62508b:source/blender/blenkernel/intern/geometry_set.cc:751:757 -->
+
+```cpp
+Vector<GeometryComponent::Type> GeometrySet::gather_component_types(const bool include_instances,
+                                                                    bool ignore_empty) const
+{
+  Vector<GeometryComponent::Type> types;
+  gather_component_types_recursive(*this, include_instances, ignore_empty, types);
+  return types;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return types;`
+
+**继续追踪实现**
+
+- `gather_component_types_recursive` → [blender::bke::gather_component_types_recursive · L725](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-1c207465a47ea46b)。
+
+<!-- annotated:104ad634818701 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L758—L758</summary>
+
+<!-- original:104ad634818701:source/blender/blenkernel/intern/geometry_set.cc:758:758 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-607ccecfa5f4141f"></a>
+
+### `blender::bke::GeometrySet::has_bundle`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L759—L762。
+
+**教学注释版**
+
+<!-- annotated:ab1b9fce04c7df -->
+
+```cpp
 bool GeometrySet::has_bundle() const
 {
   return bundle_;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L759—L762</summary>
+
+<!-- original:ab1b9fce04c7df:source/blender/blenkernel/intern/geometry_set.cc:759:762 -->
+
+```cpp
+bool GeometrySet::has_bundle() const
+{
+  return bundle_;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return bundle_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:cb547d69bcad2f -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L763—L763</summary>
+
+<!-- original:cb547d69bcad2f:source/blender/blenkernel/intern/geometry_set.cc:763:763 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-96d381ad16719cfb"></a>
+
+### `blender::bke::GeometrySet::bundle`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L764—L767。
+
+**教学注释版**
+
+<!-- annotated:70be49fa1b8f66 -->
+
+```cpp
 const nodes::Bundle *GeometrySet::bundle() const
 {
   return bundle_.get();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L764—L767</summary>
+
+<!-- original:70be49fa1b8f66:source/blender/blenkernel/intern/geometry_set.cc:764:767 -->
+
+```cpp
+const nodes::Bundle *GeometrySet::bundle() const
+{
+  return bundle_.get();
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return bundle_.get();`
+
+**继续追踪实现**
+
+- `bundle_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L766。
+
+<!-- annotated:fac4935e3ff0c5 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L768—L768</summary>
+
+<!-- original:fac4935e3ff0c5:source/blender/blenkernel/intern/geometry_set.cc:768:768 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-235d74dc85ecf06b"></a>
+
+### `blender::bke::GeometrySet::bundle_ptr`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L769—L772。
+
+**教学注释版**
+
+<!-- annotated:cec36108496ade -->
+
+```cpp
 const nodes::BundlePtr &GeometrySet::bundle_ptr() const
 {
   return bundle_;
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L769—L772</summary>
 
-- 分支证据 `ignore_empty)`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `component->is_empty())`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:cec36108496ade:source/blender/blenkernel/intern/geometry_set.cc:769:772 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L725 | 出现调用或函数声明 `gather_component_types_recursive`，对应表达式为 `static void gather_component_types_recursive(const GeometrySet &geometry_set,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L726 | 本行是连续声明或表达式的一部分：`const bool include_instances,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L727 | 本行是连续声明或表达式的一部分：`const bool ignore_empty,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L728 | 本行是连续声明或表达式的一部分：`Vector<GeometryComponent::Type> &r_types)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L729 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L730 | 按 `for (const GeometryComponent *component : geometry_set.get_components())` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L731 | 判断 `ignore_empty`，成立时进入本分支，否则继续后续路径。 |
-| L732 | 判断 `component->is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L733 | 结束本轮循环并进入下一轮；核对本轮已经取得的资源是否由作用域或显式代码清理。 |
-| L734 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L735 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L736 | 出现调用或函数声明 `append_non_duplicates`，对应表达式为 `r_types.append_non_duplicates(component->type());`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L737 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L738 | 判断 `!include_instances`，成立时进入本分支，否则继续后续路径。 |
-| L739 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L740 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L741 | 把右侧 `geometry_set.get_instances()` 用于初始化或更新左侧 `const Instances *instances`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L742 | 判断 `instances == nullptr`，成立时进入本分支，否则继续后续路径。这里区分空地址与可用地址，但非空本身仍不能证明对象存活。 |
-| L743 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L744 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L745 | 出现调用或函数声明 `foreach_referenced_geometry`，对应表达式为 `instances->foreach_referenced_geometry([&](const GeometrySet &instance_geometry_set) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L746 | 出现调用或函数声明 `gather_component_types_recursive`，对应表达式为 `gather_component_types_recursive(`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L747 | 声明成员、局部对象或完成语句 `instance_geometry_set, include_instances, ignore_empty, r_types)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L748 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L749 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L751 | 出现调用或函数声明 `GeometrySet::gather_component_types`，对应表达式为 `Vector<GeometryComponent::Type> GeometrySet::gather_component_types(const bool include_instances,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L752 | 本行是连续声明或表达式的一部分：`bool ignore_empty) const`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L753 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L754 | 声明成员、局部对象或完成语句 `Vector<GeometryComponent::Type> types`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L755 | 出现调用或函数声明 `gather_component_types_recursive`，对应表达式为 `gather_component_types_recursive(*this, include_instances, ignore_empty, types);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L756 | 返回表达式 `types`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L757 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L759 | 出现调用或函数声明 `GeometrySet::has_bundle`，对应表达式为 `bool GeometrySet::has_bundle() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L760 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L761 | 返回表达式 `bundle_`。 |
-| L762 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L764 | 出现调用或函数声明 `GeometrySet::bundle`，对应表达式为 `const nodes::Bundle *GeometrySet::bundle() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L765 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L766 | 返回表达式 `bundle_.get()`。 |
-| L767 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L769 | 出现调用或函数声明 `GeometrySet::bundle_ptr`，对应表达式为 `const nodes::BundlePtr &GeometrySet::bundle_ptr() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L770 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L771 | 返回表达式 `bundle_`。 |
-| L772 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+const nodes::BundlePtr &GeometrySet::bundle_ptr() const
+{
+  return bundle_;
+}
+```
 
-### geometry_set.cc：L773—L813
+</details>
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:773:813 -->
+**结果出口**
+
+- `return bundle_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:6fc500442587c2 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L773—L773</summary>
+
+<!-- original:6fc500442587c2:source/blender/blenkernel/intern/geometry_set.cc:773:773 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-034ec9e085dc2d32"></a>
+
+### `blender::bke::GeometrySet::bundle_ptr`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L774—L777。
+
+**教学注释版**
+
+<!-- annotated:80242702780c19 -->
+
+```cpp
 nodes::BundlePtr &GeometrySet::bundle_ptr()
 {
   return bundle_;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L774—L777</summary>
+
+<!-- original:80242702780c19:source/blender/blenkernel/intern/geometry_set.cc:774:777 -->
+
+```cpp
+nodes::BundlePtr &GeometrySet::bundle_ptr()
+{
+  return bundle_;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return bundle_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:101e4abe63f45b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L778—L778</summary>
+
+<!-- original:101e4abe63f45b:source/blender/blenkernel/intern/geometry_set.cc:778:778 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9f3eaefe0279cab7"></a>
+
+### `blender::bke::GeometrySet::bundle_for_write`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L779—L785。
+
+**教学注释版**
+
+<!-- annotated:2783af9bb80d00 -->
+
+```cpp
 nodes::Bundle &GeometrySet::bundle_for_write()
 {
   if (!bundle_) {
@@ -1858,12 +5465,130 @@ nodes::Bundle &GeometrySet::bundle_for_write()
   }
   return bundle_.ensure_mutable_inplace();
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L779—L785</summary>
+
+<!-- original:2783af9bb80d00:source/blender/blenkernel/intern/geometry_set.cc:779:785 -->
+
+```cpp
+nodes::Bundle &GeometrySet::bundle_for_write()
+{
+  if (!bundle_) {
+    bundle_ = nodes::Bundle::create();
+  }
+  return bundle_.ensure_mutable_inplace();
+}
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `bundle_ = nodes::Bundle::create();`
+
+**结果出口**
+
+- `return bundle_.ensure_mutable_inplace();`
+
+**继续追踪实现**
+
+- `nodes::Bundle::create` → [blender::bke::GeometryComponent::create · L41](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-057aed72adfa658c)。
+- `bundle_.ensure_mutable_inplace` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L784。
+
+<!-- annotated:fbf9c15c33aacb -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L786—L786</summary>
+
+<!-- original:fbf9c15c33aacb:source/blender/blenkernel/intern/geometry_set.cc:786:786 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-32e6a8e8cd4cc25c"></a>
+
+### `blender::bke::GeometrySet::copy_bundle_from`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L787—L790。
+
+接口参数：
+
+- `const GeometrySet &other`
+
+**教学注释版**
+
+<!-- annotated:fe51899465727d -->
+
+```cpp
 void GeometrySet::copy_bundle_from(const GeometrySet &other)
 {
   bundle_ = other.bundle_;
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L787—L790</summary>
+
+<!-- original:fe51899465727d:source/blender/blenkernel/intern/geometry_set.cc:787:790 -->
+
+```cpp
+void GeometrySet::copy_bundle_from(const GeometrySet &other)
+{
+  bundle_ = other.bundle_;
+}
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `bundle_ = other.bundle_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:ff8868a01ac3dc -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L791—L791</summary>
+
+<!-- original:ff8868a01ac3dc:source/blender/blenkernel/intern/geometry_set.cc:791:791 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-79a1a9ddd0a95801"></a>
+
+### `blender::bke::GeometrySet::merge_bundle_from`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L792—L803。
+
+接口参数：
+
+- `const GeometrySet &other`
+
+**教学注释版**
+
+<!-- annotated:425c6371edbe2d -->
+
+```cpp
 void GeometrySet::merge_bundle_from(const GeometrySet &other)
 {
   if (!other.has_bundle()) {
@@ -1876,67 +5601,187 @@ void GeometrySet::merge_bundle_from(const GeometrySet &other)
     this->copy_bundle_from(other);
   }
 }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L792—L803</summary>
+
+<!-- original:425c6371edbe2d:source/blender/blenkernel/intern/geometry_set.cc:792:803 -->
+
+```cpp
+void GeometrySet::merge_bundle_from(const GeometrySet &other)
+{
+  if (!other.has_bundle()) {
+    return;
+  }
+  if (bundle_) {
+    this->bundle_for_write().merge(*other.bundle());
+  }
+  else {
+    this->copy_bundle_from(other);
+  }
+}
+```
+
+</details>
+
+**继续追踪实现**
+
+- `other.has_bundle` → [blender::bke::GeometrySet::has_bundle · L759](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-607ccecfa5f4141f)。
+- `this->bundle_for_write().merge` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L798。
+- `this->bundle_for_write` → [blender::bke::GeometrySet::bundle_for_write · L779](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-9f3eaefe0279cab7)。
+- `other.bundle` → [blender::bke::GeometrySet::bundle · L764](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-96d381ad16719cfb)。
+- `this->copy_bundle_from` → [blender::bke::GeometrySet::copy_bundle_from · L787](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32e6a8e8cd4cc25c)。
+
+<!-- annotated:1dbc2882c09f0a -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L804—L804</summary>
+
+<!-- original:1dbc2882c09f0a:source/blender/blenkernel/intern/geometry_set.cc:804:804 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8509f63d0760936e"></a>
+
+### `blender::bke::GeometrySet::set_name`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L805—L808。
+
+接口参数：
+
+- `std::string name`
+
+**教学注释版**
+
+<!-- annotated:7c9879ed797db4 -->
+
+```cpp
+void GeometrySet::set_name(std::string name)
+{
+  // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+  name_ = std::move(name);
+}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L805—L808</summary>
+
+<!-- original:7c9879ed797db4:source/blender/blenkernel/intern/geometry_set.cc:805:808 -->
+
+```cpp
 void GeometrySet::set_name(std::string name)
 {
   name_ = std::move(name);
 }
+```
 
+</details>
+
+**沿实际写入检查状态**
+
+- `name_ = std::move(name);`
+
+**继续追踪实现**
+
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<!-- annotated:409e844113a492 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L809—L809</summary>
+
+<!-- original:409e844113a492:source/blender/blenkernel/intern/geometry_set.cc:809:809 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8cf6870c2e71a4aa"></a>
+
+### `blender::bke::GeometrySet::name`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L810—L813。
+
+**教学注释版**
+
+<!-- annotated:4423fd95094bb1 -->
+
+```cpp
 StringRefNull GeometrySet::name() const
 {
   return name_;
 }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L810—L813</summary>
 
-- 分支证据 `!bundle_)`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `!other.has_bundle())`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:4423fd95094bb1:source/blender/blenkernel/intern/geometry_set.cc:810:813 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L774 | 出现调用或函数声明 `GeometrySet::bundle_ptr`，对应表达式为 `nodes::BundlePtr &GeometrySet::bundle_ptr()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L775 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L776 | 返回表达式 `bundle_`。 |
-| L777 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L779 | 出现调用或函数声明 `GeometrySet::bundle_for_write`，对应表达式为 `nodes::Bundle &GeometrySet::bundle_for_write()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L780 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L781 | 判断 `!bundle_`，成立时进入本分支，否则继续后续路径。 |
-| L782 | 把右侧 `nodes::Bundle::create()` 用于初始化或更新左侧 `bundle_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L783 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L784 | 返回表达式 `bundle_.ensure_mutable_inplace()`。 |
-| L785 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L787 | 出现调用或函数声明 `GeometrySet::copy_bundle_from`，对应表达式为 `void GeometrySet::copy_bundle_from(const GeometrySet &other)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L788 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L789 | 把右侧 `other.bundle_` 用于初始化或更新左侧 `bundle_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L790 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L792 | 出现调用或函数声明 `GeometrySet::merge_bundle_from`，对应表达式为 `void GeometrySet::merge_bundle_from(const GeometrySet &other)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L793 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L794 | 判断 `!other.has_bundle()`，成立时进入本分支，否则继续后续路径。 |
-| L795 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L796 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L797 | 判断 `bundle_`，成立时进入本分支，否则继续后续路径。 |
-| L798 | 出现调用或函数声明 `bundle_for_write`，对应表达式为 `this->bundle_for_write().merge(*other.bundle());`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L799 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L800 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L801 | 出现调用或函数声明 `copy_bundle_from`，对应表达式为 `this->copy_bundle_from(other);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L802 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L803 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L805 | 出现调用或函数声明 `GeometrySet::set_name`，对应表达式为 `void GeometrySet::set_name(std::string name)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L806 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L807 | 把右侧 `std::move(name)` 用于初始化或更新左侧 `name_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L808 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L810 | 出现调用或函数声明 `GeometrySet::name`，对应表达式为 `StringRefNull GeometrySet::name() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L811 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L812 | 返回表达式 `name_`。 |
-| L813 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+StringRefNull GeometrySet::name() const
+{
+  return name_;
+}
+```
 
-### geometry_set.cc：L814—L846
+</details>
 
-<!-- source:source/blender/blenkernel/intern/geometry_set.cc:814:846 -->
+**结果出口**
+
+- `return name_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:43336cf3de162b -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L814—L814</summary>
+
+<!-- original:43336cf3de162b:source/blender/blenkernel/intern/geometry_set.cc:814:814 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-e48d507dbfd856ee"></a>
+
+### `blender::bke::object_has_geometry_set_instances`
+
+实现位置：[source/blender/blenkernel/intern/geometry_set.cc](../../../../../source/blender/blenkernel/intern/geometry_set.cc) · L815—L842。
+
+接口参数：
+
+- `const Object &object`
+
+**教学注释版**
+
+<!-- annotated:c01eddbb64014a -->
+
+```cpp
 bool object_has_geometry_set_instances(const Object &object)
 {
   const GeometrySet *geometry_set = object.runtime->geometry_set_eval;
@@ -1965,300 +5810,146 @@ bool object_has_geometry_set_instances(const Object &object)
   }
   return false;
 }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L815—L842</summary>
+
+<!-- original:c01eddbb64014a:source/blender/blenkernel/intern/geometry_set.cc:815:842 -->
+
+```cpp
+bool object_has_geometry_set_instances(const Object &object)
+{
+  const GeometrySet *geometry_set = object.runtime->geometry_set_eval;
+  if (geometry_set == nullptr) {
+    return false;
+  }
+  if (geometry_set->has_component<InstancesComponent>()) {
+    return true;
+  }
+  if (object.type != OB_MESH && geometry_set->has_component<MeshComponent>()) {
+    return true;
+  }
+  if (object.type != OB_POINTCLOUD && geometry_set->has_component<PointCloudComponent>()) {
+    return true;
+  }
+  if (object.type != OB_VOLUME && geometry_set->has_component<VolumeComponent>()) {
+    return true;
+  }
+  if (!ELEM(object.type, OB_CURVES_LEGACY, OB_FONT) &&
+      geometry_set->has_component<CurveComponent>())
+  {
+    return true;
+  }
+  if (object.type != OB_GREASE_PENCIL && geometry_set->has_component<GreasePencilComponent>()) {
+    return true;
+  }
+  return false;
+}
+```
+
+</details>
+
+**结果出口**
+
+- `return false;`
+- `return true;`
+
+**继续追踪实现**
+
+- `geometry_set->has_component<InstancesComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent%E5%85%B1%E4%BA%AB.md#f-b8d4ee0c445a53ad)。
+- `geometry_set->has_component<MeshComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent%E5%85%B1%E4%BA%AB.md#f-b8d4ee0c445a53ad)。
+- `geometry_set->has_component<PointCloudComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent%E5%85%B1%E4%BA%AB.md#f-b8d4ee0c445a53ad)。
+- `geometry_set->has_component<VolumeComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent%E5%85%B1%E4%BA%AB.md#f-b8d4ee0c445a53ad)。
+- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `geometry_set->has_component<CurveComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent%E5%85%B1%E4%BA%AB.md#f-b8d4ee0c445a53ad)。
+- `geometry_set->has_component<GreasePencilComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent%E5%85%B1%E4%BA%AB.md#f-b8d4ee0c445a53ad)。
+
+### 类型布局、声明与编译条件 · geometry_set.cc L843—L846
+
+<!-- annotated:f9cf9d77715da6 -->
+
+```cpp
 
 /** \} */
 
 }  // namespace blender::bke
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenkernel/intern/geometry_set.cc · L843—L846</summary>
 
-- 分支证据 `geometry_set == nullptr)`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `geometry_set->has_component<InstancesComponent>())`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:f9cf9d77715da6:source/blender/blenkernel/intern/geometry_set.cc:843:846 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L815 | 出现调用或函数声明 `object_has_geometry_set_instances`，对应表达式为 `bool object_has_geometry_set_instances(const Object &object)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L816 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L817 | 把右侧 `object.runtime->geometry_set_eval` 用于初始化或更新左侧 `const GeometrySet *geometry_set`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L818 | 判断 `geometry_set == nullptr`，成立时进入本分支，否则继续后续路径。这里区分空地址与可用地址，但非空本身仍不能证明对象存活。 |
-| L819 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L820 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L821 | 判断 `geometry_set->has_component<InstancesComponent>()`，成立时进入本分支，否则继续后续路径。 |
-| L822 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L823 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L824 | 判断 `object.type != OB_MESH && geometry_set->has_component<MeshComponent>()`，成立时进入本分支，否则继续后续路径。 |
-| L825 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L826 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L827 | 判断 `object.type != OB_POINTCLOUD && geometry_set->has_component<PointCloudComponent>()`，成立时进入本分支，否则继续后续路径。 |
-| L828 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L829 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L830 | 判断 `object.type != OB_VOLUME && geometry_set->has_component<VolumeComponent>()`，成立时进入本分支，否则继续后续路径。 |
-| L831 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L832 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L833 | 判断 `!ELEM(object.type, OB_CURVES_LEGACY, OB_FONT`，成立时进入本分支，否则继续后续路径。 |
-| L834 | 出现调用或函数声明 `has_component`，对应表达式为 `geometry_set->has_component<CurveComponent>())`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L835 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L836 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L837 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L838 | 判断 `object.type != OB_GREASE_PENCIL && geometry_set->has_component<GreasePencilComponent>()`，成立时进入本分支，否则继续后续路径。 |
-| L839 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L840 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L841 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L842 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L846 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
 
-## 五、接口定位、调用线索与生命周期
+/** \} */
 
-### 本篇声明与实现入口
-
-| 源码位置 | 实际声明片段 |
-|---|---|
-| [geometry_set.cc:L41](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L41) | `GeometryComponentPtr GeometryComponent::create(Type component_type)` |
-| [geometry_set.cc:L63](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L63) | `int GeometryComponent::attribute_domain_size(const AttrDomain domain) const` |
-| [geometry_set.cc:L75](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L75) | `std::optional<AttributeAccessor> GeometryComponent::attributes() const` |
-| [geometry_set.cc:L79](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L79) | `std::optional<MutableAttributeAccessor> GeometryComponent::attributes_for_write()` |
-| [geometry_set.cc:L84](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L84) | `void GeometryComponent::count_memory(MemoryCounter & /*memory*/) const {}` |
-| [geometry_set.cc:L86](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L86) | `GeometryComponent::Type GeometryComponent::type() const` |
-| [geometry_set.cc:L91](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L91) | `bool GeometryComponent::is_empty() const` |
-| [geometry_set.cc:L96](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L96) | `void GeometryComponent::delete_self()` |
-| [geometry_set.cc:L101](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L101) | `void GeometryComponent::delete_data_only()` |
-| [geometry_set.cc:L119](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L119) | `GeometryComponent &GeometrySet::get_component_for_write(GeometryComponent::Type component_type)` |
-| [geometry_set.cc:L129](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L129) | `GeometryComponent *GeometrySet::get_component_for_write_ptr(GeometryComponent::Type type)` |
-| [geometry_set.cc:L137](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L137) | `const GeometryComponent *GeometrySet::get_component(GeometryComponent::Type component_type) const` |
-| [geometry_set.cc:L142](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L142) | `bool GeometrySet::has(const GeometryComponent::Type component_type) const` |
-| [geometry_set.cc:L148](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L148) | `void GeometrySet::remove(const GeometryComponent::Type component_type)` |
-| [geometry_set.cc:L153](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L153) | `void GeometrySet::keep_only(const Span<GeometryComponent::Type> component_types)` |
-| [geometry_set.cc:L164](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L164) | `void GeometrySet::add(const GeometryComponent &component)` |
-| [geometry_set.cc:L172](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L172) | `Vector<const GeometryComponent *> GeometrySet::get_components() const` |
-| [geometry_set.cc:L183](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L183) | `std::optional<Bounds<float3>> GeometrySet::compute_boundbox_without_instances(` |
-| [geometry_set.cc:L265](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L265) | `void GeometrySet::clear()` |
-| [geometry_set.cc:L272](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L272) | `void GeometrySet::ensure_owns_direct_data()` |
-| [geometry_set.cc:L286](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L286) | `void GeometrySet::ensure_owns_all_data()` |
-| [geometry_set.cc:L294](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L294) | `bool GeometrySet::owns_direct_data() const` |
-| [geometry_set.cc:L306](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L306) | `void GeometrySet::ensure_no_shared_components()` |
-| [geometry_set.cc:L315](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L315) | `const Mesh *GeometrySet::get_mesh() const` |
-| [geometry_set.cc:L321](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L321) | `bool GeometrySet::has_mesh() const` |
-| [geometry_set.cc:L327](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L327) | `const PointCloud *GeometrySet::get_pointcloud() const` |
-| [geometry_set.cc:L333](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L333) | `const Volume *GeometrySet::get_volume() const` |
-| [geometry_set.cc:L339](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L339) | `const Curves *GeometrySet::get_curves() const` |
-| [geometry_set.cc:L345](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L345) | `const Instances *GeometrySet::get_instances() const` |
-| [geometry_set.cc:L351](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L351) | `const CurvesEditHints *GeometrySet::get_curve_edit_hints() const` |
-| [geometry_set.cc:L357](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L357) | `const GreasePencilEditHints *GeometrySet::get_grease_pencil_edit_hints() const` |
-| [geometry_set.cc:L363](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L363) | `const GizmoEditHints *GeometrySet::get_gizmo_edit_hints() const` |
-| [geometry_set.cc:L369](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L369) | `const GreasePencil *GeometrySet::get_grease_pencil() const` |
-| [geometry_set.cc:L375](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L375) | `bool GeometrySet::has_pointcloud() const` |
-| [geometry_set.cc:L381](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L381) | `bool GeometrySet::has_instances() const` |
-| [geometry_set.cc:L388](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L388) | `bool GeometrySet::has_volume() const` |
-| [geometry_set.cc:L394](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L394) | `bool GeometrySet::has_curves() const` |
-| [geometry_set.cc:L400](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L400) | `bool GeometrySet::has_realized_data() const` |
-| [geometry_set.cc:L415](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L415) | `bool GeometrySet::has_grease_pencil() const` |
-| [geometry_set.cc:L421](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L421) | `bool GeometrySet::is_empty() const` |
-| [geometry_set.cc:L427](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L427) | `GeometrySet GeometrySet::from_mesh(Mesh *mesh, GeometryOwnershipType ownership)` |
-| [geometry_set.cc:L434](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L434) | `GeometrySet GeometrySet::from_volume(Volume *volume, GeometryOwnershipType ownership)` |
-| [geometry_set.cc:L441](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L441) | `GeometrySet GeometrySet::from_pointcloud(PointCloud *pointcloud, GeometryOwnershipType ownership)` |
-| [geometry_set.cc:L448](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L448) | `GeometrySet GeometrySet::from_curves(Curves *curves, GeometryOwnershipType ownership)` |
-| [geometry_set.cc:L455](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L455) | `GeometrySet GeometrySet::from_instances(Instances *instances, GeometryOwnershipType ownership)` |
-| [geometry_set.cc:L462](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L462) | `GeometrySet GeometrySet::from_instances(std::unique_ptr<Instances> instances)` |
-| [geometry_set.cc:L469](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L469) | `GeometrySet GeometrySet::from_grease_pencil(GreasePencil *grease_pencil,` |
-| [geometry_set.cc:L477](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L477) | `void GeometrySet::replace_mesh(Mesh *mesh, GeometryOwnershipType ownership)` |
-| [geometry_set.cc:L491](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L491) | `void GeometrySet::replace_curves(Curves *curves, GeometryOwnershipType ownership)` |
-| [geometry_set.cc:L505](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L505) | `void GeometrySet::replace_instances(Instances *instances, GeometryOwnershipType ownership)` |
-| [geometry_set.cc:L519](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L519) | `void GeometrySet::replace_pointcloud(PointCloud *pointcloud, GeometryOwnershipType ownership)` |
-| [geometry_set.cc:L533](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L533) | `void GeometrySet::replace_volume(Volume *volume, GeometryOwnershipType ownership)` |
-| [geometry_set.cc:L547](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L547) | `void GeometrySet::replace_grease_pencil(GreasePencil *grease_pencil,` |
-| [geometry_set.cc:L562](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L562) | `Mesh *GeometrySet::get_mesh_for_write()` |
-| [geometry_set.cc:L568](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L568) | `PointCloud *GeometrySet::get_pointcloud_for_write()` |
-| [geometry_set.cc:L574](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L574) | `Volume *GeometrySet::get_volume_for_write()` |
-| [geometry_set.cc:L580](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L580) | `Curves *GeometrySet::get_curves_for_write()` |
-| [geometry_set.cc:L586](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L586) | `Instances *GeometrySet::get_instances_for_write()` |
-| [geometry_set.cc:L592](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L592) | `CurvesEditHints *GeometrySet::get_curve_edit_hints_for_write()` |
-| [geometry_set.cc:L602](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L602) | `GreasePencilEditHints *GeometrySet::get_grease_pencil_edit_hints_for_write()` |
-| [geometry_set.cc:L612](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L612) | `GizmoEditHints *GeometrySet::get_gizmo_edit_hints_for_write()` |
-| [geometry_set.cc:L622](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L622) | `GreasePencil *GeometrySet::get_grease_pencil_for_write()` |
-| [geometry_set.cc:L628](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L628) | `void GeometrySet::count_memory(MemoryCounter &memory) const` |
-| [geometry_set.cc:L639](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L639) | `void GeometrySet::attribute_foreach(const Span<GeometryComponent::Type> component_types,` |
-| [geometry_set.cc:L675](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L675) | `bool attribute_is_builtin_on_component_type(const GeometryComponent::Type type,` |
-| [geometry_set.cc:L711](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L711) | `void GeometrySet::GatheredAttributes::add(const StringRef name, const AttributeDomainAndType &kind)` |
-| [geometry_set.cc:L725](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L725) | `static void gather_component_types_recursive(const GeometrySet &geometry_set,` |
-| [geometry_set.cc:L751](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L751) | `Vector<GeometryComponent::Type> GeometrySet::gather_component_types(const bool include_instances,` |
-| [geometry_set.cc:L759](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L759) | `bool GeometrySet::has_bundle() const` |
-| [geometry_set.cc:L764](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L764) | `const nodes::Bundle *GeometrySet::bundle() const` |
-| [geometry_set.cc:L769](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L769) | `const nodes::BundlePtr &GeometrySet::bundle_ptr() const` |
-| [geometry_set.cc:L774](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L774) | `nodes::BundlePtr &GeometrySet::bundle_ptr()` |
-| [geometry_set.cc:L779](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L779) | `nodes::Bundle &GeometrySet::bundle_for_write()` |
-| [geometry_set.cc:L787](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L787) | `void GeometrySet::copy_bundle_from(const GeometrySet &other)` |
-| [geometry_set.cc:L792](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L792) | `void GeometrySet::merge_bundle_from(const GeometrySet &other)` |
-| [geometry_set.cc:L805](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L805) | `void GeometrySet::set_name(std::string name)` |
-| [geometry_set.cc:L810](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L810) | `StringRefNull GeometrySet::name() const` |
-| [geometry_set.cc:L815](../../../../../source/blender/blenkernel/intern/geometry_set.cc#L815) | `bool object_has_geometry_set_instances(const Object &object)` |
-
-### 同名符号出现位置
-
-以下表提供跨文件阅读入口，包含声明、调用或测试使用；没有经过完整C++名称解析，不把它命名为已证明的运行时调用图。
-
-| 符号 | 位置 | 文本证据 |
-|---|---|---|
-| `create` | [BKE_geometry_set.hh:L93](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L93) | `static GeometryComponentPtr create(Type component_type);` |
-| `create` | [geometry_nodes_bundle.cc:L88](../../../../../source/blender/nodes/intern/geometry_nodes_bundle.cc#L88) | `BundlePtr Bundle::create()` |
-| `create` | [geometry_nodes_bundle.cc:L132](../../../../../source/blender/nodes/intern/geometry_nodes_bundle.cc#L132) | `BundleItemSocketValue{bundle_socket_type, bke::SocketValueVariant::from(Bundle::create())}};` |
-| `attribute_domain_size` | [BKE_geometry_set.hh:L95](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L95) | `int attribute_domain_size(AttrDomain domain) const;` |
-| `attribute_domain_size` | [geometry_fields.cc:L684](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L684) | `return component.attribute_domain_size(domain) != 0;` |
-| `attribute_domain_size` | [geometry_fields.cc:L727](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L727) | `const int domain_num = component->attribute_domain_size(domain_);` |
-| `attributes` | [BKE_curves.hh:L491](../../../../../source/blender/blenkernel/BKE_curves.hh#L491) | `AttributeAccessor attributes() const;` |
-| `attributes` | [BKE_geometry_fields.hh:L210](../../../../../source/blender/blenkernel/BKE_geometry_fields.hh#L210) | `std::optional<AttributeAccessor> attributes() const;` |
-| `attributes` | [BKE_geometry_set.hh:L101](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L101) | `virtual std::optional<AttributeAccessor> attributes() const;` |
-| `attributes_for_write` | [BKE_curves.hh:L492](../../../../../source/blender/blenkernel/BKE_curves.hh#L492) | `MutableAttributeAccessor attributes_for_write();` |
-| `attributes_for_write` | [BKE_geometry_set.hh:L102](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L102) | `virtual std::optional<MutableAttributeAccessor> attributes_for_write();` |
-| `attributes_for_write` | [BKE_geometry_set.hh:L539](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L539) | `std::optional<MutableAttributeAccessor> attributes_for_write() final;` |
-| `count_memory` | [BKE_attribute_storage.hh:L223](../../../../../source/blender/blenkernel/BKE_attribute_storage.hh#L223) | `void count_memory(MemoryCounter &memory) const;` |
-| `count_memory` | [BKE_curves.hh:L356](../../../../../source/blender/blenkernel/BKE_curves.hh#L356) | `void count_memory(MemoryCounter &memory) const;` |
-| `count_memory` | [BKE_geometry_set.hh:L104](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L104) | `virtual void count_memory(MemoryCounter &memory) const;` |
-| `type` | [BKE_attribute.hh:L82](../../../../../source/blender/blenkernel/BKE_attribute.hh#L82) | `AttributeInit(const Type type) : type(type) {}` |
-| `type` | [BKE_attribute.hh:L735](../../../../../source/blender/blenkernel/BKE_attribute.hh#L735) | `if (!attribute.varray.type().is<T>()) {` |
-| `type` | [BKE_geometry_fields.hh:L193](../../../../../source/blender/blenkernel/BKE_geometry_fields.hh#L193) | `GeometryComponent::Type type() const` |
-| `is_empty` | [BKE_attribute.hh:L780](../../../../../source/blender/blenkernel/BKE_attribute.hh#L780) | `if (name.is_empty()) {` |
-| `is_empty` | [BKE_attribute.hh:L798](../../../../../source/blender/blenkernel/BKE_attribute.hh#L798) | `if (name.is_empty()) {` |
-| `is_empty` | [BKE_curves.hh:L185](../../../../../source/blender/blenkernel/BKE_curves.hh#L185) | `bool is_empty() const;` |
-| `delete_self` | [BKE_geometry_set.hh:L125](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L125) | `void delete_self() override;` |
-| `delete_self` | [BLI_implicit_sharing.hh:L203](../../../../../source/blender/blenlib/BLI_implicit_sharing.hh#L203) | `this->delete_self();` |
-| `delete_self` | [BLI_implicit_sharing.hh:L206](../../../../../source/blender/blenlib/BLI_implicit_sharing.hh#L206) | `virtual void delete_self() = 0;` |
-| `delete_data_only` | [BKE_geometry_set.hh:L126](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L126) | `void delete_data_only() override;` |
-| `delete_data_only` | [BLI_implicit_sharing.hh:L159](../../../../../source/blender/blenlib/BLI_implicit_sharing.hh#L159) | `const_cast<ImplicitSharingInfo *>(this)->delete_data_only();` |
-| `delete_data_only` | [BLI_implicit_sharing.hh:L190](../../../../../source/blender/blenlib/BLI_implicit_sharing.hh#L190) | `virtual void delete_data_only() {}` |
-| `get_component_for_write` | [BKE_geometry_set.hh:L179](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L179) | `GeometryComponent &get_component_for_write(GeometryComponent::Type component_type);` |
-| `get_component_for_write` | [BKE_geometry_set.hh:L180](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L180) | `template<typename Component> Component &get_component_for_write()` |
-| `get_component_for_write` | [BKE_geometry_set.hh:L183](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L183) | `return static_cast<Component &>(this->get_component_for_write(Component::static_type));` |
-
-### 生命周期推理图
-
-```mermaid
-flowchart LR
-  O["调用者或源数据拥有者"]:::input
-  V["GeometrySet读写与复制的接口与状态"]:::abstraction
-  B["借用地址、引用或视图"]:::data
-  W["实际计算或修改"]:::compute
-  R["结果与清理责任"]:::result
-  O -->|"创建与配置"| V
-  O -->|"保障寿命"| B
-  B -->|"访问前验证"| W
-  V -->|"规定操作"| W
-  W -->|"交付或销毁"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+}  // namespace blender::bke
 ```
 
-这是审查生命周期的通用模型。具体类是否拥有数据由本篇成员、构造、析构和调用者一起证明；任何箭头都不自动代表shared_ptr。
+</details>
 
-## 六、把代码放进具体数据中推演
+## 语法与相关类型
 
-本方向的共同数值模型如下。本篇的专门检查是：追踪复制集合后修改Mesh组件的分离过程。
+### 只读限定 const
 
-| 步骤 | 数据或状态 | 为什么需要这一步 |
-|---|---|---|
-| 创建A | 源位置P，缓存C | C可以尚未计算 |
-| 复制B | B与A共享P和C | 源数据等价才允许共享结果 |
-| 求C | 任一副本触发 | 另一个副本也可见相同结果 |
-| 改无关属性 | 位置拓扑不变 | 相关缓存可继续有效 |
-| B改位置 | B分离对应数据与缓存 | A结果仍保持原语义 |
-| 局部更新 | 需要旧结果时保留副本 | 与直接放弃旧缓存不同 |
+const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
 
-```mermaid
-flowchart TB
-  T0["源位置P，缓存C"]:::input
-  T1["B与A共享P和C"]:::compute
-  T2["任一副本触发"]:::compute
-  T3["位置拓扑不变"]:::compute
-  T4["B分离对应数据与缓存"]:::compute
-  T5["需要旧结果时保留副本"]:::result
-  T0 -->|"复制B"| T1
-  T1 -->|"求C"| T2
-  T2 -->|"改无关属性"| T3
-  T3 -->|"B改位置"| T4
-  T4 -->|"局部更新"| T5
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
+分别写T* const、const T*与const T* const，并画出不可修改的层次。
 
-图是教学推演模型；精确分支与状态更新以本篇摘录及调用契约为准。
+### 移动转换 std::move
 
-### 本篇独立练习与参考思路
+std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
+
+记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
+
+### 异常边界 try与catch
+
+try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
+
+在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
+
+### 限定转换 const_cast
+
+const_cast可以改变访问路径的限定，但不能让本来就是const的对象合法可写。常用于复用只读实现时，仍需检查底层对象是否实际可变。
+
+对非const对象的const引用与真正const对象分别分析修改是否合法。
+
+### 可选值 optional
+
+optional把不存在与存在的T区分开，T的构造和析构跟随engaged状态变化。访问前应由has_value或条件分支证明存在。
+
+把空Field状态与合法常量零区分，不能用某个普通值代替不存在。
+
+### 构造与new表达式
+
+普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
+
+追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
+
+### 内部断言 assert
+
+断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
+
+对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
+
+### 独占拥有 unique_ptr
+
+unique_ptr通过移动转移拥有关系，默认删除策略必须与资源来源匹配。get返回借用指针，release交出责任而不销毁。
+
+区分move、get、release和reset后谁负责销毁。
+
+## 实现练习与验证
 
 追踪复制集合后修改Mesh组件的分离过程。
 
-参考思路：写接口需要确保返回的可变数据符合独占条件；可写引用的有效期仍受后续修改影响。
+参考推理：把引用使用限制在不改变相应拥有关系的范围。
 
-将输入、预期结果和资源责任分成三张清单。先用最直接的实现给出可核对的答案，再替换成对应源码使用的表示；比较结果不变的条件，而不是只比较接口名字。
+改变副本不改变原对象结果；修改任一真实依赖后旧结果不可继续被当成有效缓存。
 
-验收依据：改变副本不改变原对象结果；修改任一真实依赖后旧结果不可继续被当成有效缓存。
-
-## 七、复杂度、设计取舍与其他基础库
+## 历史、跨库比较与证据
 
 与shared_ptr比较寿命管理，与写时复制容器比较写边界，与普通memoization比较键的等价性；SharedCache把等价对象的派生结果放在共同控制对象中。
 
-本篇的具体取舍：写接口需要确保返回的可变数据符合独占条件；可写引用的有效期仍受后续修改影响。
-
-| 观察维度 | 从源码取得证据的方法 | 本篇要避免的误判 |
-|---|---|---|
-| 时间 | 对循环次数、分派次数和重建频率分别计数 | 看到单次常数操作就断定整个操作序列是常数成本 |
-| 内存 | 区分对象本体、容量存储、间接资源和共享控制块 | 用sizeof代替总内存 |
-| 安全 | 沿构造、失败回滚、销毁与失效逐路径检查 | 把断言或非空指针当作完整安全证明 |
-| 并发 | 逐字段确认锁、发布顺序和借用寿命 | 把引用计数线程安全等同数据读写线程安全 |
-
-相关一手资料：
-
-- [C++公开工作草案](https://eel.is/c++draft/)：持续更新的工作草案；语言与标准库语义以相应章节为准。
-- [Blender依赖图设计](https://developer.blender.org/docs/features/core/depsgraph/)：包含历史设计背景，当前行为以本地源码为准。
-
-资料用于核对契约和进一步阅读；这里没有声称外部库与Blender实现相同，也没有把上游性能数字当作本机实测。
-
-## 八、历史提交与设计演化
-
-### 2023-03-28 · Jacques Lucke
-
-[BLI: add core types for supporting implicit-sharing](https://projects.blender.org/blender/blender/commit/fbcddfcd68adc72f4dde6c1b769659ba8e9f086b)
-
-完整哈希：`fbcddfcd68adc72f4dde6c1b769659ba8e9f086b`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-BLI: add core types for supporting implicit-sharing
-
-The overall goal is to use implicit-sharing in many places in Blender
-that currently do unnecessary copies. See #95845 for more details.
-
-This commit only adds the base data structures in blenlib and uses those
-in `GeometrySet` and `AnonymousAttributeID`, which used a more ad-hoc
-version of implicit sharing already. #105994 lists some more places where
-support for implicit sharing can be added (most notably: custom data layers).
-
-Pull Request: https://projects.blender.org/blender/blender/pulls/105994
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“get_for_write怎样连接共享与可变访问？”判断方案改变的是表示、接口、生命周期还是调度。
-
-## 九、反例、测试入口与掌握标准
-
-需要实际构造的反例：
-
-- 空输入或没有结果需求：确认接口允许的空状态与不允许访问的操作。
-- 边界位置和退化结构：把长度为1、末尾位置、重复值或深链代入真实分支。
-- 生命周期结束或修改之后：检查保存的指针、引用、结果视图是否仍有效。
-- 与本篇核心不变量相冲突的输入：追踪复制集合后修改Mesh组件的分离过程。
-
-### 可运行的教学参考程序
-
-[reference_exercises.cc](../_tools/reference_exercises.cc)包含独立于Blender的C++20参考检查：视图、简化SmallVector、异常回滚、哈希碰撞与删除、偏移数组、拓扑映射、共享缓存、表达式、惰性分支、闭包和暴力最近邻。
-
-参考程序有意省略生产实现的完整能力。例如SmallVector禁止复制移动容器，不支持只能移动的元素，并禁止append参数别名到自身元素；TinyMap固定8槽，不提供增长。程序通过不能替代Blender实现测试。实际运行结果、编译器与命令见验收报告。
-
-掌握标准：离开源码解释“get_for_write怎样连接共享与可变访问？”；独立完成上述练习；能指出一个会破坏共享源数据相关约束的最小反例，并用具体代码行说明检查或修复应放在哪里。
+[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)

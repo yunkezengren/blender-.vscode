@@ -1,40 +1,40 @@
 # 02-08 Set与集合语义
 
-[方向导航](README.md) · [总目录](../README.md) · [覆盖索引](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
 
-> 阅读顺序：问题与数据模型 → 语法与类型 → 源码逐行 → 调用线索 → 历史与取舍 → 推演和练习。
-
-- 基准 HEAD：`cbda6b96c26c0dee3c3b5cbb93960c4ac06a6b30`。
-- 记录日期：2026-10-14。
-- 教学示例状态：正文中的推演不是本机性能实测；已运行练习见验收报告。
-
-## 一、从问题到设计
+## 从问题到实现
 
 无关联值时哪些Map设计仍然适用？
 
 Set仍需处理哈希、相等、槽位和删除；键本身在容器中不能随意改成另一个哈希值。
 
-本篇把语法、数据语义和系统取舍连接起来。相等与哈希是基础契约；探测、删除和增长共同决定复杂度。
-
-### 本篇独立模型与设计推理
+**数据模型**
 
 Set中的键既是身份又是存储值；修改其哈希相关字段会让原探测位置失效。
 
-设计取舍：集合接口较简单，但仍保留关联容器的类型、生命周期和探测约束。
+**设计取舍**
 
-最小反例：通过间接指针改了集合键的内容，查找从新哈希起点找不到它。
+集合接口较简单，但仍保留关联容器的类型、生命周期和探测约束。
 
-推导与处理：保持键不可变或先移除再按新键插入，检查相等与哈希读取的数据。
+**最小反例**
+
+通过间接指针改了集合键的内容，查找从新哈希起点找不到它。
+
+**推导**
+
+保持键不可变或先移除再按新键插入，检查相等与哈希读取的数据。
+
+## 阅读地图与执行推演
 
 ```mermaid
 flowchart TB
-  M["Set中的键既是身份又是存储值；修改其哈希<br/>相关字段会让原探测位置失效。"]:::data
-  T["集合接口较简单，但仍保留关联容器的类型、<br/>生命周期和探测约束。"]:::abstraction
-  X["通过间接指针改了集合键的内容，查找从新哈<br/>希起点找不到它。"]:::error
-  A["保持键不可变或先移除再按新键插入，检查相<br/>等与哈希读取的数据。"]:::result
-  M -->|"建立约束"| T
-  T -->|"构造反例"| X
-  X -->|"恢复不变量"| A
+  M["Set中的键既是身份又是存储值；修改其哈希相<br/>关字段会让原探测位置失效。"]:::data
+  C["集合接口较简单，但仍保留关联容器的类型、生<br/>命周期和探测约束。"]:::abstraction
+  B["通过间接指针改了集合键的内容，查找从新哈希<br/>起点找不到它。"]:::error
+  R["保持键不可变或先移除再按新键插入，检查相等<br/>与哈希读取的数据。"]:::result
+  M -->|"明确约束"| C
+  C -->|"检验边界"| B
+  B -->|"恢复正确性"| R
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -42,59 +42,17 @@ flowchart TB
   classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
-
-### 源码范围与相邻篇章
-
-| 文件 | 本篇逐行范围 | 基准SHA-256 |
-|---|---|---|
-| [source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) | L1—L996 | `c7b4a167fbbc3db175e51373abb85bd0cbe1263e2bd68cc31cd9717a24ce0b09` |
-
-同一主讲文件可能分多篇覆盖；超出本篇范围的符号通过覆盖索引定位。空行与纯注释保留在源码摘录中，逐行表解释有效语句与语法边界；许可证头统一保留。
-
-前篇：[重建与摊还复杂度](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md).
-
-后篇：[MultiValueMap一键多值](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md).
-
-## 二、类型、数据与阅读地图
-
-```mermaid
-flowchart TB
-  Q["无关联值时哪些Map设计仍然适用？"]:::input
-  C0["相等关系"]:::abstraction
-  C1["哈希探测"]:::data
-  C2["槽位状态"]:::data
-  C3["重建策略"]:::data
-  R["Set与集合语义"]:::result
-  Q -->|"建立模型"| C0
-  C0 -->|"区分职责"| C1
-  C1 -->|"区分职责"| C2
-  C2 -->|"区分职责"| C3
-  C3 -->|"回到源码"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
-
-这是概念依赖图，边表示阅读关系，不声称是运行时调用顺序。
-
-### 直接编译依赖
 
 ```mermaid
 flowchart LR
-  S["BLI_set.hh"]:::abstraction
-  I0["BLI_array.hh"]:::data
-  I1["BLI_hash.hh"]:::data
-  I2["BLI_hash_tables.hh"]:::data
-  I3["BLI_probing_strategies.hh"]:::data
-  I4["BLI_set_slots.hh"]:::data
-  S -->|"直接include"| I0
-  S -->|"直接include"| I1
-  S -->|"直接include"| I2
-  S -->|"直接include"| I3
-  S -->|"直接include"| I4
+  F0["blender::Set::Set"]:::input
+  F1["blender::Set::Set"]:::compute
+  F2["blender::Set::Set"]:::compute
+  F3["blender::Set::Set"]:::compute
+  F4["blender::Set::~Set"]:::compute
+  F5["blender::Set::Set"]:::compute
+  F6["blender::Set::Set"]:::compute
+  F7["blender::Set::operator="]:::compute
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -103,107 +61,68 @@ flowchart LR
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-箭头只表示头文件包含关系；完整调用线索见后面的符号定位表。
+```mermaid
+flowchart LR
+  P0["相等关系"]:::input
+  P1["哈希探测"]:::data
+  P2["槽位状态"]:::data
+  P3["重建策略"]:::result
+  P0 -->|"分析关系"| P1
+  P1 -->|"分析关系"| P2
+  P2 -->|"分析关系"| P3
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-## 三、关键词、语法与类型角色
+```mermaid
+flowchart TB
+  S0["hash(A)映射槽2"]:::input
+  S1["同样映射槽2"]:::compute
+  S2["槽2变Removed"]:::compute
+  S3["从槽2继续探测"]:::compute
+  S4["活元素数可能恒定"]:::compute
+  S5["迁移活键值"]:::result
+  S0 -->|"插入B"| S1
+  S1 -->|"删除A"| S2
+  S2 -->|"查找B"| S3
+  S3 -->|"持续删插"| S4
+  S4 -->|"重建"| S5
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-### 模板 template
+图中的数值推演是本方向的教学模型；实际函数之间的调用边与概念分析边分别标注，不能把概念关系当作运行时调度顺序。
 
-模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
+## 完整源码单元与就地讲解
 
-具体检查：把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
+中文讲解直接放在相关代码旁，复杂机制在代码下展开。原文折叠区保留基准行号；不需要在行号表和函数之间来回查找。类布局可分段展示，函数实现不按固定行数切开。
 
-### 依赖名称 typename
+### 类型布局、声明与编译条件 · BLI_set.hh L1—L167
 
-typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+<a id="t-9eb5ca8aa369"></a>
 
-具体检查：区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+`Set`在这里声明的数据成员：
 
-### 常量求值 constexpr
+- `int64_t removed_slots_`
+- `int64_t occupied_and_removed_slots_`
+- `int64_t usable_slots_`
+- `uint64_t slot_mask_`
+- `BLI_NO_UNIQUE_ADDRESS hash_`
+- `BLI_NO_UNIQUE_ADDRESS is_equal_`
+- `LoadFactor max_load_factor_`
+- `SlotArray slots_`
 
-constexpr声明允许相应实体参与常量求值，但constexpr函数仍可以在运行时执行。是否常量求值由调用场景和表达式合法性共同决定。
+<a id="t-d3045b1e87c4"></a>
 
-具体检查：比较constexpr变量初始化和从运行时输入调用同一函数。
-
-### 只读限定 const
-
-const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
-
-具体检查：分别写T* const、const T*与const T* const，并画出不可修改的层次。
-
-### 移动转换 std::move
-
-std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
-
-具体检查：记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
-
-### 完美转发 std::forward
-
-std::forward在转发引用模板中恢复调用者原来的值类别。它依赖推导出的模板实参；无条件move会改变左值调用者的语义。
-
-具体检查：对同一接口分别传入左值、临时对象和const左值，记录实际重载。
-
-### 异常约定 noexcept
-
-noexcept表达式可以依赖类型特征。违反不抛异常约定会终止程序；它不是自动捕获异常，也不是资源回滚代码。
-
-具体检查：找出声明的条件与实际可能抛出的分配、构造操作是否一致。
-
-### 异常边界 try与catch
-
-try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
-
-具体检查：在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
-
-### 限定转换 const_cast
-
-const_cast可以改变访问路径的限定，但不能让本来就是const的对象合法可写。常用于复用只读实现时，仍需检查底层对象是否实际可变。
-
-具体检查：对非const对象的const引用与真正const对象分别分析修改是否合法。
-
-### 对象表示 sizeof
-
-sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeof视图很小并不说明底层数组很小。
-
-具体检查：分别统计容器对象、容量字节和元素拥有的间接资源。
-
-### 构造与new表达式
-
-普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
-
-具体检查：追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
-
-### 内部断言 assert
-
-断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
-
-具体检查：对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
-
-### 编译期分支 if constexpr
-
-条件在实例化时决定被保留的分支，这常用于不同类型的合法操作选择。它与运行时if有不同的实例化检查规则。
-
-具体检查：找出每个分支依赖哪些类型特征，再使用满足与不满足条件的类型。
-
-### 受控访问 friend
-
-friend授予指定函数或类访问非公开成员的权限，并不意味着继承，也不自动扩展到友元的派生类。
-
-具体检查：解释执行器为何需要访问包装器的内部映射，同时检查边界是否仍清楚。
-
-### 类型别名 using
-
-类型别名为已有类型建立名字，不创建运行期对象。它常把模板内部使用的类型统一暴露给泛型调用者。
-
-具体检查：展开别名直到基础类型，区分类型别名和变量声明。
-
-## 四、真实源码与逐行讲解
-
-源码块保持原行内容，原始行号由小节标题及逐行表给出。表中的调用定位是静态阅读辅助；重载、模板实例化、宏展开和虚调用需结合完整声明，不能仅凭词法出现证明动态调用。
-
-### BLI_set.hh：L1—L58
-
-<!-- source:source/blender/blenlib/BLI_set.hh:1:58 -->
+<!-- annotated:b62beb79e3688f -->
 
 ```cpp
 /* SPDX-FileCopyrightText: 2023 Blender Authors
@@ -264,18 +183,6 @@ friend授予指定函数或类访问非公开成员的权限，并不意味着�
  */
 
 #include "BLI_array.hh"
-```
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L5 | 防止同一头文件在一个翻译单元中重复展开；不控制多个源文件之间的链接或对象寿命。 |
-| L58 | 引入编译依赖 "BLI_array.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-
-### BLI_set.hh：L59—L107
-
-<!-- source:source/blender/blenlib/BLI_set.hh:59:107 -->
-
-```cpp
 #include "BLI_hash.hh"
 #include "BLI_hash_tables.hh"
 #include "BLI_probing_strategies.hh"
@@ -325,31 +232,6 @@ template<
     typename Allocator = GuardedAllocator>
 class Set {
  public:
-```
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L59 | 引入编译依赖 "BLI_hash.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L60 | 引入编译依赖 "BLI_hash_tables.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L61 | 引入编译依赖 "BLI_probing_strategies.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L62 | 引入编译依赖 "BLI_set_slots.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L64 | 把后续声明放入 blender 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L66 | 声明模板参数 `template<`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L71 | 本行是连续声明或表达式的一部分：`typename Key,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L77 | 显式采用编译器生成的特殊成员行为：`int64_t InlineBufferCapacity = default_inline_buffer_capacity(sizeof(Key)),`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L81 | 把右侧 `DefaultProbingStrategy,` 用于初始化或更新左侧 `typename ProbingStrategy`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L86 | 把右侧 `DefaultHash<Key>,` 用于初始化或更新左侧 `typename Hash`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L91 | 把右侧 `DefaultEquality<Key>,` 用于初始化或更新左侧 `typename IsEqual`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L100 | 把右侧 `typename DefaultSetSlot<Key>::type,` 用于初始化或更新左侧 `typename Slot`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L105 | 把右侧 `GuardedAllocator>` 用于初始化或更新左侧 `typename Allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L106 | 声明或定义类型 `class Set`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L107 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-
-### BLI_set.hh：L108—L154
-
-<!-- source:source/blender/blenlib/BLI_set.hh:108:154 -->
-
-```cpp
   class Iterator;
   using value_type = Key;
   using pointer = Key *;
@@ -397,45 +279,6 @@ class Set {
    * the size of the array is a power of two.
    */
   SlotArray slots_;
-```
-
-本段语义重点：
-
-- `removed_slots_`：删除标记计数，影响重建判断及探测长度。
-- `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。
-- `usable_slots_`：受负载约束允许使用的槽位数，与物理总槽数不同。
-- `slot_mask_`：槽位寻址掩码；其有效性依赖容量布局约定。
-- `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L108 | 声明或定义类型 `class Iterator`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L109 | 定义类型别名 `using value_type = Key`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L110 | 定义类型别名 `using pointer = Key *`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L111 | 定义类型别名 `using const_pointer = const Key *`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L112 | 定义类型别名 `using reference = Key &`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L113 | 定义类型别名 `using const_reference = const Key &`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L114 | 定义类型别名 `using iterator = Iterator`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L115 | 定义类型别名 `using size_type = int64_t`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L117 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L122 | 本行涉及 `removed_slots_`：删除标记计数，影响重建判断及探测长度。按此语义解读 `int64_t removed_slots_`，不要把地址、数量或状态混用。 |
-| L123 | 本行涉及 `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。按此语义解读 `int64_t occupied_and_removed_slots_`，不要把地址、数量或状态混用。 |
-| L129 | 本行涉及 `usable_slots_`：受负载约束允许使用的槽位数，与物理总槽数不同。按此语义解读 `int64_t usable_slots_`，不要把地址、数量或状态混用。 |
-| L135 | 本行涉及 `slot_mask_`：槽位寻址掩码；其有效性依赖容量布局约定。按此语义解读 `uint64_t slot_mask_`，不要把地址、数量或状态混用。 |
-| L138 | 声明成员、局部对象或完成语句 `BLI_NO_UNIQUE_ADDRESS Hash hash_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L141 | 声明成员、局部对象或完成语句 `BLI_NO_UNIQUE_ADDRESS IsEqual is_equal_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L144 | 预处理阶段处理 #define LOAD_FACTOR 1, 2。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L145 | 把右侧 `LoadFactor(LOAD_FACTOR)` 用于初始化或更新左侧 `static constexpr LoadFactor max_load_factor_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L146 | 定义类型别名 `using SlotArray =`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L147 | 出现调用或函数声明 `LoadFactor::compute_total_slots`，对应表达式为 `Array<Slot, LoadFactor::compute_total_slots(InlineBufferCapacity, LOAD_FACTOR), Allocator>;`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L148 | 预处理阶段处理 #undef LOAD_FACTOR。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L154 | 本行涉及 `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。按此语义解读 `SlotArray slots_`，不要把地址、数量或状态混用。 |
-
-### BLI_set.hh：L155—L191
-
-<!-- source:source/blender/blenlib/BLI_set.hh:155:191 -->
-
-```cpp
 
   /** Iterate over a slot index sequence for a given hash. */
 #define SET_SLOT_PROBING_BEGIN(HASH, R_SLOT) \
@@ -449,6 +292,200 @@ class Set {
    * is. This is necessary to avoid a high cost when no elements are added at all. An optimized
    * grow operation is performed on the first insertion.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L1—L167</summary>
+
+<!-- original:b62beb79e3688f:source/blender/blenlib/BLI_set.hh:1:167 -->
+
+```cpp
+/* SPDX-FileCopyrightText: 2023 Blender Authors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
+#pragma once
+
+/** \file
+ * \ingroup bli
+ *
+ * A `Set<Key>` is an unordered container for unique elements of type `Key`. It is
+ * designed to be a more convenient and efficient replacement for `std::unordered_set`. All core
+ * operations (add, remove and contains) can be done in O(1) amortized expected time.
+ *
+ * In most cases, your default choice for a hash set in Blender should be `Set`.
+ *
+ * Set is implemented using open addressing in a slot array with a power-of-two size.
+ * Every slot is in one of three states: empty, occupied or removed. If a slot is occupied, it
+ * contains an instance of the key type.
+ *
+ * Bench-marking and comparing hash tables is hard, because many factors influence the result. The
+ * performance of a hash table depends on the combination of the hash function, probing strategy,
+ * max load factor, key type, slot type and the data distribution. This implementation is designed
+ * to be relatively fast by default in all cases. However, it also offers many customization
+ * points that allow it to be optimized for a specific use case.
+ *
+ * A rudimentary benchmark can be found in `BLI_set_test.cc`. The results of that benchmark are
+ * there as well. The numbers show that in this specific case #Set outperforms
+ * #std::unordered_set consistently by a good amount.
+ *
+ * Some noteworthy information:
+ * - Key must be a movable type.
+ * - Pointers to keys might be invalidated when the set is changed or moved.
+ * - The hash function can be customized. See BLI_hash.hh for details.
+ * - The probing strategy can be customized. See BLI_probing_stragies.hh for details.
+ * - The slot type can be customized. See BLI_set_slots.hh for details.
+ * - Small buffer optimization is enabled by default, if the key is not too large.
+ * - The methods `add_new` and `remove_contained` should be used instead of `add` and `remove`
+ *   whenever appropriate. Assumptions and intention are described better this way.
+ * - Lookups can be performed using types other than Key without conversion. For that use the
+ *   methods ending with `_as`. The template parameters Hash and #IsEqual have to support the other
+ *   key type. This can greatly improve performance when the set contains strings.
+ * - The default constructor is cheap, even when a large #InlineBufferCapacity is used. A large
+ *   slot array will only be initialized when the first key is added.
+ * - The `print_stats` method can be used to get information about the distribution of keys and
+ *   memory usage of the set.
+ * - The method names don't follow the std::unordered_set names in many cases. Searching for such
+ *   names in this file will usually let you discover the new name.
+ *
+ * Possible Improvements:
+ * - Use a branch-less loop over slots in grow function (measured ~10% performance improvement when
+ *   the distribution of occupied slots is sufficiently random).
+ * - Support max load factor customization.
+ * - Improve performance with large data sets through software prefetching. I got fairly
+ *   significant improvements in simple tests (~30% faster). It still needs to be investigated how
+ *   to make a nice interface for this functionality.
+ */
+
+#include "BLI_array.hh"
+#include "BLI_hash.hh"
+#include "BLI_hash_tables.hh"
+#include "BLI_probing_strategies.hh"
+#include "BLI_set_slots.hh"
+
+namespace blender {
+
+template<
+    /**
+     * Type of the elements that are stored in this set. It has to be movable.
+     * Furthermore, the hash and is-equal functions have to support it.
+     */
+    typename Key,
+    /**
+     * The minimum number of elements that can be stored in this Set without doing a heap
+     * allocation. This is useful when you expect to have many small sets. However, keep in mind
+     * that (unlike vector) initializing a set has a O(n) cost in the number of slots.
+     */
+    int64_t InlineBufferCapacity = default_inline_buffer_capacity(sizeof(Key)),
+    /**
+     * The strategy used to deal with collisions. They are defined in BLI_probing_strategies.hh.
+     */
+    typename ProbingStrategy = DefaultProbingStrategy,
+    /**
+     * The hash function used to hash the keys. There is a default for many types. See BLI_hash.hh
+     * for examples on how to define a custom hash function.
+     */
+    typename Hash = DefaultHash<Key>,
+    /**
+     * The equality operator used to compare keys. By default it will simply compare keys using the
+     * `==` operator.
+     */
+    typename IsEqual = DefaultEquality<Key>,
+    /**
+     * This is what will actually be stored in the hash table array. At a minimum a slot has to
+     * be able to hold a key and information about whether the slot is empty, occupied or removed.
+     * Using a non-standard slot type can improve performance or reduce the memory footprint. For
+     * example, a hash can be stored in the slot, to make inequality checks more efficient. Some
+     * types have special values that can represent an empty or removed state, eliminating the need
+     * for an additional variable. Also see BLI_set_slots.hh.
+     */
+    typename Slot = typename DefaultSetSlot<Key>::type,
+    /**
+     * The allocator used by this set. Should rarely be changed, except when you don't want that
+     * MEM_* is used internally.
+     */
+    typename Allocator = GuardedAllocator>
+class Set {
+ public:
+  class Iterator;
+  using value_type = Key;
+  using pointer = Key *;
+  using const_pointer = const Key *;
+  using reference = Key &;
+  using const_reference = const Key &;
+  using iterator = Iterator;
+  using size_type = int64_t;
+
+ private:
+  /**
+   * Slots are either empty, occupied or removed. The number of occupied slots can be computed by
+   * subtracting the removed slots from the occupied-and-removed slots.
+   */
+  int64_t removed_slots_;
+  int64_t occupied_and_removed_slots_;
+
+  /**
+   * The maximum number of slots that can be used (either occupied or removed) until the set has to
+   * grow. This is the total number of slots times the max load factor.
+   */
+  int64_t usable_slots_;
+
+  /**
+   * The number of slots minus one. This is a bit mask that can be used to turn any integer into a
+   * valid slot index efficiently.
+   */
+  uint64_t slot_mask_;
+
+  /** This is called to hash incoming keys. */
+  BLI_NO_UNIQUE_ADDRESS Hash hash_;
+
+  /** This is called to check equality of two keys. */
+  BLI_NO_UNIQUE_ADDRESS IsEqual is_equal_;
+
+  /** The max load factor is 1/2 = 50% by default. */
+#define LOAD_FACTOR 1, 2
+  static constexpr LoadFactor max_load_factor_ = LoadFactor(LOAD_FACTOR);
+  using SlotArray =
+      Array<Slot, LoadFactor::compute_total_slots(InlineBufferCapacity, LOAD_FACTOR), Allocator>;
+#undef LOAD_FACTOR
+
+  /**
+   * This is the array that contains the actual slots. There is always at least one empty slot and
+   * the size of the array is a power of two.
+   */
+  SlotArray slots_;
+
+  /** Iterate over a slot index sequence for a given hash. */
+#define SET_SLOT_PROBING_BEGIN(HASH, R_SLOT) \
+  SLOT_PROBING_BEGIN (ProbingStrategy, HASH, slot_mask_, SLOT_INDEX) \
+    auto &R_SLOT = slots_[SLOT_INDEX];
+#define SET_SLOT_PROBING_END() SLOT_PROBING_END()
+
+ public:
+  /**
+   * Initialize an empty set. This is a cheap operation no matter how large the inline buffer
+   * is. This is necessary to avoid a high cost when no elements are added at all. An optimized
+   * grow operation is performed on the first insertion.
+   */
+```
+
+</details>
+
+<a id="f-90ed819a0d9f9bb9"></a>
+
+### `blender::Set::Set`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L168—L175。
+
+接口参数：
+
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:8ae49e4af89ecb -->
+
+```cpp
   Set(Allocator allocator = {}) noexcept
       : removed_slots_(0),
         occupied_and_removed_slots_(0),
@@ -457,62 +494,357 @@ class Set {
         slots_(1, allocator)
   {
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L168—L175</summary>
+
+<!-- original:8ae49e4af89ecb:source/blender/blenlib/BLI_set.hh:168:175 -->
+
+```cpp
+  Set(Allocator allocator = {}) noexcept
+      : removed_slots_(0),
+        occupied_and_removed_slots_(0),
+        usable_slots_(0),
+        slot_mask_(0),
+        slots_(1, allocator)
+  {
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:242b538e26cd9d -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L176—L176</summary>
+
+<!-- original:242b538e26cd9d:source/blender/blenlib/BLI_set.hh:176:176 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-c9b8f9a3408eebf2"></a>
+
+### `blender::Set::Set`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L177—L177。
+
+接口参数：
+
+- `NoExceptConstructor`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:372249aed8457f -->
+
+```cpp
   Set(NoExceptConstructor, Allocator allocator = {}) noexcept : Set(allocator) {}
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L177—L177</summary>
+
+<!-- original:372249aed8457f:source/blender/blenlib/BLI_set.hh:177:177 -->
+
+```cpp
+  Set(NoExceptConstructor, Allocator allocator = {}) noexcept : Set(allocator) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:6f75b1cdc76bdf -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L178—L178</summary>
+
+<!-- original:6f75b1cdc76bdf:source/blender/blenlib/BLI_set.hh:178:178 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-ee3bc759853aea7c"></a>
+
+### `blender::Set::Set`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L179—L182。
+
+接口参数：
+
+- `Span<Key> values`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:c3855f85d3ecc5 -->
+
+```cpp
   Set(Span<Key> values, Allocator allocator = {}) : Set(NoExceptConstructor(), allocator)
   {
     this->add_multiple(values);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L179—L182</summary>
+
+<!-- original:c3855f85d3ecc5:source/blender/blenlib/BLI_set.hh:179:182 -->
+
+```cpp
+  Set(Span<Key> values, Allocator allocator = {}) : Set(NoExceptConstructor(), allocator)
+  {
+    this->add_multiple(values);
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->add_multiple` → [blender::Set::add_multiple · L287](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-18a099a39b0fcf37)。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L183—L186
+
+<!-- annotated:c870ed8eb37fb6 -->
+
+```cpp
 
   /**
    * Construct a set that contains the given keys. Duplicates will be removed automatically.
    */
-  Set(const std::initializer_list<Key> &values) : Set(Span<Key>(values)) {}
-
-  ~Set() = default;
-
-  Set(const Set &other) = default;
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L183—L186</summary>
 
-- `removed_slots_`：删除标记计数，影响重建判断及探测长度。
-- `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。
-- `usable_slots_`：受负载约束允许使用的槽位数，与物理总槽数不同。
-- `slot_mask_`：槽位寻址掩码；其有效性依赖容量布局约定。
-- `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L157 | 预处理阶段处理 #define SET_SLOT_PROBING_BEGIN(HASH, R_SLOT) \。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L158 | 本行涉及 `slot_mask_`：槽位寻址掩码；其有效性依赖容量布局约定。按此语义解读 `SLOT_PROBING_BEGIN (ProbingStrategy, HASH, slot_mask_, SLOT_INDEX) \`，不要把地址、数量或状态混用。 |
-| L159 | 建立或更新 `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。本行的具体值关系为 `auto &R_SLOT = slots_[SLOT_INDEX]`；对照更新前后相应范围或状态是否一致。 |
-| L160 | 预处理阶段处理 #define SET_SLOT_PROBING_END() SLOT_PROBING_END()。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L162 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L168 | 把右侧 `{}) noexcept` 用于初始化或更新左侧 `Set(Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L169 | 本行涉及 `removed_slots_`：删除标记计数，影响重建判断及探测长度。按此语义解读 `: removed_slots_(0),`，不要把地址、数量或状态混用。 |
-| L170 | 本行涉及 `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。按此语义解读 `occupied_and_removed_slots_(0),`，不要把地址、数量或状态混用。 |
-| L171 | 本行涉及 `usable_slots_`：受负载约束允许使用的槽位数，与物理总槽数不同。按此语义解读 `usable_slots_(0),`，不要把地址、数量或状态混用。 |
-| L172 | 本行涉及 `slot_mask_`：槽位寻址掩码；其有效性依赖容量布局约定。按此语义解读 `slot_mask_(0),`，不要把地址、数量或状态混用。 |
-| L173 | 本行涉及 `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。按此语义解读 `slots_(1, allocator)`，不要把地址、数量或状态混用。 |
-| L174 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L175 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L177 | 把右侧 `{}) noexcept : Set(allocator) {}` 用于初始化或更新左侧 `Set(NoExceptConstructor, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L179 | 把右侧 `{}) : Set(NoExceptConstructor(), allocator)` 用于初始化或更新左侧 `Set(Span<Key> values, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L180 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L181 | 出现调用或函数声明 `add_multiple`，对应表达式为 `this->add_multiple(values);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L182 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L187 | 出现调用或函数声明 `Set`，对应表达式为 `Set(const std::initializer_list<Key> &values) : Set(Span<Key>(values)) {}`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L189 | 显式采用编译器生成的特殊成员行为：`~Set() = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L191 | 显式采用编译器生成的特殊成员行为：`Set(const Set &other) = default;`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-
-### BLI_set.hh：L192—L240
-
-<!-- source:source/blender/blenlib/BLI_set.hh:192:240 -->
+<!-- original:c870ed8eb37fb6:source/blender/blenlib/BLI_set.hh:183:186 -->
 
 ```cpp
 
+  /**
+   * Construct a set that contains the given keys. Duplicates will be removed automatically.
+   */
+```
+
+</details>
+
+<a id="f-e445c4d2f90ade85"></a>
+
+### `blender::Set::Set`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L187—L187。
+
+接口参数：
+
+- `const std::initializer_list<Key> &values`
+
+**教学注释版**
+
+<!-- annotated:1f3b2c18b09576 -->
+
+```cpp
+  Set(const std::initializer_list<Key> &values) : Set(Span<Key>(values)) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L187—L187</summary>
+
+<!-- original:1f3b2c18b09576:source/blender/blenlib/BLI_set.hh:187:187 -->
+
+```cpp
+  Set(const std::initializer_list<Key> &values) : Set(Span<Key>(values)) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:2385a70676a3d3 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L188—L188</summary>
+
+<!-- original:2385a70676a3d3:source/blender/blenlib/BLI_set.hh:188:188 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-6de785e3b9e53f8d"></a>
+
+### `blender::Set::~Set`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L189—L189。
+
+**教学注释版**
+
+<!-- annotated:23db609341ff67 -->
+
+```cpp
+  ~Set() = default;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L189—L189</summary>
+
+<!-- original:23db609341ff67:source/blender/blenlib/BLI_set.hh:189:189 -->
+
+```cpp
+  ~Set() = default;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:cf1dbf0e435880 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L190—L190</summary>
+
+<!-- original:cf1dbf0e435880:source/blender/blenlib/BLI_set.hh:190:190 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a94620600dd86254"></a>
+
+### `blender::Set::Set`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L191—L191。
+
+接口参数：
+
+- `const Set &other`
+
+**教学注释版**
+
+<!-- annotated:fa04ca19ab786c -->
+
+```cpp
+  Set(const Set &other) = default;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L191—L191</summary>
+
+<!-- original:fa04ca19ab786c:source/blender/blenlib/BLI_set.hh:191:191 -->
+
+```cpp
+  Set(const Set &other) = default;
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:5c9be1ef2dd412 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L192—L192</summary>
+
+<!-- original:5c9be1ef2dd412:source/blender/blenlib/BLI_set.hh:192:192 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-4889adf4964a0a54"></a>
+
+### `blender::Set::Set`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L193—L216。
+
+接口参数：
+
+- `Set &&other`
+
+**教学注释版**
+
+<!-- annotated:aca7def71d69ff -->
+
+```cpp
+  Set(Set &&other) noexcept(std::is_nothrow_move_constructible_v<SlotArray>)
+      : Set(NoExceptConstructor(), other.slots_.allocator())
+
+  {
+    if constexpr (std::is_nothrow_move_constructible_v<SlotArray>) {
+      // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+      slots_ = std::move(other.slots_);
+    }
+    else {
+      try {
+        slots_ = std::move(other.slots_);
+      }
+      catch (...) {
+        other.noexcept_reset();
+        throw;
+      }
+    }
+    removed_slots_ = other.removed_slots_;
+    occupied_and_removed_slots_ = other.occupied_and_removed_slots_;
+    usable_slots_ = other.usable_slots_;
+    slot_mask_ = other.slot_mask_;
+    hash_ = std::move(other.hash_);
+    is_equal_ = std::move(other.is_equal_);
+    other.noexcept_reset();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L193—L216</summary>
+
+<!-- original:aca7def71d69ff:source/blender/blenlib/BLI_set.hh:193:216 -->
+
+```cpp
   Set(Set &&other) noexcept(std::is_nothrow_move_constructible_v<SlotArray>)
       : Set(NoExceptConstructor(), other.slots_.allocator())
 
@@ -537,85 +869,273 @@ class Set {
     is_equal_ = std::move(other.is_equal_);
     other.noexcept_reset();
   }
+```
 
+</details>
+
+**沿实际写入检查状态**
+
+- `slots_ = std::move(other.slots_);`
+- `removed_slots_ = other.removed_slots_;`
+- `occupied_and_removed_slots_ = other.occupied_and_removed_slots_;`
+- `usable_slots_ = other.usable_slots_;`
+- `slot_mask_ = other.slot_mask_;`
+- `hash_ = std::move(other.hash_);`
+- `is_equal_ = std::move(other.is_equal_);`
+
+**继续追踪实现**
+
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+- `other.noexcept_reset` → [blender::Set::noexcept_reset · L779](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-8e129637c06ba7df)。
+
+<!-- annotated:5f178c6ff389fd -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L217—L217</summary>
+
+<!-- original:5f178c6ff389fd:source/blender/blenlib/BLI_set.hh:217:217 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-cd8970db93b0c160"></a>
+
+### `blender::Set::operator=`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L218—L221。
+
+接口参数：
+
+- `const Set &other`
+
+**教学注释版**
+
+<!-- annotated:34a2407329f8f9 -->
+
+```cpp
   Set &operator=(const Set &other)
   {
     return copy_assign_container(*this, other);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L218—L221</summary>
+
+<!-- original:34a2407329f8f9:source/blender/blenlib/BLI_set.hh:218:221 -->
+
+```cpp
+  Set &operator=(const Set &other)
+  {
+    return copy_assign_container(*this, other);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return copy_assign_container(*this, other);`
+
+**继续追踪实现**
+
+- `copy_assign_container` → [blender::copy_assign_container · L284](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-546a45b4d8b5ab44)。
+
+<!-- annotated:a49b0fb14f8e6e -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L222—L222</summary>
+
+<!-- original:a49b0fb14f8e6e:source/blender/blenlib/BLI_set.hh:222:222 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-7c07cb70a94a8f07"></a>
+
+### `blender::Set::operator=`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L223—L226。
+
+接口参数：
+
+- `Set &&other`
+
+**教学注释版**
+
+<!-- annotated:cec5b085f9f181 -->
+
+```cpp
+  Set &operator=(Set &&other)
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    return move_assign_container(*this, std::move(other));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L223—L226</summary>
+
+<!-- original:cec5b085f9f181:source/blender/blenlib/BLI_set.hh:223:226 -->
+
+```cpp
   Set &operator=(Set &&other)
   {
     return move_assign_container(*this, std::move(other));
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return move_assign_container(*this, std::move(other));`
+
+**继续追踪实现**
+
+- `move_assign_container` → [blender::move_assign_container · L300](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-5144b56be86e6f42)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L227—L232
+
+<!-- annotated:701c0584f00fb5 -->
+
+```cpp
 
   /**
    * Add a new key to the set. This invokes undefined behavior when the key is in the set already.
    * When you know for certain that a key is not in the set yet, use this method for better
    * performance. This also expresses the intent better.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L227—L232</summary>
+
+<!-- original:701c0584f00fb5:source/blender/blenlib/BLI_set.hh:227:232 -->
+
+```cpp
+
+  /**
+   * Add a new key to the set. This invokes undefined behavior when the key is in the set already.
+   * When you know for certain that a key is not in the set yet, use this method for better
+   * performance. This also expresses the intent better.
+   */
+```
+
+</details>
+
+<a id="f-12f4dd65a3abaaac"></a>
+
+### `blender::Set::add_new`
+
+按哈希与相等关系加入键或键值。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L233—L236。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:76830de5827cc0 -->
+
+```cpp
   void add_new(const Key &key)
   {
     this->add_new__impl(key, hash_(key));
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L233—L236</summary>
+
+<!-- original:76830de5827cc0:source/blender/blenlib/BLI_set.hh:233:236 -->
+
+```cpp
+  void add_new(const Key &key)
+  {
+    this->add_new__impl(key, hash_(key));
+  }
+```
+
+</details>
+
+**接口与不变量**
+
+存在键与不存在键的接口承诺不同；add_new需要调用者保证键尚不存在。
+
+**继续追踪实现**
+
+- `this->add_new__impl` → [blender::Set::add_new__impl · L827](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-bc4ae48abcde6959)。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L235。
+
+<a id="f-9c46c167cdd9bb73"></a>
+
+### `blender::Set::add_new`
+
+按哈希与相等关系加入键或键值。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L237—L240。
+
+接口参数：
+
+- `Key &&key`
+
+**教学注释版**
+
+<!-- annotated:6d95abfdc368a8 -->
+
+```cpp
+  void add_new(Key &&key)
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    this->add_new__impl(std::move(key), hash_(key));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L237—L240</summary>
+
+<!-- original:6d95abfdc368a8:source/blender/blenlib/BLI_set.hh:237:240 -->
+
+```cpp
   void add_new(Key &&key)
   {
     this->add_new__impl(std::move(key), hash_(key));
   }
 ```
 
-本段语义重点：
+</details>
 
-- `removed_slots_`：删除标记计数，影响重建判断及探测长度。
-- `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。
-- `usable_slots_`：受负载约束允许使用的槽位数，与物理总槽数不同。
-- `slot_mask_`：槽位寻址掩码；其有效性依赖容量布局约定。
-- `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。
+**接口与不变量**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L193 | 出现调用或函数声明 `Set`，对应表达式为 `Set(Set &&other) noexcept(std::is_nothrow_move_constructible_v<SlotArray>)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L194 | 本行涉及 `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。按此语义解读 `: Set(NoExceptConstructor(), other.slots_.allocator())`，不要把地址、数量或状态混用。 |
-| L196 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L197 | 编译期条件分支 `if constexpr (std::is_nothrow_move_constructible_v<SlotArray>)`。按实例化类型选择相应实现；被舍弃分支和运行期if具有不同检查规则，不能当作运行时输入验证。 |
-| L198 | 建立或更新 `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。本行的具体值关系为 `slots_ = std::move(other.slots_)`；对照更新前后相应范围或状态是否一致。 |
-| L199 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L200 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L201 | 开始可能抛异常的操作区间；下面catch负责局部回滚，需精确区分已经构造和尚未构造对象。 |
-| L202 | 建立或更新 `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。本行的具体值关系为 `slots_ = std::move(other.slots_)`；对照更新前后相应范围或状态是否一致。 |
-| L203 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L204 | 进入异常清理路径；随后应释放本路径新取得的资源，同时遵守源对象已经发生的状态变化。 |
-| L205 | 出现调用或函数声明 `noexcept_reset`，对应表达式为 `other.noexcept_reset();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L206 | 继续传播异常或抛出新异常；在执行前必须完成本层负责的资源清理。 |
-| L207 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L208 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L209 | 建立或更新 `removed_slots_`：删除标记计数，影响重建判断及探测长度。本行的具体值关系为 `removed_slots_ = other.removed_slots_`；对照更新前后相应范围或状态是否一致。 |
-| L210 | 建立或更新 `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。本行的具体值关系为 `occupied_and_removed_slots_ = other.occupied_and_removed_slots_`；对照更新前后相应范围或状态是否一致。 |
-| L211 | 建立或更新 `usable_slots_`：受负载约束允许使用的槽位数，与物理总槽数不同。本行的具体值关系为 `usable_slots_ = other.usable_slots_`；对照更新前后相应范围或状态是否一致。 |
-| L212 | 建立或更新 `slot_mask_`：槽位寻址掩码；其有效性依赖容量布局约定。本行的具体值关系为 `slot_mask_ = other.slot_mask_`；对照更新前后相应范围或状态是否一致。 |
-| L213 | 把右侧 `std::move(other.hash_)` 用于初始化或更新左侧 `hash_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L214 | 把右侧 `std::move(other.is_equal_)` 用于初始化或更新左侧 `is_equal_`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L215 | 出现调用或函数声明 `noexcept_reset`，对应表达式为 `other.noexcept_reset();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L216 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L218 | 运算符重载声明、定义或显式调用：`Set &operator=(const Set &other)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L219 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L220 | 返回表达式 `copy_assign_container(*this, other)`。 |
-| L221 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L223 | 运算符重载声明、定义或显式调用：`Set &operator=(Set &&other)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L224 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L225 | 返回表达式 `move_assign_container(*this, std::move(other))`。 |
-| L226 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L233 | 出现调用或函数声明 `add_new`，对应表达式为 `void add_new(const Key &key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L234 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L235 | 出现调用或函数声明 `add_new__impl`，对应表达式为 `this->add_new__impl(key, hash_(key));`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L236 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L237 | 出现调用或函数声明 `add_new`，对应表达式为 `void add_new(Key &&key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L238 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L239 | 出现调用或函数声明 `add_new__impl`，对应表达式为 `this->add_new__impl(std::move(key), hash_(key));`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L240 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+存在键与不存在键的接口承诺不同；add_new需要调用者保证键尚不存在。
 
-### BLI_set.hh：L241—L292
+**继续追踪实现**
 
-<!-- source:source/blender/blenlib/BLI_set.hh:241:292 -->
+- `this->add_new__impl` → [blender::Set::add_new__impl · L827](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-bc4ae48abcde6959)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L239。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L241—L247
+
+<!-- annotated:0d3ba13f5868ae -->
 
 ```cpp
 
@@ -625,18 +1145,183 @@ class Set {
    *
    * This is similar to std::unordered_set::insert.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L241—L247</summary>
+
+<!-- original:0d3ba13f5868ae:source/blender/blenlib/BLI_set.hh:241:247 -->
+
+```cpp
+
+  /**
+   * Add a key to the set. If the key exists in the set already, nothing is done. The return value
+   * is true if the key was newly added to the set.
+   *
+   * This is similar to std::unordered_set::insert.
+   */
+```
+
+</details>
+
+<a id="f-c7498809c2327fba"></a>
+
+### `blender::Set::add`
+
+按哈希与相等关系加入键或键值。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L248—L251。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:34ed71eb919784 -->
+
+```cpp
+  bool add(const Key &key)
+  {
+    // [讲解] this->add_as：按哈希与相等关系加入键或键值。
+    return this->add_as(key);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L248—L251</summary>
+
+<!-- original:34ed71eb919784:source/blender/blenlib/BLI_set.hh:248:251 -->
+
+```cpp
   bool add(const Key &key)
   {
     return this->add_as(key);
   }
+```
+
+</details>
+
+**接口与不变量**
+
+存在键与不存在键的接口承诺不同；add_new需要调用者保证键尚不存在。
+
+**结果出口**
+
+- `return this->add_as(key);`
+
+**继续追踪实现**
+
+- `this->add_as` → [blender::Set::add_as · L256](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-ce49561a490e821a)。
+
+<a id="f-e3ac8d1c52c03c2b"></a>
+
+### `blender::Set::add`
+
+按哈希与相等关系加入键或键值。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L252—L255。
+
+接口参数：
+
+- `Key &&key`
+
+**教学注释版**
+
+<!-- annotated:2b60448ca6b0ef -->
+
+```cpp
+  bool add(Key &&key)
+  {
+    // [讲解] this->add_as：按哈希与相等关系加入键或键值。
+    return this->add_as(std::move(key));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L252—L255</summary>
+
+<!-- original:2b60448ca6b0ef:source/blender/blenlib/BLI_set.hh:252:255 -->
+
+```cpp
   bool add(Key &&key)
   {
     return this->add_as(std::move(key));
   }
+```
+
+</details>
+
+**接口与不变量**
+
+存在键与不存在键的接口承诺不同；add_new需要调用者保证键尚不存在。
+
+**结果出口**
+
+- `return this->add_as(std::move(key));`
+
+**继续追踪实现**
+
+- `this->add_as` → [blender::Set::add_as · L256](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-ce49561a490e821a)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<a id="f-ce49561a490e821a"></a>
+
+### `blender::Set::add_as`
+
+按哈希与相等关系加入键或键值。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L256—L259。
+
+接口参数：
+
+- `ForwardKey &&key`
+
+**教学注释版**
+
+<!-- annotated:63c0e0895733a1 -->
+
+```cpp
+  template<typename ForwardKey> bool add_as(ForwardKey &&key)
+  {
+    // [讲解] std::forward<ForwardKey>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+    return this->add__impl(std::forward<ForwardKey>(key), hash_(key));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L256—L259</summary>
+
+<!-- original:63c0e0895733a1:source/blender/blenlib/BLI_set.hh:256:259 -->
+
+```cpp
   template<typename ForwardKey> bool add_as(ForwardKey &&key)
   {
     return this->add__impl(std::forward<ForwardKey>(key), hash_(key));
   }
+```
+
+</details>
+
+**接口与不变量**
+
+存在键与不存在键的接口承诺不同；add_new需要调用者保证键尚不存在。
+
+**结果出口**
+
+- `return this->add__impl(std::forward<ForwardKey>(key), hash_(key));`
+
+**继续追踪实现**
+
+- `this->add__impl` → [blender::Set::add__impl · L845](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-f71ddee9127387aa)。
+- `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L258。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L260—L266
+
+<!-- annotated:23cebf883050cb -->
+
+```cpp
 
   /**
    * Similar to #add but reinserts the key if it already exists. Using this only makes sense if the
@@ -644,18 +1329,164 @@ class Set {
    *
    * \return True if the key was newly added, false if it was already present and was overwritten.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L260—L266</summary>
+
+<!-- original:23cebf883050cb:source/blender/blenlib/BLI_set.hh:260:266 -->
+
+```cpp
+
+  /**
+   * Similar to #add but reinserts the key if it already exists. Using this only makes sense if the
+   * key contains additional data besides what affects the hash.
+   *
+   * \return True if the key was newly added, false if it was already present and was overwritten.
+   */
+```
+
+</details>
+
+<a id="f-647c919fe97d16c2"></a>
+
+### `blender::Set::add_overwrite`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L267—L270。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:9b71bb4b2768a8 -->
+
+```cpp
   bool add_overwrite(const Key &key)
   {
     return this->add_overwrite_as(key);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L267—L270</summary>
+
+<!-- original:9b71bb4b2768a8:source/blender/blenlib/BLI_set.hh:267:270 -->
+
+```cpp
+  bool add_overwrite(const Key &key)
+  {
+    return this->add_overwrite_as(key);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->add_overwrite_as(key);`
+
+**继续追踪实现**
+
+- `this->add_overwrite_as` → [blender::Set::add_overwrite_as · L275](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-ac8df34dd60f4eda)。
+
+<a id="f-2811f2e733a12f8f"></a>
+
+### `blender::Set::add_overwrite`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L271—L274。
+
+接口参数：
+
+- `Key &&key`
+
+**教学注释版**
+
+<!-- annotated:330280d4ea2477 -->
+
+```cpp
+  bool add_overwrite(Key &&key)
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    return this->add_overwrite_as(std::move(key));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L271—L274</summary>
+
+<!-- original:330280d4ea2477:source/blender/blenlib/BLI_set.hh:271:274 -->
+
+```cpp
   bool add_overwrite(Key &&key)
   {
     return this->add_overwrite_as(std::move(key));
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->add_overwrite_as(std::move(key));`
+
+**继续追踪实现**
+
+- `this->add_overwrite_as` → [blender::Set::add_overwrite_as · L275](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-ac8df34dd60f4eda)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<a id="f-ac8df34dd60f4eda"></a>
+
+### `blender::Set::add_overwrite_as`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L275—L278。
+
+接口参数：
+
+- `ForwardKey &&key`
+
+**教学注释版**
+
+<!-- annotated:4549331b770e52 -->
+
+```cpp
+  template<typename ForwardKey> bool add_overwrite_as(ForwardKey &&key)
+  {
+    // [讲解] std::forward<ForwardKey>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+    return this->add_overwrite__impl(std::forward<ForwardKey>(key), hash_(key));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L275—L278</summary>
+
+<!-- original:4549331b770e52:source/blender/blenlib/BLI_set.hh:275:278 -->
+
+```cpp
   template<typename ForwardKey> bool add_overwrite_as(ForwardKey &&key)
   {
     return this->add_overwrite__impl(std::forward<ForwardKey>(key), hash_(key));
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->add_overwrite__impl(std::forward<ForwardKey>(key), hash_(key));`
+
+**继续追踪实现**
+
+- `this->add_overwrite__impl` → [blender::Set::add_overwrite__impl · L864](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-021aba3aad404275)。
+- `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L277。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L279—L286
+
+<!-- annotated:f4719b0690b015 -->
+
+```cpp
 
   /**
    * Convenience function to add many keys to the set at once. Duplicates are removed
@@ -664,6 +1495,56 @@ class Set {
    * We might be able to make this faster than sequentially adding all keys, but that is not
    * implemented yet.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L279—L286</summary>
+
+<!-- original:f4719b0690b015:source/blender/blenlib/BLI_set.hh:279:286 -->
+
+```cpp
+
+  /**
+   * Convenience function to add many keys to the set at once. Duplicates are removed
+   * automatically.
+   *
+   * We might be able to make this faster than sequentially adding all keys, but that is not
+   * implemented yet.
+   */
+```
+
+</details>
+
+<a id="f-18a099a39b0fcf37"></a>
+
+### `blender::Set::add_multiple`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L287—L292。
+
+接口参数：
+
+- `Span<Key> keys`
+
+**教学注释版**
+
+<!-- annotated:09705186e2f8a0 -->
+
+```cpp
+  void add_multiple(Span<Key> keys)
+  {
+    for (const Key &key : keys) {
+      // [讲解] this->add：按哈希与相等关系加入键或键值。
+      this->add(key);
+    }
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L287—L292</summary>
+
+<!-- original:09705186e2f8a0:source/blender/blenlib/BLI_set.hh:287:292 -->
+
+```cpp
   void add_multiple(Span<Key> keys)
   {
     for (const Key &key : keys) {
@@ -672,42 +1553,15 @@ class Set {
   }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L248 | 出现调用或函数声明 `add`，对应表达式为 `bool add(const Key &key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L249 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L250 | 返回表达式 `this->add_as(key)`。 |
-| L251 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L252 | 出现调用或函数声明 `add`，对应表达式为 `bool add(Key &&key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L253 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L254 | 返回表达式 `this->add_as(std::move(key))`。 |
-| L255 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L256 | 声明模板参数 `template<typename ForwardKey> bool add_as(ForwardKey &&key)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L257 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L258 | 返回表达式 `this->add__impl(std::forward<ForwardKey>(key), hash_(key))`。 |
-| L259 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L267 | 出现调用或函数声明 `add_overwrite`，对应表达式为 `bool add_overwrite(const Key &key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L268 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L269 | 返回表达式 `this->add_overwrite_as(key)`。 |
-| L270 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L271 | 出现调用或函数声明 `add_overwrite`，对应表达式为 `bool add_overwrite(Key &&key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L272 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L273 | 返回表达式 `this->add_overwrite_as(std::move(key))`。 |
-| L274 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L275 | 声明模板参数 `template<typename ForwardKey> bool add_overwrite_as(ForwardKey &&key)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L276 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L277 | 返回表达式 `this->add_overwrite__impl(std::forward<ForwardKey>(key), hash_(key))`。 |
-| L278 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L287 | 出现调用或函数声明 `add_multiple`，对应表达式为 `void add_multiple(Span<Key> keys)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L288 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L289 | 按 `for (const Key &key : keys)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L290 | 出现调用或函数声明 `add`，对应表达式为 `this->add(key);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L291 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L292 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+</details>
 
-### BLI_set.hh：L293—L339
+**继续追踪实现**
 
-<!-- source:source/blender/blenlib/BLI_set.hh:293:339 -->
+- `this->add` → [blender::Set::add · L248](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-c7498809c2327fba)；[blender::Set::add · L252](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-e3ac8d1c52c03c2b)。同名重载需按实参类型选择。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L293—L297
+
+<!-- annotated:bc16a702274a3b -->
 
 ```cpp
 
@@ -715,82 +1569,395 @@ class Set {
    * Convenience function to add many new keys to the set at once. The keys must not exist in the
    * set before and there must not be duplicates in the array.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L293—L297</summary>
+
+<!-- original:bc16a702274a3b:source/blender/blenlib/BLI_set.hh:293:297 -->
+
+```cpp
+
+  /**
+   * Convenience function to add many new keys to the set at once. The keys must not exist in the
+   * set before and there must not be duplicates in the array.
+   */
+```
+
+</details>
+
+<a id="f-d3ed25b77a7be06e"></a>
+
+### `blender::Set::add_multiple_new`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L298—L303。
+
+接口参数：
+
+- `Span<Key> keys`
+
+**教学注释版**
+
+<!-- annotated:3a0a3d2b6d8bf8 -->
+
+```cpp
+  void add_multiple_new(Span<Key> keys)
+  {
+    for (const Key &key : keys) {
+      // [讲解] this->add_new：按哈希与相等关系加入键或键值。
+      this->add_new(key);
+    }
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L298—L303</summary>
+
+<!-- original:3a0a3d2b6d8bf8:source/blender/blenlib/BLI_set.hh:298:303 -->
+
+```cpp
   void add_multiple_new(Span<Key> keys)
   {
     for (const Key &key : keys) {
       this->add_new(key);
     }
   }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->add_new` → [blender::Set::add_new · L233](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-12f4dd65a3abaaac)；[blender::Set::add_new · L237](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-9c46c167cdd9bb73)。同名重载需按实参类型选择。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L304—L309
+
+<!-- annotated:3057566a58a749 -->
+
+```cpp
 
   /**
    * Returns true if the key is in the set.
    *
    * This is similar to std::unordered_set::find() != std::unordered_set::end().
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L304—L309</summary>
+
+<!-- original:3057566a58a749:source/blender/blenlib/BLI_set.hh:304:309 -->
+
+```cpp
+
+  /**
+   * Returns true if the key is in the set.
+   *
+   * This is similar to std::unordered_set::find() != std::unordered_set::end().
+   */
+```
+
+</details>
+
+<a id="f-af7099799494350e"></a>
+
+### `blender::Set::contains`
+
+查询活项数量或键是否存在。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L310—L313。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:74fc4cee14276f -->
+
+```cpp
+  bool contains(const Key &key) const
+  {
+    // [讲解] this->contains_as：查询活项数量或键是否存在。
+    return this->contains_as(key);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L310—L313</summary>
+
+<!-- original:74fc4cee14276f:source/blender/blenlib/BLI_set.hh:310:313 -->
+
+```cpp
   bool contains(const Key &key) const
   {
     return this->contains_as(key);
   }
+```
+
+</details>
+
+**接口与不变量**
+
+活项数量与删除槽数量不同，探测成本不能只看size。
+
+**结果出口**
+
+- `return this->contains_as(key);`
+
+**继续追踪实现**
+
+- `this->contains_as` → [blender::Set::contains_as · L314](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-cfb34e01adf42d3a)。
+
+<a id="f-cfb34e01adf42d3a"></a>
+
+### `blender::Set::contains_as`
+
+查询活项数量或键是否存在。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L314—L317。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:1f08e7b0447f58 -->
+
+```cpp
   template<typename ForwardKey> bool contains_as(const ForwardKey &key) const
   {
     return this->contains__impl(key, hash_(key));
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L314—L317</summary>
+
+<!-- original:1f08e7b0447f58:source/blender/blenlib/BLI_set.hh:314:317 -->
+
+```cpp
+  template<typename ForwardKey> bool contains_as(const ForwardKey &key) const
+  {
+    return this->contains__impl(key, hash_(key));
+  }
+```
+
+</details>
+
+**接口与不变量**
+
+活项数量与删除槽数量不同，探测成本不能只看size。
+
+**结果出口**
+
+- `return this->contains__impl(key, hash_(key));`
+
+**继续追踪实现**
+
+- `this->contains__impl` → [blender::Set::contains__impl · L786](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-c5ed4ac8fe44e158)。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L316。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L318—L322
+
+<!-- annotated:281c1ee8790705 -->
+
+```cpp
 
   /**
    * Returns the key that is stored in the set that compares equal to the given key. This invokes
    * undefined behavior when the key is not in the set.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L318—L322</summary>
+
+<!-- original:281c1ee8790705:source/blender/blenlib/BLI_set.hh:318:322 -->
+
+```cpp
+
+  /**
+   * Returns the key that is stored in the set that compares equal to the given key. This invokes
+   * undefined behavior when the key is not in the set.
+   */
+```
+
+</details>
+
+<a id="f-223b6788d784103f"></a>
+
+### `blender::Set::lookup_key`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L323—L326。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:f7bb8143940775 -->
+
+```cpp
   const Key &lookup_key(const Key &key) const
   {
     return this->lookup_key_as(key);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L323—L326</summary>
+
+<!-- original:f7bb8143940775:source/blender/blenlib/BLI_set.hh:323:326 -->
+
+```cpp
+  const Key &lookup_key(const Key &key) const
+  {
+    return this->lookup_key_as(key);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->lookup_key_as(key);`
+
+**继续追踪实现**
+
+- `this->lookup_key_as` → [blender::Set::lookup_key_as · L327](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-359a668340af93c8)。
+
+<a id="f-359a668340af93c8"></a>
+
+### `blender::Set::lookup_key_as`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L327—L330。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:6c894d55bfba3f -->
+
+```cpp
   template<typename ForwardKey> const Key &lookup_key_as(const ForwardKey &key) const
   {
     return this->lookup_key__impl(key, hash_(key));
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L327—L330</summary>
+
+<!-- original:6c894d55bfba3f:source/blender/blenlib/BLI_set.hh:327:330 -->
+
+```cpp
+  template<typename ForwardKey> const Key &lookup_key_as(const ForwardKey &key) const
+  {
+    return this->lookup_key__impl(key, hash_(key));
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->lookup_key__impl(key, hash_(key));`
+
+**继续追踪实现**
+
+- `this->lookup_key__impl` → [blender::Set::lookup_key__impl · L800](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4d6ee914c304e771)。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L329。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L331—L335
+
+<!-- annotated:736d7ca47e7b0f -->
+
+```cpp
 
   /**
    * Returns the key that is stored in the set that compares equal to the given key. If the key is
    * not in the set, the given default value is returned instead.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L331—L335</summary>
+
+<!-- original:736d7ca47e7b0f:source/blender/blenlib/BLI_set.hh:331:335 -->
+
+```cpp
+
+  /**
+   * Returns the key that is stored in the set that compares equal to the given key. If the key is
+   * not in the set, the given default value is returned instead.
+   */
+```
+
+</details>
+
+<a id="f-868d5a2e0ec7ead6"></a>
+
+### `blender::Set::lookup_key_default`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L336—L339。
+
+接口参数：
+
+- `const Key &key`
+- `const Key &default_value`
+
+**教学注释版**
+
+<!-- annotated:179c09b9b3aa86 -->
+
+```cpp
   const Key &lookup_key_default(const Key &key, const Key &default_value) const
   {
     return this->lookup_key_default_as(key, default_value);
   }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L298 | 出现调用或函数声明 `add_multiple_new`，对应表达式为 `void add_multiple_new(Span<Key> keys)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L299 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L300 | 按 `for (const Key &key : keys)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L301 | 出现调用或函数声明 `add_new`，对应表达式为 `this->add_new(key);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L302 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L303 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L310 | 出现调用或函数声明 `contains`，对应表达式为 `bool contains(const Key &key) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L311 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L312 | 返回表达式 `this->contains_as(key)`。 |
-| L313 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L314 | 声明模板参数 `template<typename ForwardKey> bool contains_as(const ForwardKey &key) const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L315 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L316 | 返回表达式 `this->contains__impl(key, hash_(key))`。 |
-| L317 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L323 | 出现调用或函数声明 `lookup_key`，对应表达式为 `const Key &lookup_key(const Key &key) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L324 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L325 | 返回表达式 `this->lookup_key_as(key)`。 |
-| L326 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L327 | 声明模板参数 `template<typename ForwardKey> const Key &lookup_key_as(const ForwardKey &key) const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L328 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L329 | 返回表达式 `this->lookup_key__impl(key, hash_(key))`。 |
-| L330 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L336 | 出现调用或函数声明 `lookup_key_default`，对应表达式为 `const Key &lookup_key_default(const Key &key, const Key &default_value) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L337 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L338 | 返回表达式 `this->lookup_key_default_as(key, default_value)`。 |
-| L339 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L336—L339</summary>
 
-### BLI_set.hh：L340—L391
+<!-- original:179c09b9b3aa86:source/blender/blenlib/BLI_set.hh:336:339 -->
 
-<!-- source:source/blender/blenlib/BLI_set.hh:340:391 -->
+```cpp
+  const Key &lookup_key_default(const Key &key, const Key &default_value) const
+  {
+    return this->lookup_key_default_as(key, default_value);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->lookup_key_default_as(key, default_value);`
+
+**继续追踪实现**
+
+- `this->lookup_key_default_as` → [blender::Set::lookup_key_default_as · L340](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-a7d935a275a2a042)。
+
+<a id="f-a7d935a275a2a042"></a>
+
+### `blender::Set::lookup_key_default_as`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L340—L348。
+
+接口参数：
+
+- `const ForwardKey &key`
+- `const Key &default_key`
+
+**教学注释版**
+
+<!-- annotated:5c7aed5aeb944f -->
 
 ```cpp
   template<typename ForwardKey>
@@ -802,36 +1969,317 @@ class Set {
     }
     return *ptr;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L340—L348</summary>
+
+<!-- original:5c7aed5aeb944f:source/blender/blenlib/BLI_set.hh:340:348 -->
+
+```cpp
+  template<typename ForwardKey>
+  const Key &lookup_key_default_as(const ForwardKey &key, const Key &default_key) const
+  {
+    const Key *ptr = this->lookup_key_ptr__impl(key, hash_(key));
+    if (ptr == nullptr) {
+      return default_key;
+    }
+    return *ptr;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return default_key;`
+- `return *ptr;`
+
+**继续追踪实现**
+
+- `this->lookup_key_ptr__impl` → [blender::Set::lookup_key_ptr__impl · L813](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-8bc0730a5900e50c)。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L343。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L349—L353
+
+<!-- annotated:fce46bfc84fd5f -->
+
+```cpp
 
   /**
    * Returns a pointer to the key that is stored in the set that compares equal to the given key.
    * If the key is not in the set, nullptr is returned instead.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L349—L353</summary>
+
+<!-- original:fce46bfc84fd5f:source/blender/blenlib/BLI_set.hh:349:353 -->
+
+```cpp
+
+  /**
+   * Returns a pointer to the key that is stored in the set that compares equal to the given key.
+   * If the key is not in the set, nullptr is returned instead.
+   */
+```
+
+</details>
+
+<a id="f-4b63f4d782804c8e"></a>
+
+### `blender::Set::lookup_key_ptr`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L354—L357。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:cdebb6fddade9b -->
+
+```cpp
   const Key *lookup_key_ptr(const Key &key) const
   {
     return this->lookup_key_ptr_as(key);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L354—L357</summary>
+
+<!-- original:cdebb6fddade9b:source/blender/blenlib/BLI_set.hh:354:357 -->
+
+```cpp
+  const Key *lookup_key_ptr(const Key &key) const
+  {
+    return this->lookup_key_ptr_as(key);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->lookup_key_ptr_as(key);`
+
+**继续追踪实现**
+
+- `this->lookup_key_ptr_as` → [blender::Set::lookup_key_ptr_as · L358](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4547118d8b516515)。
+
+<a id="f-4547118d8b516515"></a>
+
+### `blender::Set::lookup_key_ptr_as`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L358—L361。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:467b5f24943702 -->
+
+```cpp
   template<typename ForwardKey> const Key *lookup_key_ptr_as(const ForwardKey &key) const
   {
     return this->lookup_key_ptr__impl(key, hash_(key));
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L358—L361</summary>
+
+<!-- original:467b5f24943702:source/blender/blenlib/BLI_set.hh:358:361 -->
+
+```cpp
+  template<typename ForwardKey> const Key *lookup_key_ptr_as(const ForwardKey &key) const
+  {
+    return this->lookup_key_ptr__impl(key, hash_(key));
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->lookup_key_ptr__impl(key, hash_(key));`
+
+**继续追踪实现**
+
+- `this->lookup_key_ptr__impl` → [blender::Set::lookup_key_ptr__impl · L813](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-8bc0730a5900e50c)。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L360。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L362—L366
+
+<!-- annotated:640014bebfb51a -->
+
+```cpp
 
   /**
    * Returns the key in the set that compares equal to the given key. If it does not exist, the key
    * is newly added.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L362—L366</summary>
+
+<!-- original:640014bebfb51a:source/blender/blenlib/BLI_set.hh:362:366 -->
+
+```cpp
+
+  /**
+   * Returns the key in the set that compares equal to the given key. If it does not exist, the key
+   * is newly added.
+   */
+```
+
+</details>
+
+<a id="f-3464e5a6b866af8a"></a>
+
+### `blender::Set::lookup_key_or_add`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L367—L370。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:bf9cb860dd1dd2 -->
+
+```cpp
   const Key &lookup_key_or_add(const Key &key)
   {
     return this->lookup_key_or_add_as(key);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L367—L370</summary>
+
+<!-- original:bf9cb860dd1dd2:source/blender/blenlib/BLI_set.hh:367:370 -->
+
+```cpp
+  const Key &lookup_key_or_add(const Key &key)
+  {
+    return this->lookup_key_or_add_as(key);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->lookup_key_or_add_as(key);`
+
+**继续追踪实现**
+
+- `this->lookup_key_or_add_as` → [blender::Set::lookup_key_or_add_as · L375](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-6eb644d4a23c98f3)。
+
+<a id="f-b2bddb4323cfb56b"></a>
+
+### `blender::Set::lookup_key_or_add`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L371—L374。
+
+接口参数：
+
+- `Key &&key`
+
+**教学注释版**
+
+<!-- annotated:082961cae41c80 -->
+
+```cpp
+  const Key &lookup_key_or_add(Key &&key)
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    return this->lookup_key_or_add_as(std::move(key));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L371—L374</summary>
+
+<!-- original:082961cae41c80:source/blender/blenlib/BLI_set.hh:371:374 -->
+
+```cpp
   const Key &lookup_key_or_add(Key &&key)
   {
     return this->lookup_key_or_add_as(std::move(key));
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->lookup_key_or_add_as(std::move(key));`
+
+**继续追踪实现**
+
+- `this->lookup_key_or_add_as` → [blender::Set::lookup_key_or_add_as · L375](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-6eb644d4a23c98f3)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<a id="f-6eb644d4a23c98f3"></a>
+
+### `blender::Set::lookup_key_or_add_as`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L375—L378。
+
+接口参数：
+
+- `ForwardKey &&key`
+
+**教学注释版**
+
+<!-- annotated:596da2531d70d0 -->
+
+```cpp
+  template<typename ForwardKey> const Key &lookup_key_or_add_as(ForwardKey &&key)
+  {
+    // [讲解] std::forward<ForwardKey>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+    return this->lookup_key_or_add__impl(std::forward<ForwardKey>(key), hash_(key));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L375—L378</summary>
+
+<!-- original:596da2531d70d0:source/blender/blenlib/BLI_set.hh:375:378 -->
+
+```cpp
   template<typename ForwardKey> const Key &lookup_key_or_add_as(ForwardKey &&key)
   {
     return this->lookup_key_or_add__impl(std::forward<ForwardKey>(key), hash_(key));
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->lookup_key_or_add__impl(std::forward<ForwardKey>(key), hash_(key));`
+
+**继续追踪实现**
+
+- `this->lookup_key_or_add__impl` → [blender::Set::lookup_key_or_add__impl · L916](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-77b743a659c803a6)。
+- `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L377。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L379—L386
+
+<!-- annotated:eec32c13801498 -->
+
+```cpp
 
   /**
    * Returns the key in the set that is equal to the given key. If the key does not exist, a new
@@ -840,6 +2288,56 @@ class Set {
    * Note, the value created by the callback has to compare equal to the given key and also has to
    * have the same hash.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L379—L386</summary>
+
+<!-- original:eec32c13801498:source/blender/blenlib/BLI_set.hh:379:386 -->
+
+```cpp
+
+  /**
+   * Returns the key in the set that is equal to the given key. If the key does not exist, a new
+   * key is created with the callback, added to the set and returned.
+   *
+   * Note, the value created by the callback has to compare equal to the given key and also has to
+   * have the same hash.
+   */
+```
+
+</details>
+
+<a id="f-023d6e6ec0da1d67"></a>
+
+### `blender::Set::lookup_key_or_add_cb`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L387—L391。
+
+接口参数：
+
+- `const Key &key`
+- `CreateValueF &&create_value`
+
+**教学注释版**
+
+<!-- annotated:6a85bdec1ade86 -->
+
+```cpp
+  template<typename CreateValueF>
+  const Key &lookup_key_or_add_cb(const Key &key, CreateValueF &&create_value)
+  {
+    // [讲解] std::forward<CreateValueF>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+    return this->lookup_key_or_add_cb_as(key, std::forward<CreateValueF>(create_value));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L387—L391</summary>
+
+<!-- original:6a85bdec1ade86:source/blender/blenlib/BLI_set.hh:387:391 -->
+
+```cpp
   template<typename CreateValueF>
   const Key &lookup_key_or_add_cb(const Key &key, CreateValueF &&create_value)
   {
@@ -847,50 +2345,46 @@ class Set {
   }
 ```
 
-本段语义重点：
+</details>
 
-- 分支证据 `ptr == nullptr)`：分别推演条件成立与不成立，核对相同出口处的状态。
+**结果出口**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L340 | 声明模板参数 `template<typename ForwardKey>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L341 | 出现调用或函数声明 `lookup_key_default_as`，对应表达式为 `const Key &lookup_key_default_as(const ForwardKey &key, const Key &default_key) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L342 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L343 | 把右侧 `this->lookup_key_ptr__impl(key, hash_(key))` 用于初始化或更新左侧 `const Key *ptr`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L344 | 判断 `ptr == nullptr`，成立时进入本分支，否则继续后续路径。这里区分空地址与可用地址，但非空本身仍不能证明对象存活。 |
-| L345 | 返回表达式 `default_key`。 |
-| L346 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L347 | 返回表达式 `*ptr`。 |
-| L348 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L354 | 出现调用或函数声明 `lookup_key_ptr`，对应表达式为 `const Key *lookup_key_ptr(const Key &key) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L355 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L356 | 返回表达式 `this->lookup_key_ptr_as(key)`。 |
-| L357 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L358 | 声明模板参数 `template<typename ForwardKey> const Key *lookup_key_ptr_as(const ForwardKey &key) const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L359 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L360 | 返回表达式 `this->lookup_key_ptr__impl(key, hash_(key))`。 |
-| L361 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L367 | 出现调用或函数声明 `lookup_key_or_add`，对应表达式为 `const Key &lookup_key_or_add(const Key &key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L368 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L369 | 返回表达式 `this->lookup_key_or_add_as(key)`。 |
-| L370 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L371 | 出现调用或函数声明 `lookup_key_or_add`，对应表达式为 `const Key &lookup_key_or_add(Key &&key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L372 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L373 | 返回表达式 `this->lookup_key_or_add_as(std::move(key))`。 |
-| L374 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L375 | 声明模板参数 `template<typename ForwardKey> const Key &lookup_key_or_add_as(ForwardKey &&key)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L376 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L377 | 返回表达式 `this->lookup_key_or_add__impl(std::forward<ForwardKey>(key), hash_(key))`。 |
-| L378 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L387 | 声明模板参数 `template<typename CreateValueF>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L388 | 出现调用或函数声明 `lookup_key_or_add_cb`，对应表达式为 `const Key &lookup_key_or_add_cb(const Key &key, CreateValueF &&create_value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L389 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L390 | 返回表达式 `this->lookup_key_or_add_cb_as(key, std::forward<CreateValueF>(create_value))`。 |
-| L391 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `return this->lookup_key_or_add_cb_as(key, std::forward<CreateValueF>(create_value));`
 
-### BLI_set.hh：L392—L438
+**继续追踪实现**
 
-<!-- source:source/blender/blenlib/BLI_set.hh:392:438 -->
+- `this->lookup_key_or_add_cb_as` → [blender::Set::lookup_key_or_add_cb_as · L392](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-f57e06eca9772802)。
+- `std::forward<CreateValueF>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+
+<a id="f-f57e06eca9772802"></a>
+
+### `blender::Set::lookup_key_or_add_cb_as`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L392—L397。
+
+接口参数：
+
+- `ForwardKey &&key`
+- `CreateValueF &&create_value`
+
+**教学注释版**
+
+<!-- annotated:aaf837d6d8deb1 -->
+
+```cpp
+  template<typename ForwardKey, typename CreateValueF>
+  const Key &lookup_key_or_add_cb_as(ForwardKey &&key, CreateValueF &&create_value)
+  {
+    return this->lookup_key_or_add_cb__impl(
+        // [讲解] std::forward<ForwardKey>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+        std::forward<ForwardKey>(key), hash_(key), std::forward<CreateValueF>(create_value));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L392—L397</summary>
+
+<!-- original:aaf837d6d8deb1:source/blender/blenlib/BLI_set.hh:392:397 -->
 
 ```cpp
   template<typename ForwardKey, typename CreateValueF>
@@ -899,32 +2393,280 @@ class Set {
     return this->lookup_key_or_add_cb__impl(
         std::forward<ForwardKey>(key), hash_(key), std::forward<CreateValueF>(create_value));
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->lookup_key_or_add_cb__impl(`
+
+**继续追踪实现**
+
+- `this->lookup_key_or_add_cb__impl` → [blender::Set::lookup_key_or_add_cb__impl · L936](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-05077930ab750268)。
+- `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L396。
+- `std::forward<CreateValueF>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L398—L403
+
+<!-- annotated:7f7bcc144dac7f -->
+
+```cpp
 
   /**
    * Deletes the key from the set. Returns true when the key did exist beforehand, otherwise false.
    *
    * This is similar to std::unordered_set::erase.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L398—L403</summary>
+
+<!-- original:7f7bcc144dac7f:source/blender/blenlib/BLI_set.hh:398:403 -->
+
+```cpp
+
+  /**
+   * Deletes the key from the set. Returns true when the key did exist beforehand, otherwise false.
+   *
+   * This is similar to std::unordered_set::erase.
+   */
+```
+
+</details>
+
+<a id="f-15d39dbe8a968718"></a>
+
+### `blender::Set::remove`
+
+移除占用项并维护探测状态。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L404—L407。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:324756f44ba046 -->
+
+```cpp
+  bool remove(const Key &key)
+  {
+    // [讲解] this->remove_as：移除占用项并维护探测状态。
+    return this->remove_as(key);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L404—L407</summary>
+
+<!-- original:324756f44ba046:source/blender/blenlib/BLI_set.hh:404:407 -->
+
+```cpp
   bool remove(const Key &key)
   {
     return this->remove_as(key);
   }
+```
+
+</details>
+
+**接口与不变量**
+
+对象销毁与留下删除槽标记是不同步骤，直接把碰撞链中间槽变成Empty可能截断后续查找。
+
+**结果出口**
+
+- `return this->remove_as(key);`
+
+**继续追踪实现**
+
+- `this->remove_as` → [blender::Set::remove_as · L408](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-20dd5d8116cacb91)。
+
+<a id="f-20dd5d8116cacb91"></a>
+
+### `blender::Set::remove_as`
+
+移除占用项并维护探测状态。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L408—L411。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:b3e103d8824947 -->
+
+```cpp
   template<typename ForwardKey> bool remove_as(const ForwardKey &key)
   {
     return this->remove__impl(key, hash_(key));
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L408—L411</summary>
+
+<!-- original:b3e103d8824947:source/blender/blenlib/BLI_set.hh:408:411 -->
+
+```cpp
+  template<typename ForwardKey> bool remove_as(const ForwardKey &key)
+  {
+    return this->remove__impl(key, hash_(key));
+  }
+```
+
+</details>
+
+**接口与不变量**
+
+对象销毁与留下删除槽标记是不同步骤，直接把碰撞链中间槽变成Empty可能截断后续查找。
+
+**结果出口**
+
+- `return this->remove__impl(key, hash_(key));`
+
+**继续追踪实现**
+
+- `this->remove__impl` → [blender::Set::remove__impl · L886](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-eb2a1637047acb99)。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L410。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L412—L415
+
+<!-- annotated:89aede4c44891c -->
+
+```cpp
 
   /**
    * Deletes the key from the set. This invokes undefined behavior when the key is not in the map.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L412—L415</summary>
+
+<!-- original:89aede4c44891c:source/blender/blenlib/BLI_set.hh:412:415 -->
+
+```cpp
+
+  /**
+   * Deletes the key from the set. This invokes undefined behavior when the key is not in the map.
+   */
+```
+
+</details>
+
+<a id="f-81c553c1cf89015f"></a>
+
+### `blender::Set::remove_contained`
+
+移除占用项并维护探测状态。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L416—L419。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:e1789b115053bd -->
+
+```cpp
+  void remove_contained(const Key &key)
+  {
+    // [讲解] this->remove_contained_as：移除占用项并维护探测状态。
+    this->remove_contained_as(key);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L416—L419</summary>
+
+<!-- original:e1789b115053bd:source/blender/blenlib/BLI_set.hh:416:419 -->
+
+```cpp
   void remove_contained(const Key &key)
   {
     this->remove_contained_as(key);
   }
+```
+
+</details>
+
+**接口与不变量**
+
+对象销毁与留下删除槽标记是不同步骤，直接把碰撞链中间槽变成Empty可能截断后续查找。
+
+**继续追踪实现**
+
+- `this->remove_contained_as` → [blender::Set::remove_contained_as · L420](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-eba96bdcf980f7fb)。
+
+<a id="f-eba96bdcf980f7fb"></a>
+
+### `blender::Set::remove_contained_as`
+
+移除占用项并维护探测状态。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L420—L423。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:6aeb87c326d676 -->
+
+```cpp
   template<typename ForwardKey> void remove_contained_as(const ForwardKey &key)
   {
     this->remove_contained__impl(key, hash_(key));
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L420—L423</summary>
+
+<!-- original:6aeb87c326d676:source/blender/blenlib/BLI_set.hh:420:423 -->
+
+```cpp
+  template<typename ForwardKey> void remove_contained_as(const ForwardKey &key)
+  {
+    this->remove_contained__impl(key, hash_(key));
+  }
+```
+
+</details>
+
+**接口与不变量**
+
+对象销毁与留下删除槽标记是不同步骤，直接把碰撞链中间槽变成Empty可能截断后续查找。
+
+**继续追踪实现**
+
+- `this->remove_contained__impl` → [blender::Set::remove_contained__impl · L901](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-7dfbc6e4ad863afb)。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L422。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L424—L447
+
+<a id="t-1c1b4bc125c6"></a>
+
+`Iterator`在这里声明的数据成员：
+
+- `Slot slots_`
+- `int64_t total_slots_`
+- `int64_t current_slot_`
+
+<!-- annotated:9226a4a6f2f125 -->
+
+```cpp
 
   /**
    * An iterator that can iterate over all keys in the set. The iterator is invalidated when the
@@ -940,45 +2682,6 @@ class Set {
     using pointer = const Key *;
     using reference = const Key &;
     using difference_type = std::ptrdiff_t;
-```
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L392 | 声明模板参数 `template<typename ForwardKey, typename CreateValueF>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L393 | 出现调用或函数声明 `lookup_key_or_add_cb_as`，对应表达式为 `const Key &lookup_key_or_add_cb_as(ForwardKey &&key, CreateValueF &&create_value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L394 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L395 | 返回表达式 `this->lookup_key_or_add_cb__impl(`。 |
-| L396 | 出现调用或函数声明 `std::forward`，对应表达式为 `std::forward<ForwardKey>(key), hash_(key), std::forward<CreateValueF>(create_value));`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L397 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L404 | 出现调用或函数声明 `remove`，对应表达式为 `bool remove(const Key &key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L405 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L406 | 返回表达式 `this->remove_as(key)`。 |
-| L407 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L408 | 声明模板参数 `template<typename ForwardKey> bool remove_as(const ForwardKey &key)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L409 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L410 | 返回表达式 `this->remove__impl(key, hash_(key))`。 |
-| L411 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L416 | 出现调用或函数声明 `remove_contained`，对应表达式为 `void remove_contained(const Key &key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L417 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L418 | 出现调用或函数声明 `remove_contained_as`，对应表达式为 `this->remove_contained_as(key);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L419 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L420 | 声明模板参数 `template<typename ForwardKey> void remove_contained_as(const ForwardKey &key)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L421 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L422 | 出现调用或函数声明 `remove_contained__impl`，对应表达式为 `this->remove_contained__impl(key, hash_(key));`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L423 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L432 | 声明或定义类型 `class Iterator`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L433 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L434 | 定义类型别名 `using iterator_category = std::forward_iterator_tag`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L435 | 定义类型别名 `using value_type = Key`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L436 | 定义类型别名 `using pointer = const Key *`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L437 | 定义类型别名 `using reference = const Key &`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L438 | 定义类型别名 `using difference_type = std::ptrdiff_t`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-
-### BLI_set.hh：L439—L485
-
-<!-- source:source/blender/blenlib/BLI_set.hh:439:485 -->
-
-```cpp
 
    private:
     const Slot *slots_;
@@ -988,11 +2691,111 @@ class Set {
     friend Set;
 
    public:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L424—L447</summary>
+
+<!-- original:9226a4a6f2f125:source/blender/blenlib/BLI_set.hh:424:447 -->
+
+```cpp
+
+  /**
+   * An iterator that can iterate over all keys in the set. The iterator is invalidated when the
+   * set is moved or when it is grown.
+   *
+   * Keys returned by this iterator are always const. They should not change, because this might
+   * also change their hash.
+   */
+  class Iterator {
+   public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = Key;
+    using pointer = const Key *;
+    using reference = const Key &;
+    using difference_type = std::ptrdiff_t;
+
+   private:
+    const Slot *slots_;
+    int64_t total_slots_;
+    int64_t current_slot_;
+
+    friend Set;
+
+   public:
+```
+
+</details>
+
+<a id="f-bae639d92797fd81"></a>
+
+### `blender::Set::Iterator::Iterator`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L448—L451。
+
+接口参数：
+
+- `const Slot *slots`
+- `int64_t total_slots`
+- `int64_t current_slot`
+
+**教学注释版**
+
+<!-- annotated:d672e10b8a3e6a -->
+
+```cpp
     Iterator(const Slot *slots, int64_t total_slots, int64_t current_slot)
         : slots_(slots), total_slots_(total_slots), current_slot_(current_slot)
     {
     }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L448—L451</summary>
+
+<!-- original:d672e10b8a3e6a:source/blender/blenlib/BLI_set.hh:448:451 -->
+
+```cpp
+    Iterator(const Slot *slots, int64_t total_slots, int64_t current_slot)
+        : slots_(slots), total_slots_(total_slots), current_slot_(current_slot)
+    {
+    }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:f1e1e213efe525 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L452—L452</summary>
+
+<!-- original:f1e1e213efe525:source/blender/blenlib/BLI_set.hh:452:452 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9d894c2270fe7957"></a>
+
+### `blender::Set::Iterator::operator++`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L453—L461。
+
+**教学注释版**
+
+<!-- annotated:0309c3dad99092 -->
+
+```cpp
     Iterator &operator++()
     {
       while (++current_slot_ < total_slots_) {
@@ -1002,24 +2805,244 @@ class Set {
       }
       return *this;
     }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L453—L461</summary>
+
+<!-- original:0309c3dad99092:source/blender/blenlib/BLI_set.hh:453:461 -->
+
+```cpp
+    Iterator &operator++()
+    {
+      while (++current_slot_ < total_slots_) {
+        if (slots_[current_slot_].is_occupied()) {
+          break;
+        }
+      }
+      return *this;
+    }
+```
+
+</details>
+
+**结果出口**
+
+- `return *this;`
+
+**继续追踪实现**
+
+- `slots_[current_slot_].is_occupied` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L456。
+
+<!-- annotated:660cb42f9c9bb8 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L462—L462</summary>
+
+<!-- original:660cb42f9c9bb8:source/blender/blenlib/BLI_set.hh:462:462 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-ddee9b5479acc743"></a>
+
+### `blender::Set::Iterator::operator++`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L463—L468。
+
+接口参数：
+
+- `int`
+
+**教学注释版**
+
+<!-- annotated:36b659e93f494f -->
+
+```cpp
     Iterator operator++(int)
     {
       Iterator copied_iterator = *this;
       ++(*this);
       return copied_iterator;
     }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L463—L468</summary>
+
+<!-- original:36b659e93f494f:source/blender/blenlib/BLI_set.hh:463:468 -->
+
+```cpp
+    Iterator operator++(int)
+    {
+      Iterator copied_iterator = *this;
+      ++(*this);
+      return copied_iterator;
+    }
+```
+
+</details>
+
+**结果出口**
+
+- `return copied_iterator;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:79bc252d0fb775 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L469—L469</summary>
+
+<!-- original:79bc252d0fb775:source/blender/blenlib/BLI_set.hh:469:469 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-fd48a20b30b5e263"></a>
+
+### `blender::Set::Iterator::operator*`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L470—L473。
+
+**教学注释版**
+
+<!-- annotated:f0bb8e3ca8cb1a -->
+
+```cpp
     const Key &operator*() const
     {
       return *slots_[current_slot_].key();
     }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L470—L473</summary>
+
+<!-- original:f0bb8e3ca8cb1a:source/blender/blenlib/BLI_set.hh:470:473 -->
+
+```cpp
+    const Key &operator*() const
+    {
+      return *slots_[current_slot_].key();
+    }
+```
+
+</details>
+
+**结果出口**
+
+- `return *slots_[current_slot_].key();`
+
+**继续追踪实现**
+
+- `slots_[current_slot_].key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L472。
+
+<!-- annotated:f28a1024af3ddd -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L474—L474</summary>
+
+<!-- original:f28a1024af3ddd:source/blender/blenlib/BLI_set.hh:474:474 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-d8831a06f788ec90"></a>
+
+### `blender::Set::Iterator::operator->`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L475—L478。
+
+**教学注释版**
+
+<!-- annotated:eb70b8dab5c09e -->
+
+```cpp
     const Key *operator->() const
     {
       return slots_[current_slot_].key();
     }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L475—L478</summary>
+
+<!-- original:eb70b8dab5c09e:source/blender/blenlib/BLI_set.hh:475:478 -->
+
+```cpp
+    const Key *operator->() const
+    {
+      return slots_[current_slot_].key();
+    }
+```
+
+</details>
+
+**结果出口**
+
+- `return slots_[current_slot_].key();`
+
+**继续追踪实现**
+
+- `slots_[current_slot_].key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L477。
+
+<!-- annotated:a1b0c81584f053 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L479—L479</summary>
+
+<!-- original:a1b0c81584f053:source/blender/blenlib/BLI_set.hh:479:479 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-323da7bfc4ce98dc"></a>
+
+### `blender::Set::Iterator::operator!=`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L480—L485。
+
+接口参数：
+
+- `const Iterator &a`
+- `const Iterator &b`
+
+**教学注释版**
+
+<!-- annotated:4a1b94c0a74bfd -->
+
+```cpp
     friend bool operator!=(const Iterator &a, const Iterator &b)
     {
       BLI_assert(a.slots_ == b.slots_);
@@ -1028,70 +3051,201 @@ class Set {
     }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L480—L485</summary>
 
-- `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。
+<!-- original:4a1b94c0a74bfd:source/blender/blenlib/BLI_set.hh:480:485 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L440 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L441 | 本行涉及 `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。按此语义解读 `const Slot *slots_`，不要把地址、数量或状态混用。 |
-| L442 | 声明成员、局部对象或完成语句 `int64_t total_slots_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L443 | 声明成员、局部对象或完成语句 `int64_t current_slot_`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L445 | 声明成员、局部对象或完成语句 `friend Set`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L447 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L448 | 出现调用或函数声明 `Iterator`，对应表达式为 `Iterator(const Slot *slots, int64_t total_slots, int64_t current_slot)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L449 | 本行涉及 `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。按此语义解读 `: slots_(slots), total_slots_(total_slots), current_slot_(current_slot)`，不要把地址、数量或状态混用。 |
-| L450 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L451 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L453 | 运算符重载声明、定义或显式调用：`Iterator &operator++()`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L454 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L455 | 按 `while (++current_slot_ < total_slots_)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L456 | 判断 `slots_[current_slot_].is_occupied()`，成立时进入本分支，否则继续后续路径。 |
-| L457 | 离开最近的循环或switch；不是离开整个函数，后续清理和提交代码可能仍会执行。 |
-| L458 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L459 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L460 | 返回表达式 `*this`。返回当前对象；返回类型决定它是引用还是值，不能仅凭表达式假定复制。 |
-| L461 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L463 | 运算符重载声明、定义或显式调用：`Iterator operator++(int)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L464 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L465 | 把右侧 `*this` 用于初始化或更新左侧 `Iterator copied_iterator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L466 | 声明成员、局部对象或完成语句 `++(*this)`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L467 | 返回表达式 `copied_iterator`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L468 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L470 | 运算符重载声明、定义或显式调用：`const Key &operator*() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L471 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L472 | 返回表达式 `*slots_[current_slot_].key()`。 |
-| L473 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L475 | 运算符重载声明、定义或显式调用：`const Key *operator->() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L476 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L477 | 返回表达式 `slots_[current_slot_].key()`。 |
-| L478 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L480 | 运算符重载声明、定义或显式调用：`friend bool operator!=(const Iterator &a, const Iterator &b)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L481 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L482 | 断言约束 `BLI_assert(a.slots_ == b.slots_);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L483 | 断言约束 `BLI_assert(a.total_slots_ == b.total_slots_);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L484 | 返回表达式 `a.current_slot_ != b.current_slot_`。 |
-| L485 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+    friend bool operator!=(const Iterator &a, const Iterator &b)
+    {
+      BLI_assert(a.slots_ == b.slots_);
+      BLI_assert(a.total_slots_ == b.total_slots_);
+      return a.current_slot_ != b.current_slot_;
+    }
+```
 
-### BLI_set.hh：L486—L526
+</details>
 
-<!-- source:source/blender/blenlib/BLI_set.hh:486:526 -->
+**结果出口**
+
+- `return a.current_slot_ != b.current_slot_;`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+
+<!-- annotated:d01a07168db40b -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L486—L486</summary>
+
+<!-- original:d01a07168db40b:source/blender/blenlib/BLI_set.hh:486:486 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-5090905f991b2e8e"></a>
+
+### `blender::Set::Iterator::operator==`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L487—L490。
+
+接口参数：
+
+- `const Iterator &a`
+- `const Iterator &b`
+
+**教学注释版**
+
+<!-- annotated:b6697566d03595 -->
+
+```cpp
     friend bool operator==(const Iterator &a, const Iterator &b)
     {
       return !(a != b);
     }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L487—L490</summary>
+
+<!-- original:b6697566d03595:source/blender/blenlib/BLI_set.hh:487:490 -->
+
+```cpp
+    friend bool operator==(const Iterator &a, const Iterator &b)
+    {
+      return !(a != b);
+    }
+```
+
+</details>
+
+**结果出口**
+
+- `return !(a != b);`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L491—L492
+
+<!-- annotated:3c801328b07a46 -->
+
+```cpp
 
    protected:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L491—L492</summary>
+
+<!-- original:3c801328b07a46:source/blender/blenlib/BLI_set.hh:491:492 -->
+
+```cpp
+
+   protected:
+```
+
+</details>
+
+<a id="f-beed03e57500adc6"></a>
+
+### `blender::Set::Iterator::current_slot`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L493—L496。
+
+**教学注释版**
+
+<!-- annotated:3ac08b93facf91 -->
+
+```cpp
     const Slot &current_slot() const
     {
       return slots_[current_slot_];
     }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L493—L496</summary>
+
+<!-- original:3ac08b93facf91:source/blender/blenlib/BLI_set.hh:493:496 -->
+
+```cpp
+    const Slot &current_slot() const
+    {
+      return slots_[current_slot_];
+    }
+```
+
+</details>
+
+**结果出口**
+
+- `return slots_[current_slot_];`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L497—L498
+
+<!-- annotated:e761b6171c3552 -->
+
+```cpp
   };
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L497—L498</summary>
+
+<!-- original:e761b6171c3552:source/blender/blenlib/BLI_set.hh:497:498 -->
+
+```cpp
+  };
+
+```
+
+</details>
+
+<a id="f-2885cc115ca7486f"></a>
+
+### `blender::Set::begin`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L499—L507。
+
+**教学注释版**
+
+<!-- annotated:ef46fec9aafa15 -->
+
+```cpp
+  Iterator begin() const
+  {
+    // [讲解] slots_.size：查询活项数量或键是否存在。
+    for (int64_t i = 0; i < slots_.size(); i++) {
+      if (slots_[i].is_occupied()) {
+        return Iterator(slots_.data(), slots_.size(), i);
+      }
+    }
+    return this->end();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L499—L507</summary>
+
+<!-- original:ef46fec9aafa15:source/blender/blenlib/BLI_set.hh:499:507 -->
+
+```cpp
   Iterator begin() const
   {
     for (int64_t i = 0; i < slots_.size(); i++) {
@@ -1101,17 +3255,128 @@ class Set {
     }
     return this->end();
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return Iterator(slots_.data(), slots_.size(), i);`
+- `return this->end();`
+
+**继续追踪实现**
+
+- `slots_.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+- `slots_[i].is_occupied` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L502。
+- `Iterator` → [blender::Set::Iterator::Iterator · L448](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-bae639d92797fd81)。
+- `slots_.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L503。
+- `this->end` → [blender::Set::end · L509](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-553fc42e3d469eaa)。
+
+<!-- annotated:2e0c76d3fe409b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L508—L508</summary>
+
+<!-- original:2e0c76d3fe409b:source/blender/blenlib/BLI_set.hh:508:508 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-553fc42e3d469eaa"></a>
+
+### `blender::Set::end`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L509—L512。
+
+**教学注释版**
+
+<!-- annotated:6f196ee55979e7 -->
+
+```cpp
+  Iterator end() const
+  {
+    // [讲解] slots_.size：查询活项数量或键是否存在。
+    return Iterator(slots_.data(), slots_.size(), slots_.size());
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L509—L512</summary>
+
+<!-- original:6f196ee55979e7:source/blender/blenlib/BLI_set.hh:509:512 -->
+
+```cpp
   Iterator end() const
   {
     return Iterator(slots_.data(), slots_.size(), slots_.size());
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return Iterator(slots_.data(), slots_.size(), slots_.size());`
+
+**继续追踪实现**
+
+- `Iterator` → [blender::Set::Iterator::Iterator · L448](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-bae639d92797fd81)。
+- `slots_.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L511。
+- `slots_.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L513—L518
+
+<!-- annotated:6f11c6455f5323 -->
+
+```cpp
 
   /**
    * Remove the key that the iterator is currently pointing at. It is valid to call this method
    * while iterating over the set. However, after this method has been called, the removed element
    * must not be accessed anymore.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L513—L518</summary>
+
+<!-- original:6f11c6455f5323:source/blender/blenlib/BLI_set.hh:513:518 -->
+
+```cpp
+
+  /**
+   * Remove the key that the iterator is currently pointing at. It is valid to call this method
+   * while iterating over the set. However, after this method has been called, the removed element
+   * must not be accessed anymore.
+   */
+```
+
+</details>
+
+<a id="f-c9547a19dae5001b"></a>
+
+### `blender::Set::remove`
+
+移除占用项并维护探测状态。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L519—L526。
+
+接口参数：
+
+- `const Iterator &it`
+
+**教学注释版**
+
+<!-- annotated:3b3f9ba1820c76 -->
+
+```cpp
   void remove(const Iterator &it)
   {
     /* The const cast is valid because this method itself is not const. */
@@ -1122,47 +3387,38 @@ class Set {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L519—L526</summary>
 
-- `removed_slots_`：删除标记计数，影响重建判断及探测长度。
-- `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。
+<!-- original:3b3f9ba1820c76:source/blender/blenlib/BLI_set.hh:519:526 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L487 | 运算符重载声明、定义或显式调用：`friend bool operator==(const Iterator &a, const Iterator &b)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L488 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L489 | 返回表达式 `!(a != b)`。 |
-| L490 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L492 | 切换成员访问权限为 protected；它是编译期接口边界，不是线程同步或内存保护。 |
-| L493 | 出现调用或函数声明 `current_slot`，对应表达式为 `const Slot &current_slot() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L494 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L495 | 返回表达式 `slots_[current_slot_]`。 |
-| L496 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L497 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L499 | 出现调用或函数声明 `begin`，对应表达式为 `Iterator begin() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L500 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L501 | 纯虚接口声明：`for (int64_t i = 0; i < slots_.size(); i++) {`。等号零标记抽象接口，需要按继承约定提供覆写；不表示执行函数并把结果设为零。 |
-| L502 | 判断 `slots_[i].is_occupied()`，成立时进入本分支，否则继续后续路径。 |
-| L503 | 返回表达式 `Iterator(slots_.data(), slots_.size(), i)`。 |
-| L504 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L505 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L506 | 返回表达式 `this->end()`。 |
-| L507 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L509 | 出现调用或函数声明 `end`，对应表达式为 `Iterator end() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L510 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L511 | 返回表达式 `Iterator(slots_.data(), slots_.size(), slots_.size())`。 |
-| L512 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L519 | 出现调用或函数声明 `remove`，对应表达式为 `void remove(const Iterator &it)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L520 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L522 | 把右侧 `const_cast<Slot &>(it.current_slot())` 用于初始化或更新左侧 `Slot &slot`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L523 | 断言约束 `BLI_assert(slot.is_occupied());`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L524 | 出现调用或函数声明 `remove`，对应表达式为 `slot.remove();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L525 | 递增或递减现有状态：`removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L526 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  void remove(const Iterator &it)
+  {
+    /* The const cast is valid because this method itself is not const. */
+    Slot &slot = const_cast<Slot &>(it.current_slot());
+    BLI_assert(slot.is_occupied());
+    slot.remove();
+    removed_slots_++;
+  }
+```
 
-### BLI_set.hh：L527—L574
+</details>
 
-<!-- source:source/blender/blenlib/BLI_set.hh:527:574 -->
+**接口与不变量**
+
+对象销毁与留下删除槽标记是不同步骤，直接把碰撞链中间槽变成Empty可能截断后续查找。
+
+**继续追踪实现**
+
+- `it.current_slot` → [blender::Set::Iterator::current_slot · L493](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-beed03e57500adc6)。
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `slot.is_occupied` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L523。
+- `slot.remove` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L524。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L527—L533
+
+<!-- annotated:7f44959b1f681e -->
 
 ```cpp
 
@@ -1172,6 +3428,63 @@ class Set {
    *
    * This is similar to std::erase_if.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L527—L533</summary>
+
+<!-- original:7f44959b1f681e:source/blender/blenlib/BLI_set.hh:527:533 -->
+
+```cpp
+
+  /**
+   * Remove all values for which the given predicate is true and return the number of removed
+   * values.
+   *
+   * This is similar to std::erase_if.
+   */
+```
+
+</details>
+
+<a id="f-01add0e8479a54a0"></a>
+
+### `blender::Set::remove_if`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L534—L547。
+
+接口参数：
+
+- `Predicate &&predicate`
+
+**教学注释版**
+
+<!-- annotated:7ba979ecb3d33a -->
+
+```cpp
+  template<typename Predicate> int64_t remove_if(Predicate &&predicate)
+  {
+    // [讲解] this->size：查询活项数量或键是否存在。
+    const int64_t prev_size = this->size();
+    for (Slot &slot : slots_) {
+      if (slot.is_occupied()) {
+        const Key &key = *slot.key();
+        if (predicate(key)) {
+          slot.remove();
+          removed_slots_++;
+        }
+      }
+    }
+    return prev_size - this->size();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L534—L547</summary>
+
+<!-- original:7ba979ecb3d33a:source/blender/blenlib/BLI_set.hh:534:547 -->
+
+```cpp
   template<typename Predicate> int64_t remove_if(Predicate &&predicate)
   {
     const int64_t prev_size = this->size();
@@ -1186,28 +3499,197 @@ class Set {
     }
     return prev_size - this->size();
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return prev_size - this->size();`
+
+**继续追踪实现**
+
+- `this->size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+- `slot.is_occupied` → [blender::SimpleSetSlot::is_occupied · L107](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-5af1a021584cc3de)。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `predicate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L540。
+- `slot.remove` → [blender::SimpleSetSlot::remove · L157](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d5efb876e6730548)。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L548—L551
+
+<!-- annotated:97e1f997da8ce3 -->
+
+```cpp
 
   /**
    * Print common statistics like size and collision count. This is useful for debugging purposes.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L548—L551</summary>
+
+<!-- original:97e1f997da8ce3:source/blender/blenlib/BLI_set.hh:548:551 -->
+
+```cpp
+
+  /**
+   * Print common statistics like size and collision count. This is useful for debugging purposes.
+   */
+```
+
+</details>
+
+<a id="f-cc5ba8d9e511d814"></a>
+
+### `blender::Set::print_stats`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L552—L556。
+
+接口参数：
+
+- `const char *name`
+
+**教学注释版**
+
+<!-- annotated:0248e38d6bcc21 -->
+
+```cpp
   void print_stats(const char *name) const
   {
     HashTableStats stats(*this, *this);
     stats.print(name);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L552—L556</summary>
+
+<!-- original:0248e38d6bcc21:source/blender/blenlib/BLI_set.hh:552:556 -->
+
+```cpp
+  void print_stats(const char *name) const
+  {
+    HashTableStats stats(*this, *this);
+    stats.print(name);
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `stats.print` → [blender::HashTableStats::print · L16](%E4%BE%9D%E8%B5%96-hash_tables-5853e7.md#f-be761e16ade883cd)。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L557—L561
+
+<!-- annotated:ffba17b623727d -->
+
+```cpp
 
   /**
    * Get the number of collisions that the probing strategy has to go through to find the key or
    * determine that it is not in the set.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L557—L561</summary>
+
+<!-- original:ffba17b623727d:source/blender/blenlib/BLI_set.hh:557:561 -->
+
+```cpp
+
+  /**
+   * Get the number of collisions that the probing strategy has to go through to find the key or
+   * determine that it is not in the set.
+   */
+```
+
+</details>
+
+<a id="f-59fd5b07ca13acb4"></a>
+
+### `blender::Set::count_collisions`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L562—L565。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:6e5268acd34e7c -->
+
+```cpp
   int64_t count_collisions(const Key &key) const
   {
     return this->count_collisions__impl(key, hash_(key));
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L562—L565</summary>
+
+<!-- original:6e5268acd34e7c:source/blender/blenlib/BLI_set.hh:562:565 -->
+
+```cpp
+  int64_t count_collisions(const Key &key) const
+  {
+    return this->count_collisions__impl(key, hash_(key));
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->count_collisions__impl(key, hash_(key));`
+
+**继续追踪实现**
+
+- `this->count_collisions__impl` → [blender::Set::count_collisions__impl · L958](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-00c5b7754faa08b8)。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L564。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L566—L569
+
+<!-- annotated:b02749f4c3b706 -->
+
+```cpp
 
   /**
    * Remove all elements. Under some circumstances #clear_and_keep_capacity may be more efficient.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L566—L569</summary>
+
+<!-- original:b02749f4c3b706:source/blender/blenlib/BLI_set.hh:566:569 -->
+
+```cpp
+
+  /**
+   * Remove all elements. Under some circumstances #clear_and_keep_capacity may be more efficient.
+   */
+```
+
+</details>
+
+<a id="f-ca1071f7960a58f0"></a>
+
+### `blender::Set::clear`
+
+移除全部活项，并按接口决定是否归还存储。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L570—L574。
+
+**教学注释版**
+
+<!-- annotated:1a1a7ab3ca8bdf -->
+
+```cpp
   void clear()
   {
     std::destroy_at(this);
@@ -1215,45 +3697,32 @@ class Set {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L570—L574</summary>
 
-- `removed_slots_`：删除标记计数，影响重建判断及探测长度。
-- `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。
+<!-- original:1a1a7ab3ca8bdf:source/blender/blenlib/BLI_set.hh:570:574 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L534 | 声明模板参数 `template<typename Predicate> int64_t remove_if(Predicate &&predicate)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L535 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L536 | 把右侧 `this->size()` 用于初始化或更新左侧 `const int64_t prev_size`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L537 | 按 `for (Slot &slot : slots_)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L538 | 判断 `slot.is_occupied()`，成立时进入本分支，否则继续后续路径。 |
-| L539 | 把右侧 `*slot.key()` 用于初始化或更新左侧 `const Key &key`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L540 | 判断 `predicate(key)`，成立时进入本分支，否则继续后续路径。 |
-| L541 | 出现调用或函数声明 `remove`，对应表达式为 `slot.remove();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L542 | 递增或递减现有状态：`removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L543 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L544 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L545 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L546 | 返回表达式 `prev_size - this->size()`。 |
-| L547 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L552 | 出现调用或函数声明 `print_stats`，对应表达式为 `void print_stats(const char *name) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L553 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L554 | 出现调用或函数声明 `stats`，对应表达式为 `HashTableStats stats(*this, *this);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L555 | 出现调用或函数声明 `print`，对应表达式为 `stats.print(name);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L556 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L562 | 出现调用或函数声明 `count_collisions`，对应表达式为 `int64_t count_collisions(const Key &key) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L563 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L564 | 返回表达式 `this->count_collisions__impl(key, hash_(key))`。 |
-| L565 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L570 | 出现调用或函数声明 `clear`，对应表达式为 `void clear()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L571 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L572 | 出现调用或函数声明 `std::destroy_at`，对应表达式为 `std::destroy_at(this);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L573 | 出现调用或函数声明 `new`，对应表达式为 `new (this) Set(NoExceptConstructor{});`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L574 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  void clear()
+  {
+    std::destroy_at(this);
+    new (this) Set(NoExceptConstructor{});
+  }
+```
 
-### BLI_set.hh：L575—L625
+</details>
 
-<!-- source:source/blender/blenlib/BLI_set.hh:575:625 -->
+**接口与不变量**
+
+只销毁真实占用槽中的对象；空槽和删除槽的旧值不能被再次析构。
+
+**继续追踪实现**
+
+- `std::destroy_at` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L575—L582
+
+<!-- annotated:cde198f3dd4384 -->
 
 ```cpp
 
@@ -1264,6 +3733,37 @@ class Set {
    * added again afterwards. If way fewer elements are added instead, the cost of maintaining a
    * large hash table can lead to very bad worst-case performance.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L575—L582</summary>
+
+<!-- original:cde198f3dd4384:source/blender/blenlib/BLI_set.hh:575:582 -->
+
+```cpp
+
+  /**
+   * Remove all elements, but don't free the underlying memory.
+   *
+   * This can be more efficient than using #clear if approximately the same or more elements are
+   * added again afterwards. If way fewer elements are added instead, the cost of maintaining a
+   * large hash table can lead to very bad worst-case performance.
+   */
+```
+
+</details>
+
+<a id="f-6d1b7ef693ab87df"></a>
+
+### `blender::Set::clear_and_keep_capacity`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L583—L592。
+
+**教学注释版**
+
+<!-- annotated:3965eb4ba46ec6 -->
+
+```cpp
   void clear_and_keep_capacity()
   {
     for (Slot &slot : slots_) {
@@ -1274,121 +3774,649 @@ class Set {
     removed_slots_ = 0;
     occupied_and_removed_slots_ = 0;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L583—L592</summary>
+
+<!-- original:3965eb4ba46ec6:source/blender/blenlib/BLI_set.hh:583:592 -->
+
+```cpp
+  void clear_and_keep_capacity()
+  {
+    for (Slot &slot : slots_) {
+      slot.~Slot();
+      new (&slot) Slot();
+    }
+
+    removed_slots_ = 0;
+    occupied_and_removed_slots_ = 0;
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `removed_slots_ = 0;`
+- `occupied_and_removed_slots_ = 0;`
+
+**继续追踪实现**
+
+- `slot.~Slot` → [blender::animrig::Slot::~Slot · L994](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-action-a70714.md#f-d520ece4c5c4f41e)。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L593—L597
+
+<!-- annotated:fadf0078c39676 -->
+
+```cpp
 
   /**
    * Creates a new slot array and reinserts all keys inside of that. This method can be used to get
    * rid of removed slots. Also this is useful for benchmarking the grow function.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L593—L597</summary>
+
+<!-- original:fadf0078c39676:source/blender/blenlib/BLI_set.hh:593:597 -->
+
+```cpp
+
+  /**
+   * Creates a new slot array and reinserts all keys inside of that. This method can be used to get
+   * rid of removed slots. Also this is useful for benchmarking the grow function.
+   */
+```
+
+</details>
+
+<a id="f-cc3aa2ccf6f94081"></a>
+
+### `blender::Set::rehash`
+
+重新组织槽位或准备容量。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L598—L601。
+
+**教学注释版**
+
+<!-- annotated:6ce0347a7a78b8 -->
+
+```cpp
+  void rehash()
+  {
+    // [讲解] this->realloc_and_reinsert：重新组织槽位或准备容量。
+    this->realloc_and_reinsert(this->size());
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L598—L601</summary>
+
+<!-- original:6ce0347a7a78b8:source/blender/blenlib/BLI_set.hh:598:601 -->
+
+```cpp
   void rehash()
   {
     this->realloc_and_reinsert(this->size());
   }
+```
+
+</details>
+
+**接口与不变量**
+
+重建后需同步计数和寻址掩码，原键值地址或元素索引是否稳定按容器约定判断。
+
+**继续追踪实现**
+
+- `this->realloc_and_reinsert` → [blender::Set::realloc_and_reinsert · L708](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-649abea6bedaaa95)。
+- `this->size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L602—L605
+
+<!-- annotated:7bd3a273161b0d -->
+
+```cpp
 
   /**
    * Returns the number of keys stored in the set.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L602—L605</summary>
+
+<!-- original:7bd3a273161b0d:source/blender/blenlib/BLI_set.hh:602:605 -->
+
+```cpp
+
+  /**
+   * Returns the number of keys stored in the set.
+   */
+```
+
+</details>
+
+<a id="f-4f8f88fffeb44b15"></a>
+
+### `blender::Set::size`
+
+查询活项数量或键是否存在。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L606—L609。
+
+**教学注释版**
+
+<!-- annotated:2eee5e5caa86ad -->
+
+```cpp
   int64_t size() const
   {
     return occupied_and_removed_slots_ - removed_slots_;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L606—L609</summary>
+
+<!-- original:2eee5e5caa86ad:source/blender/blenlib/BLI_set.hh:606:609 -->
+
+```cpp
+  int64_t size() const
+  {
+    return occupied_and_removed_slots_ - removed_slots_;
+  }
+```
+
+</details>
+
+**接口与不变量**
+
+活项数量与删除槽数量不同，探测成本不能只看size。
+
+**结果出口**
+
+- `return occupied_and_removed_slots_ - removed_slots_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L610—L613
+
+<!-- annotated:05189c1bdba807 -->
+
+```cpp
 
   /**
    * Returns true if no keys are stored.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L610—L613</summary>
+
+<!-- original:05189c1bdba807:source/blender/blenlib/BLI_set.hh:610:613 -->
+
+```cpp
+
+  /**
+   * Returns true if no keys are stored.
+   */
+```
+
+</details>
+
+<a id="f-5f91040461f7120c"></a>
+
+### `blender::Set::is_empty`
+
+查询活项数量或键是否存在。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L614—L617。
+
+**教学注释版**
+
+<!-- annotated:589128ae2fd4ca -->
+
+```cpp
   bool is_empty() const
   {
     return occupied_and_removed_slots_ == removed_slots_;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L614—L617</summary>
+
+<!-- original:589128ae2fd4ca:source/blender/blenlib/BLI_set.hh:614:617 -->
+
+```cpp
+  bool is_empty() const
+  {
+    return occupied_and_removed_slots_ == removed_slots_;
+  }
+```
+
+</details>
+
+**接口与不变量**
+
+活项数量与删除槽数量不同，探测成本不能只看size。
+
+**结果出口**
+
+- `return occupied_and_removed_slots_ == removed_slots_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L618—L621
+
+<!-- annotated:bd7b1d72617910 -->
+
+```cpp
 
   /**
    * Returns the number of available slots. This is mostly for debugging purposes.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L618—L621</summary>
+
+<!-- original:bd7b1d72617910:source/blender/blenlib/BLI_set.hh:618:621 -->
+
+```cpp
+
+  /**
+   * Returns the number of available slots. This is mostly for debugging purposes.
+   */
+```
+
+</details>
+
+<a id="f-e94848ccd12a0aef"></a>
+
+### `blender::Set::capacity`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L622—L625。
+
+**教学注释版**
+
+<!-- annotated:005d050101e772 -->
+
+```cpp
+  int64_t capacity() const
+  {
+    // [讲解] slots_.size：查询活项数量或键是否存在。
+    return slots_.size();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L622—L625</summary>
+
+<!-- original:005d050101e772:source/blender/blenlib/BLI_set.hh:622:625 -->
+
+```cpp
   int64_t capacity() const
   {
     return slots_.size();
   }
 ```
 
-本段语义重点：
+</details>
 
-- `realloc_and_reinsert`：重新组织哈希槽并重插活元素；槽位改变但键值相等语义应保持。
-- `removed_slots_`：删除标记计数，影响重建判断及探测长度。
-- `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。
-- `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。
+**结果出口**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L583 | 出现调用或函数声明 `clear_and_keep_capacity`，对应表达式为 `void clear_and_keep_capacity()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L584 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L585 | 按 `for (Slot &slot : slots_)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L586 | 涉及析构接口或显式析构：`slot.~Slot();`。检查目标对象已成功构造，且资源不会在另一条清理路径再次销毁。 |
-| L587 | 出现调用或函数声明 `new`，对应表达式为 `new (&slot) Slot();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L588 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L590 | 建立或更新 `removed_slots_`：删除标记计数，影响重建判断及探测长度。本行的具体值关系为 `removed_slots_ = 0`；对照更新前后相应范围或状态是否一致。 |
-| L591 | 建立或更新 `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。本行的具体值关系为 `occupied_and_removed_slots_ = 0`；对照更新前后相应范围或状态是否一致。 |
-| L592 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L598 | 出现调用或函数声明 `rehash`，对应表达式为 `void rehash()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L599 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L600 | 本行使用 `realloc_and_reinsert`：重新组织哈希槽并重插活元素；槽位改变但键值相等语义应保持。 |
-| L601 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L606 | 出现调用或函数声明 `size`，对应表达式为 `int64_t size() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L607 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L608 | 返回表达式 `occupied_and_removed_slots_ - removed_slots_`。 |
-| L609 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L614 | 出现调用或函数声明 `is_empty`，对应表达式为 `bool is_empty() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L615 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L616 | 返回表达式 `occupied_and_removed_slots_ == removed_slots_`。 |
-| L617 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L622 | 出现调用或函数声明 `capacity`，对应表达式为 `int64_t capacity() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L623 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L624 | 返回表达式 `slots_.size()`。 |
-| L625 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `return slots_.size();`
 
-### BLI_set.hh：L626—L679
+**继续追踪实现**
 
-<!-- source:source/blender/blenlib/BLI_set.hh:626:679 -->
+- `slots_.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L626—L629
+
+<!-- annotated:f696b8512cbfc7 -->
 
 ```cpp
 
   /**
    * Returns the amount of removed slots in the set. This is mostly for debugging purposes.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L626—L629</summary>
+
+<!-- original:f696b8512cbfc7:source/blender/blenlib/BLI_set.hh:626:629 -->
+
+```cpp
+
+  /**
+   * Returns the amount of removed slots in the set. This is mostly for debugging purposes.
+   */
+```
+
+</details>
+
+<a id="f-b496b06b5b9e9e40"></a>
+
+### `blender::Set::removed_amount`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L630—L633。
+
+**教学注释版**
+
+<!-- annotated:cc7c5a55a2785f -->
+
+```cpp
   int64_t removed_amount() const
   {
     return removed_slots_;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L630—L633</summary>
+
+<!-- original:cc7c5a55a2785f:source/blender/blenlib/BLI_set.hh:630:633 -->
+
+```cpp
+  int64_t removed_amount() const
+  {
+    return removed_slots_;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return removed_slots_;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L634—L637
+
+<!-- annotated:a2635615045e4c -->
+
+```cpp
 
   /**
    * Returns the bytes required per element. This is mostly for debugging purposes.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L634—L637</summary>
+
+<!-- original:a2635615045e4c:source/blender/blenlib/BLI_set.hh:634:637 -->
+
+```cpp
+
+  /**
+   * Returns the bytes required per element. This is mostly for debugging purposes.
+   */
+```
+
+</details>
+
+<a id="f-87ae76e573c802a1"></a>
+
+### `blender::Set::size_per_element`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L638—L641。
+
+**教学注释版**
+
+<!-- annotated:97487e4a362bc8 -->
+
+```cpp
   int64_t size_per_element() const
   {
     return sizeof(Slot);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L638—L641</summary>
+
+<!-- original:97487e4a362bc8:source/blender/blenlib/BLI_set.hh:638:641 -->
+
+```cpp
+  int64_t size_per_element() const
+  {
+    return sizeof(Slot);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return sizeof(Slot);`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L642—L646
+
+<!-- annotated:79851655617211 -->
+
+```cpp
 
   /**
    * Returns the approximate memory requirements of the set in bytes. This is more correct for
    * larger sets.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L642—L646</summary>
+
+<!-- original:79851655617211:source/blender/blenlib/BLI_set.hh:642:646 -->
+
+```cpp
+
+  /**
+   * Returns the approximate memory requirements of the set in bytes. This is more correct for
+   * larger sets.
+   */
+```
+
+</details>
+
+<a id="f-2549996772571128"></a>
+
+### `blender::Set::size_in_bytes`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L647—L650。
+
+**教学注释版**
+
+<!-- annotated:1248b6b9a6b4e1 -->
+
+```cpp
+  int64_t size_in_bytes() const
+  {
+    // [讲解] slots_.size：查询活项数量或键是否存在。
+    return sizeof(Slot) * slots_.size();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L647—L650</summary>
+
+<!-- original:1248b6b9a6b4e1:source/blender/blenlib/BLI_set.hh:647:650 -->
+
+```cpp
   int64_t size_in_bytes() const
   {
     return sizeof(Slot) * slots_.size();
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return sizeof(Slot) * slots_.size();`
+
+**继续追踪实现**
+
+- `slots_.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L651—L655
+
+<!-- annotated:b830d044cde877 -->
+
+```cpp
 
   /**
    * Potentially resize the set such that it can hold the specified number of keys without another
    * grow operation.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L651—L655</summary>
+
+<!-- original:b830d044cde877:source/blender/blenlib/BLI_set.hh:651:655 -->
+
+```cpp
+
+  /**
+   * Potentially resize the set such that it can hold the specified number of keys without another
+   * grow operation.
+   */
+```
+
+</details>
+
+<a id="f-95bdc8ebdf9331d4"></a>
+
+### `blender::Set::reserve`
+
+重新组织槽位或准备容量。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L656—L661。
+
+接口参数：
+
+- `const int64_t n`
+
+**教学注释版**
+
+<!-- annotated:b29f224d86281a -->
+
+```cpp
+  void reserve(const int64_t n)
+  {
+    if (usable_slots_ < n) {
+      // [讲解] this->realloc_and_reinsert：重新组织槽位或准备容量。
+      this->realloc_and_reinsert(n);
+    }
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L656—L661</summary>
+
+<!-- original:b29f224d86281a:source/blender/blenlib/BLI_set.hh:656:661 -->
+
+```cpp
   void reserve(const int64_t n)
   {
     if (usable_slots_ < n) {
       this->realloc_and_reinsert(n);
     }
   }
+```
+
+</details>
+
+**接口与不变量**
+
+重建后需同步计数和寻址掩码，原键值地址或元素索引是否稳定按容器约定判断。
+
+**继续追踪实现**
+
+- `this->realloc_and_reinsert` → [blender::Set::realloc_and_reinsert · L708](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-649abea6bedaaa95)。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L662—L665
+
+<!-- annotated:4ed3af254ee8ab -->
+
+```cpp
 
   /**
    * Returns true if there is a key that exists in both sets.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L662—L665</summary>
+
+<!-- original:4ed3af254ee8ab:source/blender/blenlib/BLI_set.hh:662:665 -->
+
+```cpp
+
+  /**
+   * Returns true if there is a key that exists in both sets.
+   */
+```
+
+</details>
+
+<a id="f-18d6f595c8e87bc5"></a>
+
+### `blender::Set::Intersects`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L666—L679。
+
+接口参数：
+
+- `const Set &a`
+- `const Set &b`
+
+**教学注释版**
+
+<!-- annotated:69e223269273f5 -->
+
+```cpp
+  static bool Intersects(const Set &a, const Set &b)
+  {
+    /* Make sure we iterate over the shorter set. */
+    // [讲解] a.size：查询活项数量或键是否存在。
+    if (a.size() > b.size()) {
+      return Intersects(b, a);
+    }
+
+    for (const Key &key : a) {
+      // [讲解] b.contains：查询活项数量或键是否存在。
+      if (b.contains(key)) {
+        return true;
+      }
+    }
+    return false;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L666—L679</summary>
+
+<!-- original:69e223269273f5:source/blender/blenlib/BLI_set.hh:666:679 -->
+
+```cpp
   static bool Intersects(const Set &a, const Set &b)
   {
     /* Make sure we iterate over the shorter set. */
@@ -1405,60 +4433,145 @@ class Set {
   }
 ```
 
-本段语义重点：
+</details>
 
-- `realloc_and_reinsert`：重新组织哈希槽并重插活元素；槽位改变但键值相等语义应保持。
-- `removed_slots_`：删除标记计数，影响重建判断及探测长度。
-- `usable_slots_`：受负载约束允许使用的槽位数，与物理总槽数不同。
-- `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。
+**结果出口**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L630 | 出现调用或函数声明 `removed_amount`，对应表达式为 `int64_t removed_amount() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L631 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L632 | 返回表达式 `removed_slots_`。 |
-| L633 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L638 | 出现调用或函数声明 `size_per_element`，对应表达式为 `int64_t size_per_element() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L639 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L640 | 返回表达式 `sizeof(Slot)`。 |
-| L641 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L647 | 出现调用或函数声明 `size_in_bytes`，对应表达式为 `int64_t size_in_bytes() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L648 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L649 | 返回表达式 `sizeof(Slot) * slots_.size()`。 |
-| L650 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L656 | 出现调用或函数声明 `reserve`，对应表达式为 `void reserve(const int64_t n)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L657 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L658 | 判断 `usable_slots_ < n`，成立时进入本分支，否则继续后续路径。 |
-| L659 | 本行使用 `realloc_and_reinsert`：重新组织哈希槽并重插活元素；槽位改变但键值相等语义应保持。 |
-| L660 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L661 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L666 | 出现调用或函数声明 `Intersects`，对应表达式为 `static bool Intersects(const Set &a, const Set &b)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L667 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L669 | 判断 `a.size() > b.size()`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L670 | 返回表达式 `Intersects(b, a)`。 |
-| L671 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L673 | 按 `for (const Key &key : a)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L674 | 判断 `b.contains(key)`，成立时进入本分支，否则继续后续路径。 |
-| L675 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L676 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L677 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L678 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L679 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `return Intersects(b, a);`
+- `return true;`
+- `return false;`
 
-### BLI_set.hh：L680—L707
+**继续追踪实现**
 
-<!-- source:source/blender/blenlib/BLI_set.hh:680:707 -->
+- `a.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+- `b.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+- `Intersects` → [blender::Set::Intersects · L666](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-18d6f595c8e87bc5)。
+- `b.contains` → [blender::Set::contains · L310](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-af7099799494350e)。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L680—L683
+
+<!-- annotated:b7ce0c0c099806 -->
 
 ```cpp
 
   /**
    * Returns true if no key from a is also in b and vice versa.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L680—L683</summary>
+
+<!-- original:b7ce0c0c099806:source/blender/blenlib/BLI_set.hh:680:683 -->
+
+```cpp
+
+  /**
+   * Returns true if no key from a is also in b and vice versa.
+   */
+```
+
+</details>
+
+<a id="f-e9d87230dcbcdfbe"></a>
+
+### `blender::Set::Disjoint`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L684—L687。
+
+接口参数：
+
+- `const Set &a`
+- `const Set &b`
+
+**教学注释版**
+
+<!-- annotated:f9e2dd03fd1b57 -->
+
+```cpp
   static bool Disjoint(const Set &a, const Set &b)
   {
     return !Intersects(a, b);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L684—L687</summary>
+
+<!-- original:f9e2dd03fd1b57:source/blender/blenlib/BLI_set.hh:684:687 -->
+
+```cpp
+  static bool Disjoint(const Set &a, const Set &b)
+  {
+    return !Intersects(a, b);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return !Intersects(a, b);`
+
+**继续追踪实现**
+
+- `Intersects` → [blender::Set::Intersects · L666](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-18d6f595c8e87bc5)。
+
+<!-- annotated:5811037a0954cc -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L688—L688</summary>
+
+<!-- original:5811037a0954cc:source/blender/blenlib/BLI_set.hh:688:688 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-e083381757edba1c"></a>
+
+### `blender::Set::operator==`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L689—L700。
+
+接口参数：
+
+- `const Set &a`
+- `const Set &b`
+
+**教学注释版**
+
+<!-- annotated:d284d442f14d24 -->
+
+```cpp
+  friend bool operator==(const Set &a, const Set &b)
+  {
+    // [讲解] a.size：查询活项数量或键是否存在。
+    if (a.size() != b.size()) {
+      return false;
+    }
+    for (const Key &key : a) {
+      // [讲解] b.contains：查询活项数量或键是否存在。
+      if (!b.contains(key)) {
+        return false;
+      }
+    }
+    return true;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L689—L700</summary>
+
+<!-- original:d284d442f14d24:source/blender/blenlib/BLI_set.hh:689:700 -->
+
+```cpp
   friend bool operator==(const Set &a, const Set &b)
   {
     if (a.size() != b.size()) {
@@ -1471,47 +4584,181 @@ class Set {
     }
     return true;
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return false;`
+- `return true;`
+
+**继续追踪实现**
+
+- `a.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+- `b.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+- `b.contains` → [blender::Set::contains · L310](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-af7099799494350e)。
+
+<!-- annotated:18ebe9ab0a339b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L701—L701</summary>
+
+<!-- original:18ebe9ab0a339b:source/blender/blenlib/BLI_set.hh:701:701 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-a7a33c1accc4dfa0"></a>
+
+### `blender::Set::operator!=`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L702—L705。
+
+接口参数：
+
+- `const Set &a`
+- `const Set &b`
+
+**教学注释版**
+
+<!-- annotated:468bae8fb2cec6 -->
+
+```cpp
   friend bool operator!=(const Set &a, const Set &b)
   {
     return !(a == b);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L702—L705</summary>
+
+<!-- original:468bae8fb2cec6:source/blender/blenlib/BLI_set.hh:702:705 -->
+
+```cpp
+  friend bool operator!=(const Set &a, const Set &b)
+  {
+    return !(a == b);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return !(a == b);`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L706—L707
+
+<!-- annotated:b2a5230f21a6e1 -->
+
+```cpp
 
  private:
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L706—L707</summary>
 
-- 分支证据 `a.size() != b.size())`：分别推演条件成立与不成立，核对相同出口处的状态。
-- 分支证据 `!b.contains(key))`：分别推演条件成立与不成立，核对相同出口处的状态。
+<!-- original:b2a5230f21a6e1:source/blender/blenlib/BLI_set.hh:706:707 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L684 | 出现调用或函数声明 `Disjoint`，对应表达式为 `static bool Disjoint(const Set &a, const Set &b)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L685 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L686 | 返回表达式 `!Intersects(a, b)`。 |
-| L687 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L689 | 运算符重载声明、定义或显式调用：`friend bool operator==(const Set &a, const Set &b)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L690 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L691 | 判断 `a.size() != b.size()`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L692 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L693 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L694 | 按 `for (const Key &key : a)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L695 | 判断 `!b.contains(key)`，成立时进入本分支，否则继续后续路径。 |
-| L696 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L697 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L698 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L699 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L700 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L702 | 运算符重载声明、定义或显式调用：`friend bool operator!=(const Set &a, const Set &b)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L703 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L704 | 返回表达式 `!(a == b)`。 |
-| L705 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L707 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
+```cpp
 
-### BLI_set.hh：L708—L759
+ private:
+```
 
-<!-- source:source/blender/blenlib/BLI_set.hh:708:759 -->
+</details>
+
+<a id="f-649abea6bedaaa95"></a>
+
+### `blender::Set::realloc_and_reinsert`
+
+重新组织槽位或准备容量。
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L708—L759。
+
+接口参数：
+
+- `int64_t min_usable_slots`
+
+**教学注释版**
+
+<!-- annotated:bf5e7627acfd79 -->
+
+```cpp
+  BLI_NOINLINE void realloc_and_reinsert(int64_t min_usable_slots)
+  {
+    /* Avoid rebuilding the hash table just to get rid of a few removed slots. In this case, also
+     * increase the set size to avoid a bad edge case. */
+    // [讲解] std::max：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+    min_usable_slots = std::max(min_usable_slots, this->size() * 2);
+
+    int64_t total_slots, usable_slots;
+    max_load_factor_.compute_total_and_usable_slots(
+        SlotArray::inline_buffer_capacity(), min_usable_slots, &total_slots, &usable_slots);
+    BLI_assert(total_slots >= 1);
+    const uint64_t new_slot_mask = uint64_t(total_slots) - 1;
+
+    /**
+     * Optimize the case when the set was empty beforehand. We can avoid some copies here.
+     */
+    // [讲解] this->size：查询活项数量或键是否存在。
+    if (this->size() == 0) {
+      try {
+        slots_.reinitialize(total_slots);
+      }
+      catch (...) {
+        this->noexcept_reset();
+        throw;
+      }
+      removed_slots_ = 0;
+      occupied_and_removed_slots_ = 0;
+      usable_slots_ = usable_slots;
+      slot_mask_ = new_slot_mask;
+      return;
+    }
+
+    /* The grown array that we insert the keys into. */
+    SlotArray new_slots(total_slots);
+
+    try {
+      for (Slot &slot : slots_) {
+        if (slot.is_occupied()) {
+          this->add_after_grow(slot, new_slots, new_slot_mask);
+          slot.remove();
+        }
+      }
+      // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+      slots_ = std::move(new_slots);
+    }
+    catch (...) {
+      this->noexcept_reset();
+      throw;
+    }
+
+    occupied_and_removed_slots_ -= removed_slots_;
+    usable_slots_ = usable_slots;
+    removed_slots_ = 0;
+    slot_mask_ = new_slot_mask;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L708—L759</summary>
+
+<!-- original:bf5e7627acfd79:source/blender/blenlib/BLI_set.hh:708:759 -->
 
 ```cpp
   BLI_NOINLINE void realloc_and_reinsert(int64_t min_usable_slots)
@@ -1568,64 +4815,92 @@ class Set {
   }
 ```
 
-本段语义重点：
+</details>
 
-- `realloc_and_reinsert`：重新组织哈希槽并重插活元素；槽位改变但键值相等语义应保持。
-- `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。
-- `removed_slots_`：删除标记计数，影响重建判断及探测长度。
-- `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。
-- `usable_slots_`：受负载约束允许使用的槽位数，与物理总槽数不同。
+**接口与不变量**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L708 | 出现调用或函数声明 `realloc_and_reinsert`，对应表达式为 `BLI_NOINLINE void realloc_and_reinsert(int64_t min_usable_slots)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L709 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L712 | 本行使用 `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。 |
-| L714 | 声明成员、局部对象或完成语句 `int64_t total_slots, usable_slots`。若为指针或引用，它本身不说明拥有；若为值对象，其构造析构由所在作用域或外层对象管理。 |
-| L715 | 出现调用或函数声明 `compute_total_and_usable_slots`，对应表达式为 `max_load_factor_.compute_total_and_usable_slots(`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L716 | 出现调用或函数声明 `SlotArray::inline_buffer_capacity`，对应表达式为 `SlotArray::inline_buffer_capacity(), min_usable_slots, &total_slots, &usable_slots);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L717 | 断言约束 `BLI_assert(total_slots >= 1);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L718 | 把右侧 `uint64_t(total_slots) - 1` 用于初始化或更新左侧 `const uint64_t new_slot_mask`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L723 | 判断 `this->size() == 0`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L724 | 开始可能抛异常的操作区间；下面catch负责局部回滚，需精确区分已经构造和尚未构造对象。 |
-| L725 | 本行涉及 `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。按此语义解读 `slots_.reinitialize(total_slots)`，不要把地址、数量或状态混用。 |
-| L726 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L727 | 进入异常清理路径；随后应释放本路径新取得的资源，同时遵守源对象已经发生的状态变化。 |
-| L728 | 出现调用或函数声明 `noexcept_reset`，对应表达式为 `this->noexcept_reset();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L729 | 继续传播异常或抛出新异常；在执行前必须完成本层负责的资源清理。 |
-| L730 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L731 | 建立或更新 `removed_slots_`：删除标记计数，影响重建判断及探测长度。本行的具体值关系为 `removed_slots_ = 0`；对照更新前后相应范围或状态是否一致。 |
-| L732 | 建立或更新 `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。本行的具体值关系为 `occupied_and_removed_slots_ = 0`；对照更新前后相应范围或状态是否一致。 |
-| L733 | 建立或更新 `usable_slots_`：受负载约束允许使用的槽位数，与物理总槽数不同。本行的具体值关系为 `usable_slots_ = usable_slots`；对照更新前后相应范围或状态是否一致。 |
-| L734 | 建立或更新 `slot_mask_`：槽位寻址掩码；其有效性依赖容量布局约定。本行的具体值关系为 `slot_mask_ = new_slot_mask`；对照更新前后相应范围或状态是否一致。 |
-| L735 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L736 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L739 | 出现调用或函数声明 `new_slots`，对应表达式为 `SlotArray new_slots(total_slots);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L741 | 开始可能抛异常的操作区间；下面catch负责局部回滚，需精确区分已经构造和尚未构造对象。 |
-| L742 | 按 `for (Slot &slot : slots_)` 指定的范围或条件重复执行。对照循环变量与真实元素编号；循环内调用成本乘以实际迭代次数。 |
-| L743 | 判断 `slot.is_occupied()`，成立时进入本分支，否则继续后续路径。 |
-| L744 | 出现调用或函数声明 `add_after_grow`，对应表达式为 `this->add_after_grow(slot, new_slots, new_slot_mask);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L745 | 出现调用或函数声明 `remove`，对应表达式为 `slot.remove();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L746 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L747 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L748 | 建立或更新 `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。本行的具体值关系为 `slots_ = std::move(new_slots)`；对照更新前后相应范围或状态是否一致。 |
-| L749 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L750 | 进入异常清理路径；随后应释放本路径新取得的资源，同时遵守源对象已经发生的状态变化。 |
-| L751 | 出现调用或函数声明 `noexcept_reset`，对应表达式为 `this->noexcept_reset();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L752 | 继续传播异常或抛出新异常；在执行前必须完成本层负责的资源清理。 |
-| L753 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L755 | 复合更新 `occupied_and_removed_slots_ -= removed_slots_`：读取左侧现有值，与右侧按`-=`对应操作组合后写回。检查数值边界、位掩码或共享状态保护；它不是新对象的构造。 |
-| L756 | 建立或更新 `usable_slots_`：受负载约束允许使用的槽位数，与物理总槽数不同。本行的具体值关系为 `usable_slots_ = usable_slots`；对照更新前后相应范围或状态是否一致。 |
-| L757 | 建立或更新 `removed_slots_`：删除标记计数，影响重建判断及探测长度。本行的具体值关系为 `removed_slots_ = 0`；对照更新前后相应范围或状态是否一致。 |
-| L758 | 建立或更新 `slot_mask_`：槽位寻址掩码；其有效性依赖容量布局约定。本行的具体值关系为 `slot_mask_ = new_slot_mask`；对照更新前后相应范围或状态是否一致。 |
-| L759 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+重建后需同步计数和寻址掩码，原键值地址或元素索引是否稳定按容器约定判断。
 
-### BLI_set.hh：L760—L811
+**沿实际写入检查状态**
 
-<!-- source:source/blender/blenlib/BLI_set.hh:760:811 -->
+- `min_usable_slots = std::max(min_usable_slots, this->size() * 2);`
+- `removed_slots_ = 0;`
+- `occupied_and_removed_slots_ = 0;`
+- `usable_slots_ = usable_slots;`
+- `slot_mask_ = new_slot_mask;`
+- `slots_ = std::move(new_slots);`
+- `occupied_and_removed_slots_ -= removed_slots_;`
+
+**继续追踪实现**
+
+- `std::max` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+- `this->size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+- `max_load_factor_.compute_total_and_usable_slots` → [blender::LoadFactor::compute_total_and_usable_slots · L85](03-%E6%A7%BD%E4%BD%8D%E7%8A%B6%E6%80%81%E4%B8%8E%E6%8E%A2%E6%B5%8B.md#f-23ebf500254e8be7)。
+- `SlotArray::inline_buffer_capacity` → [blender::Array::inline_buffer_capacity · L421](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-bbe69b0556f92519)。
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `slots_.reinitialize` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L725。
+- `this->noexcept_reset` → [blender::Set::noexcept_reset · L779](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-8e129637c06ba7df)。
+- `slot.is_occupied` → [blender::SimpleSetSlot::is_occupied · L107](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-5af1a021584cc3de)。
+- `this->add_after_grow` → [blender::Set::add_after_grow · L761](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-70de256afc93e8c8)。
+- `slot.remove` → [blender::SimpleSetSlot::remove · L157](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d5efb876e6730548)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<!-- annotated:9850f924c65d37 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L760—L760</summary>
+
+<!-- original:9850f924c65d37:source/blender/blenlib/BLI_set.hh:760:760 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-70de256afc93e8c8"></a>
+
+### `blender::Set::add_after_grow`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L761—L773。
+
+接口参数：
+
+- `Slot &old_slot`
+- `SlotArray &new_slots`
+- `const uint64_t new_slot_mask`
+
+**教学注释版**
+
+<!-- annotated:4943830f53bbf6 -->
+
+```cpp
+  void add_after_grow(Slot &old_slot, SlotArray &new_slots, const uint64_t new_slot_mask)
+  {
+    const uint64_t hash = old_slot.get_hash(Hash());
+
+    SLOT_PROBING_BEGIN (ProbingStrategy, hash, new_slot_mask, slot_index) {
+      Slot &slot = new_slots[slot_index];
+      if (slot.is_empty()) {
+        // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+        slot.occupy(std::move(*old_slot.key()), hash);
+        return;
+      }
+    }
+    SLOT_PROBING_END();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L761—L773</summary>
+
+<!-- original:4943830f53bbf6:source/blender/blenlib/BLI_set.hh:761:773 -->
+
+```cpp
   void add_after_grow(Slot &old_slot, SlotArray &new_slots, const uint64_t new_slot_mask)
   {
     const uint64_t hash = old_slot.get_hash(Hash());
@@ -1639,18 +4914,121 @@ class Set {
     }
     SLOT_PROBING_END();
   }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `old_slot.get_hash` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L763。
+- `Hash` → [SubEdge::Hash](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-subpatch-ee57c2.md#t-5fba122deac5)；[ImageCache::DeviceImageKey::Hash](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-image_cache-ab8b3b.md#t-6c0191c65525)。
+- `slot.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L767。
+- `slot.occupy` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L768。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+- `old_slot.key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L768。
+- `SLOT_PROBING_END` → [SLOT_PROBING_END · L225](%E4%BE%9D%E8%B5%96-BLI_probing_strategies-75cda3.md#m-04aac9863679)。宏定义由构建条件选择。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L774—L778
+
+<!-- annotated:8da578aaa4b9be -->
+
+```cpp
 
   /**
    * In some cases when exceptions are thrown, it's best to just reset the entire container to make
    * sure that invariants are maintained. This should happen very rarely in practice.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L774—L778</summary>
+
+<!-- original:8da578aaa4b9be:source/blender/blenlib/BLI_set.hh:774:778 -->
+
+```cpp
+
+  /**
+   * In some cases when exceptions are thrown, it's best to just reset the entire container to make
+   * sure that invariants are maintained. This should happen very rarely in practice.
+   */
+```
+
+</details>
+
+<a id="f-8e129637c06ba7df"></a>
+
+### `blender::Set::noexcept_reset`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L779—L784。
+
+**教学注释版**
+
+<!-- annotated:df76f4a31ed9ed -->
+
+```cpp
   void noexcept_reset() noexcept
   {
     Allocator allocator = slots_.allocator();
     this->~Set();
     new (this) Set(NoExceptConstructor(), allocator);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L779—L784</summary>
+
+<!-- original:df76f4a31ed9ed:source/blender/blenlib/BLI_set.hh:779:784 -->
+
+```cpp
+  void noexcept_reset() noexcept
+  {
+    Allocator allocator = slots_.allocator();
+    this->~Set();
+    new (this) Set(NoExceptConstructor(), allocator);
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `slots_.allocator` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L781。
+- `this->~Set` → [blender::Set::~Set · L189](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-6de785e3b9e53f8d)。
+- `NoExceptConstructor` → [blender::NoExceptConstructor](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-BLI_memory_utils-e249c3.md#t-4970c3d9f442)。
+
+<!-- annotated:bbc25c6959f468 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L785—L785</summary>
+
+<!-- original:bbc25c6959f468:source/blender/blenlib/BLI_set.hh:785:785 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-c5ed4ac8fe44e158"></a>
+
+### `blender::Set::contains__impl`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L786—L798。
+
+接口参数：
+
+- `const ForwardKey &key`
+- `const uint64_t hash`
+
+**教学注释版**
+
+<!-- annotated:7bd852472ed26b -->
+
+```cpp
   template<typename ForwardKey>
   bool contains__impl(const ForwardKey &key, const uint64_t hash) const
   {
@@ -1664,7 +5042,96 @@ class Set {
     }
     SET_SLOT_PROBING_END();
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L786—L798</summary>
+
+<!-- original:7bd852472ed26b:source/blender/blenlib/BLI_set.hh:786:798 -->
+
+```cpp
+  template<typename ForwardKey>
+  bool contains__impl(const ForwardKey &key, const uint64_t hash) const
+  {
+    SET_SLOT_PROBING_BEGIN (hash, slot) {
+      if (slot.is_empty()) {
+        return false;
+      }
+      if (slot.contains(key, is_equal_, hash)) {
+        return true;
+      }
+    }
+    SET_SLOT_PROBING_END();
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return false;`
+- `return true;`
+
+**继续追踪实现**
+
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+
+<!-- annotated:fb211295bf9dae -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L799—L799</summary>
+
+<!-- original:fb211295bf9dae:source/blender/blenlib/BLI_set.hh:799:799 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-4d6ee914c304e771"></a>
+
+### `blender::Set::lookup_key__impl`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L800—L811。
+
+接口参数：
+
+- `const ForwardKey &key`
+- `const uint64_t hash`
+
+**教学注释版**
+
+<!-- annotated:8266a470d6ac40 -->
+
+```cpp
+  template<typename ForwardKey>
+  const Key &lookup_key__impl(const ForwardKey &key, const uint64_t hash) const
+  {
+    // [讲解] this->contains_as：查询活项数量或键是否存在。
+    BLI_assert(this->contains_as(key));
+
+    SET_SLOT_PROBING_BEGIN (hash, slot) {
+      if (slot.contains(key, is_equal_, hash)) {
+        return *slot.key();
+      }
+    }
+    SET_SLOT_PROBING_END();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L800—L811</summary>
+
+<!-- original:8266a470d6ac40:source/blender/blenlib/BLI_set.hh:800:811 -->
+
+```cpp
   template<typename ForwardKey>
   const Key &lookup_key__impl(const ForwardKey &key, const uint64_t hash) const
   {
@@ -1679,61 +5146,53 @@ class Set {
   }
 ```
 
-本段语义重点：
+</details>
 
-- `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。
+**结果出口**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L761 | 出现调用或函数声明 `add_after_grow`，对应表达式为 `void add_after_grow(Slot &old_slot, SlotArray &new_slots, const uint64_t new_slot_mask)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L762 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L763 | 把右侧 `old_slot.get_hash(Hash())` 用于初始化或更新左侧 `const uint64_t hash`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L765 | 出现调用或函数声明 `SLOT_PROBING_BEGIN`，对应表达式为 `SLOT_PROBING_BEGIN (ProbingStrategy, hash, new_slot_mask, slot_index) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L766 | 把右侧 `new_slots[slot_index]` 用于初始化或更新左侧 `Slot &slot`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L767 | 判断 `slot.is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L768 | 出现调用或函数声明 `occupy`，对应表达式为 `slot.occupy(std::move(*old_slot.key()), hash);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L769 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L770 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L771 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L772 | 出现调用或函数声明 `SLOT_PROBING_END`，对应表达式为 `SLOT_PROBING_END();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L773 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L779 | 出现调用或函数声明 `noexcept_reset`，对应表达式为 `void noexcept_reset() noexcept`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L780 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L781 | 建立或更新 `slots_`：哈希槽数组，其中对象存活与槽位状态必须一致。本行的具体值关系为 `Allocator allocator = slots_.allocator()`；对照更新前后相应范围或状态是否一致。 |
-| L782 | 涉及析构接口或显式析构：`this->~Set();`。检查目标对象已成功构造，且资源不会在另一条清理路径再次销毁。 |
-| L783 | 出现调用或函数声明 `new`，对应表达式为 `new (this) Set(NoExceptConstructor(), allocator);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L784 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L786 | 声明模板参数 `template<typename ForwardKey>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L787 | 出现调用或函数声明 `contains__impl`，对应表达式为 `bool contains__impl(const ForwardKey &key, const uint64_t hash) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L788 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L789 | 出现调用或函数声明 `SET_SLOT_PROBING_BEGIN`，对应表达式为 `SET_SLOT_PROBING_BEGIN (hash, slot) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L790 | 判断 `slot.is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L791 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L792 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L793 | 判断 `slot.contains(key, is_equal_, hash)`，成立时进入本分支，否则继续后续路径。 |
-| L794 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L795 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L796 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L797 | 出现调用或函数声明 `SET_SLOT_PROBING_END`，对应表达式为 `SET_SLOT_PROBING_END();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L798 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L800 | 声明模板参数 `template<typename ForwardKey>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L801 | 出现调用或函数声明 `lookup_key__impl`，对应表达式为 `const Key &lookup_key__impl(const ForwardKey &key, const uint64_t hash) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L802 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L803 | 断言约束 `BLI_assert(this->contains_as(key));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L805 | 出现调用或函数声明 `SET_SLOT_PROBING_BEGIN`，对应表达式为 `SET_SLOT_PROBING_BEGIN (hash, slot) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L806 | 判断 `slot.contains(key, is_equal_, hash)`，成立时进入本分支，否则继续后续路径。 |
-| L807 | 返回表达式 `*slot.key()`。 |
-| L808 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L809 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L810 | 出现调用或函数声明 `SET_SLOT_PROBING_END`，对应表达式为 `SET_SLOT_PROBING_END();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L811 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `return *slot.key();`
 
-### BLI_set.hh：L812—L862
+**继续追踪实现**
 
-<!-- source:source/blender/blenlib/BLI_set.hh:812:862 -->
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->contains_as` → [blender::Set::contains_as · L314](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-cfb34e01adf42d3a)。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+
+<!-- annotated:daefdfba10200e -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L812—L812</summary>
+
+<!-- original:daefdfba10200e:source/blender/blenlib/BLI_set.hh:812:812 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8bc0730a5900e50c"></a>
+
+### `blender::Set::lookup_key_ptr__impl`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L813—L825。
+
+接口参数：
+
+- `const ForwardKey &key`
+- `const uint64_t hash`
+
+**教学注释版**
+
+<!-- annotated:9016871caa1057 -->
+
+```cpp
   template<typename ForwardKey>
   const Key *lookup_key_ptr__impl(const ForwardKey &key, const uint64_t hash) const
   {
@@ -1747,7 +5206,103 @@ class Set {
     }
     SET_SLOT_PROBING_END();
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L813—L825</summary>
+
+<!-- original:9016871caa1057:source/blender/blenlib/BLI_set.hh:813:825 -->
+
+```cpp
+  template<typename ForwardKey>
+  const Key *lookup_key_ptr__impl(const ForwardKey &key, const uint64_t hash) const
+  {
+    SET_SLOT_PROBING_BEGIN (hash, slot) {
+      if (slot.contains(key, is_equal_, hash)) {
+        return slot.key();
+      }
+      if (slot.is_empty()) {
+        return nullptr;
+      }
+    }
+    SET_SLOT_PROBING_END();
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return slot.key();`
+- `return nullptr;`
+
+**继续追踪实现**
+
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+
+<!-- annotated:9ef7cbdabc55ca -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L826—L826</summary>
+
+<!-- original:9ef7cbdabc55ca:source/blender/blenlib/BLI_set.hh:826:826 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-bc4ae48abcde6959"></a>
+
+### `blender::Set::add_new__impl`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L827—L843。
+
+接口参数：
+
+- `ForwardKey &&key`
+- `const uint64_t hash`
+
+**教学注释版**
+
+<!-- annotated:1caa83466ed4fe -->
+
+```cpp
+  template<typename ForwardKey> void add_new__impl(ForwardKey &&key, const uint64_t hash)
+  {
+    // [讲解] this->contains_as：查询活项数量或键是否存在。
+    BLI_assert(!this->contains_as(key));
+
+    this->ensure_can_add();
+
+    SET_SLOT_PROBING_BEGIN (hash, slot) {
+      if (slot.is_empty()) {
+        // [讲解] std::forward<ForwardKey>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+        slot.occupy(std::forward<ForwardKey>(key), hash);
+        BLI_assert(hash_(*slot.key()) == hash);
+        BLI_assert(is_equal_(*slot.key(), *slot.key()));
+        occupied_and_removed_slots_++;
+        return;
+      }
+    }
+    SET_SLOT_PROBING_END();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L827—L843</summary>
+
+<!-- original:1caa83466ed4fe:source/blender/blenlib/BLI_set.hh:827:843 -->
+
+```cpp
   template<typename ForwardKey> void add_new__impl(ForwardKey &&key, const uint64_t hash)
   {
     BLI_assert(!this->contains_as(key));
@@ -1765,7 +5320,83 @@ class Set {
     }
     SET_SLOT_PROBING_END();
   }
+```
 
+</details>
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->contains_as` → [blender::Set::contains_as · L314](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-cfb34e01adf42d3a)。
+- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-7b03b2102df62235)。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
+- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-173bd7a5b6441f70)。
+- `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L836。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L837。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+
+<!-- annotated:e19495cda5402b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L844—L844</summary>
+
+<!-- original:e19495cda5402b:source/blender/blenlib/BLI_set.hh:844:844 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-f71ddee9127387aa"></a>
+
+### `blender::Set::add__impl`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L845—L862。
+
+接口参数：
+
+- `ForwardKey &&key`
+- `const uint64_t hash`
+
+**教学注释版**
+
+<!-- annotated:98b41318a15a3a -->
+
+```cpp
+  template<typename ForwardKey> bool add__impl(ForwardKey &&key, const uint64_t hash)
+  {
+    this->ensure_can_add();
+
+    SET_SLOT_PROBING_BEGIN (hash, slot) {
+      if (slot.is_empty()) {
+        // [讲解] std::forward<ForwardKey>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+        slot.occupy(std::forward<ForwardKey>(key), hash);
+        BLI_assert(hash_(*slot.key()) == hash);
+        BLI_assert(is_equal_(*slot.key(), *slot.key()));
+        occupied_and_removed_slots_++;
+        return true;
+      }
+      if (slot.contains(key, is_equal_, hash)) {
+        return false;
+      }
+    }
+    SET_SLOT_PROBING_END();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L845—L862</summary>
+
+<!-- original:98b41318a15a3a:source/blender/blenlib/BLI_set.hh:845:862 -->
+
+```cpp
   template<typename ForwardKey> bool add__impl(ForwardKey &&key, const uint64_t hash)
   {
     this->ensure_can_add();
@@ -1786,64 +5417,89 @@ class Set {
   }
 ```
 
-本段语义重点：
+</details>
 
-- `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。
+**结果出口**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L813 | 声明模板参数 `template<typename ForwardKey>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L814 | 出现调用或函数声明 `lookup_key_ptr__impl`，对应表达式为 `const Key *lookup_key_ptr__impl(const ForwardKey &key, const uint64_t hash) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L815 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L816 | 出现调用或函数声明 `SET_SLOT_PROBING_BEGIN`，对应表达式为 `SET_SLOT_PROBING_BEGIN (hash, slot) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L817 | 判断 `slot.contains(key, is_equal_, hash)`，成立时进入本分支，否则继续后续路径。 |
-| L818 | 返回表达式 `slot.key()`。 |
-| L819 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L820 | 判断 `slot.is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L821 | 返回表达式 `nullptr`。 |
-| L822 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L823 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L824 | 出现调用或函数声明 `SET_SLOT_PROBING_END`，对应表达式为 `SET_SLOT_PROBING_END();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L825 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L827 | 声明模板参数 `template<typename ForwardKey> void add_new__impl(ForwardKey &&key, const uint64_t hash)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L828 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L829 | 断言约束 `BLI_assert(!this->contains_as(key));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L831 | 出现调用或函数声明 `ensure_can_add`，对应表达式为 `this->ensure_can_add();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L833 | 出现调用或函数声明 `SET_SLOT_PROBING_BEGIN`，对应表达式为 `SET_SLOT_PROBING_BEGIN (hash, slot) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L834 | 判断 `slot.is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L835 | 出现调用或函数声明 `occupy`，对应表达式为 `slot.occupy(std::forward<ForwardKey>(key), hash);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L836 | 断言约束 `BLI_assert(hash_(*slot.key()) == hash);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L837 | 断言约束 `BLI_assert(is_equal_(*slot.key(), *slot.key()));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L838 | 递增或递减现有状态：`occupied_and_removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L839 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L840 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L841 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L842 | 出现调用或函数声明 `SET_SLOT_PROBING_END`，对应表达式为 `SET_SLOT_PROBING_END();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L843 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L845 | 声明模板参数 `template<typename ForwardKey> bool add__impl(ForwardKey &&key, const uint64_t hash)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L846 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L847 | 出现调用或函数声明 `ensure_can_add`，对应表达式为 `this->ensure_can_add();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L849 | 出现调用或函数声明 `SET_SLOT_PROBING_BEGIN`，对应表达式为 `SET_SLOT_PROBING_BEGIN (hash, slot) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L850 | 判断 `slot.is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L851 | 出现调用或函数声明 `occupy`，对应表达式为 `slot.occupy(std::forward<ForwardKey>(key), hash);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L852 | 断言约束 `BLI_assert(hash_(*slot.key()) == hash);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L853 | 断言约束 `BLI_assert(is_equal_(*slot.key(), *slot.key()));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L854 | 递增或递减现有状态：`occupied_and_removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L855 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L856 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L857 | 判断 `slot.contains(key, is_equal_, hash)`，成立时进入本分支，否则继续后续路径。 |
-| L858 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L859 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L860 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L861 | 出现调用或函数声明 `SET_SLOT_PROBING_END`，对应表达式为 `SET_SLOT_PROBING_END();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L862 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `return true;`
+- `return false;`
 
-### BLI_set.hh：L863—L914
+**继续追踪实现**
 
-<!-- source:source/blender/blenlib/BLI_set.hh:863:914 -->
+- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-7b03b2102df62235)。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
+- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-173bd7a5b6441f70)。
+- `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L852。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L853。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+
+<!-- annotated:99cfa185ee0a95 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L863—L863</summary>
+
+<!-- original:99cfa185ee0a95:source/blender/blenlib/BLI_set.hh:863:863 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-021aba3aad404275"></a>
+
+### `blender::Set::add_overwrite__impl`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L864—L884。
+
+接口参数：
+
+- `ForwardKey &&key`
+- `const uint64_t hash`
+
+**教学注释版**
+
+<!-- annotated:ebffaa1c2c329f -->
+
+```cpp
+  template<typename ForwardKey> bool add_overwrite__impl(ForwardKey &&key, const uint64_t hash)
+  {
+    this->ensure_can_add();
+
+    SET_SLOT_PROBING_BEGIN (hash, slot) {
+      if (slot.is_empty()) {
+        // [讲解] std::forward<ForwardKey>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+        slot.occupy(std::forward<ForwardKey>(key), hash);
+        BLI_assert(hash_(*slot.key()) == hash);
+        BLI_assert(is_equal_(*slot.key(), *slot.key()));
+        occupied_and_removed_slots_++;
+        return true;
+      }
+      if (slot.contains(key, is_equal_, hash)) {
+        Key &stored_key = *slot.key();
+        stored_key = std::forward<ForwardKey>(key);
+        BLI_assert(hash_(stored_key) == hash);
+        return false;
+      }
+    }
+    SET_SLOT_PROBING_END();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L864—L884</summary>
+
+<!-- original:ebffaa1c2c329f:source/blender/blenlib/BLI_set.hh:864:884 -->
+
+```cpp
   template<typename ForwardKey> bool add_overwrite__impl(ForwardKey &&key, const uint64_t hash)
   {
     this->ensure_can_add();
@@ -1865,7 +5521,65 @@ class Set {
     }
     SET_SLOT_PROBING_END();
   }
+```
 
+</details>
+
+**沿实际写入检查状态**
+
+- `stored_key = std::forward<ForwardKey>(key);`
+
+**结果出口**
+
+- `return true;`
+- `return false;`
+
+**继续追踪实现**
+
+- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-7b03b2102df62235)。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
+- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-173bd7a5b6441f70)。
+- `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L871。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L872。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+
+<!-- annotated:f85ab6392b2561 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L885—L885</summary>
+
+<!-- original:f85ab6392b2561:source/blender/blenlib/BLI_set.hh:885:885 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-eb2a1637047acb99"></a>
+
+### `blender::Set::remove__impl`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L886—L899。
+
+接口参数：
+
+- `const ForwardKey &key`
+- `const uint64_t hash`
+
+**教学注释版**
+
+<!-- annotated:660c062dc1b638 -->
+
+```cpp
   template<typename ForwardKey> bool remove__impl(const ForwardKey &key, const uint64_t hash)
   {
     SET_SLOT_PROBING_BEGIN (hash, slot) {
@@ -1880,7 +5594,100 @@ class Set {
     }
     SET_SLOT_PROBING_END();
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L886—L899</summary>
+
+<!-- original:660c062dc1b638:source/blender/blenlib/BLI_set.hh:886:899 -->
+
+```cpp
+  template<typename ForwardKey> bool remove__impl(const ForwardKey &key, const uint64_t hash)
+  {
+    SET_SLOT_PROBING_BEGIN (hash, slot) {
+      if (slot.contains(key, is_equal_, hash)) {
+        slot.remove();
+        removed_slots_++;
+        return true;
+      }
+      if (slot.is_empty()) {
+        return false;
+      }
+    }
+    SET_SLOT_PROBING_END();
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return true;`
+- `return false;`
+
+**继续追踪实现**
+
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
+- `slot.remove` → [blender::SimpleSetSlot::remove · L157](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d5efb876e6730548)。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+
+<!-- annotated:b02f44be4d3e05 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L900—L900</summary>
+
+<!-- original:b02f44be4d3e05:source/blender/blenlib/BLI_set.hh:900:900 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-7dfbc6e4ad863afb"></a>
+
+### `blender::Set::remove_contained__impl`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L901—L914。
+
+接口参数：
+
+- `const ForwardKey &key`
+- `const uint64_t hash`
+
+**教学注释版**
+
+<!-- annotated:91ee4a9eed7ddb -->
+
+```cpp
+  template<typename ForwardKey>
+  void remove_contained__impl(const ForwardKey &key, const uint64_t hash)
+  {
+    // [讲解] this->contains_as：查询活项数量或键是否存在。
+    BLI_assert(this->contains_as(key));
+
+    SET_SLOT_PROBING_BEGIN (hash, slot) {
+      if (slot.contains(key, is_equal_, hash)) {
+        slot.remove();
+        removed_slots_++;
+        return;
+      }
+    }
+    SET_SLOT_PROBING_END();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L901—L914</summary>
+
+<!-- original:91ee4a9eed7ddb:source/blender/blenlib/BLI_set.hh:901:914 -->
+
+```cpp
   template<typename ForwardKey>
   void remove_contained__impl(const ForwardKey &key, const uint64_t hash)
   {
@@ -1897,67 +5704,77 @@ class Set {
   }
 ```
 
-本段语义重点：
+</details>
 
-- `removed_slots_`：删除标记计数，影响重建判断及探测长度。
-- `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。
+**继续追踪实现**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L864 | 声明模板参数 `template<typename ForwardKey> bool add_overwrite__impl(ForwardKey &&key, const uint64_t hash)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L865 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L866 | 出现调用或函数声明 `ensure_can_add`，对应表达式为 `this->ensure_can_add();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L868 | 出现调用或函数声明 `SET_SLOT_PROBING_BEGIN`，对应表达式为 `SET_SLOT_PROBING_BEGIN (hash, slot) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L869 | 判断 `slot.is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L870 | 出现调用或函数声明 `occupy`，对应表达式为 `slot.occupy(std::forward<ForwardKey>(key), hash);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L871 | 断言约束 `BLI_assert(hash_(*slot.key()) == hash);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L872 | 断言约束 `BLI_assert(is_equal_(*slot.key(), *slot.key()));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L873 | 递增或递减现有状态：`occupied_and_removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L874 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L875 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L876 | 判断 `slot.contains(key, is_equal_, hash)`，成立时进入本分支，否则继续后续路径。 |
-| L877 | 把右侧 `*slot.key()` 用于初始化或更新左侧 `Key &stored_key`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L878 | 把右侧 `std::forward<ForwardKey>(key)` 用于初始化或更新左侧 `stored_key`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L879 | 断言约束 `BLI_assert(hash_(stored_key) == hash);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L880 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L881 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L882 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L883 | 出现调用或函数声明 `SET_SLOT_PROBING_END`，对应表达式为 `SET_SLOT_PROBING_END();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L884 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L886 | 声明模板参数 `template<typename ForwardKey> bool remove__impl(const ForwardKey &key, const uint64_t hash)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L887 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L888 | 出现调用或函数声明 `SET_SLOT_PROBING_BEGIN`，对应表达式为 `SET_SLOT_PROBING_BEGIN (hash, slot) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L889 | 判断 `slot.contains(key, is_equal_, hash)`，成立时进入本分支，否则继续后续路径。 |
-| L890 | 出现调用或函数声明 `remove`，对应表达式为 `slot.remove();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L891 | 递增或递减现有状态：`removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L892 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L893 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L894 | 判断 `slot.is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L895 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L896 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L897 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L898 | 出现调用或函数声明 `SET_SLOT_PROBING_END`，对应表达式为 `SET_SLOT_PROBING_END();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L899 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L901 | 声明模板参数 `template<typename ForwardKey>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L902 | 出现调用或函数声明 `remove_contained__impl`，对应表达式为 `void remove_contained__impl(const ForwardKey &key, const uint64_t hash)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L903 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L904 | 断言约束 `BLI_assert(this->contains_as(key));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L906 | 出现调用或函数声明 `SET_SLOT_PROBING_BEGIN`，对应表达式为 `SET_SLOT_PROBING_BEGIN (hash, slot) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L907 | 判断 `slot.contains(key, is_equal_, hash)`，成立时进入本分支，否则继续后续路径。 |
-| L908 | 出现调用或函数声明 `remove`，对应表达式为 `slot.remove();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L909 | 递增或递减现有状态：`removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L910 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L911 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L912 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L913 | 出现调用或函数声明 `SET_SLOT_PROBING_END`，对应表达式为 `SET_SLOT_PROBING_END();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L914 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->contains_as` → [blender::Set::contains_as · L314](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-cfb34e01adf42d3a)。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
+- `slot.remove` → [blender::SimpleSetSlot::remove · L157](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d5efb876e6730548)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
 
-### BLI_set.hh：L915—L956
-
-<!-- source:source/blender/blenlib/BLI_set.hh:915:956 -->
+<!-- annotated:2d484526cd23e0 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L915—L915</summary>
+
+<!-- original:2d484526cd23e0:source/blender/blenlib/BLI_set.hh:915:915 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-77b743a659c803a6"></a>
+
+### `blender::Set::lookup_key_or_add__impl`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L916—L934。
+
+接口参数：
+
+- `ForwardKey &&key`
+- `const uint64_t hash`
+
+**教学注释版**
+
+<!-- annotated:a190ea68d89c39 -->
+
+```cpp
+  template<typename ForwardKey>
+  const Key &lookup_key_or_add__impl(ForwardKey &&key, const uint64_t hash)
+  {
+    this->ensure_can_add();
+
+    SET_SLOT_PROBING_BEGIN (hash, slot) {
+      if (slot.contains(key, is_equal_, hash)) {
+        return *slot.key();
+      }
+      if (slot.is_empty()) {
+        // [讲解] std::forward<ForwardKey>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+        slot.occupy(std::forward<ForwardKey>(key), hash);
+        BLI_assert(hash_(*slot.key()) == hash);
+        BLI_assert(is_equal_(*slot.key(), *slot.key()));
+        occupied_and_removed_slots_++;
+        return *slot.key();
+      }
+    }
+    SET_SLOT_PROBING_END();
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L916—L934</summary>
+
+<!-- original:a190ea68d89c39:source/blender/blenlib/BLI_set.hh:916:934 -->
+
+```cpp
   template<typename ForwardKey>
   const Key &lookup_key_or_add__impl(ForwardKey &&key, const uint64_t hash)
   {
@@ -1977,7 +5794,61 @@ class Set {
     }
     SET_SLOT_PROBING_END();
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return *slot.key();`
+
+**继续追踪实现**
+
+- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-7b03b2102df62235)。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
+- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-173bd7a5b6441f70)。
+- `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L927。
+- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L928。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+
+<!-- annotated:2d48b089e00b93 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L935—L935</summary>
+
+<!-- original:2d48b089e00b93:source/blender/blenlib/BLI_set.hh:935:935 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-05077930ab750268"></a>
+
+### `blender::Set::lookup_key_or_add_cb__impl`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L936—L956。
+
+接口参数：
+
+- `ForwardKey &&key`
+- `const uint64_t hash`
+- `CreateKeyF &&create_key`
+
+**教学注释版**
+
+<!-- annotated:64bb1600bcd2c8 -->
+
+```cpp
   template<typename ForwardKey, typename CreateKeyF>
   const Key &lookup_key_or_add_cb__impl(ForwardKey &&key,
                                         const uint64_t hash,
@@ -2001,57 +5872,87 @@ class Set {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L936—L956</summary>
 
-- `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。
+<!-- original:64bb1600bcd2c8:source/blender/blenlib/BLI_set.hh:936:956 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L916 | 声明模板参数 `template<typename ForwardKey>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L917 | 出现调用或函数声明 `lookup_key_or_add__impl`，对应表达式为 `const Key &lookup_key_or_add__impl(ForwardKey &&key, const uint64_t hash)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L918 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L919 | 出现调用或函数声明 `ensure_can_add`，对应表达式为 `this->ensure_can_add();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L921 | 出现调用或函数声明 `SET_SLOT_PROBING_BEGIN`，对应表达式为 `SET_SLOT_PROBING_BEGIN (hash, slot) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L922 | 判断 `slot.contains(key, is_equal_, hash)`，成立时进入本分支，否则继续后续路径。 |
-| L923 | 返回表达式 `*slot.key()`。 |
-| L924 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L925 | 判断 `slot.is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L926 | 出现调用或函数声明 `occupy`，对应表达式为 `slot.occupy(std::forward<ForwardKey>(key), hash);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L927 | 断言约束 `BLI_assert(hash_(*slot.key()) == hash);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L928 | 断言约束 `BLI_assert(is_equal_(*slot.key(), *slot.key()));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L929 | 递增或递减现有状态：`occupied_and_removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L930 | 返回表达式 `*slot.key()`。 |
-| L931 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L932 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L933 | 出现调用或函数声明 `SET_SLOT_PROBING_END`，对应表达式为 `SET_SLOT_PROBING_END();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L934 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L936 | 声明模板参数 `template<typename ForwardKey, typename CreateKeyF>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L937 | 出现调用或函数声明 `lookup_key_or_add_cb__impl`，对应表达式为 `const Key &lookup_key_or_add_cb__impl(ForwardKey &&key,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L938 | 本行是连续声明或表达式的一部分：`const uint64_t hash,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L939 | 本行是连续声明或表达式的一部分：`CreateKeyF &&create_key)`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L940 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L941 | 出现调用或函数声明 `ensure_can_add`，对应表达式为 `this->ensure_can_add();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L943 | 出现调用或函数声明 `SET_SLOT_PROBING_BEGIN`，对应表达式为 `SET_SLOT_PROBING_BEGIN (hash, slot) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L944 | 判断 `slot.contains(key, is_equal_, hash)`，成立时进入本分支，否则继续后续路径。 |
-| L945 | 返回表达式 `*slot.key()`。 |
-| L946 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L947 | 判断 `slot.is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L948 | 出现调用或函数声明 `occupy`，对应表达式为 `slot.occupy(create_key(), hash);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L949 | 断言约束 `BLI_assert(hash_(*slot.key()) == hash);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L950 | 断言约束 `BLI_assert(is_equal_(*slot.key(), *slot.key()));`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L951 | 递增或递减现有状态：`occupied_and_removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L952 | 返回表达式 `*slot.key()`。 |
-| L953 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L954 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L955 | 出现调用或函数声明 `SET_SLOT_PROBING_END`，对应表达式为 `SET_SLOT_PROBING_END();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L956 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  template<typename ForwardKey, typename CreateKeyF>
+  const Key &lookup_key_or_add_cb__impl(ForwardKey &&key,
+                                        const uint64_t hash,
+                                        CreateKeyF &&create_key)
+  {
+    this->ensure_can_add();
 
-### BLI_set.hh：L957—L996
+    SET_SLOT_PROBING_BEGIN (hash, slot) {
+      if (slot.contains(key, is_equal_, hash)) {
+        return *slot.key();
+      }
+      if (slot.is_empty()) {
+        slot.occupy(create_key(), hash);
+        BLI_assert(hash_(*slot.key()) == hash);
+        BLI_assert(is_equal_(*slot.key(), *slot.key()));
+        occupied_and_removed_slots_++;
+        return *slot.key();
+      }
+    }
+    SET_SLOT_PROBING_END();
+  }
+```
 
-<!-- source:source/blender/blenlib/BLI_set.hh:957:996 -->
+</details>
+
+**结果出口**
+
+- `return *slot.key();`
+
+**继续追踪实现**
+
+- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-7b03b2102df62235)。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
+- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-173bd7a5b6441f70)。
+- `create_key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L948。
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L949。
+- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L950。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+
+<!-- annotated:4fdd502c32f76c -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L957—L957</summary>
+
+<!-- original:4fdd502c32f76c:source/blender/blenlib/BLI_set.hh:957:957 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-00c5b7754faa08b8"></a>
+
+### `blender::Set::count_collisions__impl`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L958—L973。
+
+接口参数：
+
+- `const ForwardKey &key`
+- `const uint64_t hash`
+
+**教学注释版**
+
+<!-- annotated:a8460a4f1c41e1 -->
+
+```cpp
   template<typename ForwardKey>
   int64_t count_collisions__impl(const ForwardKey &key, const uint64_t hash) const
   {
@@ -2068,7 +5969,88 @@ class Set {
     }
     SET_SLOT_PROBING_END();
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L958—L973</summary>
+
+<!-- original:a8460a4f1c41e1:source/blender/blenlib/BLI_set.hh:958:973 -->
+
+```cpp
+  template<typename ForwardKey>
+  int64_t count_collisions__impl(const ForwardKey &key, const uint64_t hash) const
+  {
+    int64_t collisions = 0;
+
+    SET_SLOT_PROBING_BEGIN (hash, slot) {
+      if (slot.contains(key, is_equal_, hash)) {
+        return collisions;
+      }
+      if (slot.is_empty()) {
+        return collisions;
+      }
+      collisions++;
+    }
+    SET_SLOT_PROBING_END();
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return collisions;`
+
+**继续追踪实现**
+
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+
+<!-- annotated:231081f994fc3b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L974—L974</summary>
+
+<!-- original:231081f994fc3b:source/blender/blenlib/BLI_set.hh:974:974 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-7b03b2102df62235"></a>
+
+### `blender::Set::ensure_can_add`
+
+实现位置：[source/blender/blenlib/BLI_set.hh](../../../../../source/blender/blenlib/BLI_set.hh) · L975—L981。
+
+**教学注释版**
+
+<!-- annotated:50c635a3f127a3 -->
+
+```cpp
+  void ensure_can_add()
+  {
+    if (occupied_and_removed_slots_ >= usable_slots_) {
+      // [讲解] this->realloc_and_reinsert：重新组织槽位或准备容量。
+      this->realloc_and_reinsert(this->size() + 1);
+      BLI_assert(occupied_and_removed_slots_ < usable_slots_);
+    }
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L975—L981</summary>
+
+<!-- original:50c635a3f127a3:source/blender/blenlib/BLI_set.hh:975:981 -->
+
+```cpp
   void ensure_can_add()
   {
     if (occupied_and_removed_slots_ >= usable_slots_) {
@@ -2076,6 +6058,21 @@ class Set {
       BLI_assert(occupied_and_removed_slots_ < usable_slots_);
     }
   }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->realloc_and_reinsert` → [blender::Set::realloc_and_reinsert · L708](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-649abea6bedaaa95)。
+- `this->size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+
+### 类型布局、声明与编译条件 · BLI_set.hh L982—L996
+
+<!-- annotated:9fb21cdbd73612 -->
+
+```cpp
 };
 
 /**
@@ -2093,351 +6090,133 @@ using RawSet = Set<Key, InlineBufferCapacity, ProbingStrategy, Hash, IsEqual, Sl
 }  // namespace blender
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_set.hh · L982—L996</summary>
 
-- `realloc_and_reinsert`：重新组织哈希槽并重插活元素；槽位改变但键值相等语义应保持。
-- `occupied_and_removed_slots_`：占用与删除状态总量，不能替代活元素数量。
-- `usable_slots_`：受负载约束允许使用的槽位数，与物理总槽数不同。
+<!-- original:9fb21cdbd73612:source/blender/blenlib/BLI_set.hh:982:996 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L958 | 声明模板参数 `template<typename ForwardKey>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L959 | 出现调用或函数声明 `count_collisions__impl`，对应表达式为 `int64_t count_collisions__impl(const ForwardKey &key, const uint64_t hash) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L960 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L961 | 把右侧 `0` 用于初始化或更新左侧 `int64_t collisions`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L963 | 出现调用或函数声明 `SET_SLOT_PROBING_BEGIN`，对应表达式为 `SET_SLOT_PROBING_BEGIN (hash, slot) {`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L964 | 判断 `slot.contains(key, is_equal_, hash)`，成立时进入本分支，否则继续后续路径。 |
-| L965 | 返回表达式 `collisions`。 |
-| L966 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L967 | 判断 `slot.is_empty()`，成立时进入本分支，否则继续后续路径。 |
-| L968 | 返回表达式 `collisions`。 |
-| L969 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L970 | 递增或递减现有状态：`collisions++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L971 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L972 | 出现调用或函数声明 `SET_SLOT_PROBING_END`，对应表达式为 `SET_SLOT_PROBING_END();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L973 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L975 | 出现调用或函数声明 `ensure_can_add`，对应表达式为 `void ensure_can_add()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L976 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L977 | 判断 `occupied_and_removed_slots_ >= usable_slots_`，成立时进入本分支，否则继续后续路径。 |
-| L978 | 本行使用 `realloc_and_reinsert`：重新组织哈希槽并重插活元素；槽位改变但键值相等语义应保持。 |
-| L979 | 断言约束 `BLI_assert(occupied_and_removed_slots_ < usable_slots_);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L980 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L981 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L982 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L988 | 声明模板参数 `template<typename Key,`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L989 | 显式采用编译器生成的特殊成员行为：`int64_t InlineBufferCapacity = default_inline_buffer_capacity(sizeof(Key)),`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L990 | 把右侧 `DefaultProbingStrategy,` 用于初始化或更新左侧 `typename ProbingStrategy`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L991 | 把右侧 `DefaultHash<Key>,` 用于初始化或更新左侧 `typename Hash`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L992 | 把右侧 `DefaultEquality<Key>,` 用于初始化或更新左侧 `typename IsEqual`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L993 | 把右侧 `typename DefaultSetSlot<Key>::type>` 用于初始化或更新左侧 `typename Slot`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L994 | 定义类型别名 `using RawSet = Set<Key, InlineBufferCapacity, ProbingStrategy, Hash, IsEqual, Slot, RawAllocator>`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L996 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+};
 
-## 五、接口定位、调用线索与生命周期
+/**
+ * Same as a normal Set, but does not use Blender's guarded allocator. This is useful when
+ * allocating memory with static storage duration.
+ */
+template<typename Key,
+         int64_t InlineBufferCapacity = default_inline_buffer_capacity(sizeof(Key)),
+         typename ProbingStrategy = DefaultProbingStrategy,
+         typename Hash = DefaultHash<Key>,
+         typename IsEqual = DefaultEquality<Key>,
+         typename Slot = typename DefaultSetSlot<Key>::type>
+using RawSet = Set<Key, InlineBufferCapacity, ProbingStrategy, Hash, IsEqual, Slot, RawAllocator>;
 
-### 本篇声明与实现入口
-
-| 源码位置 | 实际声明片段 |
-|---|---|
-| [BLI_set.hh:L106](../../../../../source/blender/blenlib/BLI_set.hh#L106) | `class Set` |
-| [BLI_set.hh:L108](../../../../../source/blender/blenlib/BLI_set.hh#L108) | `class Iterator;` |
-| [BLI_set.hh:L158](../../../../../source/blender/blenlib/BLI_set.hh#L158) | `SLOT_PROBING_BEGIN (ProbingStrategy, HASH, slot_mask_, SLOT_INDEX) \` |
-| [BLI_set.hh:L168](../../../../../source/blender/blenlib/BLI_set.hh#L168) | `Set(Allocator allocator = {}) noexcept` |
-| [BLI_set.hh:L169](../../../../../source/blender/blenlib/BLI_set.hh#L169) | `: removed_slots_(0),` |
-| [BLI_set.hh:L177](../../../../../source/blender/blenlib/BLI_set.hh#L177) | `Set(NoExceptConstructor, Allocator allocator = {}) noexcept : Set(allocator) {}` |
-| [BLI_set.hh:L179](../../../../../source/blender/blenlib/BLI_set.hh#L179) | `Set(Span<Key> values, Allocator allocator = {}) : Set(NoExceptConstructor(), allocator)` |
-| [BLI_set.hh:L187](../../../../../source/blender/blenlib/BLI_set.hh#L187) | `Set(const std::initializer_list<Key> &values) : Set(Span<Key>(values)) {}` |
-| [BLI_set.hh:L191](../../../../../source/blender/blenlib/BLI_set.hh#L191) | `Set(const Set &other) = default;` |
-| [BLI_set.hh:L193](../../../../../source/blender/blenlib/BLI_set.hh#L193) | `Set(Set &&other) noexcept(std::is_nothrow_move_constructible_v<SlotArray>)` |
-| [BLI_set.hh:L194](../../../../../source/blender/blenlib/BLI_set.hh#L194) | `: Set(NoExceptConstructor(), other.slots_.allocator())` |
-| [BLI_set.hh:L233](../../../../../source/blender/blenlib/BLI_set.hh#L233) | `void add_new(const Key &key)` |
-| [BLI_set.hh:L237](../../../../../source/blender/blenlib/BLI_set.hh#L237) | `void add_new(Key &&key)` |
-| [BLI_set.hh:L248](../../../../../source/blender/blenlib/BLI_set.hh#L248) | `bool add(const Key &key)` |
-| [BLI_set.hh:L252](../../../../../source/blender/blenlib/BLI_set.hh#L252) | `bool add(Key &&key)` |
-| [BLI_set.hh:L256](../../../../../source/blender/blenlib/BLI_set.hh#L256) | `template<typename ForwardKey> bool add_as(ForwardKey &&key)` |
-| [BLI_set.hh:L267](../../../../../source/blender/blenlib/BLI_set.hh#L267) | `bool add_overwrite(const Key &key)` |
-| [BLI_set.hh:L271](../../../../../source/blender/blenlib/BLI_set.hh#L271) | `bool add_overwrite(Key &&key)` |
-| [BLI_set.hh:L275](../../../../../source/blender/blenlib/BLI_set.hh#L275) | `template<typename ForwardKey> bool add_overwrite_as(ForwardKey &&key)` |
-| [BLI_set.hh:L287](../../../../../source/blender/blenlib/BLI_set.hh#L287) | `void add_multiple(Span<Key> keys)` |
-| [BLI_set.hh:L298](../../../../../source/blender/blenlib/BLI_set.hh#L298) | `void add_multiple_new(Span<Key> keys)` |
-| [BLI_set.hh:L310](../../../../../source/blender/blenlib/BLI_set.hh#L310) | `bool contains(const Key &key) const` |
-| [BLI_set.hh:L314](../../../../../source/blender/blenlib/BLI_set.hh#L314) | `template<typename ForwardKey> bool contains_as(const ForwardKey &key) const` |
-| [BLI_set.hh:L323](../../../../../source/blender/blenlib/BLI_set.hh#L323) | `const Key &lookup_key(const Key &key) const` |
-| [BLI_set.hh:L327](../../../../../source/blender/blenlib/BLI_set.hh#L327) | `template<typename ForwardKey> const Key &lookup_key_as(const ForwardKey &key) const` |
-| [BLI_set.hh:L336](../../../../../source/blender/blenlib/BLI_set.hh#L336) | `const Key &lookup_key_default(const Key &key, const Key &default_value) const` |
-| [BLI_set.hh:L341](../../../../../source/blender/blenlib/BLI_set.hh#L341) | `const Key &lookup_key_default_as(const ForwardKey &key, const Key &default_key) const` |
-| [BLI_set.hh:L354](../../../../../source/blender/blenlib/BLI_set.hh#L354) | `const Key *lookup_key_ptr(const Key &key) const` |
-| [BLI_set.hh:L358](../../../../../source/blender/blenlib/BLI_set.hh#L358) | `template<typename ForwardKey> const Key *lookup_key_ptr_as(const ForwardKey &key) const` |
-| [BLI_set.hh:L367](../../../../../source/blender/blenlib/BLI_set.hh#L367) | `const Key &lookup_key_or_add(const Key &key)` |
-| [BLI_set.hh:L371](../../../../../source/blender/blenlib/BLI_set.hh#L371) | `const Key &lookup_key_or_add(Key &&key)` |
-| [BLI_set.hh:L375](../../../../../source/blender/blenlib/BLI_set.hh#L375) | `template<typename ForwardKey> const Key &lookup_key_or_add_as(ForwardKey &&key)` |
-| [BLI_set.hh:L388](../../../../../source/blender/blenlib/BLI_set.hh#L388) | `const Key &lookup_key_or_add_cb(const Key &key, CreateValueF &&create_value)` |
-| [BLI_set.hh:L393](../../../../../source/blender/blenlib/BLI_set.hh#L393) | `const Key &lookup_key_or_add_cb_as(ForwardKey &&key, CreateValueF &&create_value)` |
-| [BLI_set.hh:L404](../../../../../source/blender/blenlib/BLI_set.hh#L404) | `bool remove(const Key &key)` |
-| [BLI_set.hh:L408](../../../../../source/blender/blenlib/BLI_set.hh#L408) | `template<typename ForwardKey> bool remove_as(const ForwardKey &key)` |
-| [BLI_set.hh:L416](../../../../../source/blender/blenlib/BLI_set.hh#L416) | `void remove_contained(const Key &key)` |
-| [BLI_set.hh:L420](../../../../../source/blender/blenlib/BLI_set.hh#L420) | `template<typename ForwardKey> void remove_contained_as(const ForwardKey &key)` |
-| [BLI_set.hh:L432](../../../../../source/blender/blenlib/BLI_set.hh#L432) | `class Iterator` |
-| [BLI_set.hh:L448](../../../../../source/blender/blenlib/BLI_set.hh#L448) | `Iterator(const Slot *slots, int64_t total_slots, int64_t current_slot)` |
-| [BLI_set.hh:L449](../../../../../source/blender/blenlib/BLI_set.hh#L449) | `: slots_(slots), total_slots_(total_slots), current_slot_(current_slot)` |
-| [BLI_set.hh:L493](../../../../../source/blender/blenlib/BLI_set.hh#L493) | `const Slot &current_slot() const` |
-| [BLI_set.hh:L499](../../../../../source/blender/blenlib/BLI_set.hh#L499) | `Iterator begin() const` |
-| [BLI_set.hh:L509](../../../../../source/blender/blenlib/BLI_set.hh#L509) | `Iterator end() const` |
-| [BLI_set.hh:L519](../../../../../source/blender/blenlib/BLI_set.hh#L519) | `void remove(const Iterator &it)` |
-| [BLI_set.hh:L534](../../../../../source/blender/blenlib/BLI_set.hh#L534) | `template<typename Predicate> int64_t remove_if(Predicate &&predicate)` |
-| [BLI_set.hh:L552](../../../../../source/blender/blenlib/BLI_set.hh#L552) | `void print_stats(const char *name) const` |
-| [BLI_set.hh:L554](../../../../../source/blender/blenlib/BLI_set.hh#L554) | `HashTableStats stats(*this, *this);` |
-| [BLI_set.hh:L562](../../../../../source/blender/blenlib/BLI_set.hh#L562) | `int64_t count_collisions(const Key &key) const` |
-| [BLI_set.hh:L570](../../../../../source/blender/blenlib/BLI_set.hh#L570) | `void clear()` |
-| [BLI_set.hh:L583](../../../../../source/blender/blenlib/BLI_set.hh#L583) | `void clear_and_keep_capacity()` |
-| [BLI_set.hh:L598](../../../../../source/blender/blenlib/BLI_set.hh#L598) | `void rehash()` |
-| [BLI_set.hh:L606](../../../../../source/blender/blenlib/BLI_set.hh#L606) | `int64_t size() const` |
-| [BLI_set.hh:L614](../../../../../source/blender/blenlib/BLI_set.hh#L614) | `bool is_empty() const` |
-| [BLI_set.hh:L622](../../../../../source/blender/blenlib/BLI_set.hh#L622) | `int64_t capacity() const` |
-| [BLI_set.hh:L630](../../../../../source/blender/blenlib/BLI_set.hh#L630) | `int64_t removed_amount() const` |
-| [BLI_set.hh:L638](../../../../../source/blender/blenlib/BLI_set.hh#L638) | `int64_t size_per_element() const` |
-| [BLI_set.hh:L647](../../../../../source/blender/blenlib/BLI_set.hh#L647) | `int64_t size_in_bytes() const` |
-| [BLI_set.hh:L656](../../../../../source/blender/blenlib/BLI_set.hh#L656) | `void reserve(const int64_t n)` |
-| [BLI_set.hh:L666](../../../../../source/blender/blenlib/BLI_set.hh#L666) | `static bool Intersects(const Set &a, const Set &b)` |
-| [BLI_set.hh:L684](../../../../../source/blender/blenlib/BLI_set.hh#L684) | `static bool Disjoint(const Set &a, const Set &b)` |
-| [BLI_set.hh:L708](../../../../../source/blender/blenlib/BLI_set.hh#L708) | `BLI_NOINLINE void realloc_and_reinsert(int64_t min_usable_slots)` |
-| [BLI_set.hh:L739](../../../../../source/blender/blenlib/BLI_set.hh#L739) | `SlotArray new_slots(total_slots);` |
-| [BLI_set.hh:L761](../../../../../source/blender/blenlib/BLI_set.hh#L761) | `void add_after_grow(Slot &old_slot, SlotArray &new_slots, const uint64_t new_slot_mask)` |
-| [BLI_set.hh:L765](../../../../../source/blender/blenlib/BLI_set.hh#L765) | `SLOT_PROBING_BEGIN (ProbingStrategy, hash, new_slot_mask, slot_index)` |
-| [BLI_set.hh:L772](../../../../../source/blender/blenlib/BLI_set.hh#L772) | `SLOT_PROBING_END();` |
-| [BLI_set.hh:L779](../../../../../source/blender/blenlib/BLI_set.hh#L779) | `void noexcept_reset() noexcept` |
-| [BLI_set.hh:L787](../../../../../source/blender/blenlib/BLI_set.hh#L787) | `bool contains__impl(const ForwardKey &key, const uint64_t hash) const` |
-| [BLI_set.hh:L789](../../../../../source/blender/blenlib/BLI_set.hh#L789) | `SET_SLOT_PROBING_BEGIN (hash, slot)` |
-| [BLI_set.hh:L797](../../../../../source/blender/blenlib/BLI_set.hh#L797) | `SET_SLOT_PROBING_END();` |
-| [BLI_set.hh:L801](../../../../../source/blender/blenlib/BLI_set.hh#L801) | `const Key &lookup_key__impl(const ForwardKey &key, const uint64_t hash) const` |
-| [BLI_set.hh:L805](../../../../../source/blender/blenlib/BLI_set.hh#L805) | `SET_SLOT_PROBING_BEGIN (hash, slot)` |
-| [BLI_set.hh:L810](../../../../../source/blender/blenlib/BLI_set.hh#L810) | `SET_SLOT_PROBING_END();` |
-| [BLI_set.hh:L814](../../../../../source/blender/blenlib/BLI_set.hh#L814) | `const Key *lookup_key_ptr__impl(const ForwardKey &key, const uint64_t hash) const` |
-| [BLI_set.hh:L816](../../../../../source/blender/blenlib/BLI_set.hh#L816) | `SET_SLOT_PROBING_BEGIN (hash, slot)` |
-| [BLI_set.hh:L824](../../../../../source/blender/blenlib/BLI_set.hh#L824) | `SET_SLOT_PROBING_END();` |
-| [BLI_set.hh:L827](../../../../../source/blender/blenlib/BLI_set.hh#L827) | `template<typename ForwardKey> void add_new__impl(ForwardKey &&key, const uint64_t hash)` |
-| [BLI_set.hh:L833](../../../../../source/blender/blenlib/BLI_set.hh#L833) | `SET_SLOT_PROBING_BEGIN (hash, slot)` |
-| [BLI_set.hh:L842](../../../../../source/blender/blenlib/BLI_set.hh#L842) | `SET_SLOT_PROBING_END();` |
-| [BLI_set.hh:L845](../../../../../source/blender/blenlib/BLI_set.hh#L845) | `template<typename ForwardKey> bool add__impl(ForwardKey &&key, const uint64_t hash)` |
-| [BLI_set.hh:L849](../../../../../source/blender/blenlib/BLI_set.hh#L849) | `SET_SLOT_PROBING_BEGIN (hash, slot)` |
-| [BLI_set.hh:L861](../../../../../source/blender/blenlib/BLI_set.hh#L861) | `SET_SLOT_PROBING_END();` |
-| [BLI_set.hh:L864](../../../../../source/blender/blenlib/BLI_set.hh#L864) | `template<typename ForwardKey> bool add_overwrite__impl(ForwardKey &&key, const uint64_t hash)` |
-| [BLI_set.hh:L868](../../../../../source/blender/blenlib/BLI_set.hh#L868) | `SET_SLOT_PROBING_BEGIN (hash, slot)` |
-| [BLI_set.hh:L883](../../../../../source/blender/blenlib/BLI_set.hh#L883) | `SET_SLOT_PROBING_END();` |
-| [BLI_set.hh:L886](../../../../../source/blender/blenlib/BLI_set.hh#L886) | `template<typename ForwardKey> bool remove__impl(const ForwardKey &key, const uint64_t hash)` |
-| [BLI_set.hh:L888](../../../../../source/blender/blenlib/BLI_set.hh#L888) | `SET_SLOT_PROBING_BEGIN (hash, slot)` |
-| [BLI_set.hh:L898](../../../../../source/blender/blenlib/BLI_set.hh#L898) | `SET_SLOT_PROBING_END();` |
-| [BLI_set.hh:L902](../../../../../source/blender/blenlib/BLI_set.hh#L902) | `void remove_contained__impl(const ForwardKey &key, const uint64_t hash)` |
-| [BLI_set.hh:L906](../../../../../source/blender/blenlib/BLI_set.hh#L906) | `SET_SLOT_PROBING_BEGIN (hash, slot)` |
-| [BLI_set.hh:L913](../../../../../source/blender/blenlib/BLI_set.hh#L913) | `SET_SLOT_PROBING_END();` |
-| [BLI_set.hh:L917](../../../../../source/blender/blenlib/BLI_set.hh#L917) | `const Key &lookup_key_or_add__impl(ForwardKey &&key, const uint64_t hash)` |
-| [BLI_set.hh:L921](../../../../../source/blender/blenlib/BLI_set.hh#L921) | `SET_SLOT_PROBING_BEGIN (hash, slot)` |
-| [BLI_set.hh:L933](../../../../../source/blender/blenlib/BLI_set.hh#L933) | `SET_SLOT_PROBING_END();` |
-| [BLI_set.hh:L937](../../../../../source/blender/blenlib/BLI_set.hh#L937) | `const Key &lookup_key_or_add_cb__impl(ForwardKey &&key,` |
-| [BLI_set.hh:L943](../../../../../source/blender/blenlib/BLI_set.hh#L943) | `SET_SLOT_PROBING_BEGIN (hash, slot)` |
-| [BLI_set.hh:L955](../../../../../source/blender/blenlib/BLI_set.hh#L955) | `SET_SLOT_PROBING_END();` |
-| [BLI_set.hh:L959](../../../../../source/blender/blenlib/BLI_set.hh#L959) | `int64_t count_collisions__impl(const ForwardKey &key, const uint64_t hash) const` |
-| [BLI_set.hh:L963](../../../../../source/blender/blenlib/BLI_set.hh#L963) | `SET_SLOT_PROBING_BEGIN (hash, slot)` |
-| [BLI_set.hh:L972](../../../../../source/blender/blenlib/BLI_set.hh#L972) | `SET_SLOT_PROBING_END();` |
-| [BLI_set.hh:L975](../../../../../source/blender/blenlib/BLI_set.hh#L975) | `void ensure_can_add()` |
-
-### 同名符号出现位置
-
-以下表提供跨文件阅读入口，包含声明、调用或测试使用；没有经过完整C++名称解析，不把它命名为已证明的运行时调用图。
-
-| 符号 | 位置 | 文本证据 |
-|---|---|---|
-| `SLOT_PROBING_BEGIN` | [BLI_map.hh:L176](../../../../../source/blender/blenlib/BLI_map.hh#L176) | `SLOT_PROBING_BEGIN (ProbingStrategy, HASH, slot_mask_, SLOT_INDEX) \` |
-| `SLOT_PROBING_BEGIN` | [BLI_map.hh:L1154](../../../../../source/blender/blenlib/BLI_map.hh#L1154) | `SLOT_PROBING_BEGIN (ProbingStrategy, hash, new_slot_mask, slot_index) {` |
-| `SLOT_PROBING_BEGIN` | [BLI_vector_set.hh:L155](../../../../../source/blender/blenlib/BLI_vector_set.hh#L155) | `SLOT_PROBING_BEGIN (ProbingStrategy, HASH, slot_mask_, SLOT_INDEX) \` |
-| `removed_slots_` | [BLI_map.hh:L187](../../../../../source/blender/blenlib/BLI_map.hh#L187) | `: removed_slots_(0),` |
-| `removed_slots_` | [BLI_vector_set.hh:L179](../../../../../source/blender/blenlib/BLI_vector_set.hh#L179) | `: removed_slots_(0),` |
-| `removed_slots_` | [BLI_vector_set.hh:L248](../../../../../source/blender/blenlib/BLI_vector_set.hh#L248) | `: removed_slots_(other.removed_slots_),` |
-| `add_new` | [mesh.cc:L1313](../../../../../source/blender/blenkernel/intern/mesh.cc#L1313) | `names.add_new(iter.name);` |
-| `add_new` | [mesh.cc:L2045](../../../../../source/blender/blenkernel/intern/mesh.cc#L2045) | `r_data.add_new(i);` |
-| `add_new` | [BLI_map.hh:L265](../../../../../source/blender/blenlib/BLI_map.hh#L265) | `void add_new(const Key &key, const Value &value)` |
-| `add` | [BKE_attribute.hh:L769](../../../../../source/blender/blenkernel/BKE_attribute.hh#L769) | `bool add(const StringRef name,` |
-| `add` | [BKE_attribute.hh:L783](../../../../../source/blender/blenkernel/BKE_attribute.hh#L783) | `return fn_->add(owner_, name, domain, data_type, initializer);` |
-| `add` | [BKE_attribute.hh:L786](../../../../../source/blender/blenkernel/BKE_attribute.hh#L786) | `bool add(const StringRef name, const AttrDomain domain, const AttributeInit &initializer)` |
-| `add_as` | [BLI_map.hh:L297](../../../../../source/blender/blenlib/BLI_map.hh#L297) | `return this->add_as(key, value);` |
-| `add_as` | [BLI_map.hh:L301](../../../../../source/blender/blenlib/BLI_map.hh#L301) | `return this->add_as(key, std::move(value));` |
-| `add_as` | [BLI_map.hh:L305](../../../../../source/blender/blenlib/BLI_map.hh#L305) | `return this->add_as(std::move(key), value);` |
-| `add_overwrite` | [BLI_map.hh:L325](../../../../../source/blender/blenlib/BLI_map.hh#L325) | `bool add_overwrite(const Key &key, const Value &value)` |
-| `add_overwrite` | [BLI_map.hh:L329](../../../../../source/blender/blenlib/BLI_map.hh#L329) | `bool add_overwrite(const Key &key, Value &&value)` |
-| `add_overwrite` | [BLI_map.hh:L333](../../../../../source/blender/blenlib/BLI_map.hh#L333) | `bool add_overwrite(Key &&key, const Value &value)` |
-| `add_overwrite_as` | [BLI_map.hh:L327](../../../../../source/blender/blenlib/BLI_map.hh#L327) | `return this->add_overwrite_as(key, value);` |
-| `add_overwrite_as` | [BLI_map.hh:L331](../../../../../source/blender/blenlib/BLI_map.hh#L331) | `return this->add_overwrite_as(key, std::move(value));` |
-| `add_overwrite_as` | [BLI_map.hh:L335](../../../../../source/blender/blenlib/BLI_map.hh#L335) | `return this->add_overwrite_as(std::move(key), value);` |
-| `add_multiple` | [mesh.cc:L823](../../../../../source/blender/blenkernel/intern/mesh.cc#L823) | `verts.add_multiple(corner_verts.slice(face));` |
-| `add_multiple` | [BLI_multi_value_map.hh:L73](../../../../../source/blender/blenlib/BLI_multi_value_map.hh#L73) | `void add_multiple(const Key &key, Span<Value> values)` |
-| `add_multiple` | [BLI_multi_value_map.hh:L77](../../../../../source/blender/blenlib/BLI_multi_value_map.hh#L77) | `void add_multiple(Key &&key, Span<Value> values)` |
-| `contains` | [BKE_attribute.hh:L525](../../../../../source/blender/blenkernel/BKE_attribute.hh#L525) | `bool contains(StringRef name) const` |
-| `contains` | [BKE_attribute.hh:L777](../../../../../source/blender/blenkernel/BKE_attribute.hh#L777) | `if (this->contains(name)) {` |
-| `contains` | [BKE_attribute.hh:L818](../../../../../source/blender/blenkernel/BKE_attribute.hh#L818) | `BLI_assert(this->contains(name));` |
-| `contains_as` | [BKE_attribute_filters.hh:L55](../../../../../source/blender/blenkernel/BKE_attribute_filters.hh#L55) | `if (skip.contains_as(name)) {` |
-| `contains_as` | [BKE_attribute_filters.hh:L80](../../../../../source/blender/blenkernel/BKE_attribute_filters.hh#L80) | `if (skip.contains_as(name)) {` |
-| `contains_as` | [BLI_map.hh:L355](../../../../../source/blender/blenlib/BLI_map.hh#L355) | `return this->contains_as(key);` |
-
-### 生命周期推理图
-
-```mermaid
-flowchart LR
-  O["调用者或源数据拥有者"]:::input
-  V["Set与集合语义的接口与状态"]:::abstraction
-  B["借用地址、引用或视图"]:::data
-  W["实际计算或修改"]:::compute
-  R["结果与清理责任"]:::result
-  O -->|"创建与配置"| V
-  O -->|"保障寿命"| B
-  B -->|"访问前验证"| W
-  V -->|"规定操作"| W
-  W -->|"交付或销毁"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+}  // namespace blender
 ```
 
-这是审查生命周期的通用模型。具体类是否拥有数据由本篇成员、构造、析构和调用者一起证明；任何箭头都不自动代表shared_ptr。
+</details>
 
-## 六、把代码放进具体数据中推演
+## 语法与相关类型
 
-本方向的共同数值模型如下。本篇的专门检查是：实现交并差基线，并用碰撞键验证结果。
+### 模板 template
 
-| 步骤 | 数据或状态 | 为什么需要这一步 |
-|---|---|---|
-| 插入A | hash(A)映射槽2 | 槽2变Occupied |
-| 插入B | 同样映射槽2 | 沿探测序列找到后续空槽 |
-| 删除A | 槽2变Removed | B仍须可达 |
-| 查找B | 从槽2继续探测 | Removed不能当作Empty终止 |
-| 持续删插 | 活元素数可能恒定 | 墓碑和探测长度仍可能增长 |
-| 重建 | 迁移活键值 | 去掉旧删除状态并恢复足够空间 |
+模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
 
-```mermaid
-flowchart TB
-  T0["hash(A)映射槽2"]:::input
-  T1["同样映射槽2"]:::compute
-  T2["槽2变Removed"]:::compute
-  T3["从槽2继续探测"]:::compute
-  T4["活元素数可能恒定"]:::compute
-  T5["迁移活键值"]:::result
-  T0 -->|"插入B"| T1
-  T1 -->|"删除A"| T2
-  T2 -->|"查找B"| T3
-  T3 -->|"持续删插"| T4
-  T4 -->|"重建"| T5
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
+把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
 
-图是教学推演模型；精确分支与状态更新以本篇摘录及调用契约为准。
+### 依赖名称 typename
 
-### 本篇独立练习与参考思路
+typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+
+区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+
+### 常量求值 constexpr
+
+constexpr声明允许相应实体参与常量求值，但constexpr函数仍可以在运行时执行。是否常量求值由调用场景和表达式合法性共同决定。
+
+比较constexpr变量初始化和从运行时输入调用同一函数。
+
+### 只读限定 const
+
+const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
+
+分别写T* const、const T*与const T* const，并画出不可修改的层次。
+
+### 移动转换 std::move
+
+std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
+
+记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
+
+### 完美转发 std::forward
+
+std::forward在转发引用模板中恢复调用者原来的值类别。它依赖推导出的模板实参；无条件move会改变左值调用者的语义。
+
+对同一接口分别传入左值、临时对象和const左值，记录实际重载。
+
+### 异常约定 noexcept
+
+noexcept表达式可以依赖类型特征。违反不抛异常约定会终止程序；它不是自动捕获异常，也不是资源回滚代码。
+
+找出声明的条件与实际可能抛出的分配、构造操作是否一致。
+
+### 异常边界 try与catch
+
+try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
+
+在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
+
+### 限定转换 const_cast
+
+const_cast可以改变访问路径的限定，但不能让本来就是const的对象合法可写。常用于复用只读实现时，仍需检查底层对象是否实际可变。
+
+对非const对象的const引用与真正const对象分别分析修改是否合法。
+
+### 对象表示 sizeof
+
+sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeof视图很小并不说明底层数组很小。
+
+分别统计容器对象、容量字节和元素拥有的间接资源。
+
+### 构造与new表达式
+
+普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
+
+追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
+
+### 内部断言 assert
+
+断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
+
+对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
+
+### 编译期分支 if constexpr
+
+条件在实例化时决定被保留的分支，这常用于不同类型的合法操作选择。它与运行时if有不同的实例化检查规则。
+
+找出每个分支依赖哪些类型特征，再使用满足与不满足条件的类型。
+
+### 受控访问 friend
+
+friend授予指定函数或类访问非公开成员的权限，并不意味着继承，也不自动扩展到友元的派生类。
+
+解释执行器为何需要访问包装器的内部映射，同时检查边界是否仍清楚。
+
+### 类型别名 using
+
+类型别名为已有类型建立名字，不创建运行期对象。它常把模板内部使用的类型统一暴露给泛型调用者。
+
+展开别名直到基础类型，区分类型别名和变量声明。
+
+## 实现练习与验证
 
 实现交并差基线，并用碰撞键验证结果。
 
-参考思路：Set仍需处理哈希、相等、槽位和删除；键本身在容器中不能随意改成另一个哈希值。
+参考推理：保持键不可变或先移除再按新键插入，检查相等与哈希读取的数据。
 
-将输入、预期结果和资源责任分成三张清单。先用最直接的实现给出可核对的答案，再替换成对应源码使用的表示；比较结果不变的条件，而不是只比较接口名字。
+每个活键从其探测起点可达；不存在的键可终止；析构仅命中占用状态的真实对象。
 
-验收依据：每个活键从其探测起点可达；不存在的键可终止；析构仅命中占用状态的真实对象。
-
-## 七、复杂度、设计取舍与其他基础库
+## 历史、跨库比较与证据
 
 对比std::unordered_map、Abseil flat_hash_map与node_hash_map时，优先比较地址稳定性、键值搬移要求和删除行为；不同实现的平均常数及负载策略需要测量。
 
-本篇的具体取舍：Set仍需处理哈希、相等、槽位和删除；键本身在容器中不能随意改成另一个哈希值。
-
-| 观察维度 | 从源码取得证据的方法 | 本篇要避免的误判 |
-|---|---|---|
-| 时间 | 对循环次数、分派次数和重建频率分别计数 | 看到单次常数操作就断定整个操作序列是常数成本 |
-| 内存 | 区分对象本体、容量存储、间接资源和共享控制块 | 用sizeof代替总内存 |
-| 安全 | 沿构造、失败回滚、销毁与失效逐路径检查 | 把断言或非空指针当作完整安全证明 |
-| 并发 | 逐字段确认锁、发布顺序和借用寿命 | 把引用计数线程安全等同数据读写线程安全 |
-
-相关一手资料：
-
-- [C++公开工作草案](https://eel.is/c++draft/)：持续更新的工作草案；语言与标准库语义以相应章节为准。
-- [Abseil Containers](https://abseil.io/docs/cpp/guides/container)：在线版，2026-10-14查阅；引用失效按具体容器契约检查。
-
-资料用于核对契约和进一步阅读；这里没有声称外部库与Blender实现相同，也没有把上游性能数字当作本机实测。
-
-## 八、历史提交与设计演化
-
-### 2025-12-12 · Jacques Lucke
-
-[Fix: BLI: bad performance edge case in hash table implementations](https://projects.blender.org/blender/blender/commit/b242c618450e3c0011914112c3ffe31ae2e96028)
-
-完整哈希：`b242c618450e3c0011914112c3ffe31ae2e96028`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-Fix: BLI: bad performance edge case in hash table implementations
-
-The issue happened when the hash table (e.g. Map) has close to a power of two
-number of elements and repeatedly deletes and adds values. In this case the map
-is rebuild more often than is necessary, and in the worst case a rebuild happens
-each time something is removed and added again.
-
-The fix here is to make sure that each call to `realloc_and_reinsert` is
-actually worth it by making it grow the map in some cases where it previously
-wouldn't. A similar optimization already exists in
-`Vector::realloc_to_at_least`.
-
-An alternative would be to support overriding removed-slots in `Map::add`, but
-that has negative performance implications for the most common case when no
-elements are ever removed.
-
-This brings back performance to the same level before #150009:
-`60k_cubes_same_mesh.blend: old: 11.3s, main: 70s, this patch: 11.3s`
-
-Pull Request: https://projects.blender.org/blender/blender/pulls/151502
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“无关联值时哪些Map设计仍然适用？”判断方案改变的是表示、接口、生命周期还是调度。
-
-### 2026-06-11 · Jacques Lucke
-
-[BLI: assert on hash table keys not comparing equal to themselves](https://projects.blender.org/blender/blender/commit/44a1dc7055466e153b4ab66628034d8561f540bf)
-
-完整哈希：`44a1dc7055466e153b4ab66628034d8561f540bf`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-BLI: assert on hash table keys not comparing equal to themselves
-
-This helps finding issues with bad data (especially nan values) earlier.
-
-Pull Request: https://projects.blender.org/blender/blender/pulls/159974
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“无关联值时哪些Map设计仍然适用？”判断方案改变的是表示、接口、生命周期还是调度。
-
-## 九、反例、测试入口与掌握标准
-
-仓库测试入口：
-
-- [BLI_set_test.cc](../../../../../source/blender/blenlib/tests/BLI_set_test.cc)：阅读输入、断言与覆盖边界；本篇不把“存在测试”写成“本轮已运行”。
-
-需要实际构造的反例：
-
-- 空输入或没有结果需求：确认接口允许的空状态与不允许访问的操作。
-- 边界位置和退化结构：把长度为1、末尾位置、重复值或深链代入真实分支。
-- 生命周期结束或修改之后：检查保存的指针、引用、结果视图是否仍有效。
-- 与本篇核心不变量相冲突的输入：实现交并差基线，并用碰撞键验证结果。
-
-### 可运行的教学参考程序
-
-[reference_exercises.cc](../_tools/reference_exercises.cc)包含独立于Blender的C++20参考检查：视图、简化SmallVector、异常回滚、哈希碰撞与删除、偏移数组、拓扑映射、共享缓存、表达式、惰性分支、闭包和暴力最近邻。
-
-参考程序有意省略生产实现的完整能力。例如SmallVector禁止复制移动容器，不支持只能移动的元素，并禁止append参数别名到自身元素；TinyMap固定8槽，不提供增长。程序通过不能替代Blender实现测试。实际运行结果、编译器与命令见验收报告。
-
-掌握标准：离开源码解释“无关联值时哪些Map设计仍然适用？”；独立完成上述练习；能指出一个会破坏相等关系相关约束的最小反例，并用具体代码行说明检查或修复应放在哪里。
+[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)

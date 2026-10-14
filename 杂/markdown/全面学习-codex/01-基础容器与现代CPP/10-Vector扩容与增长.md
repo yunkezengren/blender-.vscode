@@ -1,101 +1,71 @@
 # 01-10 Vector扩容与增长
 
-[方向导航](README.md) · [总目录](../README.md) · [覆盖索引](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
 
-> 阅读顺序：问题与数据模型 → 语法与类型 → 源码逐行 → 调用线索 → 历史与取舍 → 推演和练习。
-
-- 基准 HEAD：`cbda6b96c26c0dee3c3b5cbb93960c4ac06a6b30`。
-- 记录日期：2026-10-14。
-- 教学示例状态：正文中的推演不是本机性能实测；已运行练习见验收报告。
-
-## 一、从问题到设计
+## 从问题到实现
 
 reserve为什么不能被理解成增加元素？
 
 reserve改变容量保障，不应使未构造位置变成元素；扩容必须在新存储建立对象后安全提交新状态。
 
-本篇把语法、数据语义和系统取舍连接起来。先证明对象存活，再讨论索引；先区分借用与拥有，再讨论复制移动。
-
-### 本篇独立模型与设计推理
+**数据模型**
 
 容量4、大小4、请求5时，当前增长策略可选择至少8个位置；迁移的有效元素仍只有4。
 
-设计取舍：几何增长换取摊还线性总迁移量，但会保留多余容量；reserve适用于已知规模。
+**设计取舍**
 
-最小反例：每追加一次都重新分配刚好多1的位置，总迁移数量形成1到N的和。
+几何增长换取摊还线性总迁移量，但会保留多余容量；reserve适用于已知规模。
 
-推导与处理：比较容量倍增与精确增长的总操作计数，而不只测一次追加。
+**最小反例**
 
-```mermaid
-flowchart TB
-  M["容量4、大小4、请求5时，当前增长策略可选<br/>择至少8个位置；迁移的有效元素仍只有4。"]:::data
-  T["几何增长换取摊还线性总迁移量，但会保留多<br/>余容量；reserve适用于已知规模。"]:::abstraction
-  X["每追加一次都重新分配刚好多1的位置，总迁<br/>移数量形成1到N的和。"]:::error
-  A["比较容量倍增与精确增长的总操作计数，而不<br/>只测一次追加。"]:::result
-  M -->|"建立约束"| T
-  T -->|"构造反例"| X
-  X -->|"恢复不变量"| A
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
+每追加一次都重新分配刚好多1的位置，总迁移数量形成1到N的和。
 
-### 源码范围与相邻篇章
+**推导**
 
-| 文件 | 本篇逐行范围 | 基准SHA-256 |
-|---|---|---|
-| [source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) | L352—L497 | `6867b6ba34200e7e0a14495d93a9bef1645c5ef599e1f29ccdddc7c21e500485` |
-| [source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) | L1113—L1153 | `6867b6ba34200e7e0a14495d93a9bef1645c5ef599e1f29ccdddc7c21e500485` |
+比较容量倍增与精确增长的总操作计数，而不只测一次追加。
 
-同一主讲文件可能分多篇覆盖；超出本篇范围的符号通过覆盖索引定位。空行与纯注释保留在源码摘录中，逐行表解释有效语句与语法边界；许可证头统一保留。
+## 本篇专用阅读顺序与依赖链
 
-前篇：[Vector存储与内嵌缓冲](09-Vector%E5%AD%98%E5%82%A8%E4%B8%8E%E5%86%85%E5%B5%8C%E7%BC%93%E5%86%B2.md).
+先读reserve和realloc_to_at_least，再沿迁移工具进入标准库契约；最后比较resize、reinitialize与两种clear。这里列出跨篇精确入口，避免把全文中的operator[]等辅助接口误当成扩容主链。
 
-后篇：[Vector插入删除与重排](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md).
+- [`mallocn.cc::aligned_malloc` · L77](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-48812794cdf34f28)
+- [`mallocn.cc::aligned_free` · L99](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9dceace8dd60fe03)
+- [`mallocn.cc::MEM_delete_void` · L109](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9a07b26421f2bee6)
+- [`mallocn.cc::MEM_new_uninitialized_aligned` · L134](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9f3d21bd7da93c68)
+- [`BLI_allocator.hh::allocate` · L43](03-%E5%86%85%E5%AD%98%E5%B7%A5%E5%85%B7%E4%B8%8E%E5%88%86%E9%85%8D%E5%99%A8%E6%8E%A5%E5%8F%A3.md#f-a57239e6d3bd10d9)
+- [`BLI_allocator.hh::deallocate` · L60](03-%E5%86%85%E5%AD%98%E5%B7%A5%E5%85%B7%E4%B8%8E%E5%88%86%E9%85%8D%E5%99%A8%E6%8E%A5%E5%8F%A3.md#f-c1586978e7959acb)
+- [`BLI_vector.hh::reserve` · L405](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)
+- [`BLI_vector.hh::resize` · L418](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-059312cabb8abe3a)
+- [`BLI_vector.hh::resize` · L439](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-ab8f94924ebe2d12)
+- [`BLI_vector.hh::reinitialize` · L458](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-9249cd61747c1405)
+- [`BLI_vector.hh::clear` · L468](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-d051bebff5275a43)
+- [`BLI_vector.hh::clear_and_shrink` · L479](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-bc6dd407df52ad34)
+- [`BLI_vector.hh::size` · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)
+- [`BLI_vector.hh::capacity` · L1007](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-1a73aecfff2e3366)
+- [`BLI_vector.hh::is_inline` · L1108](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-6bbcba0fedd158a9)
+- [`BLI_vector.hh::ensure_space_for_one` · L1114](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-eafa5315534c2edf)
+- [`BLI_vector.hh::realloc_to_at_least` · L1121](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-9189de35f17e7c08)
+- [`BLI_memory_utils.hh::destruct_n` · L34](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-cb5bcdbd0ee77885)
+- [`BLI_memory_utils.hh::default_construct_n` · L43](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-7fba5f8c23635f17)
+- [`BLI_memory_utils.hh::uninitialized_move_n` · L69](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-fc5f51bf717c3b5a)
+- [`BLI_memory_utils.hh::uninitialized_relocate_n` · L80](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-9de0365b9a47fd68)
+- [`BLI_memory_utils.hh::uninitialized_fill_n` · L91](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-020ca78eff5f9227)
 
-## 二、类型、数据与阅读地图
+`begin_`是存储起点，`end_`是已构造元素的尾后边界，`capacity_end_`是可用存储的尾后边界。只有前两个指针之间存在Vector负责销毁的T对象。
 
-```mermaid
-flowchart TB
-  Q["reserve为什么不能被理解成增加元素？"]:::input
-  C0["拥有型容器"]:::abstraction
-  C1["借用视图"]:::data
-  C2["元素生命周期"]:::data
-  C3["分配与失效"]:::data
-  R["Vector扩容与增长"]:::result
-  Q -->|"建立模型"| C0
-  C0 -->|"区分职责"| C1
-  C1 -->|"区分职责"| C2
-  C2 -->|"区分职责"| C3
-  C3 -->|"回到源码"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
-
-这是概念依赖图，边表示阅读关系，不声称是运行时调用顺序。
-
-### 直接编译依赖
+## 内存、调用与异常路径
 
 ```mermaid
 flowchart LR
-  S["BLI_vector.hh"]:::abstraction
-  I0["BLI_allocator.hh"]:::data
-  I1["BLI_index_range.hh"]:::data
-  I2["BLI_memory_utils.hh"]:::data
-  I3["BLI_span.hh"]:::data
-  I4["BLI_utildefines.hh"]:::data
-  S -->|"直接include"| I0
-  S -->|"直接include"| I1
-  S -->|"直接include"| I2
-  S -->|"直接include"| I3
-  S -->|"直接include"| I4
+  B["begin_：槽位0"]:::input
+  L["[0,3)：3个活对象"]:::data
+  E["end_：槽位3"]:::abstraction
+  U["[3,8)：未构造存储"]:::data
+  C["capacity_end_：槽位8"]:::result
+  B -->|"起点"| L
+  L -->|"有效范围"| E
+  E -->|"剩余容量"| U
+  U -->|"存储上界"| C
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -104,86 +74,119 @@ flowchart LR
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-箭头只表示头文件包含关系；完整调用线索见后面的符号定位表。
+```mermaid
+flowchart TB
+  R["reserve(n)"]:::input
+  Q["n大于capacity？"]:::abstraction
+  N["返回：地址和size不变"]:::result
+  A["分配max(n,2×capacity)个槽位"]:::compute
+  M["迁移size个对象"]:::compute
+  C["释放旧堆存储并提交三指针"]:::result
+  R -->|"检查"| Q
+  Q -->|"否"| N
+  Q -->|"是"| A
+  A -->|"取得存储"| M
+  M -->|"成功"| C
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-## 三、关键词、语法与类型角色
+```mermaid
+flowchart TB
+  R["uninitialized_relocate_n"]:::input
+  M["uninitialized_move_n"]:::compute
+  I["move_iterator＋未初始化构造"]:::abstraction
+  D["destruct_n"]:::compute
+  T["平凡析构判定"]:::abstraction
+  S["标准库destroy_n或无需销毁"]:::result
+  R -->|"先构造目标"| M
+  M -->|"提供右值访问"| I
+  I -->|"全部成功后"| D
+  D -->|"编译期判断"| T
+  T -->|"选择行为"| S
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-### 模板 template
+```mermaid
+flowchart TB
+  A["分配器抛异常"]:::error
+  O["旧指针与对象尚未迁移"]:::result
+  M["第k个移动构造抛异常"]:::error
+  D["标准算法销毁目标已构造前缀"]:::compute
+  F["Vector释放目标原始存储"]:::compute
+  S["旧size和地址仍在；部分源值已移动"]:::error
+  A -->|"本次测试分配器"| O
+  M -->|"清理"| D
+  D -->|"重新抛出"| F
+  F -->|"不承诺原值恢复"| S
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
+```mermaid
+flowchart LR
+  V["size=3，capacity=8"]:::input
+  S["resize(1)：销毁尾部2个对象"]:::compute
+  C["clear：销毁剩余对象，保留8槽位"]:::data
+  R["clear_and_shrink：释放堆存储"]:::compute
+  I["size=0，恢复内嵌容量"]:::result
+  V -->|"缩小"| S
+  S -->|"清空"| C
+  C -->|"释放"| R
+  R -->|"重置三指针"| I
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-具体检查：把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
+## 完整源码单元与就地讲解
 
-### 依赖名称 typename
+中文讲解直接放在相关代码旁，复杂机制在代码下展开。原文折叠区保留基准行号；不需要在行号表和函数之间来回查找。类布局可分段展示，函数实现不按固定行数切开。
 
-typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+<a id="f-57bef91be0a315ba"></a>
 
-具体检查：区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+### `blender::Vector::operator[]`
 
-### 约束 requires
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L352—L357。
 
-requires表达式或requires子句限制模板参与重载的条件。它提供编译期可用性检查，不是运行时if，不能指望输入到达程序后再被这一机制验证。
+接口参数：
 
-具体检查：构造满足和不满足约束的两个类型，观察候选被排除而不是在函数内返回错误。
+- `int64_t index`
 
-### 只读限定 const
+**教学注释版**
 
-const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
+<!-- annotated:6a678f307f644a -->
 
-具体检查：分别写T* const、const T*与const T* const，并画出不可修改的层次。
+```cpp
+  const T &operator[](int64_t index) const
+  {
+    BLI_assert(index >= 0);
+    // [讲解] this->size：用end_减begin_得到活元素数量。
+    BLI_assert(index < this->size());
+    return begin_[index];
+  }
+```
 
-### 异常边界 try与catch
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L352—L357</summary>
 
-try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
-
-具体检查：在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
-
-### 显式静态转换 static_cast
-
-static_cast表达编译期允许的转换，不会自动验证运行时真实类型、指针寿命或索引边界。由void指针恢复T指针时，调用者仍须保证实际存储中确有合法T对象。
-
-具体检查：标出转换前后的类型以及正确性依据来自哪里。
-
-### 对齐 alignof
-
-alignof得到类型要求的地址对齐。分配足够字节后仍需把地址对齐到相应边界，内嵌缓冲也一样。
-
-具体检查：对齐a为2的幂时可推导向上取整，但仍要考虑溢出与边界。
-
-### 对象表示 sizeof
-
-sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeof视图很小并不说明底层数组很小。
-
-具体检查：分别统计容器对象、容量字节和元素拥有的间接资源。
-
-### 构造与new表达式
-
-普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
-
-具体检查：追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
-
-### 内部断言 assert
-
-断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
-
-具体检查：对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
-
-### 容量增长的实际失败路径
-
-当前Vector私有增长函数先检查已有容量，再选择请求容量与两倍旧容量的较大值。
-分配新缓冲之后进入`uninitialized_relocate_n`，失败时释放新缓冲并继续抛出。
-成功之后只有旧缓冲不是内嵌存储才调用allocator释放。
-最后更新begin、end、capacity_end，让已构造长度继续保持原size。
-这个顺序不能简化成“先释放旧数据，再创建新数据”，否则异常时失去源对象。
-具体基本保证与源元素状态仍需结合memory_utils中的重定位实现及T的移动性质分析。
-
-## 四、真实源码与逐行讲解
-
-源码块保持原行内容，原始行号由小节标题及逐行表给出。表中的调用定位是静态阅读辅助；重载、模板实例化、宏展开和虚调用需结合完整声明，不能仅凭词法出现证明动态调用。
-
-### BLI_vector.hh：L352—L398
-
-<!-- source:source/blender/blenlib/BLI_vector.hh:352:398 -->
+<!-- original:6a678f307f644a:source/blender/blenlib/BLI_vector.hh:352:357 -->
 
 ```cpp
   const T &operator[](int64_t index) const
@@ -192,99 +195,452 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
     BLI_assert(index < this->size());
     return begin_[index];
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return begin_[index];`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+
+<!-- annotated:056601de7954d0 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L358—L358</summary>
+
+<!-- original:056601de7954d0:source/blender/blenlib/BLI_vector.hh:358:358 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-2799dcbf5e803bba"></a>
+
+### `blender::Vector::operator[]`
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L359—L364。
+
+接口参数：
+
+- `int64_t index`
+
+**教学注释版**
+
+<!-- annotated:645f80f0ee6bf3 -->
+
+```cpp
+  T &operator[](int64_t index)
+  {
+    BLI_assert(index >= 0);
+    // [讲解] this->size：用end_减begin_得到活元素数量。
+    BLI_assert(index < this->size());
+    return begin_[index];
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L359—L364</summary>
+
+<!-- original:645f80f0ee6bf3:source/blender/blenlib/BLI_vector.hh:359:364 -->
+
+```cpp
   T &operator[](int64_t index)
   {
     BLI_assert(index >= 0);
     BLI_assert(index < this->size());
     return begin_[index];
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return begin_[index];`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+
+<!-- annotated:0a76bd52b07000 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L365—L365</summary>
+
+<!-- original:0a76bd52b07000:source/blender/blenlib/BLI_vector.hh:365:365 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-6242156c039749d9"></a>
+
+### `blender::Vector::() const`
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L366—L369。
+
+**教学注释版**
+
+<!-- annotated:465a08f47d27d8 -->
+
+```cpp
+  operator Span<T>() const
+  {
+    // [讲解] this->size：用end_减begin_得到活元素数量。
+    return Span<T>(begin_, this->size());
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L366—L369</summary>
+
+<!-- original:465a08f47d27d8:source/blender/blenlib/BLI_vector.hh:366:369 -->
+
+```cpp
   operator Span<T>() const
   {
     return Span<T>(begin_, this->size());
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return Span<T>(begin_, this->size());`
+
+**继续追踪实现**
+
+- `Span<T>` → [blender::Span](%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
+- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+
+<!-- annotated:a5a46c0da27be2 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L370—L370</summary>
+
+<!-- original:a5a46c0da27be2:source/blender/blenlib/BLI_vector.hh:370:370 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-cc55237b756cff1f"></a>
+
+### `blender::Vector::()`
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L371—L374。
+
+**教学注释版**
+
+<!-- annotated:10011dabe81b49 -->
+
+```cpp
+  operator MutableSpan<T>()
+  {
+    // [讲解] this->size：用end_减begin_得到活元素数量。
+    return MutableSpan<T>(begin_, this->size());
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L371—L374</summary>
+
+<!-- original:10011dabe81b49:source/blender/blenlib/BLI_vector.hh:371:374 -->
+
+```cpp
   operator MutableSpan<T>()
   {
     return MutableSpan<T>(begin_, this->size());
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return MutableSpan<T>(begin_, this->size());`
+
+**继续追踪实现**
+
+- `MutableSpan<T>` → [blender::MutableSpan::MutableSpan · L462](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+
+<!-- annotated:17f0712b416213 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L375—L375</summary>
+
+<!-- original:17f0712b416213:source/blender/blenlib/BLI_vector.hh:375:375 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-500582cbfe82b04e"></a>
+
+### `blender::Vector::is_span_convertible_pointer_v`
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L376—L381。
+
+**教学注释版**
+
+<!-- annotated:dd5bead34ba330 -->
+
+```cpp
+  template<typename U>
+  operator Span<U>() const
+    requires(is_span_convertible_pointer_v<T, U>)
+  {
+    // [讲解] this->size：用end_减begin_得到活元素数量。
+    return Span<U>(begin_, this->size());
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L376—L381</summary>
+
+<!-- original:dd5bead34ba330:source/blender/blenlib/BLI_vector.hh:376:381 -->
+
+```cpp
   template<typename U>
   operator Span<U>() const
     requires(is_span_convertible_pointer_v<T, U>)
   {
     return Span<U>(begin_, this->size());
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return Span<U>(begin_, this->size());`
+
+**继续追踪实现**
+
+- `Span<U>` → [blender::Span](%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
+- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+
+<!-- annotated:5237e93017c662 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L382—L382</summary>
+
+<!-- original:5237e93017c662:source/blender/blenlib/BLI_vector.hh:382:382 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-2ac8fbdcf3763d04"></a>
+
+### `blender::Vector::is_span_convertible_pointer_v`
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L383—L388。
+
+**教学注释版**
+
+<!-- annotated:b0d58a88fbe0a5 -->
+
+```cpp
+  template<typename U>
+  operator MutableSpan<U>()
+    requires(is_span_convertible_pointer_v<T, U>)
+  {
+    // [讲解] this->size：用end_减begin_得到活元素数量。
+    return MutableSpan<U>(begin_, this->size());
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L383—L388</summary>
+
+<!-- original:b0d58a88fbe0a5:source/blender/blenlib/BLI_vector.hh:383:388 -->
+
+```cpp
   template<typename U>
   operator MutableSpan<U>()
     requires(is_span_convertible_pointer_v<T, U>)
   {
     return MutableSpan<U>(begin_, this->size());
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return MutableSpan<U>(begin_, this->size());`
+
+**继续追踪实现**
+
+- `MutableSpan<U>` → [blender::MutableSpan::MutableSpan · L462](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+
+<!-- annotated:036792ae947483 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L389—L389</summary>
+
+<!-- original:036792ae947483:source/blender/blenlib/BLI_vector.hh:389:389 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-e2eed03cefcdd2ff"></a>
+
+### `blender::Vector::as_span`
+
+构造对当前有效元素区间的借用视图。
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L390—L393。
+
+**教学注释版**
+
+<!-- annotated:af3ec1b150c1aa -->
+
+```cpp
   Span<T> as_span() const
   {
     return *this;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L390—L393</summary>
+
+<!-- original:af3ec1b150c1aa:source/blender/blenlib/BLI_vector.hh:390:393 -->
+
+```cpp
+  Span<T> as_span() const
+  {
+    return *this;
+  }
+```
+
+</details>
+
+**接口与不变量**
+
+视图不拥有Vector；扩容、删除、销毁和部分移动操作会影响其有效性。
+
+**结果出口**
+
+- `return *this;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:4ab173ff431081 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L394—L394</summary>
+
+<!-- original:4ab173ff431081:source/blender/blenlib/BLI_vector.hh:394:394 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-98b7994c0b2e3bae"></a>
+
+### `blender::Vector::as_mutable_span`
+
+构造对当前有效元素区间的借用视图。
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L395—L398。
+
+**教学注释版**
+
+<!-- annotated:736f7e17c593ed -->
+
+```cpp
   MutableSpan<T> as_mutable_span()
   {
     return *this;
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L395—L398</summary>
 
-- `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。
+<!-- original:736f7e17c593ed:source/blender/blenlib/BLI_vector.hh:395:398 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L352 | 运算符重载声明、定义或显式调用：`const T &operator[](int64_t index) const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L353 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L354 | 断言约束 `BLI_assert(index >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L355 | 断言约束 `BLI_assert(index < this->size());`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L356 | 返回表达式 `begin_[index]`。 |
-| L357 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L359 | 运算符重载声明、定义或显式调用：`T &operator[](int64_t index)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L360 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L361 | 断言约束 `BLI_assert(index >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L362 | 断言约束 `BLI_assert(index < this->size());`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L363 | 返回表达式 `begin_[index]`。 |
-| L364 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L366 | 运算符重载声明、定义或显式调用：`operator Span<T>() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L367 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L368 | 返回表达式 `Span<T>(begin_, this->size())`。 |
-| L369 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L371 | 运算符重载声明、定义或显式调用：`operator MutableSpan<T>()`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L372 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L373 | 返回表达式 `MutableSpan<T>(begin_, this->size())`。 |
-| L374 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L376 | 声明模板参数 `template<typename U>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L377 | 运算符重载声明、定义或显式调用：`operator Span<U>() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L378 | 约束模板可用性：`requires(is_span_convertible_pointer_v<T, U>)`。条件在编译期检查，不替代运行期的地址、长度和类型一致性验证。 |
-| L379 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L380 | 返回表达式 `Span<U>(begin_, this->size())`。 |
-| L381 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L383 | 声明模板参数 `template<typename U>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L384 | 运算符重载声明、定义或显式调用：`operator MutableSpan<U>()`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L385 | 约束模板可用性：`requires(is_span_convertible_pointer_v<T, U>)`。条件在编译期检查，不替代运行期的地址、长度和类型一致性验证。 |
-| L386 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L387 | 返回表达式 `MutableSpan<U>(begin_, this->size())`。 |
-| L388 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L390 | 出现调用或函数声明 `as_span`，对应表达式为 `Span<T> as_span() const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L391 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L392 | 返回表达式 `*this`。返回当前对象；返回类型决定它是引用还是值，不能仅凭表达式假定复制。 |
-| L393 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L395 | 出现调用或函数声明 `as_mutable_span`，对应表达式为 `MutableSpan<T> as_mutable_span()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L396 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L397 | 返回表达式 `*this`。返回当前对象；返回类型决定它是引用还是值，不能仅凭表达式假定复制。 |
-| L398 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  MutableSpan<T> as_mutable_span()
+  {
+    return *this;
+  }
+```
 
-### BLI_vector.hh：L399—L452
+</details>
 
-<!-- source:source/blender/blenlib/BLI_vector.hh:399:452 -->
+**接口与不变量**
+
+视图不拥有Vector；扩容、删除、销毁和部分移动操作会影响其有效性。
+
+**结果出口**
+
+- `return *this;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_vector.hh L399—L404
+
+<!-- annotated:fb688f2b9f7cbf -->
 
 ```cpp
 
@@ -293,12 +649,88 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
    * This won't necessarily make an allocation when min_capacity is small.
    * The actual size of the vector does not change.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L399—L404</summary>
+
+<!-- original:fb688f2b9f7cbf:source/blender/blenlib/BLI_vector.hh:399:404 -->
+
+```cpp
+
+  /**
+   * Make sure that enough memory is allocated to hold min_capacity elements.
+   * This won't necessarily make an allocation when min_capacity is small.
+   * The actual size of the vector does not change.
+   */
+```
+
+</details>
+
+<a id="f-4cf9c0f00e01102e"></a>
+
+### `blender::Vector::reserve`
+
+确保可容纳至少min_capacity个元素；当前size和已有元素值不因容量请求本身而增加。
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L405—L410。
+
+接口参数：
+
+- `const int64_t min_capacity`
+
+**教学注释版**
+
+<!-- annotated:c5c67389fed180 -->
+
+```cpp
+  // [讲解] 参数是最低容量要求，不是新的元素数量。
+  void reserve(const int64_t min_capacity)
+  {
+    // [讲解] 只有请求超过现有容量才增长；相等也直接返回。
+    if (min_capacity > this->capacity()) {
+      // [讲解] 进入下方完整展开的增长实现；成功后size保持原值，原地址可能失效。
+      this->realloc_to_at_least(min_capacity);
+    }
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L405—L410</summary>
+
+<!-- original:c5c67389fed180:source/blender/blenlib/BLI_vector.hh:405:410 -->
+
+```cpp
   void reserve(const int64_t min_capacity)
   {
     if (min_capacity > this->capacity()) {
       this->realloc_to_at_least(min_capacity);
     }
   }
+```
+
+</details>
+
+**机制与执行推导**
+
+设size=3、capacity=8。reserve(5)无需分配，三个边界指针均不变，已有视图不会因这次调用失效。
+
+若reserve(12)，增长函数负责选择容量、迁移3个对象，再提交新边界。请求12不代表构造12个T。
+
+本函数没有检查min_capacity非负；负请求落在已有容量足够的路径。不要把resize的非负断言移植成这里已经存在的保证。
+
+时间分两种：容量足够时为常数；不足时还包含分配与迁移现有size个元素的成本。
+
+**继续追踪实现**
+
+- `this->capacity` → [blender::Vector::capacity · L1007](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-1a73aecfff2e3366)。
+- `this->realloc_to_at_least` → [blender::Vector::realloc_to_at_least · L1121](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-9189de35f17e7c08)。
+
+### 类型布局、声明与编译条件 · BLI_vector.hh L411—L417
+
+<!-- annotated:cad7eb7a84fca8 -->
+
+```cpp
 
   /**
    * Change the size of the vector so that it contains new_size elements.
@@ -306,6 +738,72 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
    * destructed. If new_size is larger than the old size, the new elements at the end are default
    * constructed. If T is trivially constructible, the memory is not touched by this function.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L411—L417</summary>
+
+<!-- original:cad7eb7a84fca8:source/blender/blenlib/BLI_vector.hh:411:417 -->
+
+```cpp
+
+  /**
+   * Change the size of the vector so that it contains new_size elements.
+   * If new_size is smaller than the old size, the elements at the end of the vector are
+   * destructed. If new_size is larger than the old size, the new elements at the end are default
+   * constructed. If T is trivially constructible, the memory is not touched by this function.
+   */
+```
+
+</details>
+
+<a id="f-059312cabb8abe3a"></a>
+
+### `blender::Vector::resize`
+
+把有效元素数调整为new_size。增长路径构造新元素，缩小路径销毁尾部对象，最后才提交新的end_。
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L418—L431。
+
+接口参数：
+
+- `const int64_t new_size`
+
+**教学注释版**
+
+<!-- annotated:73eb4357ddcf19 -->
+
+```cpp
+  void resize(const int64_t new_size)
+  {
+    // [讲解] 有效元素数不能为负；这是内部调用契约，不是负数输入的修复代码。
+    BLI_assert(new_size >= 0);
+    // [讲解] 保存旧有效长度，供计算新增或移除的尾部区间。
+    const int64_t old_size = this->size();
+    // [讲解] 只在增长时需要准备额外存储并构造对象。
+    if (new_size > old_size) {
+      // [讲解] 先保证容量；它不会替我们构造新增元素。
+      this->reserve(new_size);
+      // [讲解] 在尚无对象的尾部构造差额个T；int的默认初始化不承诺零值。
+      default_construct_n(begin_ + old_size, new_size - old_size);
+    }
+    else {
+      // [讲解] 销毁不再属于Vector的尾部对象；不释放整块容量存储。
+      destruct_n(begin_ + new_size, old_size - new_size);
+    }
+    // [讲解] 这里更新的是end_：只有对象构造/销毁完成后，才提交新的有效区间。
+    end_ = begin_ + new_size;
+    // [讲解] 同步调试镜像；发布构建中该宏不承担真实长度存储。
+    UPDATE_VECTOR_SIZE(this);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L418—L431</summary>
+
+<!-- original:73eb4357ddcf19:source/blender/blenlib/BLI_vector.hh:418:431 -->
+
+```cpp
   void resize(const int64_t new_size)
   {
     BLI_assert(new_size >= 0);
@@ -320,6 +818,42 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
     end_ = begin_ + new_size;
     UPDATE_VECTOR_SIZE(this);
   }
+```
+
+</details>
+
+**机制与执行推导**
+
+两个重载区别在新增元素怎样构造：一个默认初始化，另一个从value复制构造。它们都不是简单改变一个整数。
+
+设原size=3、capacity=8。resize(5)只构造区间[3,5)；不需要迁移原三个对象。
+
+resize(2)析构区间[2,3)，容量仍是8。new_size等于old_size时进入else，但析构数量为0。
+
+新增对象构造失败时，标准未初始化算法清理已构造的新对象；end_尚未提交。但如果reserve之前成功重分配，容量和地址可能已经变化，所以不能无条件说失败后完全不变。
+
+默认初始化int不等于填零。value重载只复制新增元素，不覆盖原有元素。
+
+value若引用本Vector内部元素，还要单独检查reserve导致的引用失效；不能将普通外部value案例的推理扩大为任意别名输入。
+
+**沿实际写入检查状态**
+
+- `end_ = begin_ + new_size;`：提交有效元素尾后位置；它决定size，不是容量。
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `this->reserve` → [blender::Vector::reserve · L405](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)。
+- `default_construct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L424。
+- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L427。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+
+### 类型布局、声明与编译条件 · BLI_vector.hh L432—L438
+
+<!-- annotated:294dc06ab78b08 -->
+
+```cpp
 
   /**
    * Change the size of the vector so that it contains new_size elements.
@@ -327,6 +861,73 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
    * destructed. If new_size is larger than the old size, the new elements will be copy constructed
    * from the given value.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L432—L438</summary>
+
+<!-- original:294dc06ab78b08:source/blender/blenlib/BLI_vector.hh:432:438 -->
+
+```cpp
+
+  /**
+   * Change the size of the vector so that it contains new_size elements.
+   * If new_size is smaller than the old size, the elements at the end of the vector are
+   * destructed. If new_size is larger than the old size, the new elements will be copy constructed
+   * from the given value.
+   */
+```
+
+</details>
+
+<a id="f-ab8f94924ebe2d12"></a>
+
+### `blender::Vector::resize`
+
+把有效元素数调整为new_size。增长路径构造新元素，缩小路径销毁尾部对象，最后才提交新的end_。
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L439—L452。
+
+接口参数：
+
+- `const int64_t new_size`
+- `const T &value`
+
+**教学注释版**
+
+<!-- annotated:bc42d8dbc08e5b -->
+
+```cpp
+  void resize(const int64_t new_size, const T &value)
+  {
+    // [讲解] 有效元素数不能为负；这是内部调用契约，不是负数输入的修复代码。
+    BLI_assert(new_size >= 0);
+    // [讲解] 保存旧有效长度，供计算新增或移除的尾部区间。
+    const int64_t old_size = this->size();
+    // [讲解] 只在增长时需要准备额外存储并构造对象。
+    if (new_size > old_size) {
+      // [讲解] 先保证容量；它不会替我们构造新增元素。
+      this->reserve(new_size);
+      // [讲解] 在新增尾部从value复制构造；原来的[0,old_size)保持原值。
+      uninitialized_fill_n(begin_ + old_size, new_size - old_size, value);
+    }
+    else {
+      // [讲解] 销毁不再属于Vector的尾部对象；不释放整块容量存储。
+      destruct_n(begin_ + new_size, old_size - new_size);
+    }
+    // [讲解] 这里更新的是end_：只有对象构造/销毁完成后，才提交新的有效区间。
+    end_ = begin_ + new_size;
+    // [讲解] 同步调试镜像；发布构建中该宏不承担真实长度存储。
+    UPDATE_VECTOR_SIZE(this);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L439—L452</summary>
+
+<!-- original:bc42d8dbc08e5b:source/blender/blenlib/BLI_vector.hh:439:452 -->
+
+```cpp
   void resize(const int64_t new_size, const T &value)
   {
     BLI_assert(new_size >= 0);
@@ -343,54 +944,38 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
   }
 ```
 
-本段语义重点：
+</details>
 
-- `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。
-- `default_construct_n`：为目标区间建立默认构造对象；基本类型默认初始化未必给出可读取的零。
-- `realloc_to_at_least`：进入Vector容量增长路径；检查迁移失败回滚和旧视图失效。
-- `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。
-- `end_`：尾后位置字段；在Vector中界定已构造区间，尾后位置不是最后一个元素。
+**机制与执行推导**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L405 | 出现调用或函数声明 `reserve`，对应表达式为 `void reserve(const int64_t min_capacity)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L406 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L407 | 判断 `min_capacity > this->capacity()`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L408 | 本行使用 `realloc_to_at_least`：进入Vector容量增长路径；检查迁移失败回滚和旧视图失效。 |
-| L409 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L410 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L418 | 出现调用或函数声明 `resize`，对应表达式为 `void resize(const int64_t new_size)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L419 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L420 | 断言约束 `BLI_assert(new_size >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L421 | 把右侧 `this->size()` 用于初始化或更新左侧 `const int64_t old_size`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L422 | 判断 `new_size > old_size`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L423 | 出现调用或函数声明 `reserve`，对应表达式为 `this->reserve(new_size);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L424 | 本行使用 `default_construct_n`：为目标区间建立默认构造对象；基本类型默认初始化未必给出可读取的零。 |
-| L425 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L426 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L427 | 本行使用 `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。 |
-| L428 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L429 | 建立或更新 `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。本行的具体值关系为 `end_ = begin_ + new_size`；对照更新前后相应范围或状态是否一致。 |
-| L430 | 出现调用或函数声明 `UPDATE_VECTOR_SIZE`，对应表达式为 `UPDATE_VECTOR_SIZE(this);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L431 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L439 | 出现调用或函数声明 `resize`，对应表达式为 `void resize(const int64_t new_size, const T &value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L440 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L441 | 断言约束 `BLI_assert(new_size >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L442 | 把右侧 `this->size()` 用于初始化或更新左侧 `const int64_t old_size`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L443 | 判断 `new_size > old_size`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L444 | 出现调用或函数声明 `reserve`，对应表达式为 `this->reserve(new_size);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L445 | 本行涉及 `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。按此语义解读 `uninitialized_fill_n(begin_ + old_size, new_size - old_size, value)`，不要把地址、数量或状态混用。 |
-| L446 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L447 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L448 | 本行使用 `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。 |
-| L449 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L450 | 建立或更新 `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。本行的具体值关系为 `end_ = begin_ + new_size`；对照更新前后相应范围或状态是否一致。 |
-| L451 | 出现调用或函数声明 `UPDATE_VECTOR_SIZE`，对应表达式为 `UPDATE_VECTOR_SIZE(this);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L452 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+两个重载区别在新增元素怎样构造：一个默认初始化，另一个从value复制构造。它们都不是简单改变一个整数。
 
-### BLI_vector.hh：L453—L497
+设原size=3、capacity=8。resize(5)只构造区间[3,5)；不需要迁移原三个对象。
 
-<!-- source:source/blender/blenlib/BLI_vector.hh:453:497 -->
+resize(2)析构区间[2,3)，容量仍是8。new_size等于old_size时进入else，但析构数量为0。
+
+新增对象构造失败时，标准未初始化算法清理已构造的新对象；end_尚未提交。但如果reserve之前成功重分配，容量和地址可能已经变化，所以不能无条件说失败后完全不变。
+
+默认初始化int不等于填零。value重载只复制新增元素，不覆盖原有元素。
+
+value若引用本Vector内部元素，还要单独检查reserve导致的引用失效；不能将普通外部value案例的推理扩大为任意别名输入。
+
+**沿实际写入检查状态**
+
+- `end_ = begin_ + new_size;`：提交有效元素尾后位置；它决定size，不是容量。
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `this->reserve` → [blender::Vector::reserve · L405](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)。
+- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-020ca78eff5f9227)。
+- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L448。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+
+### 类型布局、声明与编译条件 · BLI_vector.hh L453—L457
+
+<!-- annotated:816d51d8cbfcbf -->
 
 ```cpp
 
@@ -398,27 +983,228 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
    * Reset the size of the vector so that it contains new_size elements.
    * All existing elements are destructed, and not copied if the data must be reallocated.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L453—L457</summary>
+
+<!-- original:816d51d8cbfcbf:source/blender/blenlib/BLI_vector.hh:453:457 -->
+
+```cpp
+
+  /**
+   * Reset the size of the vector so that it contains new_size elements.
+   * All existing elements are destructed, and not copied if the data must be reallocated.
+   */
+```
+
+</details>
+
+<a id="f-9249cd61747c1405"></a>
+
+### `blender::Vector::reinitialize`
+
+先销毁全部旧元素，再按新长度重新构造；旧元素不参与扩容迁移。
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L458—L462。
+
+接口参数：
+
+- `const int64_t new_size`
+
+**教学注释版**
+
+<!-- annotated:404f542c1b817d -->
+
+```cpp
+  void reinitialize(const int64_t new_size)
+  {
+    // [讲解] 结束全部旧元素寿命，保留可复用容量。
+    this->clear();
+    // [讲解] 在空Vector上建立新的有效元素；没有旧值要保留或搬移。
+    this->resize(new_size);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L458—L462</summary>
+
+<!-- original:404f542c1b817d:source/blender/blenlib/BLI_vector.hh:458:462 -->
+
+```cpp
   void reinitialize(const int64_t new_size)
   {
     this->clear();
     this->resize(new_size);
   }
+```
+
+</details>
+
+**机制与执行推导**
+
+与resize相比，reinitialize不保留原前缀。原有string无论新长度变大还是变小都会先析构。
+
+clear不释放容量，因此已有缓冲足够时可以复用存储。若新长度更大，后续resize扩容时迁移的旧有效元素数已为0。
+
+clear已经改变状态，后续构造失败不会恢复旧元素；接口不具有“失败保持旧值”的含义。
+
+**继续追踪实现**
+
+- `this->clear` → [blender::Vector::clear · L468](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-d051bebff5275a43)。
+- `this->resize` → [blender::Vector::resize · L418](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-059312cabb8abe3a)；[blender::Vector::resize · L439](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-ab8f94924ebe2d12)。同名重载需按实参类型选择。
+
+### 类型布局、声明与编译条件 · BLI_vector.hh L463—L467
+
+<!-- annotated:a9da866831feb5 -->
+
+```cpp
 
   /**
    * Afterwards the vector has 0 elements, but will still have
    * memory to be refilled again.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L463—L467</summary>
+
+<!-- original:a9da866831feb5:source/blender/blenlib/BLI_vector.hh:463:467 -->
+
+```cpp
+
+  /**
+   * Afterwards the vector has 0 elements, but will still have
+   * memory to be refilled again.
+   */
+```
+
+</details>
+
+<a id="f-d051bebff5275a43"></a>
+
+### `blender::Vector::clear`
+
+销毁所有有效元素，把size变为0，但保留原分配或内嵌容量。
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L468—L473。
+
+**教学注释版**
+
+<!-- annotated:8f83d42328ff9c -->
+
+```cpp
+  void clear()
+  {
+    // [讲解] 只析构[begin_,end_)中的活对象；空闲容量从来不应被析构。
+    destruct_n(begin_, this->size());
+    // [讲解] 把有效区间置空，容量边界保持不变。
+    end_ = begin_;
+    // [讲解] 更新debug_size_，让调试器中的镜像与真实指针差保持一致。
+    UPDATE_VECTOR_SIZE(this);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L468—L473</summary>
+
+<!-- original:8f83d42328ff9c:source/blender/blenlib/BLI_vector.hh:468:473 -->
+
+```cpp
   void clear()
   {
     destruct_n(begin_, this->size());
     end_ = begin_;
     UPDATE_VECTOR_SIZE(this);
   }
+```
+
+</details>
+
+**机制与执行推导**
+
+clear之后begin_与capacity_end_仍描述原存储。end_回到begin_，只说明没有T对象属于有效区间。
+
+旧元素的引用不能继续访问，即使其地址所处的字节存储尚未释放。
+
+下次append可以复用容量，却必须重新构造T。保留容量和保留元素是两回事。
+
+**沿实际写入检查状态**
+
+- `end_ = begin_;`：提交有效元素尾后位置；它决定size，不是容量。
+
+**继续追踪实现**
+
+- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L470。
+- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+
+### 类型布局、声明与编译条件 · BLI_vector.hh L474—L478
+
+<!-- annotated:64f7f4cb7aa8ad -->
+
+```cpp
 
   /**
    * Afterwards the vector has 0 elements and any allocated memory
    * will be freed.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L474—L478</summary>
+
+<!-- original:64f7f4cb7aa8ad:source/blender/blenlib/BLI_vector.hh:474:478 -->
+
+```cpp
+
+  /**
+   * Afterwards the vector has 0 elements and any allocated memory
+   * will be freed.
+   */
+```
+
+</details>
+
+<a id="f-bc6dd407df52ad34"></a>
+
+### `blender::Vector::clear_and_shrink`
+
+销毁全部元素，释放外部缓冲，并恢复到空的内嵌存储状态。
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L479—L490。
+
+**教学注释版**
+
+<!-- annotated:3c3e1d364f69e4 -->
+
+```cpp
+  void clear_and_shrink()
+  {
+    // [讲解] 先调用活对象析构，让资源在原存储仍存在时得到释放。
+    destruct_n(begin_, this->size());
+    // [讲解] 只有外部分配的缓冲可以交还allocator_；内嵌缓冲不能单独释放。
+    if (!this->is_inline()) {
+      // [讲解] 归还原缓冲存储；元素析构已在前一步完成。
+      allocator_.deallocate(begin_);
+    }
+
+    // [讲解] 回到本Vector对象内部的缓冲地址。
+    begin_ = inline_buffer_;
+    // [讲解] 没有有效元素。
+    end_ = begin_;
+    // [讲解] 恢复该实例的内嵌容量，而非一律设成零。
+    capacity_end_ = begin_ + InlineBufferCapacity;
+    UPDATE_VECTOR_SIZE(this);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L479—L490</summary>
+
+<!-- original:3c3e1d364f69e4:source/blender/blenlib/BLI_vector.hh:479:490 -->
+
+```cpp
   void clear_and_shrink()
   {
     destruct_n(begin_, this->size());
@@ -431,6 +1217,37 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
     capacity_end_ = begin_ + InlineBufferCapacity;
     UPDATE_VECTOR_SIZE(this);
   }
+```
+
+</details>
+
+**机制与执行推导**
+
+释放对象内嵌缓冲是不合法的，因为那块存储属于Vector对象本体。所以释放前检查is_inline。
+
+恢复后的capacity为InlineBufferCapacity，不一定是0；如果该模板参数为0，才是零容量的特殊实例。
+
+这里没有把旧元素缩到一块较小堆数组，而是直接舍弃所有旧元素和外部缓冲。
+
+**沿实际写入检查状态**
+
+- `begin_ = inline_buffer_;`：切换数据起点；检查旧对象寿命与旧存储释放已经处理。
+- `end_ = begin_;`：提交有效元素尾后位置；它决定size，不是容量。
+- `capacity_end_ = begin_ + InlineBufferCapacity;`：提交容量尾后边界，必须与当前缓冲起点和容量一致。
+
+**继续追踪实现**
+
+- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L481。
+- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `this->is_inline` → [blender::Vector::is_inline · L1108](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-6bbcba0fedd158a9)。
+- `allocator_.deallocate` → [blender::GuardedAllocator::deallocate · L60](03-%E5%86%85%E5%AD%98%E5%B7%A5%E5%85%B7%E4%B8%8E%E5%88%86%E9%85%8D%E5%99%A8%E6%8E%A5%E5%8F%A3.md#f-c1586978e7959acb)。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+
+### 类型布局、声明与编译条件 · BLI_vector.hh L491—L497
+
+<!-- annotated:7e685cf67ca3c5 -->
+
+```cpp
 
   /**
    * Insert a new element at the end of the vector.
@@ -440,52 +1257,162 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
    */
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L491—L497</summary>
 
-- `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。
-- `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。
-- `end_`：尾后位置字段；在Vector中界定已构造区间，尾后位置不是最后一个元素。
-- `capacity_end_`：已分配存储的尾后位置，和end_之间通常尚未构造对象。
-- `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L458 | 出现调用或函数声明 `reinitialize`，对应表达式为 `void reinitialize(const int64_t new_size)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L459 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L460 | 出现调用或函数声明 `clear`，对应表达式为 `this->clear();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L461 | 出现调用或函数声明 `resize`，对应表达式为 `this->resize(new_size);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L462 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L468 | 出现调用或函数声明 `clear`，对应表达式为 `void clear()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L469 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L470 | 本行使用 `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。 |
-| L471 | 建立或更新 `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。本行的具体值关系为 `end_ = begin_`；对照更新前后相应范围或状态是否一致。 |
-| L472 | 出现调用或函数声明 `UPDATE_VECTOR_SIZE`，对应表达式为 `UPDATE_VECTOR_SIZE(this);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L473 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L479 | 出现调用或函数声明 `clear_and_shrink`，对应表达式为 `void clear_and_shrink()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L480 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L481 | 本行使用 `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。 |
-| L482 | 判断 `!this->is_inline()`，成立时进入本分支，否则继续后续路径。 |
-| L483 | 本行涉及 `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。按此语义解读 `allocator_.deallocate(begin_)`，不要把地址、数量或状态混用。 |
-| L484 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L486 | 建立或更新 `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。本行的具体值关系为 `begin_ = inline_buffer_`；对照更新前后相应范围或状态是否一致。 |
-| L487 | 建立或更新 `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。本行的具体值关系为 `end_ = begin_`；对照更新前后相应范围或状态是否一致。 |
-| L488 | 建立或更新 `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。本行的具体值关系为 `capacity_end_ = begin_ + InlineBufferCapacity`；对照更新前后相应范围或状态是否一致。 |
-| L489 | 出现调用或函数声明 `UPDATE_VECTOR_SIZE`，对应表达式为 `UPDATE_VECTOR_SIZE(this);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L490 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-
-### BLI_vector.hh：L1113—L1153
-
-<!-- source:source/blender/blenlib/BLI_vector.hh:1113:1153 -->
+<!-- original:7e685cf67ca3c5:source/blender/blenlib/BLI_vector.hh:491:497 -->
 
 ```cpp
- private:
+
+  /**
+   * Insert a new element at the end of the vector.
+   * This might cause a reallocation with the capacity is exceeded.
+   *
+   * This is similar to std::vector::push_back.
+   */
+```
+
+</details>
+
+<a id="f-eafa5315534c2edf"></a>
+
+### `blender::Vector::ensure_space_for_one`
+
+追加前保证至少一个空闲槽位；本函数本身不构造追加的元素。
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L1114—L1119。
+
+**教学注释版**
+
+<!-- annotated:a084b943dddb44 -->
+
+```cpp
+  void ensure_space_for_one()
+  {
+    // [讲解] 有效尾后位置已经到达容量边界，无法直接追加。
+    if (end_ >= capacity_end_) [[unlikely]] {
+      // [讲解] 请求至少多一个位置；增长策略可以分配比size+1更多的容量。
+      this->realloc_to_at_least(this->size() + 1);
+    }
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L1114—L1119</summary>
+
+<!-- original:a084b943dddb44:source/blender/blenlib/BLI_vector.hh:1114:1119 -->
+
+```cpp
   void ensure_space_for_one()
   {
     if (end_ >= capacity_end_) [[unlikely]] {
       this->realloc_to_at_least(this->size() + 1);
     }
   }
+```
 
+</details>
+
+**机制与执行推导**
+
+当end_小于capacity_end_时，现有尾部就有可用存储；否则请求size+1。
+
+[[unlikely]]是分支预测提示，不改变条件与正确性，也不是排除这一分支。
+
+ensure完成后，调用者仍负责构造新元素并在成功后推进end_。
+
+**继续追踪实现**
+
+- `this->realloc_to_at_least` → [blender::Vector::realloc_to_at_least · L1121](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-9189de35f17e7c08)。
+- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+
+<!-- annotated:9652e7372515d0 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L1120—L1120</summary>
+
+<!-- original:9652e7372515d0:source/blender/blenlib/BLI_vector.hh:1120:1120 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-9189de35f17e7c08"></a>
+
+### `blender::Vector::realloc_to_at_least`
+
+执行容量增长：选容量、分配、迁移、释放旧存储，最后一次性提交三个边界。
+
+实现位置：[source/blender/blenlib/BLI_vector.hh](../../../../../source/blender/blenlib/BLI_vector.hh) · L1121—L1151。
+
+接口参数：
+
+- `const int64_t min_capacity`
+
+**教学注释版**
+
+<!-- annotated:61533a3859e036 -->
+
+```cpp
+  BLI_NOINLINE void realloc_to_at_least(const int64_t min_capacity)
+  {
+    // [讲解] 已有容量足够时不做任何迁移；这个检查也保护直接调用该私有函数的路径。
+    if (this->capacity() >= min_capacity) {
+      return;
+    }
+
+    /* At least double the size of the previous allocation. Otherwise consecutive calls to grow can
+     * cause a reallocation every time even though min_capacity only increments. */
+    // [讲解] 使用几何增长，给未来追加留下余量，而不是每次恰好多一个位置。
+    const int64_t min_new_capacity = this->capacity() * 2;
+
+    // [讲解] 同时满足本次请求与增长策略；很大的reserve请求可以直接超过两倍。
+    const int64_t new_capacity = std::max(min_capacity, min_new_capacity);
+    // [讲解] 记住真实活元素数；迁移不处理尚未构造的容量尾部。
+    const int64_t size = this->size();
+
+    T *new_array = static_cast<T *>(
+        // [讲解] 按T大小计算字节数，按T对齐分配，AT提供源码位置名称；还没有构造T。
+        allocator_.allocate(size_t(new_capacity) * sizeof(T), alignof(T), AT));
+    try {
+      // [讲解] 迁移活对象；目标构造全部成功后，工具函数才结束源对象寿命。
+      uninitialized_relocate_n(begin_, size, new_array);
+    }
+    // [讲解] 这里只能捕获异常，无法捕获返回nullptr或进程终止式失败。
+    catch (...) {
+      // [讲解] 清理新存储；目标前缀对象的清理由未初始化构造算法在抛出前承担。
+      allocator_.deallocate(new_array);
+      // [讲解] 继续传播原异常，旧边界尚未提交，但部分源值可能已经被移动。
+      throw;
+    }
+
+    // [讲解] 成功迁移后仅释放旧外部缓冲；旧内嵌缓冲仍属于Vector对象。
+    if (!this->is_inline()) {
+      // [讲解] 源对象寿命已由relocate结束，此处只归还外部字节存储。
+      allocator_.deallocate(begin_);
+    }
+
+    // [讲解] 从这里开始提交新状态：存储起点切换到新缓冲。
+    begin_ = new_array;
+    // [讲解] 新有效区间仍只有原size个对象；reserve并未新增元素。
+    end_ = begin_ + size;
+    // [讲解] 新容量尾后边界使用new_capacity，与有效元素尾后边界区分。
+    capacity_end_ = begin_ + new_capacity;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L1121—L1151</summary>
+
+<!-- original:61533a3859e036:source/blender/blenlib/BLI_vector.hh:1121:1151 -->
+
+```cpp
   BLI_NOINLINE void realloc_to_at_least(const int64_t min_capacity)
   {
     if (this->capacity() >= min_capacity) {
@@ -517,305 +1444,181 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
     end_ = begin_ + size;
     capacity_end_ = begin_ + new_capacity;
   }
+```
+
+</details>
+
+**机制与执行推导**
+
+增长公式是max(min_capacity, 2*old_capacity)。它避免连续追加时每次只多分配一个位置；容量为0时由min_capacity推动首次增长。
+
+迁移数量取旧size，而不是旧capacity。空闲容量只有存储，没有可搬移的活对象。
+
+uninitialized_relocate_n先移动构造所有目标对象，全部成功后才析构源对象。若第k个移动构造抛异常，标准库清理已构造的目标前缀，源码不会执行随后源区间的destruct_n。
+
+这时旧对象仍存活，但此前成功移动的对象值可能已经改变。catch只释放新字节缓冲并重抛，不能把已移动源值变回原样。
+
+成功后旧元素的寿命已结束；若旧缓冲在堆上，才归还分配器。最后把新缓冲中的原size个对象纳入Vector。
+
+默认GuardedAllocator的MEM底层分配函数可能报告错误并返回空地址，本函数没有显式空地址检查。因此不能凭这个catch宣称它对所有分配失败都提供std::bad_alloc式恢复；自定义抛异常分配器的失败路径应另行分析。
+
+析构函数抛异常不属于本讲解假设的常规容器使用场景。大容量乘法、增长算术和请求值也须满足可表示范围。
+
+**沿实际写入检查状态**
+
+- `begin_ = new_array;`：切换数据起点；检查旧对象寿命与旧存储释放已经处理。
+- `end_ = begin_ + size;`：提交有效元素尾后位置；它决定size，不是容量。
+- `capacity_end_ = begin_ + new_capacity;`：提交容量尾后边界，必须与当前缓冲起点和容量一致。
+
+**继续追踪实现**
+
+- `this->capacity` → [blender::Vector::capacity · L1007](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-1a73aecfff2e3366)。
+- `std::max` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
+- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `allocator_.allocate` → [blender::GuardedAllocator::allocate · L43](03-%E5%86%85%E5%AD%98%E5%B7%A5%E5%85%B7%E4%B8%8E%E5%88%86%E9%85%8D%E5%99%A8%E6%8E%A5%E5%8F%A3.md#f-a57239e6d3bd10d9)。
+- `uninitialized_relocate_n` → [blender::uninitialized_relocate_n · L80](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-9de0365b9a47fd68)。
+- `allocator_.deallocate` → [blender::GuardedAllocator::deallocate · L60](03-%E5%86%85%E5%AD%98%E5%B7%A5%E5%85%B7%E4%B8%8E%E5%88%86%E9%85%8D%E5%99%A8%E6%8E%A5%E5%8F%A3.md#f-c1586978e7959acb)。
+- `this->is_inline` → [blender::Vector::is_inline · L1108](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-6bbcba0fedd158a9)。
+
+### 类型布局、声明与编译条件 · BLI_vector.hh L1152—L1167
+
+<!-- annotated:2a1643c83c422f -->
+
+```cpp
 };
 
+#undef UPDATE_VECTOR_SIZE
+
+/**
+ * Same as a normal Vector, but does not use Blender's guarded allocator. This is useful when
+ * allocating memory with static storage duration.
+ */
+template<typename T, int64_t InlineBufferCapacity = default_inline_buffer_capacity(sizeof(T))>
+using RawVector = Vector<T, InlineBufferCapacity, RawAllocator>;
+
+template<typename T> static constexpr bool is_Vector_v = false;
+template<typename T, int64_t InlineBufferCapacity, typename Allocator>
+static constexpr bool is_Vector_v<Vector<T, InlineBufferCapacity, Allocator>> = true;
+
+}  // namespace blender
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_vector.hh · L1152—L1167</summary>
 
-- `uninitialized_relocate_n`：在目标原始存储建立n个对象，并结束源对象寿命；与仅移动构造不同，后续不能再次把源当作存活元素销毁。
-- `realloc_to_at_least`：进入Vector容量增长路径；检查迁移失败回滚和旧视图失效。
-- `ensure_space_for_one`：确保单次追加有可用存储，随后仍须真正构造元素。
-- `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。
-- `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。
+<!-- original:2a1643c83c422f:source/blender/blenlib/BLI_vector.hh:1152:1167 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L1113 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L1114 | 出现调用或函数声明 `ensure_space_for_one`，对应表达式为 `void ensure_space_for_one()`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L1115 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L1116 | 判断 `end_ >= capacity_end_`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L1117 | 本行使用 `realloc_to_at_least`：进入Vector容量增长路径；检查迁移失败回滚和旧视图失效。 |
-| L1118 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L1119 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L1121 | 出现调用或函数声明 `realloc_to_at_least`，对应表达式为 `BLI_NOINLINE void realloc_to_at_least(const int64_t min_capacity)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L1122 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L1123 | 判断 `this->capacity() >= min_capacity`，成立时进入本分支，否则继续后续路径。该边界影响可访问元素或可用容量，两者要按各变量的定义区分。 |
-| L1124 | 结束当前函数，本路径不再执行后续语句；局部对象按作用域规则清理。 |
-| L1125 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L1129 | 把右侧 `this->capacity() * 2` 用于初始化或更新左侧 `const int64_t min_new_capacity`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L1131 | 本行使用 `std::max`：取较大值，在容量计算中常用于同时满足请求量和增长策略。 |
-| L1132 | 把右侧 `this->size()` 用于初始化或更新左侧 `const int64_t size`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L1134 | 把右侧 `static_cast<T *>(` 用于初始化或更新左侧 `T *new_array`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L1135 | 本行涉及 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。按此语义解读 `allocator_.allocate(size_t(new_capacity) * sizeof(T), alignof(T), AT))`，不要把地址、数量或状态混用。 |
-| L1136 | 开始可能抛异常的操作区间；下面catch负责局部回滚，需精确区分已经构造和尚未构造对象。 |
-| L1137 | 本行使用 `uninitialized_relocate_n`：在目标原始存储建立n个对象，并结束源对象寿命；与仅移动构造不同，后续不能再次把源当作存活元素销毁。 |
-| L1138 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L1139 | 进入异常清理路径；随后应释放本路径新取得的资源，同时遵守源对象已经发生的状态变化。 |
-| L1140 | 本行涉及 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。按此语义解读 `allocator_.deallocate(new_array)`，不要把地址、数量或状态混用。 |
-| L1141 | 继续传播异常或抛出新异常；在执行前必须完成本层负责的资源清理。 |
-| L1142 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L1144 | 判断 `!this->is_inline()`，成立时进入本分支，否则继续后续路径。 |
-| L1145 | 本行涉及 `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。按此语义解读 `allocator_.deallocate(begin_)`，不要把地址、数量或状态混用。 |
-| L1146 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L1148 | 建立或更新 `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。本行的具体值关系为 `begin_ = new_array`；对照更新前后相应范围或状态是否一致。 |
-| L1149 | 建立或更新 `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。本行的具体值关系为 `end_ = begin_ + size`；对照更新前后相应范围或状态是否一致。 |
-| L1150 | 建立或更新 `begin_`：起点字段；在Vector中与end_界定已构造区间，其他类应按自己的声明确认含义。本行的具体值关系为 `capacity_end_ = begin_ + new_capacity`；对照更新前后相应范围或状态是否一致。 |
-| L1151 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L1152 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+};
 
-## 五、接口定位、调用线索与生命周期
+#undef UPDATE_VECTOR_SIZE
 
-### Vector增长的成功路径与异常出口
+/**
+ * Same as a normal Vector, but does not use Blender's guarded allocator. This is useful when
+ * allocating memory with static storage duration.
+ */
+template<typename T, int64_t InlineBufferCapacity = default_inline_buffer_capacity(sizeof(T))>
+using RawVector = Vector<T, InlineBufferCapacity, RawAllocator>;
 
-```mermaid
-flowchart TB
-  V0["reserve检查请求容量"]:::input
-  V1["不足时调用增长函数"]:::compute
-  V2["按容量和对齐取得新存储"]:::compute
-  V3["迁移真实size个对象"]:::compute
-  V4["异常路径释放新存储并抛出"]:::compute
-  V5["成功后提交新边界"]:::result
-  V0 -->|"容量不足"| V1
-  V1 -->|"进入增长"| V2
-  V2 -->|"分配成功"| V3
-  V3 -->|"迁移抛异常"| V4
-  V3 -->|"迁移成功"| V5
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+template<typename T> static constexpr bool is_Vector_v = false;
+template<typename T, int64_t InlineBufferCapacity, typename Allocator>
+static constexpr bool is_Vector_v<Vector<T, InlineBufferCapacity, Allocator>> = true;
+
+}  // namespace blender
 ```
 
-边界更新在对象迁移成功之后。清理新缓冲不能替代对迁移工具内部部分对象的正确回滚分析；必须沿memory_utils继续阅读。
+</details>
 
-| 阶段 | 源码证据位置 | 实际语句定位 |
-|---|---|---|
-| reserve检查请求容量 | BLI_vector.hh [L405](../../../../../source/blender/blenlib/BLI_vector.hh#L405) | `void reserve(` |
-| 不足时调用增长函数 | BLI_vector.hh [L408](../../../../../source/blender/blenlib/BLI_vector.hh#L408) | `this->realloc_to_at_least(min_capacity)` |
-| 按容量和对齐取得新存储 | BLI_vector.hh [L1135](../../../../../source/blender/blenlib/BLI_vector.hh#L1135) | `allocator_.allocate(size_t(new_capacity)` |
-| 迁移真实size个对象 | BLI_vector.hh [L1137](../../../../../source/blender/blenlib/BLI_vector.hh#L1137) | `uninitialized_relocate_n(begin_, size, new_array)` |
-| 异常路径释放新存储并抛出 | BLI_vector.hh [L1140](../../../../../source/blender/blenlib/BLI_vector.hh#L1140) | `allocator_.deallocate(new_array)` |
-| 成功后提交新边界 | BLI_vector.hh [L1148](../../../../../source/blender/blenlib/BLI_vector.hh#L1148) | `begin_ = new_array` |
+## 语法与相关类型
 
-图中的条件边必须与对应if、异常路径和提前返回合读；不把未展示分支当作不存在。
+### 模板 template
 
-### 本篇声明与实现入口
+模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
 
-| 源码位置 | 实际声明片段 |
-|---|---|
-| [BLI_vector.hh:L390](../../../../../source/blender/blenlib/BLI_vector.hh#L390) | `Span<T> as_span() const` |
-| [BLI_vector.hh:L395](../../../../../source/blender/blenlib/BLI_vector.hh#L395) | `MutableSpan<T> as_mutable_span()` |
-| [BLI_vector.hh:L405](../../../../../source/blender/blenlib/BLI_vector.hh#L405) | `void reserve(const int64_t min_capacity)` |
-| [BLI_vector.hh:L418](../../../../../source/blender/blenlib/BLI_vector.hh#L418) | `void resize(const int64_t new_size)` |
-| [BLI_vector.hh:L430](../../../../../source/blender/blenlib/BLI_vector.hh#L430) | `UPDATE_VECTOR_SIZE(this);` |
-| [BLI_vector.hh:L439](../../../../../source/blender/blenlib/BLI_vector.hh#L439) | `void resize(const int64_t new_size, const T &value)` |
-| [BLI_vector.hh:L451](../../../../../source/blender/blenlib/BLI_vector.hh#L451) | `UPDATE_VECTOR_SIZE(this);` |
-| [BLI_vector.hh:L458](../../../../../source/blender/blenlib/BLI_vector.hh#L458) | `void reinitialize(const int64_t new_size)` |
-| [BLI_vector.hh:L468](../../../../../source/blender/blenlib/BLI_vector.hh#L468) | `void clear()` |
-| [BLI_vector.hh:L472](../../../../../source/blender/blenlib/BLI_vector.hh#L472) | `UPDATE_VECTOR_SIZE(this);` |
-| [BLI_vector.hh:L479](../../../../../source/blender/blenlib/BLI_vector.hh#L479) | `void clear_and_shrink()` |
-| [BLI_vector.hh:L489](../../../../../source/blender/blenlib/BLI_vector.hh#L489) | `UPDATE_VECTOR_SIZE(this);` |
-| [BLI_vector.hh:L1114](../../../../../source/blender/blenlib/BLI_vector.hh#L1114) | `void ensure_space_for_one()` |
-| [BLI_vector.hh:L1121](../../../../../source/blender/blenlib/BLI_vector.hh#L1121) | `BLI_NOINLINE void realloc_to_at_least(const int64_t min_capacity)` |
+把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
 
-### 同名符号出现位置
+### 依赖名称 typename
 
-以下表提供跨文件阅读入口，包含声明、调用或测试使用；没有经过完整C++名称解析，不把它命名为已证明的运行时调用图。
+typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
 
-| 符号 | 位置 | 文本证据 |
-|---|---|---|
-| `as_span` | [BKE_curves.hh:L1092](../../../../../source/blender/blenkernel/BKE_curves.hh#L1092) | `return this->runtime->evaluated_length_cache.data().as_span().slice(range);` |
-| `as_span` | [mesh.cc:L1009](../../../../../source/blender/blenkernel/intern/mesh.cc#L1009) | `attribute_data.copy_from(new_values.as_span());` |
-| `as_span` | [mesh.cc:L1023](../../../../../source/blender/blenkernel/intern/mesh.cc#L1023) | `attribute_data.copy_from(new_values.as_span());` |
-| `as_mutable_span` | [geometry_fields.cc:L810](../../../../../source/blender/blenkernel/intern/geometry_fields.cc#L810) | `value_evaluator.add_with_destination(src_field_, values.as_mutable_span());` |
-| `as_mutable_span` | [mesh.cc:L1731](../../../../../source/blender/blenkernel/intern/mesh.cc#L1731) | `result.as_mutable_span().take_front(positions.size()).copy_from(positions);` |
-| `as_mutable_span` | [mesh.cc:L1732](../../../../../source/blender/blenkernel/intern/mesh.cc#L1732) | `result.as_mutable_span().drop_front(positions.size()).fill(float3(0));` |
-| `reserve` | [mesh.cc:L922](../../../../../source/blender/blenkernel/intern/mesh.cc#L922) | `new_vert_order.reserve(mesh.verts_num);` |
-| `reserve` | [mesh.cc:L925](../../../../../source/blender/blenkernel/intern/mesh.cc#L925) | `new_face_order.reserve(mesh.faces_num);` |
-| `reserve` | [mesh.cc:L930](../../../../../source/blender/blenkernel/intern/mesh.cc#L930) | `group_unique_offsets.reserve(local_groups.size() + 1);` |
-| `resize` | [BKE_attribute_storage.hh:L195](../../../../../source/blender/blenkernel/BKE_attribute_storage.hh#L195) | `void resize(AttrDomain domain, int64_t new_size);` |
-| `resize` | [BKE_curves.hh:L445](../../../../../source/blender/blenkernel/BKE_curves.hh#L445) | `void resize(int points_num, int curves_num);` |
-| `resize` | [mesh.cc:L749](../../../../../source/blender/blenkernel/intern/mesh.cc#L749) | `groups.resize(groups.size() + 2);` |
-| `reinitialize` | [mesh_mapping.cc:L286](../../../../../source/blender/blenkernel/intern/mesh_mapping.cc#L286) | `r_indices.reinitialize(offsets.total_size());` |
-| `reinitialize` | [mesh_mapping.cc:L309](../../../../../source/blender/blenkernel/intern/mesh_mapping.cc#L309) | `r_indices.reinitialize(r_offsets.last());` |
-| `reinitialize` | [mesh_mapping.cc:L345](../../../../../source/blender/blenkernel/intern/mesh_mapping.cc#L345) | `r_indices.reinitialize(r_offsets.last());` |
-| `clear` | [BKE_geometry_set.hh:L112](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L112) | `virtual void clear() = 0;` |
-| `clear` | [BKE_geometry_set.hh:L241](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L241) | `void clear();` |
-| `clear` | [BKE_geometry_set.hh:L506](../../../../../source/blender/blenkernel/BKE_geometry_set.hh#L506) | `void clear() override;` |
-| `clear_and_shrink` | [mesh_runtime.cc:L341](../../../../../source/blender/blenkernel/intern/mesh_runtime.cc#L341) | `mesh->runtime->subsurf_face_dot_tags.clear_and_shrink();` |
-| `clear_and_shrink` | [mesh_runtime.cc:L342](../../../../../source/blender/blenkernel/intern/mesh_runtime.cc#L342) | `mesh->runtime->subsurf_optimal_display_edges.clear_and_shrink();` |
-| `clear_and_shrink` | [mesh_runtime.cc:L374](../../../../../source/blender/blenkernel/intern/mesh_runtime.cc#L374) | `this->runtime->subsurf_face_dot_tags.clear_and_shrink();` |
-| `ensure_space_for_one` | [BLI_bit_vector.hh:L256](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L256) | `this->ensure_space_for_one();` |
-| `ensure_space_for_one` | [BLI_bit_vector.hh:L340](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L340) | `void ensure_space_for_one()` |
-| `realloc_to_at_least` | [BLI_bit_vector.hh:L314](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L314) | `this->realloc_to_at_least(new_capacity_in_bits);` |
-| `realloc_to_at_least` | [BLI_bit_vector.hh:L343](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L343) | `this->realloc_to_at_least(size_in_bits_ + 1);` |
-| `realloc_to_at_least` | [BLI_bit_vector.hh:L347](../../../../../source/blender/blenlib/BLI_bit_vector.hh#L347) | `BLI_NOINLINE void realloc_to_at_least(const int64_t min_capacity_in_bits,` |
+区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
 
-### 生命周期推理图
+### 约束 requires
 
-```mermaid
-flowchart LR
-  O["调用者或源数据拥有者"]:::input
-  V["Vector扩容与增长的接口与状态"]:::abstraction
-  B["借用地址、引用或视图"]:::data
-  W["实际计算或修改"]:::compute
-  R["结果与清理责任"]:::result
-  O -->|"创建与配置"| V
-  O -->|"保障寿命"| B
-  B -->|"访问前验证"| W
-  V -->|"规定操作"| W
-  W -->|"交付或销毁"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
+requires表达式或requires子句限制模板参与重载的条件。它提供编译期可用性检查，不是运行时if，不能指望输入到达程序后再被这一机制验证。
 
-这是审查生命周期的通用模型。具体类是否拥有数据由本篇成员、构造、析构和调用者一起证明；任何箭头都不自动代表shared_ptr。
+构造满足和不满足约束的两个类型，观察候选被排除而不是在函数内返回错误。
 
-## 六、把代码放进具体数据中推演
+### 常量求值 constexpr
 
-本方向的共同数值模型如下。本篇的专门检查是：逐次追加并记录capacity，分别比较预留容量和每次刚好扩容的总移动次数。
+constexpr声明允许相应实体参与常量求值，但constexpr函数仍可以在运行时执行。是否常量求值由调用场景和表达式合法性共同决定。
 
-| 步骤 | 数据或状态 | 为什么需要这一步 |
-|---|---|---|
-| 初始 | size=0, capacity=4 | 只有存储，没有可读取的T元素 |
-| 追加A | size=1, capacity=4 | 在第0个位置构造A |
-| 追加到满 | size=4, capacity=4 | 四个位置均已构造 |
-| 请求第五个 | 需扩大存储 | 旧地址仍需被正确管理 |
-| 迁移成功 | 新缓冲含原4元素 | 提交新指针并释放旧存储 |
-| 追加E | size=5 | 只在成功构造后扩大有效区间 |
+比较constexpr变量初始化和从运行时输入调用同一函数。
 
-```mermaid
-flowchart TB
-  T0["size=0, capacity=4"]:::input
-  T1["size=1, capacity=4"]:::compute
-  T2["size=4, capacity=4"]:::compute
-  T3["需扩大存储"]:::compute
-  T4["新缓冲含原4元素"]:::compute
-  T5["size=5"]:::result
-  T0 -->|"追加A"| T1
-  T1 -->|"追加到满"| T2
-  T2 -->|"请求第五个"| T3
-  T3 -->|"迁移成功"| T4
-  T4 -->|"追加E"| T5
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
+### 只读限定 const
 
-图是教学推演模型；精确分支与状态更新以本篇摘录及调用契约为准。
+const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
 
-### 本篇独立练习与参考思路
+分别写T* const、const T*与const T* const，并画出不可修改的层次。
+
+### 异常边界 try与catch
+
+try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
+
+在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
+
+### 显式静态转换 static_cast
+
+static_cast表达编译期允许的转换，不会自动验证运行时真实类型、指针寿命或索引边界。由void指针恢复T指针时，调用者仍须保证实际存储中确有合法T对象。
+
+标出转换前后的类型以及正确性依据来自哪里。
+
+### 对齐 alignof
+
+alignof得到类型要求的地址对齐。分配足够字节后仍需把地址对齐到相应边界，内嵌缓冲也一样。
+
+对齐a为2的幂时可推导向上取整，但仍要考虑溢出与边界。
+
+### 对象表示 sizeof
+
+sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeof视图很小并不说明底层数组很小。
+
+分别统计容器对象、容量字节和元素拥有的间接资源。
+
+### 构造与new表达式
+
+普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
+
+追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
+
+### 内部断言 assert
+
+断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
+
+对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
+
+### 类型别名 using
+
+类型别名为已有类型建立名字，不创建运行期对象。它常把模板内部使用的类型统一暴露给泛型调用者。
+
+展开别名直到基础类型，区分类型别名和变量声明。
+
+## 实现练习与验证
 
 逐次追加并记录capacity，分别比较预留容量和每次刚好扩容的总移动次数。
 
-参考思路：reserve改变容量保障，不应使未构造位置变成元素；扩容必须在新存储建立对象后安全提交新状态。
+参考推理：比较容量倍增与精确增长的总操作计数，而不只测一次追加。
 
-将输入、预期结果和资源责任分成三张清单。先用最直接的实现给出可核对的答案，再替换成对应源码使用的表示；比较结果不变的条件，而不是只比较接口名字。
+构造成功次数减析构次数应等于当前存活对象数；异常之后资源计数应回到合法状态。
 
-验收依据：构造成功次数减析构次数应等于当前存活对象数；异常之后资源计数应回到合法状态。
-
-## 七、复杂度、设计取舍与其他基础库
+## 历史、跨库比较与证据
 
 对比std::vector、std::array、std::span与LLVM SmallVector、ArrayRef时，分别比较拥有关系、内嵌存储、大小是否属于类型和失效条件。不要根据同名方法推断完全相同契约。
 
-本篇的具体取舍：reserve改变容量保障，不应使未构造位置变成元素；扩容必须在新存储建立对象后安全提交新状态。
+[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
 
-| 观察维度 | 从源码取得证据的方法 | 本篇要避免的误判 |
-|---|---|---|
-| 时间 | 对循环次数、分派次数和重建频率分别计数 | 看到单次常数操作就断定整个操作序列是常数成本 |
-| 内存 | 区分对象本体、容量存储、间接资源和共享控制块 | 用sizeof代替总内存 |
-| 安全 | 沿构造、失败回滚、销毁与失效逐路径检查 | 把断言或非空指针当作完整安全证明 |
-| 并发 | 逐字段确认锁、发布顺序和借用寿命 | 把引用计数线程安全等同数据读写线程安全 |
+## 已运行的真实头文件验证
 
-相关一手资料：
+2026-10-14，GCC 14.2.0，C++20，NDEBUG，直接包含本仓库BLI_vector.hh，使用TestAllocator和Tracked对象验证9组状态：容量足够、扩容成功、分配器抛异常、迁移中途抛异常、缩小、clear、clear_and_shrink、值填充resize与reinitialize。输出：`Actual Blender Vector: 9 state and exception scenarios passed.`
 
-- [C++公开工作草案](https://eel.is/c++draft/)：持续更新的工作草案；语言与标准库语义以相应章节为准。
-- [LLVM Programmer’s Manual](https://llvm.org/docs/ProgrammersManual.html)：在线版，2026-10-14查阅；仅比较设计思路，不保证与本地LLVM版本一致。
-
-资料用于核对契约和进一步阅读；这里没有声称外部库与Blender实现相同，也没有把上游性能数字当作本机实测。
-
-## 八、历史提交与设计演化
-
-### 2020-08-19 · Jacques Lucke
-
-[BLI: improve exception safety of Vector, Array and Stack](https://projects.blender.org/blender/blender/commit/2aff45146f1464ba8899368ad004522cb6a1a98c)
-
-完整哈希：`2aff45146f1464ba8899368ad004522cb6a1a98c`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-BLI: improve exception safety of Vector, Array and Stack
-
-Using C++ exceptions in Blender is difficult, due to the large
-number of C functions in the call stack. However, C++ data
-structures in blenlib should at least try to be exception safe,
-so that they can be used if someone wants to use exceptions
-in some isolated area.
-
-This patch improves the exception safety of the Vector, Array
-and Stack data structure. This is mainly achieved by reordering
-some lines and doing some explicit exception handling.
-I don't expect performance of common operations to be affected
-by this change.
-
-The three containers are supposed to provide at least the
-basic exception guarantee for most methods (except for e.g.
-`*_unchecked` methods). So, resources should not leak when
-the contained type throws an exception.
-
-I also added new unit tests that test the exception handling
-in various cases.
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“reserve为什么不能被理解成增加元素？”判断方案改变的是表示、接口、生命周期还是调度。
-
-### 2020-06-09 · Jacques Lucke
-
-[BLI: rename ArrayRef to Span](https://projects.blender.org/blender/blender/commit/f7c0f1b8b83ac475755b633abf59cf9f447b2d49)
-
-完整哈希：`f7c0f1b8b83ac475755b633abf59cf9f447b2d49`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-BLI: rename ArrayRef to Span
-
-This also renames `MutableArrayRef` to `MutableSpan`.
-The name "Span" works better, because `std::span` will provide
-similar functionality in C++20. Furthermore, a shorter, more
-concise name for a common data structure is nice.
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“reserve为什么不能被理解成增加元素？”判断方案改变的是表示、接口、生命周期还是调度。
-
-## 九、反例、测试入口与掌握标准
-
-仓库测试入口：
-
-- [BLI_vector_test.cc](../../../../../source/blender/blenlib/tests/BLI_vector_test.cc)：阅读输入、断言与覆盖边界；本篇不把“存在测试”写成“本轮已运行”。
-
-需要实际构造的反例：
-
-- 空输入或没有结果需求：确认接口允许的空状态与不允许访问的操作。
-- 边界位置和退化结构：把长度为1、末尾位置、重复值或深链代入真实分支。
-- 生命周期结束或修改之后：检查保存的指针、引用、结果视图是否仍有效。
-- 与本篇核心不变量相冲突的输入：逐次追加并记录capacity，分别比较预留容量和每次刚好扩容的总移动次数。
-
-### 可运行的教学参考程序
-
-[reference_exercises.cc](../_tools/reference_exercises.cc)包含独立于Blender的C++20参考检查：视图、简化SmallVector、异常回滚、哈希碰撞与删除、偏移数组、拓扑映射、共享缓存、表达式、惰性分支、闭包和暴力最近邻。
-
-参考程序有意省略生产实现的完整能力。例如SmallVector禁止复制移动容器，不支持只能移动的元素，并禁止append参数别名到自身元素；TinyMap固定8槽，不提供增长。程序通过不能替代Blender实现测试。实际运行结果、编译器与命令见验收报告。
-
-掌握标准：离开源码解释“reserve为什么不能被理解成增加元素？”；独立完成上述练习；能指出一个会破坏拥有型容器相关约束的最小反例，并用具体代码行说明检查或修复应放在哪里。
+[完整测试代码](../_tools/vector_revision_test.cc)。失败注入使用测试分配器，不代表默认MEM后端抛bad_alloc；默认后端返回空指针的路径依据实现讲解，未以非法内存访问方式运行验证。测试没有读取默认初始化的int值，也没有验证所有T或并发调用。

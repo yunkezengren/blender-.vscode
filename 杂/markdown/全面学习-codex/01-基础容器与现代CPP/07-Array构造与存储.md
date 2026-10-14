@@ -1,40 +1,40 @@
 # 01-07 Array构造与存储
 
-[方向导航](README.md) · [总目录](../README.md) · [覆盖索引](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
 
-> 阅读顺序：问题与数据模型 → 语法与类型 → 源码逐行 → 调用线索 → 历史与取舍 → 推演和练习。
-
-- 基准 HEAD：`cbda6b96c26c0dee3c3b5cbb93960c4ac06a6b30`。
-- 记录日期：2026-10-14。
-- 教学示例状态：正文中的推演不是本机性能实测；已运行练习见验收报告。
-
-## 一、从问题到设计
+## 从问题到实现
 
 固定大小动态数组为什么还需要复杂构造逻辑？
 
 元素数不作为类型参数，存储可能使用内嵌缓冲；初始化方式决定基本类型是否有可读取的值。
 
-本篇把语法、数据语义和系统取舍连接起来。先证明对象存活，再讨论索引；先区分借用与拥有，再讨论复制移动。
-
-### 本篇独立模型与设计推理
+**数据模型**
 
 Array大小在实例运行时确定，Array<int>(n)与std::array<int,n>的类型机制不同。
 
-设计取舍：固定大小动态存储简化增长语义，但内嵌缓冲和泛型构造仍需要类型性质判断。
+**设计取舍**
 
-最小反例：把所有默认构造的标量都当成零值读取。
+固定大小动态存储简化增长语义，但内嵌缓冲和泛型构造仍需要类型性质判断。
 
-推导与处理：根据具体构造器检查初始化路径，用明确值填充建立可读取基线。
+**最小反例**
+
+把所有默认构造的标量都当成零值读取。
+
+**推导**
+
+根据具体构造器检查初始化路径，用明确值填充建立可读取基线。
+
+## 阅读地图与执行推演
 
 ```mermaid
 flowchart TB
-  M["Array大小在实例运行时确定，Array＜int＞(<br/>n)与std::array＜int,n＞的类型机制不同。"]:::data
-  T["固定大小动态存储简化增长语义，但内嵌缓冲<br/>和泛型构造仍需要类型性质判断。"]:::abstraction
-  X["把所有默认构造的标量都当成零值读取。"]:::error
-  A["根据具体构造器检查初始化路径，用明确值填<br/>充建立可读取基线。"]:::result
-  M -->|"建立约束"| T
-  T -->|"构造反例"| X
-  X -->|"恢复不变量"| A
+  M["Array大小在实例运行时确定，Array＜int＞(n)<br/>与std::array＜int,n＞的类型机制不同。"]:::data
+  C["固定大小动态存储简化增长语义，但内嵌缓冲和<br/>泛型构造仍需要类型性质判断。"]:::abstraction
+  B["把所有默认构造的标量都当成零值读取。"]:::error
+  R["根据具体构造器检查初始化路径，用明确值填充<br/>建立可读取基线。"]:::result
+  M -->|"明确约束"| C
+  C -->|"检验边界"| B
+  B -->|"恢复正确性"| R
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -42,59 +42,17 @@ flowchart TB
   classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
-
-### 源码范围与相邻篇章
-
-| 文件 | 本篇逐行范围 | 基准SHA-256 |
-|---|---|---|
-| [source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) | L1—L245 | `a98265cac6cfcc1e86688b3cf11100dbb507c282c6b983c19572206997f63d5f` |
-
-同一主讲文件可能分多篇覆盖；超出本篇范围的符号通过覆盖索引定位。空行与纯注释保留在源码摘录中，逐行表解释有效语句与语法边界；许可证头统一保留。
-
-前篇：[MutableSpan可写视图](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md).
-
-后篇：[Array复制移动与销毁](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md).
-
-## 二、类型、数据与阅读地图
-
-```mermaid
-flowchart TB
-  Q["固定大小动态数组为什么还需要复杂构造逻辑<br/>？"]:::input
-  C0["拥有型容器"]:::abstraction
-  C1["借用视图"]:::data
-  C2["元素生命周期"]:::data
-  C3["分配与失效"]:::data
-  R["Array构造与存储"]:::result
-  Q -->|"建立模型"| C0
-  C0 -->|"区分职责"| C1
-  C1 -->|"区分职责"| C2
-  C2 -->|"区分职责"| C3
-  C3 -->|"回到源码"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
-
-这是概念依赖图，边表示阅读关系，不声称是运行时调用顺序。
-
-### 直接编译依赖
 
 ```mermaid
 flowchart LR
-  S["BLI_array.hh"]:::abstraction
-  I0["BLI_allocator.hh"]:::data
-  I1["BLI_index_range.hh"]:::data
-  I2["BLI_memory_utils.hh"]:::data
-  I3["BLI_span.hh"]:::data
-  I4["BLI_utildefines.hh"]:::data
-  S -->|"直接include"| I0
-  S -->|"直接include"| I1
-  S -->|"直接include"| I2
-  S -->|"直接include"| I3
-  S -->|"直接include"| I4
+  F0["blender::Array::Array"]:::input
+  F1["blender::Array::Array"]:::compute
+  F2["blender::Array::Array"]:::compute
+  F3["blender::Array::Array"]:::compute
+  F4["blender::Array::Array"]:::compute
+  F5["blender::Array::Array"]:::compute
+  F6["blender::Array::Array"]:::compute
+  F7["blender::Array::Array"]:::compute
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -103,77 +61,62 @@ flowchart LR
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-箭头只表示头文件包含关系；完整调用线索见后面的符号定位表。
+```mermaid
+flowchart LR
+  P0["拥有型容器"]:::input
+  P1["借用视图"]:::data
+  P2["元素生命周期"]:::data
+  P3["分配与失效"]:::result
+  P0 -->|"分析关系"| P1
+  P1 -->|"分析关系"| P2
+  P2 -->|"分析关系"| P3
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-## 三、关键词、语法与类型角色
+```mermaid
+flowchart TB
+  S0["size=0, capacity=4"]:::input
+  S1["size=1, capacity=4"]:::compute
+  S2["size=4, capacity=4"]:::compute
+  S3["需扩大存储"]:::compute
+  S4["新缓冲含原4元素"]:::compute
+  S5["size=5"]:::result
+  S0 -->|"追加A"| S1
+  S1 -->|"追加到满"| S2
+  S2 -->|"请求第五个"| S3
+  S3 -->|"迁移成功"| S4
+  S4 -->|"追加E"| S5
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-### 模板 template
+图中的数值推演是本方向的教学模型；实际函数之间的调用边与概念分析边分别标注，不能把概念关系当作运行时调度顺序。
 
-模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
+## 完整源码单元与就地讲解
 
-具体检查：把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
+中文讲解直接放在相关代码旁，复杂机制在代码下展开。原文折叠区保留基准行号；不需要在行号表和函数之间来回查找。类布局可分段展示，函数实现不按固定行数切开。
 
-### 依赖名称 typename
+### 类型布局、声明与编译条件 · BLI_array.hh L1—L77
 
-typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+<a id="t-315585e5b785"></a>
 
-具体检查：区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+`Array`在这里声明的数据成员：
 
-### 约束 requires
+- `T data_`
+- `int64_t size_`
+- `BLI_NO_UNIQUE_ADDRESS allocator_`
+- `BLI_NO_UNIQUE_ADDRESS TypedBuffer`
 
-requires表达式或requires子句限制模板参与重载的条件。它提供编译期可用性检查，不是运行时if，不能指望输入到达程序后再被这一机制验证。
-
-具体检查：构造满足和不满足约束的两个类型，观察候选被排除而不是在函数内返回错误。
-
-### 只读限定 const
-
-const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
-
-具体检查：分别写T* const、const T*与const T* const，并画出不可修改的层次。
-
-### 移动转换 std::move
-
-std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
-
-具体检查：记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
-
-### 异常约定 noexcept
-
-noexcept表达式可以依赖类型特征。违反不抛异常约定会终止程序；它不是自动捕获异常，也不是资源回滚代码。
-
-具体检查：找出声明的条件与实际可能抛出的分配、构造操作是否一致。
-
-### 对象表示 sizeof
-
-sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeof视图很小并不说明底层数组很小。
-
-具体检查：分别统计容器对象、容量字节和元素拥有的间接资源。
-
-### 构造与new表达式
-
-普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
-
-具体检查：追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
-
-### 内部断言 assert
-
-断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
-
-具体检查：对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
-
-### 类型别名 using
-
-类型别名为已有类型建立名字，不创建运行期对象。它常把模板内部使用的类型统一暴露给泛型调用者。
-
-具体检查：展开别名直到基础类型，区分类型别名和变量声明。
-
-## 四、真实源码与逐行讲解
-
-源码块保持原行内容，原始行号由小节标题及逐行表给出。表中的调用定位是静态阅读辅助；重载、模板实例化、宏展开和虚调用需结合完整声明，不能仅凭词法出现证明动态调用。
-
-### BLI_array.hh：L1—L51
-
-<!-- source:source/blender/blenlib/BLI_array.hh:1:51 -->
+<!-- annotated:583e29b540a9ed -->
 
 ```cpp
 /* SPDX-FileCopyrightText: 2023 Blender Authors
@@ -227,29 +170,6 @@ template<
     typename Allocator = GuardedAllocator>
 class Array {
  public:
-```
-
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L5 | 防止同一头文件在一个翻译单元中重复展开；不控制多个源文件之间的链接或对象寿命。 |
-| L28 | 引入编译依赖 "BLI_allocator.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L29 | 引入编译依赖 "BLI_index_range.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L30 | 引入编译依赖 "BLI_memory_utils.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L31 | 引入编译依赖 "BLI_span.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L32 | 引入编译依赖 "BLI_utildefines.hh"；这是声明可见性关系，不表示运行时一定调用该文件的所有接口。 |
-| L34 | 把后续声明放入 blender 命名空间，影响名称查找和符号归属，不创建运行时对象。 |
-| L36 | 声明模板参数 `template<`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L40 | 本行是连续声明或表达式的一部分：`typename T,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L44 | 显式采用编译器生成的特殊成员行为：`int64_t InlineBufferCapacity = default_inline_buffer_capacity(sizeof(T)),`。成员和基类的性质决定该操作是否可用、是否被删除及异常约定，不表示运行时给对象赋值为default。 |
-| L49 | 把右侧 `GuardedAllocator>` 用于初始化或更新左侧 `typename Allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L50 | 声明或定义类型 `class Array`。结合继承、访问权限和成员布局确认接口与拥有关系；前向声明本身没有完整对象布局。 |
-| L51 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-
-### BLI_array.hh：L52—L98
-
-<!-- source:source/blender/blenlib/BLI_array.hh:52:98 -->
-
-```cpp
   using value_type = T;
   using pointer = T *;
   using const_pointer = const T *;
@@ -276,17 +196,253 @@ class Array {
   /**
    * By default an empty array is created.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L1—L77</summary>
+
+<!-- original:583e29b540a9ed:source/blender/blenlib/BLI_array.hh:1:77 -->
+
+```cpp
+/* SPDX-FileCopyrightText: 2023 Blender Authors
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
+#pragma once
+
+/** \file
+ * \ingroup bli
+ *
+ * A `Array<T>` is a container for a fixed size array the size of which is NOT known at
+ * compile time.
+ *
+ * If the size is known at compile time, `std::array<T, N>` should be used instead.
+ *
+ * Array should usually be used instead of Vector whenever the number of elements
+ * is known at construction time. Note however, that Array will default construct all
+ * elements when initialized with the size-constructor. For trivial types, this does nothing. In
+ * all other cases, this adds overhead.
+ *
+ * A main benefit of using Array over Vector is that it expresses the intent of the developer
+ * better. It indicates that the size of the data structure is not expected to change. Furthermore,
+ * you can be more certain that an array does not over-allocate.
+ *
+ * Array supports small object optimization to improve performance when the size turns out
+ * to be small at run-time.
+ */
+
+#include "BLI_allocator.hh"
+#include "BLI_index_range.hh"
+#include "BLI_memory_utils.hh"
+#include "BLI_span.hh"
+#include "BLI_utildefines.hh"
+
+namespace blender {
+
+template<
+    /**
+     * The type of the values stored in the array.
+     */
+    typename T,
+    /**
+     * The number of values that can be stored in the array, without doing a heap allocation.
+     */
+    int64_t InlineBufferCapacity = default_inline_buffer_capacity(sizeof(T)),
+    /**
+     * The allocator used by this array. Should rarely be changed, except when you don't want that
+     * MEM_* functions are used internally.
+     */
+    typename Allocator = GuardedAllocator>
+class Array {
+ public:
+  using value_type = T;
+  using pointer = T *;
+  using const_pointer = const T *;
+  using reference = T &;
+  using const_reference = const T &;
+  using iterator = T *;
+  using const_iterator = const T *;
+  using size_type = int64_t;
+
+ private:
+  /** The beginning of the array. It might point into the inline buffer. */
+  T *data_;
+
+  /** Number of elements in the array. */
+  int64_t size_;
+
+  /** Used for allocations when the inline buffer is too small. */
+  BLI_NO_UNIQUE_ADDRESS Allocator allocator_;
+
+  /** A placeholder buffer that will remain uninitialized until it is used. */
+  BLI_NO_UNIQUE_ADDRESS TypedBuffer<T, InlineBufferCapacity> inline_buffer_;
+
+ public:
+  /**
+   * By default an empty array is created.
+   */
+```
+
+</details>
+
+<a id="f-001fd5eb3c658238"></a>
+
+### `blender::Array::Array`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L78—L82。
+
+接口参数：
+
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:eda1f298bd11f4 -->
+
+```cpp
   Array(Allocator allocator = {}) noexcept : allocator_(allocator)
   {
     data_ = inline_buffer_;
     size_ = 0;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L78—L82</summary>
+
+<!-- original:eda1f298bd11f4:source/blender/blenlib/BLI_array.hh:78:82 -->
+
+```cpp
+  Array(Allocator allocator = {}) noexcept : allocator_(allocator)
+  {
+    data_ = inline_buffer_;
+    size_ = 0;
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `data_ = inline_buffer_;`
+- `size_ = 0;`
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:ba49014b9e2128 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L83—L83</summary>
+
+<!-- original:ba49014b9e2128:source/blender/blenlib/BLI_array.hh:83:83 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-674e2f10361a462b"></a>
+
+### `blender::Array::Array`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L84—L84。
+
+接口参数：
+
+- `NoExceptConstructor`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:e9f41c44ce5b09 -->
+
+```cpp
   Array(NoExceptConstructor, Allocator allocator = {}) noexcept : Array(allocator) {}
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L84—L84</summary>
+
+<!-- original:e9f41c44ce5b09:source/blender/blenlib/BLI_array.hh:84:84 -->
+
+```cpp
+  Array(NoExceptConstructor, Allocator allocator = {}) noexcept : Array(allocator) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_array.hh L85—L88
+
+<!-- annotated:fd03e24b89781a -->
+
+```cpp
 
   /**
    * Create a new array that contains copies of all values.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L85—L88</summary>
+
+<!-- original:fd03e24b89781a:source/blender/blenlib/BLI_array.hh:85:88 -->
+
+```cpp
+
+  /**
+   * Create a new array that contains copies of all values.
+   */
+```
+
+</details>
+
+<a id="f-aa1e5908a9b67557"></a>
+
+### `blender::Array::Array`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L89—L98。
+
+接口参数：
+
+- `Span<U> values`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:2861d796b42ff4 -->
+
+```cpp
+  template<typename U>
+  Array(Span<U> values, Allocator allocator = {})
+    requires(std::is_convertible_v<U, T>)
+      : Array(NoExceptConstructor(), allocator)
+  {
+    // [讲解] values.size：查询视图长度或生成对应有效索引区间。
+    const int64_t size = values.size();
+    data_ = this->get_buffer_for_size(size);
+    // [讲解] values.data：返回借用范围的地址。
+    uninitialized_convert_n<U, T>(values.data(), size, data_);
+    size_ = size;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L89—L98</summary>
+
+<!-- original:2861d796b42ff4:source/blender/blenlib/BLI_array.hh:89:98 -->
+
+```cpp
   template<typename U>
   Array(Span<U> values, Allocator allocator = {})
     requires(std::is_convertible_v<U, T>)
@@ -299,66 +455,151 @@ class Array {
   }
 ```
 
-本段语义重点：
+</details>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
-- `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。
-- `inline_buffer_`：容器对象内部的缓冲区，不能像堆缓冲那样直接交给另一个对象。
+**沿实际写入检查状态**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L52 | 定义类型别名 `using value_type = T`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L53 | 定义类型别名 `using pointer = T *`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L54 | 定义类型别名 `using const_pointer = const T *`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L55 | 定义类型别名 `using reference = T &`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L56 | 定义类型别名 `using const_reference = const T &`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L57 | 定义类型别名 `using iterator = T *`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L58 | 定义类型别名 `using const_iterator = const T *`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L59 | 定义类型别名 `using size_type = int64_t`，为模板接口或内部实现统一命名；本行不分配该类型对象。 |
-| L61 | 切换成员访问权限为 private；它是编译期接口边界，不是线程同步或内存保护。 |
-| L63 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `T *data_`，不要把地址、数量或状态混用。 |
-| L66 | 本行涉及 `size_`：该对象记录的元素数或长度，不能直接当作容量。按此语义解读 `int64_t size_`，不要把地址、数量或状态混用。 |
-| L69 | 本行涉及 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。按此语义解读 `BLI_NO_UNIQUE_ADDRESS Allocator allocator_`，不要把地址、数量或状态混用。 |
-| L72 | 本行涉及 `inline_buffer_`：容器对象内部的缓冲区，不能像堆缓冲那样直接交给另一个对象。按此语义解读 `BLI_NO_UNIQUE_ADDRESS TypedBuffer<T, InlineBufferCapacity> inline_buffer_`，不要把地址、数量或状态混用。 |
-| L74 | 切换成员访问权限为 public；它是编译期接口边界，不是线程同步或内存保护。 |
-| L78 | 建立或更新 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。本行的具体值关系为 `Array(Allocator allocator = {}) noexcept : allocator_(allocator)`；对照更新前后相应范围或状态是否一致。 |
-| L79 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L80 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = inline_buffer_`；对照更新前后相应范围或状态是否一致。 |
-| L81 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `size_ = 0`；对照更新前后相应范围或状态是否一致。 |
-| L82 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L84 | 把右侧 `{}) noexcept : Array(allocator) {}` 用于初始化或更新左侧 `Array(NoExceptConstructor, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L89 | 声明模板参数 `template<typename U>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L90 | 把右侧 `{})` 用于初始化或更新左侧 `Array(Span<U> values, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L91 | 约束模板可用性：`requires(std::is_convertible_v<U, T>)`。条件在编译期检查，不替代运行期的地址、长度和类型一致性验证。 |
-| L92 | 出现调用或函数声明 `Array`，对应表达式为 `: Array(NoExceptConstructor(), allocator)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L93 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L94 | 把右侧 `values.size()` 用于初始化或更新左侧 `const int64_t size`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L95 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = this->get_buffer_for_size(size)`；对照更新前后相应范围或状态是否一致。 |
-| L96 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `uninitialized_convert_n<U, T>(values.data(), size, data_)`，不要把地址、数量或状态混用。 |
-| L97 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `size_ = size`；对照更新前后相应范围或状态是否一致。 |
-| L98 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `data_ = this->get_buffer_for_size(size);`
+- `size_ = size;`
 
-### BLI_array.hh：L99—L154
+**继续追踪实现**
 
-<!-- source:source/blender/blenlib/BLI_array.hh:99:154 -->
+- `values.size` → [blender::Span::size · L256](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
+- `this->get_buffer_for_size` → [blender::Array::get_buffer_for_size · L458](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-1b659c0da810061b)。
+- `uninitialized_convert_n<U, T>` → [blender::uninitialized_convert_n · L58](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-c9f2d65f10e2b002)。
+- `values.data` → [blender::Span::data · L219](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-10c5889198935800)。
+
+### 类型布局、声明与编译条件 · BLI_array.hh L99—L102
+
+<!-- annotated:2f872cfbee55ac -->
 
 ```cpp
 
   /**
    * Create a new array that contains copies of all values.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L99—L102</summary>
+
+<!-- original:2f872cfbee55ac:source/blender/blenlib/BLI_array.hh:99:102 -->
+
+```cpp
+
+  /**
+   * Create a new array that contains copies of all values.
+   */
+```
+
+</details>
+
+<a id="f-b141be39084346f3"></a>
+
+### `blender::Array::Array`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L103—L108。
+
+接口参数：
+
+- `const std::initializer_list<U> &values`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:fca8ea50067343 -->
+
+```cpp
   template<typename U>
   Array(const std::initializer_list<U> &values, Allocator allocator = {})
     requires(std::is_convertible_v<U, T>)
       : Array(Span<U>(values), allocator)
   {
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L103—L108</summary>
+
+<!-- original:fca8ea50067343:source/blender/blenlib/BLI_array.hh:103:108 -->
+
+```cpp
+  template<typename U>
+  Array(const std::initializer_list<U> &values, Allocator allocator = {})
+    requires(std::is_convertible_v<U, T>)
+      : Array(Span<U>(values), allocator)
+  {
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:5e3a14bbd7723f -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L109—L109</summary>
+
+<!-- original:5e3a14bbd7723f:source/blender/blenlib/BLI_array.hh:109:109 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-452e276f39e81a2a"></a>
+
+### `blender::Array::Array`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L110—L113。
+
+接口参数：
+
+- `const std::initializer_list<T> &values`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:01a0309f64ae37 -->
+
+```cpp
   Array(const std::initializer_list<T> &values, Allocator allocator = {})
       : Array(Span<T>(values), allocator)
   {
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L110—L113</summary>
+
+<!-- original:01a0309f64ae37:source/blender/blenlib/BLI_array.hh:110:113 -->
+
+```cpp
+  Array(const std::initializer_list<T> &values, Allocator allocator = {})
+      : Array(Span<T>(values), allocator)
+  {
+  }
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+### 类型布局、声明与编译条件 · BLI_array.hh L114—L122
+
+<!-- annotated:29b6c137f086a9 -->
+
+```cpp
 
   /**
    * Create a new array with the given size. All values will be default constructed. For trivial
@@ -368,6 +609,43 @@ class Array {
    * even for non-trivial types. This should not be the default though, because one can easily mess
    * up when dealing with uninitialized memory.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L114—L122</summary>
+
+<!-- original:29b6c137f086a9:source/blender/blenlib/BLI_array.hh:114:122 -->
+
+```cpp
+
+  /**
+   * Create a new array with the given size. All values will be default constructed. For trivial
+   * types like int, default construction does nothing.
+   *
+   * We might want another version of this in the future, that does not do default construction
+   * even for non-trivial types. This should not be the default though, because one can easily mess
+   * up when dealing with uninitialized memory.
+   */
+```
+
+</details>
+
+<a id="f-646aa58152ec44f6"></a>
+
+### `blender::Array::Array`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L123—L129。
+
+接口参数：
+
+- `int64_t size`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:991fda29d7b61b -->
+
+```cpp
   explicit Array(int64_t size, Allocator allocator = {}) : Array(NoExceptConstructor(), allocator)
   {
     BLI_assert(size >= 0);
@@ -375,11 +653,109 @@ class Array {
     default_construct_n(data_, size);
     size_ = size;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L123—L129</summary>
+
+<!-- original:991fda29d7b61b:source/blender/blenlib/BLI_array.hh:123:129 -->
+
+```cpp
+  explicit Array(int64_t size, Allocator allocator = {}) : Array(NoExceptConstructor(), allocator)
+  {
+    BLI_assert(size >= 0);
+    data_ = this->get_buffer_for_size(size);
+    default_construct_n(data_, size);
+    size_ = size;
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `data_ = this->get_buffer_for_size(size);`
+- `size_ = size;`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->get_buffer_for_size` → [blender::Array::get_buffer_for_size · L458](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-1b659c0da810061b)。
+- `default_construct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L127。
+
+### 类型布局、声明与编译条件 · BLI_array.hh L130—L134
+
+<!-- annotated:be6f5b80d2deac -->
+
+```cpp
 
   /**
    * Create a new array with the given size. All values will be initialized by copying the given
    * default.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L130—L134</summary>
+
+<!-- original:be6f5b80d2deac:source/blender/blenlib/BLI_array.hh:130:134 -->
+
+```cpp
+
+  /**
+   * Create a new array with the given size. All values will be initialized by copying the given
+   * default.
+   */
+```
+
+</details>
+
+<a id="f-0a9de4a549125f99"></a>
+
+### `blender::Array::Array`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L135—L154。
+
+接口参数：
+
+- `int64_t size`
+- `const T &value`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:8111a290a5798e -->
+
+```cpp
+  Array(int64_t size, const T &value, Allocator allocator = {})
+      : Array(NoExceptConstructor(), allocator)
+  {
+    BLI_assert(size >= 0);
+    if (std::is_trivially_copyable_v<T> && value_is_zero_memory(value)) {
+      data_ = this->get_buffer_for_size(size, true);
+    }
+    else {
+      data_ = this->get_buffer_for_size(size);
+#if defined(__GNUC__) && !defined(__clang__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+      // [讲解] uninitialized_fill_n：从同一个value复制构造目标n个T。
+      uninitialized_fill_n(data_, size, value);
+#if defined(__GNUC__) && !defined(__clang__)
+#  pragma GCC diagnostic pop
+#endif
+    }
+    size_ = size;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L135—L154</summary>
+
+<!-- original:8111a290a5798e:source/blender/blenlib/BLI_array.hh:135:154 -->
+
+```cpp
   Array(int64_t size, const T &value, Allocator allocator = {})
       : Array(NoExceptConstructor(), allocator)
   {
@@ -402,55 +778,24 @@ class Array {
   }
 ```
 
-本段语义重点：
+</details>
 
-- `default_construct_n`：为目标区间建立默认构造对象；基本类型默认初始化未必给出可读取的零。
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
+**沿实际写入检查状态**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L103 | 声明模板参数 `template<typename U>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L104 | 把右侧 `{})` 用于初始化或更新左侧 `Array(const std::initializer_list<U> &values, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L105 | 约束模板可用性：`requires(std::is_convertible_v<U, T>)`。条件在编译期检查，不替代运行期的地址、长度和类型一致性验证。 |
-| L106 | 出现调用或函数声明 `Array`，对应表达式为 `: Array(Span<U>(values), allocator)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L107 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L108 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L110 | 把右侧 `{})` 用于初始化或更新左侧 `Array(const std::initializer_list<T> &values, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L111 | 出现调用或函数声明 `Array`，对应表达式为 `: Array(Span<T>(values), allocator)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L112 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L113 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L123 | 把右侧 `{}) : Array(NoExceptConstructor(), allocator)` 用于初始化或更新左侧 `explicit Array(int64_t size, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L124 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L125 | 断言约束 `BLI_assert(size >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L126 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = this->get_buffer_for_size(size)`；对照更新前后相应范围或状态是否一致。 |
-| L127 | 本行使用 `default_construct_n`：为目标区间建立默认构造对象；基本类型默认初始化未必给出可读取的零。 |
-| L128 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `size_ = size`；对照更新前后相应范围或状态是否一致。 |
-| L129 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L135 | 把右侧 `{})` 用于初始化或更新左侧 `Array(int64_t size, const T &value, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L136 | 出现调用或函数声明 `Array`，对应表达式为 `: Array(NoExceptConstructor(), allocator)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L137 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L138 | 断言约束 `BLI_assert(size >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L139 | 判断 `std::is_trivially_copyable_v<T> && value_is_zero_memory(value)`，成立时进入本分支，否则继续后续路径。 |
-| L140 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = this->get_buffer_for_size(size, true)`；对照更新前后相应范围或状态是否一致。 |
-| L141 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L142 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L143 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = this->get_buffer_for_size(size)`；对照更新前后相应范围或状态是否一致。 |
-| L144 | 预处理阶段处理 #if defined(__GNUC__) && !defined(__clang__)。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L145 | 本行是连续声明或表达式的一部分：`#  pragma GCC diagnostic push`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L146 | 本行是连续声明或表达式的一部分：`#  pragma GCC diagnostic ignored "-Warray-bounds"`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L147 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L148 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `uninitialized_fill_n(data_, size, value)`，不要把地址、数量或状态混用。 |
-| L149 | 预处理阶段处理 #if defined(__GNUC__) && !defined(__clang__)。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L150 | 本行是连续声明或表达式的一部分：`#  pragma GCC diagnostic pop`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L151 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L152 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L153 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `size_ = size`；对照更新前后相应范围或状态是否一致。 |
-| L154 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `data_ = this->get_buffer_for_size(size, true);`
+- `data_ = this->get_buffer_for_size(size);`
+- `size_ = size;`
 
-### BLI_array.hh：L155—L204
+**继续追踪实现**
 
-<!-- source:source/blender/blenlib/BLI_array.hh:155:204 -->
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `value_is_zero_memory` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L139。
+- `this->get_buffer_for_size` → [blender::Array::get_buffer_for_size · L458](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-1b659c0da810061b)。
+- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-020ca78eff5f9227)。
+
+### 类型布局、声明与编译条件 · BLI_array.hh L155—L167
+
+<!-- annotated:5810e92646a0d2 -->
 
 ```cpp
 
@@ -466,6 +811,48 @@ class Array {
    * Usage:
    *  Array<std::string> my_strings(10, NoInitialization());
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L155—L167</summary>
+
+<!-- original:5810e92646a0d2:source/blender/blenlib/BLI_array.hh:155:167 -->
+
+```cpp
+
+  /**
+   * Create a new array with uninitialized elements. The caller is responsible for constructing the
+   * elements. Moving, copying or destructing an Array with uninitialized elements invokes
+   * undefined behavior.
+   *
+   * This should be used very rarely. Note, that the normal size-constructor also does not
+   * initialize the elements when T is trivially constructible. Therefore, it only makes sense to
+   * use this with non trivially constructible types.
+   *
+   * Usage:
+   *  Array<std::string> my_strings(10, NoInitialization());
+   */
+```
+
+</details>
+
+<a id="f-31f001eb92069e9d"></a>
+
+### `blender::Array::Array`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L168—L174。
+
+接口参数：
+
+- `int64_t size`
+- `NoInitialization`
+- `Allocator allocator = {}`
+
+**教学注释版**
+
+<!-- annotated:72f401967f634b -->
+
+```cpp
   Array(int64_t size, NoInitialization, Allocator allocator = {})
       : Array(NoExceptConstructor(), allocator)
   {
@@ -473,9 +860,147 @@ class Array {
     data_ = this->get_buffer_for_size(size);
     size_ = size;
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L168—L174</summary>
+
+<!-- original:72f401967f634b:source/blender/blenlib/BLI_array.hh:168:174 -->
+
+```cpp
+  Array(int64_t size, NoInitialization, Allocator allocator = {})
+      : Array(NoExceptConstructor(), allocator)
+  {
+    BLI_assert(size >= 0);
+    data_ = this->get_buffer_for_size(size);
+    size_ = size;
+  }
+```
+
+</details>
+
+**沿实际写入检查状态**
+
+- `data_ = this->get_buffer_for_size(size);`
+- `size_ = size;`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->get_buffer_for_size` → [blender::Array::get_buffer_for_size · L458](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-1b659c0da810061b)。
+
+<!-- annotated:624e9134480d48 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L175—L175</summary>
+
+<!-- original:624e9134480d48:source/blender/blenlib/BLI_array.hh:175:175 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-cf8148f06fc6747a"></a>
+
+### `blender::Array::Array`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L176—L176。
+
+接口参数：
+
+- `const Array &other`
+
+**教学注释版**
+
+<!-- annotated:52cf04c3a6a240 -->
+
+```cpp
   Array(const Array &other) : Array(other.as_span(), other.allocator_) {}
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L176—L176</summary>
+
+<!-- original:52cf04c3a6a240:source/blender/blenlib/BLI_array.hh:176:176 -->
+
+```cpp
+  Array(const Array &other) : Array(other.as_span(), other.allocator_) {}
+```
+
+</details>
+
+**继续追踪实现**
+
+本实现没有需要继续展开的显式调用；检查返回表达式、对象转换和调用者前置条件。
+
+<!-- annotated:8d1729c1fd8343 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L177—L177</summary>
+
+<!-- original:8d1729c1fd8343:source/blender/blenlib/BLI_array.hh:177:177 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-2ddca2fb9dd964b3"></a>
+
+### `blender::Array::Array`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L178—L198。
+
+接口参数：
+
+- `Array &&other`
+
+**教学注释版**
+
+<!-- annotated:b84926eaa75f23 -->
+
+```cpp
+  Array(Array &&other) noexcept(std::is_nothrow_move_constructible_v<T>)
+      : Array(NoExceptConstructor(), other.allocator_)
+  {
+    if (other.data_ == other.inline_buffer_) {
+#if defined(__GNUC__) && !defined(__clang__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+      // [讲解] uninitialized_relocate_n：在目标原始存储建立对象，再结束源对象寿命。
+      uninitialized_relocate_n(other.data_, other.size_, data_);
+#if defined(__GNUC__) && !defined(__clang__)
+#  pragma GCC diagnostic pop
+#endif
+    }
+    else {
+      data_ = other.data_;
+    }
+    size_ = other.size_;
+
+    other.data_ = other.inline_buffer_;
+    other.size_ = 0;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L178—L198</summary>
+
+<!-- original:b84926eaa75f23:source/blender/blenlib/BLI_array.hh:178:198 -->
+
+```cpp
   Array(Array &&other) noexcept(std::is_nothrow_move_constructible_v<T>)
       : Array(NoExceptConstructor(), other.allocator_)
   {
@@ -497,7 +1022,49 @@ class Array {
     other.data_ = other.inline_buffer_;
     other.size_ = 0;
   }
+```
 
+</details>
+
+**沿实际写入检查状态**
+
+- `data_ = other.data_;`
+- `size_ = other.size_;`
+- `other.data_ = other.inline_buffer_;`
+- `other.size_ = 0;`
+
+**继续追踪实现**
+
+- `uninitialized_relocate_n` → [blender::uninitialized_relocate_n · L80](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-9de0365b9a47fd68)。
+
+<!-- annotated:6f5d6731f0bc45 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L199—L199</summary>
+
+<!-- original:6f5d6731f0bc45:source/blender/blenlib/BLI_array.hh:199:199 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-d3e841adf490c602"></a>
+
+### `blender::Array::~Array`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L200—L204。
+
+**教学注释版**
+
+<!-- annotated:083c8654b2c836 -->
+
+```cpp
   ~Array()
   {
     destruct_n(data_, size_);
@@ -505,90 +1072,416 @@ class Array {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L200—L204</summary>
 
-- `uninitialized_relocate_n`：在目标原始存储建立n个对象，并结束源对象寿命；与仅移动构造不同，后续不能再次把源当作存活元素销毁。
-- `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
-- `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。
+<!-- original:083c8654b2c836:source/blender/blenlib/BLI_array.hh:200:204 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L168 | 把右侧 `{})` 用于初始化或更新左侧 `Array(int64_t size, NoInitialization, Allocator allocator`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L169 | 出现调用或函数声明 `Array`，对应表达式为 `: Array(NoExceptConstructor(), allocator)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L170 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L171 | 断言约束 `BLI_assert(size >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L172 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = this->get_buffer_for_size(size)`；对照更新前后相应范围或状态是否一致。 |
-| L173 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `size_ = size`；对照更新前后相应范围或状态是否一致。 |
-| L174 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L176 | 本行涉及 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。按此语义解读 `Array(const Array &other) : Array(other.as_span(), other.allocator_) {}`，不要把地址、数量或状态混用。 |
-| L178 | 出现调用或函数声明 `Array`，对应表达式为 `Array(Array &&other) noexcept(std::is_nothrow_move_constructible_v<T>)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L179 | 本行涉及 `allocator_`：提供存储的分配策略对象，释放必须与分配策略匹配。按此语义解读 `: Array(NoExceptConstructor(), other.allocator_)`，不要把地址、数量或状态混用。 |
-| L180 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L181 | 判断 `other.data_ == other.inline_buffer_`，成立时进入本分支，否则继续后续路径。 |
-| L182 | 预处理阶段处理 #if defined(__GNUC__) && !defined(__clang__)。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L183 | 本行是连续声明或表达式的一部分：`#  pragma GCC diagnostic push`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L184 | 本行是连续声明或表达式的一部分：`#  pragma GCC diagnostic ignored "-Warray-bounds"`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L185 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L186 | 本行使用 `uninitialized_relocate_n`：在目标原始存储建立n个对象，并结束源对象寿命；与仅移动构造不同，后续不能再次把源当作存活元素销毁。 |
-| L187 | 预处理阶段处理 #if defined(__GNUC__) && !defined(__clang__)。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L188 | 本行是连续声明或表达式的一部分：`#  pragma GCC diagnostic pop`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L189 | 预处理阶段处理 #endif。它决定哪些代码进入编译，不是运行时分支；阅读行为时必须结合实际构建宏。 |
-| L190 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L191 | 处理前一条件不成立的互补路径。比较两条路径最后是否恢复同一不变量，以及是否产生不同的资源责任。 |
-| L192 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `data_ = other.data_`；对照更新前后相应范围或状态是否一致。 |
-| L193 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L194 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `size_ = other.size_`；对照更新前后相应范围或状态是否一致。 |
-| L196 | 建立或更新 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。本行的具体值关系为 `other.data_ = other.inline_buffer_`；对照更新前后相应范围或状态是否一致。 |
-| L197 | 建立或更新 `size_`：该对象记录的元素数或长度，不能直接当作容量。本行的具体值关系为 `other.size_ = 0`；对照更新前后相应范围或状态是否一致。 |
-| L198 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L200 | 涉及析构接口或显式析构：`~Array()`。检查目标对象已成功构造，且资源不会在另一条清理路径再次销毁。 |
-| L201 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L202 | 本行使用 `destruct_n`：对已构造的元素区间执行析构；计数必须对应真实存活对象，释放原始内存是另一操作。 |
-| L203 | 本行涉及 `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。按此语义解读 `this->deallocate_if_not_inline(data_)`，不要把地址、数量或状态混用。 |
-| L204 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  ~Array()
+  {
+    destruct_n(data_, size_);
+    this->deallocate_if_not_inline(data_);
+  }
+```
 
-### BLI_array.hh：L205—L245
+</details>
 
-<!-- source:source/blender/blenlib/BLI_array.hh:205:245 -->
+**继续追踪实现**
+
+- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L202。
+- `this->deallocate_if_not_inline` → [blender::Array::deallocate_if_not_inline · L479](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-0357a7b58bbc84fa)。
+
+<!-- annotated:888896b60ccf55 -->
 
 ```cpp
 
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L205—L205</summary>
+
+<!-- original:888896b60ccf55:source/blender/blenlib/BLI_array.hh:205:205 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-b79d193528d32d2c"></a>
+
+### `blender::Array::operator=`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L206—L209。
+
+接口参数：
+
+- `const Array &other`
+
+**教学注释版**
+
+<!-- annotated:bdadaeddcf8ba8 -->
+
+```cpp
   Array &operator=(const Array &other)
   {
     return copy_assign_container(*this, other);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L206—L209</summary>
+
+<!-- original:bdadaeddcf8ba8:source/blender/blenlib/BLI_array.hh:206:209 -->
+
+```cpp
+  Array &operator=(const Array &other)
+  {
+    return copy_assign_container(*this, other);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return copy_assign_container(*this, other);`
+
+**继续追踪实现**
+
+- `copy_assign_container` → [blender::copy_assign_container · L284](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-546a45b4d8b5ab44)。
+
+<!-- annotated:4f52fadd65ab12 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L210—L210</summary>
+
+<!-- original:4f52fadd65ab12:source/blender/blenlib/BLI_array.hh:210:210 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-19d9166b03bfbe17"></a>
+
+### `blender::Array::operator=`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L211—L214。
+
+接口参数：
+
+- `Array &&other`
+
+**教学注释版**
+
+<!-- annotated:b3063604db30ef -->
+
+```cpp
+  Array &operator=(Array &&other) noexcept(std::is_nothrow_move_constructible_v<T>)
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    return move_assign_container(*this, std::move(other));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L211—L214</summary>
+
+<!-- original:b3063604db30ef:source/blender/blenlib/BLI_array.hh:211:214 -->
+
+```cpp
   Array &operator=(Array &&other) noexcept(std::is_nothrow_move_constructible_v<T>)
   {
     return move_assign_container(*this, std::move(other));
   }
+```
 
+</details>
+
+**结果出口**
+
+- `return move_assign_container(*this, std::move(other));`
+
+**继续追踪实现**
+
+- `move_assign_container` → [blender::move_assign_container · L300](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-5144b56be86e6f42)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<!-- annotated:1b3eaeea59b04b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L215—L215</summary>
+
+<!-- original:1b3eaeea59b04b:source/blender/blenlib/BLI_array.hh:215:215 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-bcb35665b16fe75d"></a>
+
+### `blender::Array::operator[]`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L216—L221。
+
+接口参数：
+
+- `int64_t index`
+
+**教学注释版**
+
+<!-- annotated:aa467810638473 -->
+
+```cpp
   T &operator[](int64_t index)
   {
     BLI_assert(index >= 0);
     BLI_assert(index < size_);
     return data_[index];
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L216—L221</summary>
+
+<!-- original:aa467810638473:source/blender/blenlib/BLI_array.hh:216:221 -->
+
+```cpp
+  T &operator[](int64_t index)
+  {
+    BLI_assert(index >= 0);
+    BLI_assert(index < size_);
+    return data_[index];
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return data_[index];`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+
+<!-- annotated:ca884b3bbc48f9 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L222—L222</summary>
+
+<!-- original:ca884b3bbc48f9:source/blender/blenlib/BLI_array.hh:222:222 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-025ff30c2ce36b46"></a>
+
+### `blender::Array::operator[]`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L223—L228。
+
+接口参数：
+
+- `int64_t index`
+
+**教学注释版**
+
+<!-- annotated:ccbdc00331e94d -->
+
+```cpp
   const T &operator[](int64_t index) const
   {
     BLI_assert(index >= 0);
     BLI_assert(index < size_);
     return data_[index];
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L223—L228</summary>
+
+<!-- original:ccbdc00331e94d:source/blender/blenlib/BLI_array.hh:223:228 -->
+
+```cpp
+  const T &operator[](int64_t index) const
+  {
+    BLI_assert(index >= 0);
+    BLI_assert(index < size_);
+    return data_[index];
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return data_[index];`
+
+**继续追踪实现**
+
+- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+
+<!-- annotated:c238e757c1539b -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L229—L229</summary>
+
+<!-- original:c238e757c1539b:source/blender/blenlib/BLI_array.hh:229:229 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-8b41b5ce990b7e0c"></a>
+
+### `blender::Array::() const`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L230—L233。
+
+**教学注释版**
+
+<!-- annotated:7d7cd6ae16cfc5 -->
+
+```cpp
   operator Span<T>() const
   {
     return Span<T>(data_, size_);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L230—L233</summary>
+
+<!-- original:7d7cd6ae16cfc5:source/blender/blenlib/BLI_array.hh:230:233 -->
+
+```cpp
+  operator Span<T>() const
+  {
+    return Span<T>(data_, size_);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return Span<T>(data_, size_);`
+
+**继续追踪实现**
+
+- `Span<T>` → [blender::Span](%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
+
+<!-- annotated:f7967041a70b9f -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L234—L234</summary>
+
+<!-- original:f7967041a70b9f:source/blender/blenlib/BLI_array.hh:234:234 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-070ad15abdf8efa3"></a>
+
+### `blender::Array::()`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L235—L238。
+
+**教学注释版**
+
+<!-- annotated:a8f24e6e776f43 -->
+
+```cpp
   operator MutableSpan<T>()
   {
     return MutableSpan<T>(data_, size_);
   }
+```
 
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L235—L238</summary>
+
+<!-- original:a8f24e6e776f43:source/blender/blenlib/BLI_array.hh:235:238 -->
+
+```cpp
+  operator MutableSpan<T>()
+  {
+    return MutableSpan<T>(data_, size_);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return MutableSpan<T>(data_, size_);`
+
+**继续追踪实现**
+
+- `MutableSpan<T>` → [blender::MutableSpan::MutableSpan · L462](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
+
+<!-- annotated:e31f4f016d1528 -->
+
+```cpp
+
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L239—L239</summary>
+
+<!-- original:e31f4f016d1528:source/blender/blenlib/BLI_array.hh:239:239 -->
+
+```cpp
+
+```
+
+</details>
+
+<a id="f-028d3115f029cad0"></a>
+
+### `blender::Array::is_span_convertible_pointer_v`
+
+实现位置：[source/blender/blenlib/BLI_array.hh](../../../../../source/blender/blenlib/BLI_array.hh) · L240—L245。
+
+**教学注释版**
+
+<!-- annotated:8223012b02380d -->
+
+```cpp
   template<typename U>
   operator Span<U>() const
     requires(is_span_convertible_pointer_v<T, U>)
@@ -597,243 +1490,102 @@ class Array {
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_array.hh · L240—L245</summary>
 
-- `data_`：数据或实现的存储入口；是否拥有应按该类声明和析构判定。
-- `size_`：该对象记录的元素数或长度，不能直接当作容量。
+<!-- original:8223012b02380d:source/blender/blenlib/BLI_array.hh:240:245 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L206 | 运算符重载声明、定义或显式调用：`Array &operator=(const Array &other)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L207 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L208 | 返回表达式 `copy_assign_container(*this, other)`。 |
-| L209 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L211 | 运算符重载声明、定义或显式调用：`Array &operator=(Array &&other) noexcept(std::is_nothrow_move_constructible_v<T>)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L212 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L213 | 返回表达式 `move_assign_container(*this, std::move(other))`。 |
-| L214 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L216 | 运算符重载声明、定义或显式调用：`T &operator[](int64_t index)`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L217 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L218 | 断言约束 `BLI_assert(index >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L219 | 断言约束 `BLI_assert(index < size_);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L220 | 返回表达式 `data_[index]`。 |
-| L221 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L223 | 运算符重载声明、定义或显式调用：`const T &operator[](int64_t index) const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L224 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L225 | 断言约束 `BLI_assert(index >= 0);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L226 | 断言约束 `BLI_assert(index < size_);`。条件是后续访问的内部前置条件；发布构建可能不执行，不能把断言当作输入修复。 |
-| L227 | 返回表达式 `data_[index]`。 |
-| L228 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L230 | 运算符重载声明、定义或显式调用：`operator Span<T>() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L231 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L232 | 返回表达式 `Span<T>(data_, size_)`。 |
-| L233 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L235 | 运算符重载声明、定义或显式调用：`operator MutableSpan<T>()`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L236 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L237 | 返回表达式 `MutableSpan<T>(data_, size_)`。 |
-| L238 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L240 | 声明模板参数 `template<typename U>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L241 | 运算符重载声明、定义或显式调用：`operator Span<U>() const`。结合参数和返回类型判断是赋值、索引、比较还是转换；operator=声明中的等号不是在给名为operator的变量赋值。 |
-| L242 | 约束模板可用性：`requires(is_span_convertible_pointer_v<T, U>)`。条件在编译期检查，不替代运行期的地址、长度和类型一致性验证。 |
-| L243 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L244 | 返回表达式 `Span<U>(data_, size_)`。 |
-| L245 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-
-## 五、接口定位、调用线索与生命周期
-
-### 本篇声明与实现入口
-
-| 源码位置 | 实际声明片段 |
-|---|---|
-| [BLI_array.hh:L50](../../../../../source/blender/blenlib/BLI_array.hh#L50) | `class Array` |
-| [BLI_array.hh:L78](../../../../../source/blender/blenlib/BLI_array.hh#L78) | `Array(Allocator allocator = {}) noexcept : allocator_(allocator)` |
-| [BLI_array.hh:L84](../../../../../source/blender/blenlib/BLI_array.hh#L84) | `Array(NoExceptConstructor, Allocator allocator = {}) noexcept : Array(allocator) {}` |
-| [BLI_array.hh:L90](../../../../../source/blender/blenlib/BLI_array.hh#L90) | `Array(Span<U> values, Allocator allocator = {})` |
-| [BLI_array.hh:L92](../../../../../source/blender/blenlib/BLI_array.hh#L92) | `: Array(NoExceptConstructor(), allocator)` |
-| [BLI_array.hh:L104](../../../../../source/blender/blenlib/BLI_array.hh#L104) | `Array(const std::initializer_list<U> &values, Allocator allocator = {})` |
-| [BLI_array.hh:L106](../../../../../source/blender/blenlib/BLI_array.hh#L106) | `: Array(Span<U>(values), allocator)` |
-| [BLI_array.hh:L110](../../../../../source/blender/blenlib/BLI_array.hh#L110) | `Array(const std::initializer_list<T> &values, Allocator allocator = {})` |
-| [BLI_array.hh:L111](../../../../../source/blender/blenlib/BLI_array.hh#L111) | `: Array(Span<T>(values), allocator)` |
-| [BLI_array.hh:L123](../../../../../source/blender/blenlib/BLI_array.hh#L123) | `explicit Array(int64_t size, Allocator allocator = {}) : Array(NoExceptConstructor(), allocator)` |
-| [BLI_array.hh:L135](../../../../../source/blender/blenlib/BLI_array.hh#L135) | `Array(int64_t size, const T &value, Allocator allocator = {})` |
-| [BLI_array.hh:L136](../../../../../source/blender/blenlib/BLI_array.hh#L136) | `: Array(NoExceptConstructor(), allocator)` |
-| [BLI_array.hh:L168](../../../../../source/blender/blenlib/BLI_array.hh#L168) | `Array(int64_t size, NoInitialization, Allocator allocator = {})` |
-| [BLI_array.hh:L169](../../../../../source/blender/blenlib/BLI_array.hh#L169) | `: Array(NoExceptConstructor(), allocator)` |
-| [BLI_array.hh:L176](../../../../../source/blender/blenlib/BLI_array.hh#L176) | `Array(const Array &other) : Array(other.as_span(), other.allocator_) {}` |
-| [BLI_array.hh:L178](../../../../../source/blender/blenlib/BLI_array.hh#L178) | `Array(Array &&other) noexcept(std::is_nothrow_move_constructible_v<T>)` |
-| [BLI_array.hh:L179](../../../../../source/blender/blenlib/BLI_array.hh#L179) | `: Array(NoExceptConstructor(), other.allocator_)` |
-
-### 同名符号出现位置
-
-以下表提供跨文件阅读入口，包含声明、调用或测试使用；没有经过完整C++名称解析，不把它命名为已证明的运行时调用图。
-
-| 符号 | 位置 | 文本证据 |
-|---|---|---|
-| `Array` | [BLI_virtual_array.hh:L969](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L969) | `owned_data_.~Array();` |
-| `Array` | [BLI_virtual_array.hh:L1042](../../../../../source/blender/blenlib/BLI_virtual_array.hh#L1042) | `owned_data_.~Array();` |
-
-### 生命周期推理图
-
-```mermaid
-flowchart LR
-  O["调用者或源数据拥有者"]:::input
-  V["Array构造与存储的接口与状态"]:::abstraction
-  B["借用地址、引用或视图"]:::data
-  W["实际计算或修改"]:::compute
-  R["结果与清理责任"]:::result
-  O -->|"创建与配置"| V
-  O -->|"保障寿命"| B
-  B -->|"访问前验证"| W
-  V -->|"规定操作"| W
-  W -->|"交付或销毁"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```cpp
+  template<typename U>
+  operator Span<U>() const
+    requires(is_span_convertible_pointer_v<T, U>)
+  {
+    return Span<U>(data_, size_);
+  }
 ```
 
-这是审查生命周期的通用模型。具体类是否拥有数据由本篇成员、构造、析构和调用者一起证明；任何箭头都不自动代表shared_ptr。
+</details>
 
-## 六、把代码放进具体数据中推演
+**结果出口**
 
-本方向的共同数值模型如下。本篇的专门检查是：对int和string分别检查默认构造、值填充和从Span复制，避免读取未初始化标量。
+- `return Span<U>(data_, size_);`
 
-| 步骤 | 数据或状态 | 为什么需要这一步 |
-|---|---|---|
-| 初始 | size=0, capacity=4 | 只有存储，没有可读取的T元素 |
-| 追加A | size=1, capacity=4 | 在第0个位置构造A |
-| 追加到满 | size=4, capacity=4 | 四个位置均已构造 |
-| 请求第五个 | 需扩大存储 | 旧地址仍需被正确管理 |
-| 迁移成功 | 新缓冲含原4元素 | 提交新指针并释放旧存储 |
-| 追加E | size=5 | 只在成功构造后扩大有效区间 |
+**继续追踪实现**
 
-```mermaid
-flowchart TB
-  T0["size=0, capacity=4"]:::input
-  T1["size=1, capacity=4"]:::compute
-  T2["size=4, capacity=4"]:::compute
-  T3["需扩大存储"]:::compute
-  T4["新缓冲含原4元素"]:::compute
-  T5["size=5"]:::result
-  T0 -->|"追加A"| T1
-  T1 -->|"追加到满"| T2
-  T2 -->|"请求第五个"| T3
-  T3 -->|"迁移成功"| T4
-  T4 -->|"追加E"| T5
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
+- `Span<U>` → [blender::Span](%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
 
-图是教学推演模型；精确分支与状态更新以本篇摘录及调用契约为准。
+## 语法与相关类型
 
-### 本篇独立练习与参考思路
+### 模板 template
+
+模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
+
+把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
+
+### 依赖名称 typename
+
+typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+
+区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+
+### 约束 requires
+
+requires表达式或requires子句限制模板参与重载的条件。它提供编译期可用性检查，不是运行时if，不能指望输入到达程序后再被这一机制验证。
+
+构造满足和不满足约束的两个类型，观察候选被排除而不是在函数内返回错误。
+
+### 只读限定 const
+
+const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
+
+分别写T* const、const T*与const T* const，并画出不可修改的层次。
+
+### 移动转换 std::move
+
+std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
+
+记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
+
+### 异常约定 noexcept
+
+noexcept表达式可以依赖类型特征。违反不抛异常约定会终止程序；它不是自动捕获异常，也不是资源回滚代码。
+
+找出声明的条件与实际可能抛出的分配、构造操作是否一致。
+
+### 对象表示 sizeof
+
+sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeof视图很小并不说明底层数组很小。
+
+分别统计容器对象、容量字节和元素拥有的间接资源。
+
+### 构造与new表达式
+
+普通new可能分配并构造；placement new在给定地址构造，存储由其他机制提供。失败回滚应区分两类责任。
+
+追踪地址来自哪里、构造何时成功、由谁析构、由谁释放。
+
+### 内部断言 assert
+
+断言表达开发者预期成立的内部契约，发布构建可能关闭。它不能替代对不可信输入的完整错误处理，也不保证后续操作被运行时保护。
+
+对每条断言构造违反条件的输入，区分调用者错误与应向用户报告的错误。
+
+### 类型别名 using
+
+类型别名为已有类型建立名字，不创建运行期对象。它常把模板内部使用的类型统一暴露给泛型调用者。
+
+展开别名直到基础类型，区分类型别名和变量声明。
+
+## 实现练习与验证
 
 对int和string分别检查默认构造、值填充和从Span复制，避免读取未初始化标量。
 
-参考思路：元素数不作为类型参数，存储可能使用内嵌缓冲；初始化方式决定基本类型是否有可读取的值。
+参考推理：根据具体构造器检查初始化路径，用明确值填充建立可读取基线。
 
-将输入、预期结果和资源责任分成三张清单。先用最直接的实现给出可核对的答案，再替换成对应源码使用的表示；比较结果不变的条件，而不是只比较接口名字。
+构造成功次数减析构次数应等于当前存活对象数；异常之后资源计数应回到合法状态。
 
-验收依据：构造成功次数减析构次数应等于当前存活对象数；异常之后资源计数应回到合法状态。
-
-## 七、复杂度、设计取舍与其他基础库
+## 历史、跨库比较与证据
 
 对比std::vector、std::array、std::span与LLVM SmallVector、ArrayRef时，分别比较拥有关系、内嵌存储、大小是否属于类型和失效条件。不要根据同名方法推断完全相同契约。
 
-本篇的具体取舍：元素数不作为类型参数，存储可能使用内嵌缓冲；初始化方式决定基本类型是否有可读取的值。
-
-| 观察维度 | 从源码取得证据的方法 | 本篇要避免的误判 |
-|---|---|---|
-| 时间 | 对循环次数、分派次数和重建频率分别计数 | 看到单次常数操作就断定整个操作序列是常数成本 |
-| 内存 | 区分对象本体、容量存储、间接资源和共享控制块 | 用sizeof代替总内存 |
-| 安全 | 沿构造、失败回滚、销毁与失效逐路径检查 | 把断言或非空指针当作完整安全证明 |
-| 并发 | 逐字段确认锁、发布顺序和借用寿命 | 把引用计数线程安全等同数据读写线程安全 |
-
-相关一手资料：
-
-- [C++公开工作草案](https://eel.is/c++draft/)：持续更新的工作草案；语言与标准库语义以相应章节为准。
-- [LLVM Programmer’s Manual](https://llvm.org/docs/ProgrammersManual.html)：在线版，2026-10-14查阅；仅比较设计思路，不保证与本地LLVM版本一致。
-
-资料用于核对契约和进一步阅读；这里没有声称外部库与Blender实现相同，也没有把上游性能数字当作本机实测。
-
-## 八、历史提交与设计演化
-
-### 2020-08-19 · Jacques Lucke
-
-[BLI: improve exception safety of Vector, Array and Stack](https://projects.blender.org/blender/blender/commit/2aff45146f1464ba8899368ad004522cb6a1a98c)
-
-完整哈希：`2aff45146f1464ba8899368ad004522cb6a1a98c`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-BLI: improve exception safety of Vector, Array and Stack
-
-Using C++ exceptions in Blender is difficult, due to the large
-number of C functions in the call stack. However, C++ data
-structures in blenlib should at least try to be exception safe,
-so that they can be used if someone wants to use exceptions
-in some isolated area.
-
-This patch improves the exception safety of the Vector, Array
-and Stack data structure. This is mainly achieved by reordering
-some lines and doing some explicit exception handling.
-I don't expect performance of common operations to be affected
-by this change.
-
-The three containers are supposed to provide at least the
-basic exception guarantee for most methods (except for e.g.
-`*_unchecked` methods). So, resources should not leak when
-the contained type throws an exception.
-
-I also added new unit tests that test the exception handling
-in various cases.
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“固定大小动态数组为什么还需要复杂构造逻辑？”判断方案改变的是表示、接口、生命周期还是调度。
-
-### 2020-06-09 · Jacques Lucke
-
-[BLI: rename ArrayRef to Span](https://projects.blender.org/blender/blender/commit/f7c0f1b8b83ac475755b633abf59cf9f447b2d49)
-
-完整哈希：`f7c0f1b8b83ac475755b633abf59cf9f447b2d49`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-BLI: rename ArrayRef to Span
-
-This also renames `MutableArrayRef` to `MutableSpan`.
-The name "Span" works better, because `std::span` will provide
-similar functionality in C++20. Furthermore, a shorter, more
-concise name for a common data structure is nice.
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“固定大小动态数组为什么还需要复杂构造逻辑？”判断方案改变的是表示、接口、生命周期还是调度。
-
-## 九、反例、测试入口与掌握标准
-
-仓库测试入口：
-
-- [BLI_array_test.cc](../../../../../source/blender/blenlib/tests/BLI_array_test.cc)：阅读输入、断言与覆盖边界；本篇不把“存在测试”写成“本轮已运行”。
-
-需要实际构造的反例：
-
-- 空输入或没有结果需求：确认接口允许的空状态与不允许访问的操作。
-- 边界位置和退化结构：把长度为1、末尾位置、重复值或深链代入真实分支。
-- 生命周期结束或修改之后：检查保存的指针、引用、结果视图是否仍有效。
-- 与本篇核心不变量相冲突的输入：对int和string分别检查默认构造、值填充和从Span复制，避免读取未初始化标量。
-
-### 可运行的教学参考程序
-
-[reference_exercises.cc](../_tools/reference_exercises.cc)包含独立于Blender的C++20参考检查：视图、简化SmallVector、异常回滚、哈希碰撞与删除、偏移数组、拓扑映射、共享缓存、表达式、惰性分支、闭包和暴力最近邻。
-
-参考程序有意省略生产实现的完整能力。例如SmallVector禁止复制移动容器，不支持只能移动的元素，并禁止append参数别名到自身元素；TinyMap固定8槽，不提供增长。程序通过不能替代Blender实现测试。实际运行结果、编译器与命令见验收报告。
-
-掌握标准：离开源码解释“固定大小动态数组为什么还需要复杂构造逻辑？”；独立完成上述练习；能指出一个会破坏拥有型容器相关约束的最小反例，并用具体代码行说明检查或修复应放在哪里。
+[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)

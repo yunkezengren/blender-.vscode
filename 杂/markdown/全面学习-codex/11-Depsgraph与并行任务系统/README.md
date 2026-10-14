@@ -1,63 +1,77 @@
 # 11-Depsgraph与并行任务系统
 
-[总目录](../README.md)
+[总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
 
-标记更新、判断需求、依赖满足和任务执行是分开的阶段。
+## 主线课程
 
-## 前置知识与阅读层次
+- [11-01 场景更新总体架构](01-%E5%9C%BA%E6%99%AF%E6%9B%B4%E6%96%B0%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84.md)
+- [11-02 ID组件与操作节点](02-ID%E7%BB%84%E4%BB%B6%E4%B8%8E%E6%93%8D%E4%BD%9C%E8%8A%82%E7%82%B9.md)
+- [11-03 节点构建器](03-%E8%8A%82%E7%82%B9%E6%9E%84%E5%BB%BA%E5%99%A8.md)
+- [11-04 关系构建器](04-%E5%85%B3%E7%B3%BB%E6%9E%84%E5%BB%BA%E5%99%A8.md)
+- [11-05 失效传播](05-%E5%A4%B1%E6%95%88%E4%BC%A0%E6%92%AD.md)
+- [11-06 可见性与求值调度](06-%E5%8F%AF%E8%A7%81%E6%80%A7%E4%B8%8E%E6%B1%82%E5%80%BC%E8%B0%83%E5%BA%A6.md)
+- [11-07 任务池与TBB接入](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md)
+- [11-08 任务隔离死锁与实战](08-%E4%BB%BB%E5%8A%A1%E9%9A%94%E7%A6%BB%E6%AD%BB%E9%94%81%E4%B8%8E%E5%AE%9E%E6%88%98.md)
 
-- [06-隐式共享与缓存系统](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/README.md)
-- [09-LazyFunction与节点执行架构](../09-LazyFunction%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E6%9E%B6%E6%9E%84/README.md)
+## 共享实现专题
 
-初读抓住数据模型，复读逐行检查，再完成反例和独立实现。方向间允许按实际问题回查，不要求机械线性阅读。
-
-## 正文与源码范围
-
-| 顺序 | 文档 | 主讲文件与范围 |
-|---|---|---|
-| 11-01 | [场景更新总体架构](01-%E5%9C%BA%E6%99%AF%E6%9B%B4%E6%96%B0%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84.md) | depsgraph.hh:L1—L206；depsgraph_relation.hh:L1—L51 |
-| 11-02 | [ID组件与操作节点](02-ID%E7%BB%84%E4%BB%B6%E4%B8%8E%E6%93%8D%E4%BD%9C%E8%8A%82%E7%82%B9.md) | deg_node_id.hh:L1—L140；deg_node_component.hh:L1—L264；deg_node_operation.hh:L1—L310 |
-| 11-03 | [节点构建器](03-%E8%8A%82%E7%82%B9%E6%9E%84%E5%BB%BA%E5%99%A8.md) | deg_builder_nodes.h:L1—L360；deg_builder_nodes.cc:L1—L2520 |
-| 11-04 | [关系构建器](04-%E5%85%B3%E7%B3%BB%E6%9E%84%E5%BB%BA%E5%99%A8.md) | deg_builder_relations.h:L1—L376；deg_builder_relations.cc:L1—L3829 |
-| 11-05 | [失效传播](05-%E5%A4%B1%E6%95%88%E4%BC%A0%E6%92%AD.md) | deg_eval_flush.cc:L1—L362 |
-| 11-06 | [可见性与求值调度](06-%E5%8F%AF%E8%A7%81%E6%80%A7%E4%B8%8E%E6%B1%82%E5%80%BC%E8%B0%83%E5%BA%A6.md) | deg_eval.cc:L1—L518；deg_eval_visibility.cc:L1—L235 |
-| 11-07 | [任务池与TBB接入](07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md) | BLI_task.hh:L1—L267；task_pool.cc:L1—L465；task_scheduler.cc:L1—L125 |
-| 11-08 | [任务隔离死锁与实战](08-%E4%BB%BB%E5%8A%A1%E9%9A%94%E7%A6%BB%E6%AD%BB%E9%94%81%E4%B8%8E%E5%AE%9E%E6%88%98.md) | task_graph.cc:L1—L151；task_range.cc:L1—L341 |
-
-## 本方向的数据模型
-
-```mermaid
-flowchart LR
-  C0["变化源"]:::input
-  C1["受影响操作"]:::data
-  C2["就绪关系"]:::data
-  C3["并行调度"]:::result
-  C0 -->|"区分职责"| C1
-  C1 -->|"区分职责"| C2
-  C2 -->|"区分职责"| C3
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
-
-## 状态推演
+- [source/blender/depsgraph/DEG_depsgraph.hh](%E4%BE%9D%E8%B5%96-DEG_depsgraph-6e4d59.md)
+- [source/blender/depsgraph/DEG_depsgraph_query.hh](%E4%BE%9D%E8%B5%96-DEG_depsgraph_query-db0d31.md)
+- [source/blender/depsgraph/intern/builder/deg_builder.cc](%E4%BE%9D%E8%B5%96-deg_builder-c9ef5e.md)
+- [source/blender/depsgraph/intern/builder/deg_builder_cache.cc](%E4%BE%9D%E8%B5%96-deg_builder_cache-38512e.md)
+- [source/blender/depsgraph/intern/builder/deg_builder_key.cc](%E4%BE%9D%E8%B5%96-deg_builder_key-367d58.md)
+- [source/blender/depsgraph/intern/builder/deg_builder_key.h](%E4%BE%9D%E8%B5%96-deg_builder_key-402cec.md)
+- [source/blender/depsgraph/intern/builder/deg_builder_nodes.h](%E4%BE%9D%E8%B5%96-deg_builder_nodes-c95998.md)
+- [source/blender/depsgraph/intern/builder/deg_builder_nodes_rig.cc](%E4%BE%9D%E8%B5%96-deg_builder_nodes_rig-7f79e2.md)
+- [source/blender/depsgraph/intern/builder/deg_builder_nodes_scene.cc](%E4%BE%9D%E8%B5%96-deg_builder_nodes_scene-66239a.md)
+- [source/blender/depsgraph/intern/builder/deg_builder_pchanmap.cc](%E4%BE%9D%E8%B5%96-deg_builder_pchanmap-f4702f.md)
+- [source/blender/depsgraph/intern/builder/deg_builder_relations.h](%E4%BE%9D%E8%B5%96-deg_builder_relations-ee8e7a.md)
+- [source/blender/depsgraph/intern/builder/deg_builder_relations_drivers.cc](%E4%BE%9D%E8%B5%96-deg_builder_relations_drivers-dcbcdf.md)
+- [source/blender/depsgraph/intern/builder/deg_builder_relations_impl.h](%E4%BE%9D%E8%B5%96-deg_builder_relations_impl-5ae258.md)
+- [source/blender/depsgraph/intern/builder/deg_builder_relations_rig.cc](%E4%BE%9D%E8%B5%96-deg_builder_relations_rig-5239a6.md)
+- [source/blender/depsgraph/intern/builder/deg_builder_relations_scene.cc](%E4%BE%9D%E8%B5%96-deg_builder_relations_scene-73e2fa.md)
+- [source/blender/depsgraph/intern/builder/deg_builder_rna.cc](%E4%BE%9D%E8%B5%96-deg_builder_rna-02a729.md)
+- [source/blender/depsgraph/intern/debug/deg_debug.cc](%E4%BE%9D%E8%B5%96-deg_debug-161340.md)
+- [source/blender/depsgraph/intern/debug/deg_debug.h](%E4%BE%9D%E8%B5%96-deg_debug-ad205b.md)
+- [source/blender/depsgraph/intern/depsgraph.cc](%E4%BE%9D%E8%B5%96-depsgraph-177fcb.md)
+- [source/blender/depsgraph/intern/depsgraph_build.cc](%E4%BE%9D%E8%B5%96-depsgraph_build-ea2fc8.md)
+- [source/blender/depsgraph/intern/depsgraph_debug.cc](%E4%BE%9D%E8%B5%96-depsgraph_debug-f95ade.md)
+- [source/blender/depsgraph/intern/depsgraph_eval.cc](%E4%BE%9D%E8%B5%96-depsgraph_eval-a90044.md)
+- [source/blender/depsgraph/intern/depsgraph_light_linking.cc](%E4%BE%9D%E8%B5%96-depsgraph_light_linking-6c0e8b.md)
+- [source/blender/depsgraph/intern/depsgraph_physics.cc](%E4%BE%9D%E8%B5%96-depsgraph_physics-40d348.md)
+- [source/blender/depsgraph/intern/depsgraph_query.cc](%E4%BE%9D%E8%B5%96-depsgraph_query-e8b1e4.md)
+- [source/blender/depsgraph/intern/depsgraph_query_foreach.cc](%E4%BE%9D%E8%B5%96-depsgraph_query_foreach-82ea88.md)
+- [source/blender/depsgraph/intern/depsgraph_query_iter.cc](%E4%BE%9D%E8%B5%96-depsgraph_query_iter-272e1a.md)
+- [source/blender/depsgraph/intern/depsgraph_registry.cc](%E4%BE%9D%E8%B5%96-depsgraph_registry-f1b523.md)
+- [source/blender/depsgraph/intern/depsgraph_relation.cc](%E4%BE%9D%E8%B5%96-depsgraph_relation-5d0905.md)
+- [source/blender/depsgraph/intern/depsgraph_tag.cc](%E4%BE%9D%E8%B5%96-depsgraph_tag-d8b3c7.md)
+- [source/blender/depsgraph/intern/depsgraph_type.cc](%E4%BE%9D%E8%B5%96-depsgraph_type-fccd49.md)
+- [source/blender/depsgraph/intern/depsgraph_type.hh](%E4%BE%9D%E8%B5%96-depsgraph_type-a5aead.md)
+- [source/blender/depsgraph/intern/depsgraph_update.cc](%E4%BE%9D%E8%B5%96-depsgraph_update-cd1b89.md)
+- [source/blender/depsgraph/intern/depsgraph_writeback_sync.cc](%E4%BE%9D%E8%B5%96-depsgraph_writeback_sync-ff73c3.md)
+- [source/blender/depsgraph/intern/eval/deg_eval_copy_on_write.cc](%E4%BE%9D%E8%B5%96-deg_eval_copy_on_write-5fb7a2.md)
+- [source/blender/depsgraph/intern/eval/deg_eval_copy_on_write.h](%E4%BE%9D%E8%B5%96-deg_eval_copy_on_write-af0e7c.md)
+- [source/blender/depsgraph/intern/eval/deg_eval_runtime_backup.cc](%E4%BE%9D%E8%B5%96-deg_eval_runtime_backup-c4c92a.md)
+- [source/blender/depsgraph/intern/eval/deg_eval_stats.cc](%E4%BE%9D%E8%B5%96-deg_eval_stats-b88615.md)
+- [source/blender/depsgraph/intern/node/deg_node.cc](%E4%BE%9D%E8%B5%96-deg_node-35126c.md)
+- [source/blender/depsgraph/intern/node/deg_node.hh](%E4%BE%9D%E8%B5%96-deg_node-496499.md)
+- [source/blender/depsgraph/intern/node/deg_node_component.cc](%E4%BE%9D%E8%B5%96-deg_node_component-2075dd.md)
+- [source/blender/depsgraph/intern/node/deg_node_factory.cc](%E4%BE%9D%E8%B5%96-deg_node_factory-22047f.md)
+- [source/blender/depsgraph/intern/node/deg_node_factory_impl.hh](%E4%BE%9D%E8%B5%96-deg_node_factory_impl-ce022d.md)
+- [source/blender/depsgraph/intern/node/deg_node_id.cc](%E4%BE%9D%E8%B5%96-deg_node_id-71dd5e.md)
+- [source/blender/depsgraph/intern/node/deg_node_operation.cc](%E4%BE%9D%E8%B5%96-deg_node_operation-b37865.md)
 
 ```mermaid
 flowchart TB
-  T0["父对象变换修改"]:::input
-  T1["子对象变换受影响"]:::compute
-  T2["修改器开关由驱动决定"]:::compute
-  T3["前置结果均完成"]:::compute
-  T4["任务池处理独立操作"]:::compute
-  T5["可能发生任务窃取"]:::result
-  T0 -->|"传播"| T1
-  T1 -->|"控制依赖"| T2
-  T2 -->|"就绪"| T3
-  T3 -->|"执行"| T4
-  T4 -->|"等待"| T5
+  A["问题与数据模型"]:::input
+  B["注释代码"]:::data
+  C["机制推导"]:::compute
+  D["依赖实现专题"]:::abstraction
+  E["反例与练习"]:::result
+  A -->|"阅读"| B
+  B -->|"解释"| C
+  C -->|"展开"| D
+  D -->|"验证"| E
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -66,17 +80,17 @@ flowchart TB
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-## 历史入口
-
-- [Depsgraph: Refactor evaluation into smaller reusable functions](https://projects.blender.org/blender/blender/commit/2280a71f900eb7907c243f76930a7e9779a90d7d) · Sergey Sharybin · 2022-07-19
-- [Depsgraph: Optimize evaluation of dependencies of disabled modifiers](https://projects.blender.org/blender/blender/commit/f12f7800c2965c721a4eb4baeb6b1ab129bfa375) · Sergey Sharybin · 2022-08-04
-- [Task: Use TBB as Task Scheduler](https://projects.blender.org/blender/blender/commit/d8a3f3595af0fb3ca5937e41c2728fd750d986ef) · Brecht Van Lommel · 2020-04-30
-- [Fix T92423: Blender freeze rendering animation with Mantaflow](https://projects.blender.org/blender/blender/commit/8507336e76902604a2128b23a4d8e52094031ab0) · Sergey Sharybin · 2021-10-27
-
-## 跨库比较与验收
-
-与构建系统依赖图、oneTBB任务与几何节点图比较：场景更新需要处理源变化和可见性，具体图执行还受领域语义影响。
-
-依赖结果先于消费者可见；禁用节点仍保留必要控制计算；没有同时持有锁的循环等待。
-
-正文和源码区间已建立；自动检查结果见根目录验收报告。阅读者的掌握程度以独立练习与反例推理为准。
+```mermaid
+flowchart TB
+  P["主线课程"]:::input
+  D["按需深入依赖"]:::compute
+  R["回到原调用点"]:::result
+  P -->|"精确锚点"| D
+  D -->|"回链"| R
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```

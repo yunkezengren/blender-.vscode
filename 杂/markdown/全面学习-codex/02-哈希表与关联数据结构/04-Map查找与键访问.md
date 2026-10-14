@@ -1,40 +1,40 @@
 # 02-04 Map查找与键访问
 
-[方向导航](README.md) · [总目录](../README.md) · [覆盖索引](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
 
-> 阅读顺序：问题与数据模型 → 语法与类型 → 源码逐行 → 调用线索 → 历史与取舍 → 推演和练习。
-
-- 基准 HEAD：`cbda6b96c26c0dee3c3b5cbb93960c4ac06a6b30`。
-- 记录日期：2026-10-14。
-- 教学示例状态：正文中的推演不是本机性能实测；已运行练习见验收报告。
-
-## 一、从问题到设计
+## 从问题到实现
 
 查找失败如何在API中表达？
 
 引用返回、指针返回、默认值和断言接口有不同前置条件；避免在未证明存在时调用必存在接口。
 
-本篇把语法、数据语义和系统取舍连接起来。相等与哈希是基础契约；探测、删除和增长共同决定复杂度。
-
-### 本篇独立模型与设计推理
+**数据模型**
 
 lookup返回引用通常要求键存在；lookup_ptr用空指针表达缺失，但返回地址受容器修改影响。
 
-设计取舍：接口可以把存在保证交给调用者，减少重复检查；前提是调用者真的证明了它。
+**设计取舍**
 
-最小反例：查找后保存Value指针，再插入导致重建，继续使用旧指针。
+接口可以把存在保证交给调用者，减少重复检查；前提是调用者真的证明了它。
 
-推导与处理：明确失效边界，重建后重新查找；不要把一次存在证明扩展到所有后续状态。
+**最小反例**
+
+查找后保存Value指针，再插入导致重建，继续使用旧指针。
+
+**推导**
+
+明确失效边界，重建后重新查找；不要把一次存在证明扩展到所有后续状态。
+
+## 阅读地图与执行推演
 
 ```mermaid
 flowchart TB
-  M["lookup返回引用通常要求键存在；lookup_ptr<br/>用空指针表达缺失，但返回地址受容器修改影<br/>响。"]:::data
-  T["接口可以把存在保证交给调用者，减少重复检<br/>查；前提是调用者真的证明了它。"]:::abstraction
-  X["查找后保存Value指针，再插入导致重建，继<br/>续使用旧指针。"]:::error
-  A["明确失效边界，重建后重新查找；不要把一次<br/>存在证明扩展到所有后续状态。"]:::result
-  M -->|"建立约束"| T
-  T -->|"构造反例"| X
-  X -->|"恢复不变量"| A
+  M["lookup返回引用通常要求键存在；lookup_ptr用<br/>空指针表达缺失，但返回地址受容器修改影响。"]:::data
+  C["接口可以把存在保证交给调用者，减少重复检查<br/>；前提是调用者真的证明了它。"]:::abstraction
+  B["查找后保存Value指针，再插入导致重建，继续<br/>使用旧指针。"]:::error
+  R["明确失效边界，重建后重新查找；不要把一次存<br/>在证明扩展到所有后续状态。"]:::result
+  M -->|"明确约束"| C
+  C -->|"检验边界"| B
+  B -->|"恢复正确性"| R
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -42,59 +42,22 @@ flowchart TB
   classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
-
-### 源码范围与相邻篇章
-
-| 文件 | 本篇逐行范围 | 基准SHA-256 |
-|---|---|---|
-| [source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) | L277—L552 | `236ceadf1c36a6e452538529f550bb9a61c4d2efc16cbb8419861fdd638bd5c7` |
-
-同一主讲文件可能分多篇覆盖；超出本篇范围的符号通过覆盖索引定位。空行与纯注释保留在源码摘录中，逐行表解释有效语句与语法边界；许可证头统一保留。
-
-前篇：[槽位状态与探测](03-%E6%A7%BD%E4%BD%8D%E7%8A%B6%E6%80%81%E4%B8%8E%E6%8E%A2%E6%B5%8B.md).
-
-后篇：[Map插入与回调](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md).
-
-## 二、类型、数据与阅读地图
-
-```mermaid
-flowchart TB
-  Q["查找失败如何在API中表达？"]:::input
-  C0["相等关系"]:::abstraction
-  C1["哈希探测"]:::data
-  C2["槽位状态"]:::data
-  C3["重建策略"]:::data
-  R["Map查找与键访问"]:::result
-  Q -->|"建立模型"| C0
-  C0 -->|"区分职责"| C1
-  C1 -->|"区分职责"| C2
-  C2 -->|"区分职责"| C3
-  C3 -->|"回到源码"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
-
-这是概念依赖图，边表示阅读关系，不声称是运行时调用顺序。
-
-### 直接编译依赖
 
 ```mermaid
 flowchart LR
-  S["BLI_map.hh"]:::abstraction
-  I0["BLI_array.hh"]:::data
-  I1["BLI_hash.hh"]:::data
-  I2["BLI_hash_tables.hh"]:::data
-  I3["BLI_map_slots.hh"]:::data
-  I4["BLI_probing_strategies.hh"]:::data
-  S -->|"直接include"| I0
-  S -->|"直接include"| I1
-  S -->|"直接include"| I2
-  S -->|"直接include"| I3
-  S -->|"直接include"| I4
+  F0["blender::Map::add_new"]:::input
+  F1["blender::Map::add_new_as"]:::compute
+  F2["blender::Map::add"]:::compute
+  F3["blender::Map::add"]:::compute
+  F4["blender::Map::add"]:::compute
+  F5["blender::Map::add"]:::compute
+  F6["blender::Map::add_as"]:::compute
+  F7["blender::Map::add_overwrite"]:::compute
+  F0 -->|"实现调用"| F1
+  F2 -->|"实现调用"| F6
+  F3 -->|"实现调用"| F6
+  F4 -->|"实现调用"| F6
+  F5 -->|"实现调用"| F6
   classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
   classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
@@ -103,77 +66,150 @@ flowchart LR
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-箭头只表示头文件包含关系；完整调用线索见后面的符号定位表。
+```mermaid
+flowchart LR
+  P0["相等关系"]:::input
+  P1["哈希探测"]:::data
+  P2["槽位状态"]:::data
+  P3["重建策略"]:::result
+  P0 -->|"分析关系"| P1
+  P1 -->|"分析关系"| P2
+  P2 -->|"分析关系"| P3
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-## 三、关键词、语法与类型角色
+```mermaid
+flowchart TB
+  S0["hash(A)映射槽2"]:::input
+  S1["同样映射槽2"]:::compute
+  S2["槽2变Removed"]:::compute
+  S3["从槽2继续探测"]:::compute
+  S4["活元素数可能恒定"]:::compute
+  S5["迁移活键值"]:::result
+  S0 -->|"插入B"| S1
+  S1 -->|"删除A"| S2
+  S2 -->|"查找B"| S3
+  S3 -->|"持续删插"| S4
+  S4 -->|"重建"| S5
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
 
-### 模板 template
+图中的数值推演是本方向的教学模型；实际函数之间的调用边与概念分析边分别标注，不能把概念关系当作运行时调度顺序。
 
-模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
+## 完整源码单元与就地讲解
 
-具体检查：把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
+中文讲解直接放在相关代码旁，复杂机制在代码下展开。原文折叠区保留基准行号；不需要在行号表和函数之间来回查找。类布局可分段展示，函数实现不按固定行数切开。
 
-### 依赖名称 typename
+<a id="f-da1e537f229db040"></a>
 
-typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
+### `blender::Map::add_new`
 
-具体检查：区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
+按哈希与相等关系加入键或键值。
 
-### 只读限定 const
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L277—L280。
 
-const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
+接口参数：
 
-具体检查：分别写T* const、const T*与const T* const，并画出不可修改的层次。
+- `Key &&key`
+- `Value &&value`
 
-### 移动转换 std::move
+**教学注释版**
 
-std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
+<!-- annotated:787b671724e654 -->
 
-具体检查：记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
+```cpp
+  void add_new(Key &&key, Value &&value)
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    this->add_new_as(std::move(key), std::move(value));
+  }
+```
 
-### 完美转发 std::forward
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L277—L280</summary>
 
-std::forward在转发引用模板中恢复调用者原来的值类别。它依赖推导出的模板实参；无条件move会改变左值调用者的语义。
-
-具体检查：对同一接口分别传入左值、临时对象和const左值，记录实际重载。
-
-### 异常边界 try与catch
-
-try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
-
-具体检查：在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
-
-### 限定转换 const_cast
-
-const_cast可以改变访问路径的限定，但不能让本来就是const的对象合法可写。常用于复用只读实现时，仍需检查底层对象是否实际可变。
-
-具体检查：对非const对象的const引用与真正const对象分别分析修改是否合法。
-
-### 可选值 optional
-
-optional把不存在与存在的T区分开，T的构造和析构跟随engaged状态变化。访问前应由has_value或条件分支证明存在。
-
-具体检查：把空Field状态与合法常量零区分，不能用某个普通值代替不存在。
-
-## 四、真实源码与逐行讲解
-
-源码块保持原行内容，原始行号由小节标题及逐行表给出。表中的调用定位是静态阅读辅助；重载、模板实例化、宏展开和虚调用需结合完整声明，不能仅凭词法出现证明动态调用。
-
-### BLI_map.hh：L277—L328
-
-<!-- source:source/blender/blenlib/BLI_map.hh:277:328 -->
+<!-- original:787b671724e654:source/blender/blenlib/BLI_map.hh:277:280 -->
 
 ```cpp
   void add_new(Key &&key, Value &&value)
   {
     this->add_new_as(std::move(key), std::move(value));
   }
+```
+
+</details>
+
+**接口与不变量**
+
+存在键与不存在键的接口承诺不同；add_new需要调用者保证键尚不存在。
+
+**继续追踪实现**
+
+- `this->add_new_as` → [blender::Map::add_new_as · L281](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-f556b7e3fb7de063)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<a id="f-f556b7e3fb7de063"></a>
+
+### `blender::Map::add_new_as`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L281—L286。
+
+接口参数：
+
+- `ForwardKey &&key`
+
+**教学注释版**
+
+<!-- annotated:e8e57e2d33a9b4 -->
+
+```cpp
+  template<typename ForwardKey, typename... ForwardValue>
+  void add_new_as(ForwardKey &&key, ForwardValue &&...value)
+  {
+    this->add_new__impl(
+        // [讲解] std::forward<ForwardKey>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+        std::forward<ForwardKey>(key), hash_(key), std::forward<ForwardValue>(value)...);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L281—L286</summary>
+
+<!-- original:e8e57e2d33a9b4:source/blender/blenlib/BLI_map.hh:281:286 -->
+
+```cpp
   template<typename ForwardKey, typename... ForwardValue>
   void add_new_as(ForwardKey &&key, ForwardValue &&...value)
   {
     this->add_new__impl(
         std::forward<ForwardKey>(key), hash_(key), std::forward<ForwardValue>(value)...);
   }
+```
+
+</details>
+
+**继续追踪实现**
+
+- `this->add_new__impl` → [blender::Map::add_new__impl · L1171](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-5c0d112426a8af61)。
+- `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L285。
+- `std::forward<ForwardValue>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+
+### 类型布局、声明与编译条件 · BLI_map.hh L287—L294
+
+<!-- annotated:494e7ec4953cee -->
+
+```cpp
 
   /**
    * Add a key-value-pair to the map. If the map contains the key already, nothing is changed.
@@ -182,28 +218,295 @@ optional把不存在与存在的T区分开，T的构造和析构跟随engaged状
    *
    * This is similar to std::unordered_map::insert.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L287—L294</summary>
+
+<!-- original:494e7ec4953cee:source/blender/blenlib/BLI_map.hh:287:294 -->
+
+```cpp
+
+  /**
+   * Add a key-value-pair to the map. If the map contains the key already, nothing is changed.
+   * If you want to replace the currently stored value, use `add_overwrite`.
+   * Returns true when the key has been newly added.
+   *
+   * This is similar to std::unordered_map::insert.
+   */
+```
+
+</details>
+
+<a id="f-8d38101abf162f88"></a>
+
+### `blender::Map::add`
+
+按哈希与相等关系加入键或键值。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L295—L298。
+
+接口参数：
+
+- `const Key &key`
+- `const Value &value`
+
+**教学注释版**
+
+<!-- annotated:2e2e659ddcef72 -->
+
+```cpp
+  bool add(const Key &key, const Value &value)
+  {
+    // [讲解] this->add_as：按哈希与相等关系加入键或键值。
+    return this->add_as(key, value);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L295—L298</summary>
+
+<!-- original:2e2e659ddcef72:source/blender/blenlib/BLI_map.hh:295:298 -->
+
+```cpp
   bool add(const Key &key, const Value &value)
   {
     return this->add_as(key, value);
   }
+```
+
+</details>
+
+**接口与不变量**
+
+存在键与不存在键的接口承诺不同；add_new需要调用者保证键尚不存在。
+
+**结果出口**
+
+- `return this->add_as(key, value);`
+
+**继续追踪实现**
+
+- `this->add_as` → [blender::Map::add_as · L311](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-14a51c8e15129893)。
+
+<a id="f-1f59510cdfbd9f87"></a>
+
+### `blender::Map::add`
+
+按哈希与相等关系加入键或键值。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L299—L302。
+
+接口参数：
+
+- `const Key &key`
+- `Value &&value`
+
+**教学注释版**
+
+<!-- annotated:aac32bd535dd7e -->
+
+```cpp
+  bool add(const Key &key, Value &&value)
+  {
+    // [讲解] this->add_as：按哈希与相等关系加入键或键值。
+    return this->add_as(key, std::move(value));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L299—L302</summary>
+
+<!-- original:aac32bd535dd7e:source/blender/blenlib/BLI_map.hh:299:302 -->
+
+```cpp
   bool add(const Key &key, Value &&value)
   {
     return this->add_as(key, std::move(value));
   }
+```
+
+</details>
+
+**接口与不变量**
+
+存在键与不存在键的接口承诺不同；add_new需要调用者保证键尚不存在。
+
+**结果出口**
+
+- `return this->add_as(key, std::move(value));`
+
+**继续追踪实现**
+
+- `this->add_as` → [blender::Map::add_as · L311](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-14a51c8e15129893)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<a id="f-645e0522347aa018"></a>
+
+### `blender::Map::add`
+
+按哈希与相等关系加入键或键值。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L303—L306。
+
+接口参数：
+
+- `Key &&key`
+- `const Value &value`
+
+**教学注释版**
+
+<!-- annotated:140d49fb0e9d07 -->
+
+```cpp
+  bool add(Key &&key, const Value &value)
+  {
+    // [讲解] this->add_as：按哈希与相等关系加入键或键值。
+    return this->add_as(std::move(key), value);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L303—L306</summary>
+
+<!-- original:140d49fb0e9d07:source/blender/blenlib/BLI_map.hh:303:306 -->
+
+```cpp
   bool add(Key &&key, const Value &value)
   {
     return this->add_as(std::move(key), value);
   }
+```
+
+</details>
+
+**接口与不变量**
+
+存在键与不存在键的接口承诺不同；add_new需要调用者保证键尚不存在。
+
+**结果出口**
+
+- `return this->add_as(std::move(key), value);`
+
+**继续追踪实现**
+
+- `this->add_as` → [blender::Map::add_as · L311](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-14a51c8e15129893)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<a id="f-03405db0730cedc0"></a>
+
+### `blender::Map::add`
+
+按哈希与相等关系加入键或键值。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L307—L310。
+
+接口参数：
+
+- `Key &&key`
+- `Value &&value`
+
+**教学注释版**
+
+<!-- annotated:c4e2baff7cf488 -->
+
+```cpp
+  bool add(Key &&key, Value &&value)
+  {
+    // [讲解] this->add_as：按哈希与相等关系加入键或键值。
+    return this->add_as(std::move(key), std::move(value));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L307—L310</summary>
+
+<!-- original:c4e2baff7cf488:source/blender/blenlib/BLI_map.hh:307:310 -->
+
+```cpp
   bool add(Key &&key, Value &&value)
   {
     return this->add_as(std::move(key), std::move(value));
   }
+```
+
+</details>
+
+**接口与不变量**
+
+存在键与不存在键的接口承诺不同；add_new需要调用者保证键尚不存在。
+
+**结果出口**
+
+- `return this->add_as(std::move(key), std::move(value));`
+
+**继续追踪实现**
+
+- `this->add_as` → [blender::Map::add_as · L311](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-14a51c8e15129893)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<a id="f-14a51c8e15129893"></a>
+
+### `blender::Map::add_as`
+
+按哈希与相等关系加入键或键值。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L311—L316。
+
+接口参数：
+
+- `ForwardKey &&key`
+
+**教学注释版**
+
+<!-- annotated:9e501caaa5dacb -->
+
+```cpp
+  template<typename ForwardKey, typename... ForwardValue>
+  bool add_as(ForwardKey &&key, ForwardValue &&...value)
+  {
+    return this->add__impl(
+        // [讲解] std::forward<ForwardKey>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+        std::forward<ForwardKey>(key), hash_(key), std::forward<ForwardValue>(value)...);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L311—L316</summary>
+
+<!-- original:9e501caaa5dacb:source/blender/blenlib/BLI_map.hh:311:316 -->
+
+```cpp
   template<typename ForwardKey, typename... ForwardValue>
   bool add_as(ForwardKey &&key, ForwardValue &&...value)
   {
     return this->add__impl(
         std::forward<ForwardKey>(key), hash_(key), std::forward<ForwardValue>(value)...);
   }
+```
+
+</details>
+
+**接口与不变量**
+
+存在键与不存在键的接口承诺不同；add_new需要调用者保证键尚不存在。
+
+**结果出口**
+
+- `return this->add__impl(`
+
+**继续追踪实现**
+
+- `this->add__impl` → [blender::Map::add__impl · L1190](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-28f9b02dc3c96291)。
+- `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L315。
+- `std::forward<ForwardValue>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+
+### 类型布局、声明与编译条件 · BLI_map.hh L317—L324
+
+<!-- annotated:732945c065fb93 -->
+
+```cpp
 
   /**
    * Adds a key-value-pair to the map. If the map contained the key already, the corresponding
@@ -212,88 +515,393 @@ optional把不存在与存在的T区分开，T的构造和析构跟随engaged状
    *
    * This is similar to std::unordered_map::insert_or_assign.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L317—L324</summary>
+
+<!-- original:732945c065fb93:source/blender/blenlib/BLI_map.hh:317:324 -->
+
+```cpp
+
+  /**
+   * Adds a key-value-pair to the map. If the map contained the key already, the corresponding
+   * value will be replaced.
+   * Returns true when the key has been newly added.
+   *
+   * This is similar to std::unordered_map::insert_or_assign.
+   */
+```
+
+</details>
+
+<a id="f-e340706c503570c8"></a>
+
+### `blender::Map::add_overwrite`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L325—L328。
+
+接口参数：
+
+- `const Key &key`
+- `const Value &value`
+
+**教学注释版**
+
+<!-- annotated:729d74b6d3366f -->
+
+```cpp
   bool add_overwrite(const Key &key, const Value &value)
   {
     return this->add_overwrite_as(key, value);
   }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L277 | 出现调用或函数声明 `add_new`，对应表达式为 `void add_new(Key &&key, Value &&value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L278 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L279 | 出现调用或函数声明 `add_new_as`，对应表达式为 `this->add_new_as(std::move(key), std::move(value));`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L280 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L281 | 声明模板参数 `template<typename ForwardKey, typename... ForwardValue>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L282 | 出现调用或函数声明 `add_new_as`，对应表达式为 `void add_new_as(ForwardKey &&key, ForwardValue &&...value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L283 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L284 | 出现调用或函数声明 `add_new__impl`，对应表达式为 `this->add_new__impl(`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L285 | 出现调用或函数声明 `std::forward`，对应表达式为 `std::forward<ForwardKey>(key), hash_(key), std::forward<ForwardValue>(value)...);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L286 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L295 | 出现调用或函数声明 `add`，对应表达式为 `bool add(const Key &key, const Value &value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L296 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L297 | 返回表达式 `this->add_as(key, value)`。 |
-| L298 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L299 | 出现调用或函数声明 `add`，对应表达式为 `bool add(const Key &key, Value &&value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L300 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L301 | 返回表达式 `this->add_as(key, std::move(value))`。 |
-| L302 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L303 | 出现调用或函数声明 `add`，对应表达式为 `bool add(Key &&key, const Value &value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L304 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L305 | 返回表达式 `this->add_as(std::move(key), value)`。 |
-| L306 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L307 | 出现调用或函数声明 `add`，对应表达式为 `bool add(Key &&key, Value &&value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L308 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L309 | 返回表达式 `this->add_as(std::move(key), std::move(value))`。 |
-| L310 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L311 | 声明模板参数 `template<typename ForwardKey, typename... ForwardValue>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L312 | 出现调用或函数声明 `add_as`，对应表达式为 `bool add_as(ForwardKey &&key, ForwardValue &&...value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L313 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L314 | 返回表达式 `this->add__impl(`。 |
-| L315 | 出现调用或函数声明 `std::forward`，对应表达式为 `std::forward<ForwardKey>(key), hash_(key), std::forward<ForwardValue>(value)...);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L316 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L325 | 出现调用或函数声明 `add_overwrite`，对应表达式为 `bool add_overwrite(const Key &key, const Value &value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L326 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L327 | 返回表达式 `this->add_overwrite_as(key, value)`。 |
-| L328 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L325—L328</summary>
 
-### BLI_map.hh：L329—L371
+<!-- original:729d74b6d3366f:source/blender/blenlib/BLI_map.hh:325:328 -->
 
-<!-- source:source/blender/blenlib/BLI_map.hh:329:371 -->
+```cpp
+  bool add_overwrite(const Key &key, const Value &value)
+  {
+    return this->add_overwrite_as(key, value);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->add_overwrite_as(key, value);`
+
+**继续追踪实现**
+
+- `this->add_overwrite_as` → [blender::Map::add_overwrite_as · L341](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-5db21628bb7ff876)。
+
+<a id="f-33b468b72fd66944"></a>
+
+### `blender::Map::add_overwrite`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L329—L332。
+
+接口参数：
+
+- `const Key &key`
+- `Value &&value`
+
+**教学注释版**
+
+<!-- annotated:194339085b7afb -->
+
+```cpp
+  bool add_overwrite(const Key &key, Value &&value)
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    return this->add_overwrite_as(key, std::move(value));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L329—L332</summary>
+
+<!-- original:194339085b7afb:source/blender/blenlib/BLI_map.hh:329:332 -->
 
 ```cpp
   bool add_overwrite(const Key &key, Value &&value)
   {
     return this->add_overwrite_as(key, std::move(value));
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->add_overwrite_as(key, std::move(value));`
+
+**继续追踪实现**
+
+- `this->add_overwrite_as` → [blender::Map::add_overwrite_as · L341](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-5db21628bb7ff876)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<a id="f-d91cbf0ab4beeb7f"></a>
+
+### `blender::Map::add_overwrite`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L333—L336。
+
+接口参数：
+
+- `Key &&key`
+- `const Value &value`
+
+**教学注释版**
+
+<!-- annotated:bf28623c48c861 -->
+
+```cpp
+  bool add_overwrite(Key &&key, const Value &value)
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    return this->add_overwrite_as(std::move(key), value);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L333—L336</summary>
+
+<!-- original:bf28623c48c861:source/blender/blenlib/BLI_map.hh:333:336 -->
+
+```cpp
   bool add_overwrite(Key &&key, const Value &value)
   {
     return this->add_overwrite_as(std::move(key), value);
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->add_overwrite_as(std::move(key), value);`
+
+**继续追踪实现**
+
+- `this->add_overwrite_as` → [blender::Map::add_overwrite_as · L341](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-5db21628bb7ff876)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<a id="f-7e2b93551ab3f253"></a>
+
+### `blender::Map::add_overwrite`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L337—L340。
+
+接口参数：
+
+- `Key &&key`
+- `Value &&value`
+
+**教学注释版**
+
+<!-- annotated:0f7ece0e6959a5 -->
+
+```cpp
+  bool add_overwrite(Key &&key, Value &&value)
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    return this->add_overwrite_as(std::move(key), std::move(value));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L337—L340</summary>
+
+<!-- original:0f7ece0e6959a5:source/blender/blenlib/BLI_map.hh:337:340 -->
+
+```cpp
   bool add_overwrite(Key &&key, Value &&value)
   {
     return this->add_overwrite_as(std::move(key), std::move(value));
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->add_overwrite_as(std::move(key), std::move(value));`
+
+**继续追踪实现**
+
+- `this->add_overwrite_as` → [blender::Map::add_overwrite_as · L341](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-5db21628bb7ff876)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<a id="f-5db21628bb7ff876"></a>
+
+### `blender::Map::add_overwrite_as`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L341—L346。
+
+接口参数：
+
+- `ForwardKey &&key`
+
+**教学注释版**
+
+<!-- annotated:135a90b5275dec -->
+
+```cpp
+  template<typename ForwardKey, typename... ForwardValue>
+  bool add_overwrite_as(ForwardKey &&key, ForwardValue &&...value)
+  {
+    return this->add_overwrite__impl(
+        // [讲解] std::forward<ForwardKey>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+        std::forward<ForwardKey>(key), hash_(key), std::forward<ForwardValue>(value)...);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L341—L346</summary>
+
+<!-- original:135a90b5275dec:source/blender/blenlib/BLI_map.hh:341:346 -->
+
+```cpp
   template<typename ForwardKey, typename... ForwardValue>
   bool add_overwrite_as(ForwardKey &&key, ForwardValue &&...value)
   {
     return this->add_overwrite__impl(
         std::forward<ForwardKey>(key), hash_(key), std::forward<ForwardValue>(value)...);
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->add_overwrite__impl(`
+
+**继续追踪实现**
+
+- `this->add_overwrite__impl` → [blender::Map::add_overwrite__impl · L1291](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-4cc01a88e5ace88d)。
+- `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L345。
+- `std::forward<ForwardValue>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+
+### 类型布局、声明与编译条件 · BLI_map.hh L347—L352
+
+<!-- annotated:cea2eb28965aef -->
+
+```cpp
 
   /**
    * Returns true if there is a key in the map that compares equal to the given key.
    *
    * This is similar to std::unordered_map::contains.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L347—L352</summary>
+
+<!-- original:cea2eb28965aef:source/blender/blenlib/BLI_map.hh:347:352 -->
+
+```cpp
+
+  /**
+   * Returns true if there is a key in the map that compares equal to the given key.
+   *
+   * This is similar to std::unordered_map::contains.
+   */
+```
+
+</details>
+
+<a id="f-70237c86261ee04d"></a>
+
+### `blender::Map::contains`
+
+查询活项数量或键是否存在。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L353—L356。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:756e4a1f28dc41 -->
+
+```cpp
+  bool contains(const Key &key) const
+  {
+    // [讲解] this->contains_as：查询活项数量或键是否存在。
+    return this->contains_as(key);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L353—L356</summary>
+
+<!-- original:756e4a1f28dc41:source/blender/blenlib/BLI_map.hh:353:356 -->
+
+```cpp
   bool contains(const Key &key) const
   {
     return this->contains_as(key);
   }
+```
+
+</details>
+
+**接口与不变量**
+
+活项数量与删除槽数量不同，探测成本不能只看size。
+
+**结果出口**
+
+- `return this->contains_as(key);`
+
+**继续追踪实现**
+
+- `this->contains_as` → [blender::Map::contains_as · L357](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-4e0b78bed756de2b)。
+
+<a id="f-4e0b78bed756de2b"></a>
+
+### `blender::Map::contains_as`
+
+查询活项数量或键是否存在。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L357—L360。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:9bb967c0e2f497 -->
+
+```cpp
   template<typename ForwardKey> bool contains_as(const ForwardKey &key) const
   {
     return this->lookup_slot_ptr(key, hash_(key)) != nullptr;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L357—L360</summary>
+
+<!-- original:9bb967c0e2f497:source/blender/blenlib/BLI_map.hh:357:360 -->
+
+```cpp
+  template<typename ForwardKey> bool contains_as(const ForwardKey &key) const
+  {
+    return this->lookup_slot_ptr(key, hash_(key)) != nullptr;
+  }
+```
+
+</details>
+
+**接口与不变量**
+
+活项数量与删除槽数量不同，探测成本不能只看size。
+
+**结果出口**
+
+- `return this->lookup_slot_ptr(key, hash_(key)) != nullptr;`
+
+**继续追踪实现**
+
+- `this->lookup_slot_ptr` → [blender::Map::lookup_slot_ptr · L1323](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-93cb8db01f95f07b)；[blender::Map::lookup_slot_ptr · L1337](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-eeec937f512ef4fe)。同名重载需按实参类型选择。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L359。
+
+### 类型布局、声明与编译条件 · BLI_map.hh L361—L367
+
+<!-- annotated:70b1b1bdfb8981 -->
+
+```cpp
 
   /**
    * Deletes the key-value-pair with the given key. Returns true when the key was contained and is
@@ -301,48 +909,90 @@ optional把不存在与存在的T区分开，T的构造和析构跟随engaged状
    *
    * This is similar to std::unordered_map::erase.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L361—L367</summary>
+
+<!-- original:70b1b1bdfb8981:source/blender/blenlib/BLI_map.hh:361:367 -->
+
+```cpp
+
+  /**
+   * Deletes the key-value-pair with the given key. Returns true when the key was contained and is
+   * now removed, otherwise false.
+   *
+   * This is similar to std::unordered_map::erase.
+   */
+```
+
+</details>
+
+<a id="f-2f431f9fec96d780"></a>
+
+### `blender::Map::remove`
+
+移除占用项并维护探测状态。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L368—L371。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:9cb4d45b0161ec -->
+
+```cpp
+  bool remove(const Key &key)
+  {
+    // [讲解] this->remove_as：移除占用项并维护探测状态。
+    return this->remove_as(key);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L368—L371</summary>
+
+<!-- original:9cb4d45b0161ec:source/blender/blenlib/BLI_map.hh:368:371 -->
+
+```cpp
   bool remove(const Key &key)
   {
     return this->remove_as(key);
   }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L329 | 出现调用或函数声明 `add_overwrite`，对应表达式为 `bool add_overwrite(const Key &key, Value &&value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L330 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L331 | 返回表达式 `this->add_overwrite_as(key, std::move(value))`。 |
-| L332 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L333 | 出现调用或函数声明 `add_overwrite`，对应表达式为 `bool add_overwrite(Key &&key, const Value &value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L334 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L335 | 返回表达式 `this->add_overwrite_as(std::move(key), value)`。 |
-| L336 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L337 | 出现调用或函数声明 `add_overwrite`，对应表达式为 `bool add_overwrite(Key &&key, Value &&value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L338 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L339 | 返回表达式 `this->add_overwrite_as(std::move(key), std::move(value))`。 |
-| L340 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L341 | 声明模板参数 `template<typename ForwardKey, typename... ForwardValue>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L342 | 出现调用或函数声明 `add_overwrite_as`，对应表达式为 `bool add_overwrite_as(ForwardKey &&key, ForwardValue &&...value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L343 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L344 | 返回表达式 `this->add_overwrite__impl(`。 |
-| L345 | 出现调用或函数声明 `std::forward`，对应表达式为 `std::forward<ForwardKey>(key), hash_(key), std::forward<ForwardValue>(value)...);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L346 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L353 | 出现调用或函数声明 `contains`，对应表达式为 `bool contains(const Key &key) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L354 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L355 | 返回表达式 `this->contains_as(key)`。 |
-| L356 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L357 | 声明模板参数 `template<typename ForwardKey> bool contains_as(const ForwardKey &key) const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L358 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L359 | 返回表达式 `this->lookup_slot_ptr(key, hash_(key)) != nullptr`。 |
-| L360 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L368 | 出现调用或函数声明 `remove`，对应表达式为 `bool remove(const Key &key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L369 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L370 | 返回表达式 `this->remove_as(key)`。 |
-| L371 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+</details>
 
-### BLI_map.hh：L372—L422
+**接口与不变量**
 
-<!-- source:source/blender/blenlib/BLI_map.hh:372:422 -->
+对象销毁与留下删除槽标记是不同步骤，直接把碰撞链中间槽变成Empty可能截断后续查找。
+
+**结果出口**
+
+- `return this->remove_as(key);`
+
+**继续追踪实现**
+
+- `this->remove_as` → [blender::Map::remove_as · L372](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-c45f4a8184335ca1)。
+
+<a id="f-c45f4a8184335ca1"></a>
+
+### `blender::Map::remove_as`
+
+移除占用项并维护探测状态。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L372—L381。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:3594bc35e8039d -->
 
 ```cpp
   template<typename ForwardKey> bool remove_as(const ForwardKey &key)
@@ -355,30 +1005,275 @@ optional把不存在与存在的T区分开，T的构造和析构跟随engaged状
     removed_slots_++;
     return true;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L372—L381</summary>
+
+<!-- original:3594bc35e8039d:source/blender/blenlib/BLI_map.hh:372:381 -->
+
+```cpp
+  template<typename ForwardKey> bool remove_as(const ForwardKey &key)
+  {
+    Slot *slot = this->lookup_slot_ptr(key, hash_(key));
+    if (slot == nullptr) {
+      return false;
+    }
+    slot->remove();
+    removed_slots_++;
+    return true;
+  }
+```
+
+</details>
+
+**接口与不变量**
+
+对象销毁与留下删除槽标记是不同步骤，直接把碰撞链中间槽变成Empty可能截断后续查找。
+
+**结果出口**
+
+- `return false;`
+- `return true;`
+
+**继续追踪实现**
+
+- `this->lookup_slot_ptr` → [blender::Map::lookup_slot_ptr · L1323](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-93cb8db01f95f07b)；[blender::Map::lookup_slot_ptr · L1337](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-eeec937f512ef4fe)。同名重载需按实参类型选择。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L374。
+- `slot->remove` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L378。
+
+### 类型布局、声明与编译条件 · BLI_map.hh L382—L386
+
+<!-- annotated:e92696d8e21f65 -->
+
+```cpp
 
   /**
    * Deletes the key-value-pair with the given key. This invokes undefined behavior when the key is
    * not in the map.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L382—L386</summary>
+
+<!-- original:e92696d8e21f65:source/blender/blenlib/BLI_map.hh:382:386 -->
+
+```cpp
+
+  /**
+   * Deletes the key-value-pair with the given key. This invokes undefined behavior when the key is
+   * not in the map.
+   */
+```
+
+</details>
+
+<a id="f-a4aaf2d337ca5a8c"></a>
+
+### `blender::Map::remove_contained`
+
+移除占用项并维护探测状态。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L387—L390。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:8a5f333f0e7d65 -->
+
+```cpp
+  void remove_contained(const Key &key)
+  {
+    // [讲解] this->remove_contained_as：移除占用项并维护探测状态。
+    this->remove_contained_as(key);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L387—L390</summary>
+
+<!-- original:8a5f333f0e7d65:source/blender/blenlib/BLI_map.hh:387:390 -->
+
+```cpp
   void remove_contained(const Key &key)
   {
     this->remove_contained_as(key);
   }
+```
+
+</details>
+
+**接口与不变量**
+
+对象销毁与留下删除槽标记是不同步骤，直接把碰撞链中间槽变成Empty可能截断后续查找。
+
+**继续追踪实现**
+
+- `this->remove_contained_as` → [blender::Map::remove_contained_as · L391](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-1bcb2ee7f6fa6831)。
+
+<a id="f-1bcb2ee7f6fa6831"></a>
+
+### `blender::Map::remove_contained_as`
+
+移除占用项并维护探测状态。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L391—L396。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:0d40ac5ec5205a -->
+
+```cpp
   template<typename ForwardKey> void remove_contained_as(const ForwardKey &key)
   {
     Slot &slot = this->lookup_slot(key, hash_(key));
     slot.remove();
     removed_slots_++;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L391—L396</summary>
+
+<!-- original:0d40ac5ec5205a:source/blender/blenlib/BLI_map.hh:391:396 -->
+
+```cpp
+  template<typename ForwardKey> void remove_contained_as(const ForwardKey &key)
+  {
+    Slot &slot = this->lookup_slot(key, hash_(key));
+    slot.remove();
+    removed_slots_++;
+  }
+```
+
+</details>
+
+**接口与不变量**
+
+对象销毁与留下删除槽标记是不同步骤，直接把碰撞链中间槽变成Empty可能截断后续查找。
+
+**继续追踪实现**
+
+- `this->lookup_slot` → [blender::Map::lookup_slot · L1306](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-7180cfdde1dfaf79)；[blender::Map::lookup_slot · L1318](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-94b5328db99e893f)。同名重载需按实参类型选择。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L393。
+- `slot.remove` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L394。
+
+### 类型布局、声明与编译条件 · BLI_map.hh L397—L401
+
+<!-- annotated:7133431a8769ed -->
+
+```cpp
 
   /**
    * Get the value that is stored for the given key and remove it from the map. This invokes
    * undefined behavior when the key is not in the map.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L397—L401</summary>
+
+<!-- original:7133431a8769ed:source/blender/blenlib/BLI_map.hh:397:401 -->
+
+```cpp
+
+  /**
+   * Get the value that is stored for the given key and remove it from the map. This invokes
+   * undefined behavior when the key is not in the map.
+   */
+```
+
+</details>
+
+<a id="f-bbb4dcd2e8987a30"></a>
+
+### `blender::Map::pop`
+
+移除占用项并维护探测状态。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L402—L405。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:d0870f0cc3f5cd -->
+
+```cpp
   Value pop(const Key &key)
   {
     return this->pop_as(key);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L402—L405</summary>
+
+<!-- original:d0870f0cc3f5cd:source/blender/blenlib/BLI_map.hh:402:405 -->
+
+```cpp
+  Value pop(const Key &key)
+  {
+    return this->pop_as(key);
+  }
+```
+
+</details>
+
+**接口与不变量**
+
+对象销毁与留下删除槽标记是不同步骤，直接把碰撞链中间槽变成Empty可能截断后续查找。
+
+**结果出口**
+
+- `return this->pop_as(key);`
+
+**继续追踪实现**
+
+- `this->pop_as` → [blender::Map::pop_as · L406](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-79800111d8438c28)。
+
+<a id="f-79800111d8438c28"></a>
+
+### `blender::Map::pop_as`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L406—L413。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:d9ef09420e56e4 -->
+
+```cpp
+  template<typename ForwardKey> Value pop_as(const ForwardKey &key)
+  {
+    Slot &slot = this->lookup_slot(key, hash_(key));
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    Value value = std::move(*slot.value());
+    slot.remove();
+    removed_slots_++;
+    return value;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L406—L413</summary>
+
+<!-- original:d9ef09420e56e4:source/blender/blenlib/BLI_map.hh:406:413 -->
+
+```cpp
   template<typename ForwardKey> Value pop_as(const ForwardKey &key)
   {
     Slot &slot = this->lookup_slot(key, hash_(key));
@@ -387,63 +1282,131 @@ optional把不存在与存在的T区分开，T的构造和析构跟随engaged状
     removed_slots_++;
     return value;
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return value;`
+
+**继续追踪实现**
+
+- `this->lookup_slot` → [blender::Map::lookup_slot · L1306](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-7180cfdde1dfaf79)；[blender::Map::lookup_slot · L1318](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-94b5328db99e893f)。同名重载需按实参类型选择。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L408。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+- `slot.value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L409。
+- `slot.remove` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L410。
+
+### 类型布局、声明与编译条件 · BLI_map.hh L414—L418
+
+<!-- annotated:31861aaa314004 -->
+
+```cpp
 
   /**
    * Get the value that is stored for the given key and remove it from the map. If the key is not
    * in the map, a value-less optional is returned.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L414—L418</summary>
+
+<!-- original:31861aaa314004:source/blender/blenlib/BLI_map.hh:414:418 -->
+
+```cpp
+
+  /**
+   * Get the value that is stored for the given key and remove it from the map. If the key is not
+   * in the map, a value-less optional is returned.
+   */
+```
+
+</details>
+
+<a id="f-1b454f51360ea453"></a>
+
+### `blender::Map::pop_try`
+
+移除占用项并维护探测状态。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L419—L422。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:82da0a91d6c6d5 -->
+
+```cpp
   std::optional<Value> pop_try(const Key &key)
   {
     return this->pop_try_as(key);
   }
 ```
 
-本段语义重点：
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L419—L422</summary>
 
-- `removed_slots_`：删除标记计数，影响重建判断及探测长度。
+<!-- original:82da0a91d6c6d5:source/blender/blenlib/BLI_map.hh:419:422 -->
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L372 | 声明模板参数 `template<typename ForwardKey> bool remove_as(const ForwardKey &key)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L373 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L374 | 把右侧 `this->lookup_slot_ptr(key, hash_(key))` 用于初始化或更新左侧 `Slot *slot`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L375 | 判断 `slot == nullptr`，成立时进入本分支，否则继续后续路径。这里区分空地址与可用地址，但非空本身仍不能证明对象存活。 |
-| L376 | 返回表达式 `false`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L377 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L378 | 出现调用或函数声明 `remove`，对应表达式为 `slot->remove();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L379 | 递增或递减现有状态：`removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L380 | 返回表达式 `true`。这是本路径的布尔结果，具体成功、存在或状态含义由函数接口规定。 |
-| L381 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L387 | 出现调用或函数声明 `remove_contained`，对应表达式为 `void remove_contained(const Key &key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L388 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L389 | 出现调用或函数声明 `remove_contained_as`，对应表达式为 `this->remove_contained_as(key);`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L390 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L391 | 声明模板参数 `template<typename ForwardKey> void remove_contained_as(const ForwardKey &key)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L392 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L393 | 把右侧 `this->lookup_slot(key, hash_(key))` 用于初始化或更新左侧 `Slot &slot`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L394 | 出现调用或函数声明 `remove`，对应表达式为 `slot.remove();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L395 | 递增或递减现有状态：`removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L396 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L402 | 出现调用或函数声明 `pop`，对应表达式为 `Value pop(const Key &key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L403 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L404 | 返回表达式 `this->pop_as(key)`。 |
-| L405 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L406 | 声明模板参数 `template<typename ForwardKey> Value pop_as(const ForwardKey &key)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L407 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L408 | 把右侧 `this->lookup_slot(key, hash_(key))` 用于初始化或更新左侧 `Slot &slot`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L409 | 把右侧 `std::move(*slot.value())` 用于初始化或更新左侧 `Value value`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L410 | 出现调用或函数声明 `remove`，对应表达式为 `slot.remove();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L411 | 递增或递减现有状态：`removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L412 | 返回表达式 `value`。 |
-| L413 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L419 | 出现调用或函数声明 `pop_try`，对应表达式为 `std::optional<Value> pop_try(const Key &key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L420 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L421 | 返回表达式 `this->pop_try_as(key)`。 |
-| L422 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+```cpp
+  std::optional<Value> pop_try(const Key &key)
+  {
+    return this->pop_try_as(key);
+  }
+```
 
-### BLI_map.hh：L423—L458
+</details>
 
-<!-- source:source/blender/blenlib/BLI_map.hh:423:458 -->
+**接口与不变量**
+
+对象销毁与留下删除槽标记是不同步骤，直接把碰撞链中间槽变成Empty可能截断后续查找。
+
+**结果出口**
+
+- `return this->pop_try_as(key);`
+
+**继续追踪实现**
+
+- `this->pop_try_as` → [blender::Map::pop_try_as · L423](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-3c6b67808922ebfb)。
+
+<a id="f-3c6b67808922ebfb"></a>
+
+### `blender::Map::pop_try_as`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L423—L433。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:50923f3f45bc12 -->
+
+```cpp
+  template<typename ForwardKey> std::optional<Value> pop_try_as(const ForwardKey &key)
+  {
+    Slot *slot = this->lookup_slot_ptr(key, hash_(key));
+    if (slot == nullptr) {
+      return {};
+    }
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    std::optional<Value> value = std::move(*slot->value());
+    slot->remove();
+    removed_slots_++;
+    return value;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L423—L433</summary>
+
+<!-- original:50923f3f45bc12:source/blender/blenlib/BLI_map.hh:423:433 -->
 
 ```cpp
   template<typename ForwardKey> std::optional<Value> pop_try_as(const ForwardKey &key)
@@ -457,19 +1420,177 @@ optional把不存在与存在的T区分开，T的构造和析构跟随engaged状
     removed_slots_++;
     return value;
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return {};`
+- `return value;`
+
+**继续追踪实现**
+
+- `this->lookup_slot_ptr` → [blender::Map::lookup_slot_ptr · L1323](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-93cb8db01f95f07b)；[blender::Map::lookup_slot_ptr · L1337](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-eeec937f512ef4fe)。同名重载需按实参类型选择。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L425。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+- `slot->value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L429。
+- `slot->remove` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L430。
+
+### 类型布局、声明与编译条件 · BLI_map.hh L434—L438
+
+<!-- annotated:197537dc8aebab -->
+
+```cpp
 
   /**
    * Get the value that corresponds to the given key and remove it from the map. If the key is not
    * in the map, return the given default value instead.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L434—L438</summary>
+
+<!-- original:197537dc8aebab:source/blender/blenlib/BLI_map.hh:434:438 -->
+
+```cpp
+
+  /**
+   * Get the value that corresponds to the given key and remove it from the map. If the key is not
+   * in the map, return the given default value instead.
+   */
+```
+
+</details>
+
+<a id="f-9dd656831c024785"></a>
+
+### `blender::Map::pop_default`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L439—L442。
+
+接口参数：
+
+- `const Key &key`
+- `const Value &default_value`
+
+**教学注释版**
+
+<!-- annotated:b4d2e2e0684803 -->
+
+```cpp
   Value pop_default(const Key &key, const Value &default_value)
   {
     return this->pop_default_as(key, default_value);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L439—L442</summary>
+
+<!-- original:b4d2e2e0684803:source/blender/blenlib/BLI_map.hh:439:442 -->
+
+```cpp
+  Value pop_default(const Key &key, const Value &default_value)
+  {
+    return this->pop_default_as(key, default_value);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->pop_default_as(key, default_value);`
+
+**继续追踪实现**
+
+- `this->pop_default_as` → [blender::Map::pop_default_as · L447](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-e594019adc9970e7)。
+
+<a id="f-f0e4b7971e882c92"></a>
+
+### `blender::Map::pop_default`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L443—L446。
+
+接口参数：
+
+- `const Key &key`
+- `Value &&default_value`
+
+**教学注释版**
+
+<!-- annotated:3445a6bd15b6b7 -->
+
+```cpp
+  Value pop_default(const Key &key, Value &&default_value)
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    return this->pop_default_as(key, std::move(default_value));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L443—L446</summary>
+
+<!-- original:3445a6bd15b6b7:source/blender/blenlib/BLI_map.hh:443:446 -->
+
+```cpp
   Value pop_default(const Key &key, Value &&default_value)
   {
     return this->pop_default_as(key, std::move(default_value));
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->pop_default_as(key, std::move(default_value));`
+
+**继续追踪实现**
+
+- `this->pop_default_as` → [blender::Map::pop_default_as · L447](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-e594019adc9970e7)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<a id="f-e594019adc9970e7"></a>
+
+### `blender::Map::pop_default_as`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L447—L458。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:2d2ae1848cf75f -->
+
+```cpp
+  template<typename ForwardKey, typename... ForwardValue>
+  Value pop_default_as(const ForwardKey &key, ForwardValue &&...default_value)
+  {
+    Slot *slot = this->lookup_slot_ptr(key, hash_(key));
+    if (slot == nullptr) {
+      // [讲解] std::forward<ForwardValue>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+      return Value(std::forward<ForwardValue>(default_value)...);
+    }
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    Value value = std::move(*slot->value());
+    slot->remove();
+    removed_slots_++;
+    return value;
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L447—L458</summary>
+
+<!-- original:2d2ae1848cf75f:source/blender/blenlib/BLI_map.hh:447:458 -->
+
+```cpp
   template<typename ForwardKey, typename... ForwardValue>
   Value pop_default_as(const ForwardKey &key, ForwardValue &&...default_value)
   {
@@ -484,47 +1605,26 @@ optional把不存在与存在的T区分开，T的构造和析构跟随engaged状
   }
 ```
 
-本段语义重点：
+</details>
 
-- `removed_slots_`：删除标记计数，影响重建判断及探测长度。
+**结果出口**
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L423 | 声明模板参数 `template<typename ForwardKey> std::optional<Value> pop_try_as(const ForwardKey &key)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L424 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L425 | 把右侧 `this->lookup_slot_ptr(key, hash_(key))` 用于初始化或更新左侧 `Slot *slot`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L426 | 判断 `slot == nullptr`，成立时进入本分支，否则继续后续路径。这里区分空地址与可用地址，但非空本身仍不能证明对象存活。 |
-| L427 | 返回表达式 `{}`。 |
-| L428 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L429 | 把右侧 `std::move(*slot->value())` 用于初始化或更新左侧 `std::optional<Value> value`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L430 | 出现调用或函数声明 `remove`，对应表达式为 `slot->remove();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L431 | 递增或递减现有状态：`removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L432 | 返回表达式 `value`。 |
-| L433 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L439 | 出现调用或函数声明 `pop_default`，对应表达式为 `Value pop_default(const Key &key, const Value &default_value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L440 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L441 | 返回表达式 `this->pop_default_as(key, default_value)`。 |
-| L442 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L443 | 出现调用或函数声明 `pop_default`，对应表达式为 `Value pop_default(const Key &key, Value &&default_value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L444 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L445 | 返回表达式 `this->pop_default_as(key, std::move(default_value))`。 |
-| L446 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L447 | 声明模板参数 `template<typename ForwardKey, typename... ForwardValue>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L448 | 出现调用或函数声明 `pop_default_as`，对应表达式为 `Value pop_default_as(const ForwardKey &key, ForwardValue &&...default_value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L449 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L450 | 把右侧 `this->lookup_slot_ptr(key, hash_(key))` 用于初始化或更新左侧 `Slot *slot`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L451 | 判断 `slot == nullptr`，成立时进入本分支，否则继续后续路径。这里区分空地址与可用地址，但非空本身仍不能证明对象存活。 |
-| L452 | 返回表达式 `Value(std::forward<ForwardValue>(default_value)...)`。 |
-| L453 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L454 | 把右侧 `std::move(*slot->value())` 用于初始化或更新左侧 `Value value`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L455 | 出现调用或函数声明 `remove`，对应表达式为 `slot->remove();`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L456 | 递增或递减现有状态：`removed_slots_++;`。这改变计数或游标；检查边界、计数单位，以及并发访问是否有相应保护。 |
-| L457 | 返回表达式 `value`。 |
-| L458 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+- `return Value(std::forward<ForwardValue>(default_value)...);`
+- `return value;`
 
-### BLI_map.hh：L459—L511
+**继续追踪实现**
 
-<!-- source:source/blender/blenlib/BLI_map.hh:459:511 -->
+- `this->lookup_slot_ptr` → [blender::Map::lookup_slot_ptr · L1323](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-93cb8db01f95f07b)；[blender::Map::lookup_slot_ptr · L1337](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-eeec937f512ef4fe)。同名重载需按实参类型选择。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L450。
+- `Value` → [blender::io::serialize::Value](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-asset_index-66abf0.md#t-12f6bd59d805)；[blender::io::serialize::Value](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_serialize-5b362e.md#t-68cc6c9eb2b6)；[blender::io::serialize::Value](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_serialize-5b362e.md#t-6338b3e5fd60)；[blender::math::Axis::Value](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_basis_types-fc7090.md#t-ef2f63ee0ed5)；[blender::math::AxisSigned::Value](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_basis_types-fc7090.md#t-fde967b6970e)；[blender::io::serialize::Value](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_idprop-fe422c.md#t-295d951f0692)；[blender::gpu::shader::SpecializationConstant::Value](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GPU_common_types-5aca01.md#t-8b4628c1c185)；[blender::fn::GFieldRef::Value](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/%E4%BE%9D%E8%B5%96-FN_field-351dc0.md#t-c10039d00c56)。
+- `std::forward<ForwardValue>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+- `slot->value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L454。
+- `slot->remove` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L455。
+
+### 类型布局、声明与编译条件 · BLI_map.hh L459—L479
+
+<!-- annotated:63d0df0362a754 -->
 
 ```cpp
 
@@ -548,6 +1648,56 @@ optional把不存在与存在的T区分开，T的构造和析构跟随engaged状
    *                     [](int *value) { *value = 5; },
    *                     [](int *value) { (*value)++; });
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L459—L479</summary>
+
+<!-- original:63d0df0362a754:source/blender/blenlib/BLI_map.hh:459:479 -->
+
+```cpp
+
+  /**
+   * This method can be used to implement more complex custom behavior without having to do
+   * multiple lookups
+   *
+   * When the key did not yet exist in the map, the create_value function is called. Otherwise the
+   * modify_value function is called.
+   *
+   * Both functions are expected to take a single parameter of type `Value *`. In create_value,
+   * this pointer will point to uninitialized memory that has to be initialized by the function. In
+   * modify_value, it will point to an already initialized value.
+   *
+   * The function returns whatever is returned from the create_value or modify_value callback.
+   * Therefore, both callbacks have to have the same return type.
+   *
+   * In this example an integer is stored for every key. The initial value is five and we want to
+   * increase it every time the same key is used.
+   *   map.add_or_modify(key,
+   *                     [](int *value) { *value = 5; },
+   *                     [](int *value) { (*value)++; });
+   */
+```
+
+</details>
+
+<a id="f-eb982d087ea50687"></a>
+
+### `blender::Map::add_or_modify`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L480—L486。
+
+接口参数：
+
+- `const Key &key`
+- `const CreateValueF &create_value`
+- `const ModifyValueF &modify_value`
+
+**教学注释版**
+
+<!-- annotated:60caa7923f7c16 -->
+
+```cpp
   template<typename CreateValueF, typename ModifyValueF>
   auto add_or_modify(const Key &key,
                      const CreateValueF &create_value,
@@ -555,12 +1705,118 @@ optional把不存在与存在的T区分开，T的构造和析构跟随engaged状
   {
     return this->add_or_modify_as(key, create_value, modify_value);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L480—L486</summary>
+
+<!-- original:60caa7923f7c16:source/blender/blenlib/BLI_map.hh:480:486 -->
+
+```cpp
+  template<typename CreateValueF, typename ModifyValueF>
+  auto add_or_modify(const Key &key,
+                     const CreateValueF &create_value,
+                     const ModifyValueF &modify_value) -> decltype(create_value(nullptr))
+  {
+    return this->add_or_modify_as(key, create_value, modify_value);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->add_or_modify_as(key, create_value, modify_value);`
+
+**继续追踪实现**
+
+- `this->add_or_modify_as` → [blender::Map::add_or_modify_as · L493](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-22f41133444128e3)。
+
+<a id="f-1811a186397c90d9"></a>
+
+### `blender::Map::add_or_modify`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L487—L492。
+
+接口参数：
+
+- `Key &&key`
+- `const CreateValueF &create_value`
+- `const ModifyValueF &modify_value`
+
+**教学注释版**
+
+<!-- annotated:8773006d944c9e -->
+
+```cpp
+  template<typename CreateValueF, typename ModifyValueF>
+  auto add_or_modify(Key &&key, const CreateValueF &create_value, const ModifyValueF &modify_value)
+      -> decltype(create_value(nullptr))
+  {
+    // [讲解] std::move：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+    return this->add_or_modify_as(std::move(key), create_value, modify_value);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L487—L492</summary>
+
+<!-- original:8773006d944c9e:source/blender/blenlib/BLI_map.hh:487:492 -->
+
+```cpp
   template<typename CreateValueF, typename ModifyValueF>
   auto add_or_modify(Key &&key, const CreateValueF &create_value, const ModifyValueF &modify_value)
       -> decltype(create_value(nullptr))
   {
     return this->add_or_modify_as(std::move(key), create_value, modify_value);
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->add_or_modify_as(std::move(key), create_value, modify_value);`
+
+**继续追踪实现**
+
+- `this->add_or_modify_as` → [blender::Map::add_or_modify_as · L493](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-22f41133444128e3)。
+- `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
+
+<a id="f-22f41133444128e3"></a>
+
+### `blender::Map::add_or_modify_as`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L493—L500。
+
+接口参数：
+
+- `ForwardKey &&key`
+- `const CreateValueF &create_value`
+- `const ModifyValueF &modify_value`
+
+**教学注释版**
+
+<!-- annotated:d19b122104c123 -->
+
+```cpp
+  template<typename ForwardKey, typename CreateValueF, typename ModifyValueF>
+  auto add_or_modify_as(ForwardKey &&key,
+                        const CreateValueF &create_value,
+                        const ModifyValueF &modify_value) -> decltype(create_value(nullptr))
+  {
+    return this->add_or_modify__impl(
+        // [讲解] std::forward<ForwardKey>：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+        std::forward<ForwardKey>(key), create_value, modify_value, hash_(key));
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L493—L500</summary>
+
+<!-- original:d19b122104c123:source/blender/blenlib/BLI_map.hh:493:500 -->
+
+```cpp
   template<typename ForwardKey, typename CreateValueF, typename ModifyValueF>
   auto add_or_modify_as(ForwardKey &&key,
                         const CreateValueF &create_value,
@@ -569,6 +1825,25 @@ optional把不存在与存在的T区分开，T的构造和析构跟随engaged状
     return this->add_or_modify__impl(
         std::forward<ForwardKey>(key), create_value, modify_value, hash_(key));
   }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->add_or_modify__impl(`
+
+**继续追踪实现**
+
+- `this->add_or_modify__impl` → [blender::Map::add_or_modify__impl · L1214](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-f36721a3ec1883f8)。
+- `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L499。
+
+### 类型布局、声明与编译条件 · BLI_map.hh L501—L507
+
+<!-- annotated:6a05484dc5e9c9 -->
+
+```cpp
 
   /**
    * Returns a pointer to the value that corresponds to the given key. If the key is not in the
@@ -576,362 +1851,534 @@ optional把不存在与存在的T区分开，T的构造和析构跟随engaged状
    *
    * This is similar to std::unordered_map::find.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L501—L507</summary>
+
+<!-- original:6a05484dc5e9c9:source/blender/blenlib/BLI_map.hh:501:507 -->
+
+```cpp
+
+  /**
+   * Returns a pointer to the value that corresponds to the given key. If the key is not in the
+   * map, nullptr is returned.
+   *
+   * This is similar to std::unordered_map::find.
+   */
+```
+
+</details>
+
+<a id="f-90844510a761dcb2"></a>
+
+### `blender::Map::lookup_ptr`
+
+按键查找对应项。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L508—L511。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:656b7b1da3d646 -->
+
+```cpp
+  const Value *lookup_ptr(const Key &key) const
+  {
+    // [讲解] this->lookup_ptr_as：按键查找对应项。
+    return this->lookup_ptr_as(key);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L508—L511</summary>
+
+<!-- original:656b7b1da3d646:source/blender/blenlib/BLI_map.hh:508:511 -->
+
+```cpp
   const Value *lookup_ptr(const Key &key) const
   {
     return this->lookup_ptr_as(key);
   }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L480 | 声明模板参数 `template<typename CreateValueF, typename ModifyValueF>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L481 | 出现调用或函数声明 `add_or_modify`，对应表达式为 `auto add_or_modify(const Key &key,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L482 | 本行是连续声明或表达式的一部分：`const CreateValueF &create_value,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L483 | 出现调用或函数声明 `decltype`，对应表达式为 `const ModifyValueF &modify_value) -> decltype(create_value(nullptr))`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L484 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L485 | 返回表达式 `this->add_or_modify_as(key, create_value, modify_value)`。 |
-| L486 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L487 | 声明模板参数 `template<typename CreateValueF, typename ModifyValueF>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L488 | 出现调用或函数声明 `add_or_modify`，对应表达式为 `auto add_or_modify(Key &&key, const CreateValueF &create_value, const ModifyValueF &modify_value)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L489 | 出现调用或函数声明 `decltype`，对应表达式为 `-> decltype(create_value(nullptr))`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L490 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L491 | 返回表达式 `this->add_or_modify_as(std::move(key), create_value, modify_value)`。 |
-| L492 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L493 | 声明模板参数 `template<typename ForwardKey, typename CreateValueF, typename ModifyValueF>`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L494 | 出现调用或函数声明 `add_or_modify_as`，对应表达式为 `auto add_or_modify_as(ForwardKey &&key,`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L495 | 本行是连续声明或表达式的一部分：`const CreateValueF &create_value,`。与本段前后行合读；逗号、括号和限定符决定它属于参数、初始化列表还是实际计算。 |
-| L496 | 出现调用或函数声明 `decltype`，对应表达式为 `const ModifyValueF &modify_value) -> decltype(create_value(nullptr))`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L497 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L498 | 返回表达式 `this->add_or_modify__impl(`。 |
-| L499 | 出现调用或函数声明 `std::forward`，对应表达式为 `std::forward<ForwardKey>(key), create_value, modify_value, hash_(key));`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L500 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L508 | 出现调用或函数声明 `lookup_ptr`，对应表达式为 `const Value *lookup_ptr(const Key &key) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L509 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L510 | 返回表达式 `this->lookup_ptr_as(key)`。 |
-| L511 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+</details>
 
-### BLI_map.hh：L512—L552
+**接口与不变量**
 
-<!-- source:source/blender/blenlib/BLI_map.hh:512:552 -->
+引用、空指针与默认值表达不同失败语义，保存返回地址后再修改容器要检查失效。
+
+**结果出口**
+
+- `return this->lookup_ptr_as(key);`
+
+**继续追踪实现**
+
+- `this->lookup_ptr_as` → [blender::Map::lookup_ptr_as · L516](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-c82b929e8b2a18fb)；[blender::Map::lookup_ptr_as · L521](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-6350d153de2baf1d)。同名重载需按实参类型选择。
+
+<a id="f-ce017485b88f4b2c"></a>
+
+### `blender::Map::lookup_ptr`
+
+按键查找对应项。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L512—L515。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:093aba09b64eaa -->
+
+```cpp
+  Value *lookup_ptr(const Key &key)
+  {
+    // [讲解] this->lookup_ptr_as：按键查找对应项。
+    return this->lookup_ptr_as(key);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L512—L515</summary>
+
+<!-- original:093aba09b64eaa:source/blender/blenlib/BLI_map.hh:512:515 -->
 
 ```cpp
   Value *lookup_ptr(const Key &key)
   {
     return this->lookup_ptr_as(key);
   }
+```
+
+</details>
+
+**接口与不变量**
+
+引用、空指针与默认值表达不同失败语义，保存返回地址后再修改容器要检查失效。
+
+**结果出口**
+
+- `return this->lookup_ptr_as(key);`
+
+**继续追踪实现**
+
+- `this->lookup_ptr_as` → [blender::Map::lookup_ptr_as · L516](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-c82b929e8b2a18fb)；[blender::Map::lookup_ptr_as · L521](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-6350d153de2baf1d)。同名重载需按实参类型选择。
+
+<a id="f-c82b929e8b2a18fb"></a>
+
+### `blender::Map::lookup_ptr_as`
+
+按键查找对应项。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L516—L520。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:a0c9cf1e6af657 -->
+
+```cpp
   template<typename ForwardKey> const Value *lookup_ptr_as(const ForwardKey &key) const
   {
     const Slot *slot = this->lookup_slot_ptr(key, hash_(key));
     return (slot != nullptr) ? slot->value() : nullptr;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L516—L520</summary>
+
+<!-- original:a0c9cf1e6af657:source/blender/blenlib/BLI_map.hh:516:520 -->
+
+```cpp
+  template<typename ForwardKey> const Value *lookup_ptr_as(const ForwardKey &key) const
+  {
+    const Slot *slot = this->lookup_slot_ptr(key, hash_(key));
+    return (slot != nullptr) ? slot->value() : nullptr;
+  }
+```
+
+</details>
+
+**接口与不变量**
+
+引用、空指针与默认值表达不同失败语义，保存返回地址后再修改容器要检查失效。
+
+**结果出口**
+
+- `return (slot != nullptr) ? slot->value() : nullptr;`
+
+**继续追踪实现**
+
+- `this->lookup_slot_ptr` → [blender::Map::lookup_slot_ptr · L1323](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-93cb8db01f95f07b)；[blender::Map::lookup_slot_ptr · L1337](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-eeec937f512ef4fe)。同名重载需按实参类型选择。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L518。
+- `slot->value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L519。
+
+<a id="f-6350d153de2baf1d"></a>
+
+### `blender::Map::lookup_ptr_as`
+
+按键查找对应项。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L521—L524。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:d3d0cafa8e8be7 -->
+
+```cpp
   template<typename ForwardKey> Value *lookup_ptr_as(const ForwardKey &key)
   {
     return const_cast<Value *>(const_cast<const Map *>(this)->lookup_ptr_as(key));
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L521—L524</summary>
+
+<!-- original:d3d0cafa8e8be7:source/blender/blenlib/BLI_map.hh:521:524 -->
+
+```cpp
+  template<typename ForwardKey> Value *lookup_ptr_as(const ForwardKey &key)
+  {
+    return const_cast<Value *>(const_cast<const Map *>(this)->lookup_ptr_as(key));
+  }
+```
+
+</details>
+
+**接口与不变量**
+
+引用、空指针与默认值表达不同失败语义，保存返回地址后再修改容器要检查失效。
+
+**结果出口**
+
+- `return const_cast<Value *>(const_cast<const Map *>(this)->lookup_ptr_as(key));`
+
+**继续追踪实现**
+
+- `const_cast<const Map *>(this)->lookup_ptr_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L523。
+
+### 类型布局、声明与编译条件 · BLI_map.hh L525—L530
+
+<!-- annotated:7e93615f0e7106 -->
+
+```cpp
 
   /**
    * Returns a copy of the value that corresponds to the given key, or std::nullopt if the key is
    * not in the map. In some cases, one may not want a copy but an actual reference to the value.
    * In that case it's better to use #lookup_ptr instead.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L525—L530</summary>
+
+<!-- original:7e93615f0e7106:source/blender/blenlib/BLI_map.hh:525:530 -->
+
+```cpp
+
+  /**
+   * Returns a copy of the value that corresponds to the given key, or std::nullopt if the key is
+   * not in the map. In some cases, one may not want a copy but an actual reference to the value.
+   * In that case it's better to use #lookup_ptr instead.
+   */
+```
+
+</details>
+
+<a id="f-665dd73b209925d1"></a>
+
+### `blender::Map::lookup_try`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L531—L534。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:2ebf1eaa6295de -->
+
+```cpp
   std::optional<Value> lookup_try(const Key &key) const
   {
     return this->lookup_try_as(key);
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L531—L534</summary>
+
+<!-- original:2ebf1eaa6295de:source/blender/blenlib/BLI_map.hh:531:534 -->
+
+```cpp
+  std::optional<Value> lookup_try(const Key &key) const
+  {
+    return this->lookup_try_as(key);
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return this->lookup_try_as(key);`
+
+**继续追踪实现**
+
+- `this->lookup_try_as` → [blender::Map::lookup_try_as · L535](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-b67ee5c5ed0c1195)。
+
+<a id="f-b67ee5c5ed0c1195"></a>
+
+### `blender::Map::lookup_try_as`
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L535—L539。
+
+接口参数：
+
+- `const ForwardKey &key`
+
+**教学注释版**
+
+<!-- annotated:b60cf3a6976f56 -->
+
+```cpp
   template<typename ForwardKey> std::optional<Value> lookup_try_as(const ForwardKey &key) const
   {
     const Slot *slot = this->lookup_slot_ptr(key, hash_(key));
     return (slot != nullptr) ? std::optional<Value>(*slot->value()) : std::nullopt;
   }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L535—L539</summary>
+
+<!-- original:b60cf3a6976f56:source/blender/blenlib/BLI_map.hh:535:539 -->
+
+```cpp
+  template<typename ForwardKey> std::optional<Value> lookup_try_as(const ForwardKey &key) const
+  {
+    const Slot *slot = this->lookup_slot_ptr(key, hash_(key));
+    return (slot != nullptr) ? std::optional<Value>(*slot->value()) : std::nullopt;
+  }
+```
+
+</details>
+
+**结果出口**
+
+- `return (slot != nullptr) ? std::optional<Value>(*slot->value()) : std::nullopt;`
+
+**继续追踪实现**
+
+- `this->lookup_slot_ptr` → [blender::Map::lookup_slot_ptr · L1323](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-93cb8db01f95f07b)；[blender::Map::lookup_slot_ptr · L1337](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-eeec937f512ef4fe)。同名重载需按实参类型选择。
+- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L537。
+- `std::optional<Value>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
+- `slot->value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L538。
+
+### 类型布局、声明与编译条件 · BLI_map.hh L540—L544
+
+<!-- annotated:579dff0dce1435 -->
+
+```cpp
 
   /**
    * Returns a reference to the value that corresponds to the given key. This invokes undefined
    * behavior when the key is not in the map.
    */
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L540—L544</summary>
+
+<!-- original:579dff0dce1435:source/blender/blenlib/BLI_map.hh:540:544 -->
+
+```cpp
+
+  /**
+   * Returns a reference to the value that corresponds to the given key. This invokes undefined
+   * behavior when the key is not in the map.
+   */
+```
+
+</details>
+
+<a id="f-f25ef95f1454656d"></a>
+
+### `blender::Map::lookup`
+
+按键查找对应项。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L545—L548。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:cb4692e419d37c -->
+
+```cpp
+  const Value &lookup(const Key &key) const
+  {
+    // [讲解] this->lookup_as：按键查找对应项。
+    return this->lookup_as(key);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L545—L548</summary>
+
+<!-- original:cb4692e419d37c:source/blender/blenlib/BLI_map.hh:545:548 -->
+
+```cpp
   const Value &lookup(const Key &key) const
   {
     return this->lookup_as(key);
   }
+```
+
+</details>
+
+**接口与不变量**
+
+引用、空指针与默认值表达不同失败语义，保存返回地址后再修改容器要检查失效。
+
+**结果出口**
+
+- `return this->lookup_as(key);`
+
+**继续追踪实现**
+
+- `this->lookup_as` → [blender::Map::lookup_as · L553](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-79a6756cad0e235d)；[blender::Map::lookup_as · L559](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-2c59f935773aaceb)。同名重载需按实参类型选择。
+
+<a id="f-742f9454fa7ea4b9"></a>
+
+### `blender::Map::lookup`
+
+按键查找对应项。
+
+实现位置：[source/blender/blenlib/BLI_map.hh](../../../../../source/blender/blenlib/BLI_map.hh) · L549—L552。
+
+接口参数：
+
+- `const Key &key`
+
+**教学注释版**
+
+<!-- annotated:74fcfa4c5cbb3e -->
+
+```cpp
+  Value &lookup(const Key &key)
+  {
+    // [讲解] this->lookup_as：按键查找对应项。
+    return this->lookup_as(key);
+  }
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_map.hh · L549—L552</summary>
+
+<!-- original:74fcfa4c5cbb3e:source/blender/blenlib/BLI_map.hh:549:552 -->
+
+```cpp
   Value &lookup(const Key &key)
   {
     return this->lookup_as(key);
   }
 ```
 
-| 原始行 | 语义、约束与检查 |
-|---|---|
-| L512 | 出现调用或函数声明 `lookup_ptr`，对应表达式为 `Value *lookup_ptr(const Key &key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L513 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L514 | 返回表达式 `this->lookup_ptr_as(key)`。 |
-| L515 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L516 | 声明模板参数 `template<typename ForwardKey> const Value *lookup_ptr_as(const ForwardKey &key) const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L517 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L518 | 把右侧 `this->lookup_slot_ptr(key, hash_(key))` 用于初始化或更新左侧 `const Slot *slot`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L519 | 返回表达式 `(slot != nullptr) ? slot->value() : nullptr`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L520 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L521 | 声明模板参数 `template<typename ForwardKey> Value *lookup_ptr_as(const ForwardKey &key)`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L522 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L523 | 返回表达式 `const_cast<Value *>(const_cast<const Map *>(this)->lookup_ptr_as(key))`。 |
-| L524 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L531 | 出现调用或函数声明 `lookup_try`，对应表达式为 `std::optional<Value> lookup_try(const Key &key) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L532 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L533 | 返回表达式 `this->lookup_try_as(key)`。 |
-| L534 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L535 | 声明模板参数 `template<typename ForwardKey> std::optional<Value> lookup_try_as(const ForwardKey &key) const`。类型参数决定生成操作的类型，非类型参数可决定内嵌容量或编译期分支。 |
-| L536 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L537 | 把右侧 `this->lookup_slot_ptr(key, hash_(key))` 用于初始化或更新左侧 `const Slot *slot`。声明初始化与已有对象赋值应按上下文区分；有资源的类型会调用相应特殊成员。 |
-| L538 | 返回表达式 `(slot != nullptr) ? std::optional<Value>(*slot->value()) : std::nullopt`。结合函数声明检查返回值是否借用原存储，借用值不会自动延长其寿命。 |
-| L539 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L545 | 出现调用或函数声明 `lookup`，对应表达式为 `const Value &lookup(const Key &key) const`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L546 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L547 | 返回表达式 `this->lookup_as(key)`。 |
-| L548 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
-| L549 | 出现调用或函数声明 `lookup`，对应表达式为 `Value &lookup(const Key &key)`。参数求值、返回类型与重载需结合前后完整语句；静态文本引用不能证明动态目标。 |
-| L550 | 连接上一行的声明或控制结构与其语句块；后续行在这个作用域中执行或声明。 |
-| L551 | 返回表达式 `this->lookup_as(key)`。 |
-| L552 | 结束当前语法单元。局部自动对象在离开其作用域时按规则销毁；这不等于所有被引用的外部数据也被释放。 |
+</details>
 
-## 五、接口定位、调用线索与生命周期
+**接口与不变量**
 
-### 本篇声明与实现入口
+引用、空指针与默认值表达不同失败语义，保存返回地址后再修改容器要检查失效。
 
-| 源码位置 | 实际声明片段 |
-|---|---|
-| [BLI_map.hh:L277](../../../../../source/blender/blenlib/BLI_map.hh#L277) | `void add_new(Key &&key, Value &&value)` |
-| [BLI_map.hh:L282](../../../../../source/blender/blenlib/BLI_map.hh#L282) | `void add_new_as(ForwardKey &&key, ForwardValue &&...value)` |
-| [BLI_map.hh:L295](../../../../../source/blender/blenlib/BLI_map.hh#L295) | `bool add(const Key &key, const Value &value)` |
-| [BLI_map.hh:L299](../../../../../source/blender/blenlib/BLI_map.hh#L299) | `bool add(const Key &key, Value &&value)` |
-| [BLI_map.hh:L303](../../../../../source/blender/blenlib/BLI_map.hh#L303) | `bool add(Key &&key, const Value &value)` |
-| [BLI_map.hh:L307](../../../../../source/blender/blenlib/BLI_map.hh#L307) | `bool add(Key &&key, Value &&value)` |
-| [BLI_map.hh:L312](../../../../../source/blender/blenlib/BLI_map.hh#L312) | `bool add_as(ForwardKey &&key, ForwardValue &&...value)` |
-| [BLI_map.hh:L325](../../../../../source/blender/blenlib/BLI_map.hh#L325) | `bool add_overwrite(const Key &key, const Value &value)` |
-| [BLI_map.hh:L329](../../../../../source/blender/blenlib/BLI_map.hh#L329) | `bool add_overwrite(const Key &key, Value &&value)` |
-| [BLI_map.hh:L333](../../../../../source/blender/blenlib/BLI_map.hh#L333) | `bool add_overwrite(Key &&key, const Value &value)` |
-| [BLI_map.hh:L337](../../../../../source/blender/blenlib/BLI_map.hh#L337) | `bool add_overwrite(Key &&key, Value &&value)` |
-| [BLI_map.hh:L342](../../../../../source/blender/blenlib/BLI_map.hh#L342) | `bool add_overwrite_as(ForwardKey &&key, ForwardValue &&...value)` |
-| [BLI_map.hh:L353](../../../../../source/blender/blenlib/BLI_map.hh#L353) | `bool contains(const Key &key) const` |
-| [BLI_map.hh:L357](../../../../../source/blender/blenlib/BLI_map.hh#L357) | `template<typename ForwardKey> bool contains_as(const ForwardKey &key) const` |
-| [BLI_map.hh:L368](../../../../../source/blender/blenlib/BLI_map.hh#L368) | `bool remove(const Key &key)` |
-| [BLI_map.hh:L372](../../../../../source/blender/blenlib/BLI_map.hh#L372) | `template<typename ForwardKey> bool remove_as(const ForwardKey &key)` |
-| [BLI_map.hh:L387](../../../../../source/blender/blenlib/BLI_map.hh#L387) | `void remove_contained(const Key &key)` |
-| [BLI_map.hh:L391](../../../../../source/blender/blenlib/BLI_map.hh#L391) | `template<typename ForwardKey> void remove_contained_as(const ForwardKey &key)` |
-| [BLI_map.hh:L402](../../../../../source/blender/blenlib/BLI_map.hh#L402) | `Value pop(const Key &key)` |
-| [BLI_map.hh:L406](../../../../../source/blender/blenlib/BLI_map.hh#L406) | `template<typename ForwardKey> Value pop_as(const ForwardKey &key)` |
-| [BLI_map.hh:L419](../../../../../source/blender/blenlib/BLI_map.hh#L419) | `std::optional<Value> pop_try(const Key &key)` |
-| [BLI_map.hh:L423](../../../../../source/blender/blenlib/BLI_map.hh#L423) | `template<typename ForwardKey> std::optional<Value> pop_try_as(const ForwardKey &key)` |
-| [BLI_map.hh:L439](../../../../../source/blender/blenlib/BLI_map.hh#L439) | `Value pop_default(const Key &key, const Value &default_value)` |
-| [BLI_map.hh:L443](../../../../../source/blender/blenlib/BLI_map.hh#L443) | `Value pop_default(const Key &key, Value &&default_value)` |
-| [BLI_map.hh:L448](../../../../../source/blender/blenlib/BLI_map.hh#L448) | `Value pop_default_as(const ForwardKey &key, ForwardValue &&...default_value)` |
-| [BLI_map.hh:L481](../../../../../source/blender/blenlib/BLI_map.hh#L481) | `auto add_or_modify(const Key &key,` |
-| [BLI_map.hh:L488](../../../../../source/blender/blenlib/BLI_map.hh#L488) | `auto add_or_modify(Key &&key, const CreateValueF &create_value, const ModifyValueF &modify_value)` |
-| [BLI_map.hh:L494](../../../../../source/blender/blenlib/BLI_map.hh#L494) | `auto add_or_modify_as(ForwardKey &&key,` |
-| [BLI_map.hh:L508](../../../../../source/blender/blenlib/BLI_map.hh#L508) | `const Value *lookup_ptr(const Key &key) const` |
-| [BLI_map.hh:L512](../../../../../source/blender/blenlib/BLI_map.hh#L512) | `Value *lookup_ptr(const Key &key)` |
-| [BLI_map.hh:L516](../../../../../source/blender/blenlib/BLI_map.hh#L516) | `template<typename ForwardKey> const Value *lookup_ptr_as(const ForwardKey &key) const` |
-| [BLI_map.hh:L521](../../../../../source/blender/blenlib/BLI_map.hh#L521) | `template<typename ForwardKey> Value *lookup_ptr_as(const ForwardKey &key)` |
-| [BLI_map.hh:L531](../../../../../source/blender/blenlib/BLI_map.hh#L531) | `std::optional<Value> lookup_try(const Key &key) const` |
-| [BLI_map.hh:L535](../../../../../source/blender/blenlib/BLI_map.hh#L535) | `template<typename ForwardKey> std::optional<Value> lookup_try_as(const ForwardKey &key) const` |
-| [BLI_map.hh:L545](../../../../../source/blender/blenlib/BLI_map.hh#L545) | `const Value &lookup(const Key &key) const` |
-| [BLI_map.hh:L549](../../../../../source/blender/blenlib/BLI_map.hh#L549) | `Value &lookup(const Key &key)` |
+**结果出口**
 
-### 同名符号出现位置
+- `return this->lookup_as(key);`
 
-以下表提供跨文件阅读入口，包含声明、调用或测试使用；没有经过完整C++名称解析，不把它命名为已证明的运行时调用图。
+**继续追踪实现**
 
-| 符号 | 位置 | 文本证据 |
-|---|---|---|
-| `add_new` | [mesh.cc:L1313](../../../../../source/blender/blenkernel/intern/mesh.cc#L1313) | `names.add_new(iter.name);` |
-| `add_new` | [mesh.cc:L2045](../../../../../source/blender/blenkernel/intern/mesh.cc#L2045) | `r_data.add_new(i);` |
-| `add_new` | [BLI_set.hh:L233](../../../../../source/blender/blenlib/BLI_set.hh#L233) | `void add_new(const Key &key)` |
-| `add_new_as` | [geometry_nodes_bundle.cc:L95](../../../../../source/blender/nodes/intern/geometry_nodes_bundle.cc#L95) | `items_.add_new_as(key, value);` |
-| `add_new_as` | [geometry_nodes_bundle.cc:L100](../../../../../source/blender/nodes/intern/geometry_nodes_bundle.cc#L100) | `items_.add_new_as(key, std::move(value));` |
-| `add` | [BKE_attribute.hh:L769](../../../../../source/blender/blenkernel/BKE_attribute.hh#L769) | `bool add(const StringRef name,` |
-| `add` | [BKE_attribute.hh:L783](../../../../../source/blender/blenkernel/BKE_attribute.hh#L783) | `return fn_->add(owner_, name, domain, data_type, initializer);` |
-| `add` | [BKE_attribute.hh:L786](../../../../../source/blender/blenkernel/BKE_attribute.hh#L786) | `bool add(const StringRef name, const AttrDomain domain, const AttributeInit &initializer)` |
-| `add_as` | [BLI_multi_value_map.hh:L43](../../../../../source/blender/blenlib/BLI_multi_value_map.hh#L43) | `this->add_as(key, value);` |
-| `add_as` | [BLI_multi_value_map.hh:L47](../../../../../source/blender/blenlib/BLI_multi_value_map.hh#L47) | `this->add_as(key, std::move(value));` |
-| `add_as` | [BLI_multi_value_map.hh:L51](../../../../../source/blender/blenlib/BLI_multi_value_map.hh#L51) | `this->add_as(std::move(key), value);` |
-| `add_overwrite` | [BLI_set.hh:L267](../../../../../source/blender/blenlib/BLI_set.hh#L267) | `bool add_overwrite(const Key &key)` |
-| `add_overwrite` | [BLI_set.hh:L271](../../../../../source/blender/blenlib/BLI_set.hh#L271) | `bool add_overwrite(Key &&key)` |
-| `add_overwrite` | [BLI_vector_set.hh:L374](../../../../../source/blender/blenlib/BLI_vector_set.hh#L374) | `bool add_overwrite(const Key &key)` |
-| `add_overwrite_as` | [BLI_set.hh:L269](../../../../../source/blender/blenlib/BLI_set.hh#L269) | `return this->add_overwrite_as(key);` |
-| `add_overwrite_as` | [BLI_set.hh:L273](../../../../../source/blender/blenlib/BLI_set.hh#L273) | `return this->add_overwrite_as(std::move(key));` |
-| `add_overwrite_as` | [BLI_set.hh:L275](../../../../../source/blender/blenlib/BLI_set.hh#L275) | `template<typename ForwardKey> bool add_overwrite_as(ForwardKey &&key)` |
-| `contains` | [BKE_attribute.hh:L525](../../../../../source/blender/blenkernel/BKE_attribute.hh#L525) | `bool contains(StringRef name) const` |
-| `contains` | [BKE_attribute.hh:L777](../../../../../source/blender/blenkernel/BKE_attribute.hh#L777) | `if (this->contains(name)) {` |
-| `contains` | [BKE_attribute.hh:L818](../../../../../source/blender/blenkernel/BKE_attribute.hh#L818) | `BLI_assert(this->contains(name));` |
-| `contains_as` | [BKE_attribute_filters.hh:L55](../../../../../source/blender/blenkernel/BKE_attribute_filters.hh#L55) | `if (skip.contains_as(name)) {` |
-| `contains_as` | [BKE_attribute_filters.hh:L80](../../../../../source/blender/blenkernel/BKE_attribute_filters.hh#L80) | `if (skip.contains_as(name)) {` |
-| `contains_as` | [BLI_set.hh:L312](../../../../../source/blender/blenlib/BLI_set.hh#L312) | `return this->contains_as(key);` |
-| `remove` | [BKE_attribute.hh:L809](../../../../../source/blender/blenkernel/BKE_attribute.hh#L809) | `if (!this->remove(name)) {` |
-| `remove` | [BKE_attribute.hh:L1007](../../../../../source/blender/blenkernel/BKE_attribute.hh#L1007) | `bool remove(const StringRef name)` |
-| `remove` | [BKE_attribute.hh:L1009](../../../../../source/blender/blenkernel/BKE_attribute.hh#L1009) | `return fn_->remove(owner_, name);` |
-| `remove_as` | [BLI_set.hh:L406](../../../../../source/blender/blenlib/BLI_set.hh#L406) | `return this->remove_as(key);` |
-| `remove_as` | [BLI_set.hh:L408](../../../../../source/blender/blenlib/BLI_set.hh#L408) | `template<typename ForwardKey> bool remove_as(const ForwardKey &key)` |
-| `remove_as` | [BLI_vector_set.hh:L425](../../../../../source/blender/blenlib/BLI_vector_set.hh#L425) | `return this->remove_as(key);` |
-| `remove_contained` | [BLI_set.hh:L416](../../../../../source/blender/blenlib/BLI_set.hh#L416) | `void remove_contained(const Key &key)` |
-| `remove_contained` | [BLI_vector_set.hh:L436](../../../../../source/blender/blenlib/BLI_vector_set.hh#L436) | `void remove_contained(const Key &key)` |
+- `this->lookup_as` → [blender::Map::lookup_as · L553](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-79a6756cad0e235d)；[blender::Map::lookup_as · L559](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-2c59f935773aaceb)。同名重载需按实参类型选择。
 
-### 生命周期推理图
+## 语法与相关类型
 
-```mermaid
-flowchart LR
-  O["调用者或源数据拥有者"]:::input
-  V["Map查找与键访问的接口与状态"]:::abstraction
-  B["借用地址、引用或视图"]:::data
-  W["实际计算或修改"]:::compute
-  R["结果与清理责任"]:::result
-  O -->|"创建与配置"| V
-  O -->|"保障寿命"| B
-  B -->|"访问前验证"| W
-  V -->|"规定操作"| W
-  W -->|"交付或销毁"| R
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
+### 模板 template
 
-这是审查生命周期的通用模型。具体类是否拥有数据由本篇成员、构造、析构和调用者一起证明；任何箭头都不自动代表shared_ptr。
+模板把类型或常量作为生成实现的参数。读声明时先列出类型参数、非类型参数和默认值，再看使用者实际实例化了什么。模板声明本身不意味着每种T都支持其全部成员。
 
-## 六、把代码放进具体数据中推演
+把T替换为int、string、只能移动的类型，分别检查每个被调用操作是否成立。
 
-本方向的共同数值模型如下。本篇的专门检查是：对存在键和缺失键比较不同查找接口的行为与复制成本。
+### 依赖名称 typename
 
-| 步骤 | 数据或状态 | 为什么需要这一步 |
-|---|---|---|
-| 插入A | hash(A)映射槽2 | 槽2变Occupied |
-| 插入B | 同样映射槽2 | 沿探测序列找到后续空槽 |
-| 删除A | 槽2变Removed | B仍须可达 |
-| 查找B | 从槽2继续探测 | Removed不能当作Empty终止 |
-| 持续删插 | 活元素数可能恒定 | 墓碑和探测长度仍可能增长 |
-| 重建 | 迁移活键值 | 去掉旧删除状态并恢复足够空间 |
+typename既可引入类型模板参数，也可告诉编译器某个依赖名称是类型。它不创建运行时对象；解析期确认语法类别与实例化期检查具体类型是不同阶段。
 
-```mermaid
-flowchart TB
-  T0["hash(A)映射槽2"]:::input
-  T1["同样映射槽2"]:::compute
-  T2["槽2变Removed"]:::compute
-  T3["从槽2继续探测"]:::compute
-  T4["活元素数可能恒定"]:::compute
-  T5["迁移活键值"]:::result
-  T0 -->|"插入B"| T1
-  T1 -->|"删除A"| T2
-  T2 -->|"查找B"| T3
-  T3 -->|"持续删插"| T4
-  T4 -->|"重建"| T5
-  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
-  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
-  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
-  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
-  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
-  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
-```
+区分typename T::value_type和T::size()，前者标记类型，后者是表达式。
 
-图是教学推演模型；精确分支与状态更新以本篇摘录及调用契约为准。
+### 只读限定 const
 
-### 本篇独立练习与参考思路
+const约束当前访问路径可做的修改。const指针、指向const的指针、const视图对象、const元素是不同位置的限定；其他别名可能仍可修改原对象。
+
+分别写T* const、const T*与const T* const，并画出不可修改的层次。
+
+### 移动转换 std::move
+
+std::move把表达式转换为可供移动重载选择的值类别，实际资源转移发生在被选中的构造或赋值中。对const对象move可能仍调用复制，对视图move也不会获得底层数据所有权。
+
+记录移动构造调用次数，不用变量名或std::move的出现次数替代测量。
+
+### 完美转发 std::forward
+
+std::forward在转发引用模板中恢复调用者原来的值类别。它依赖推导出的模板实参；无条件move会改变左值调用者的语义。
+
+对同一接口分别传入左值、临时对象和const左值，记录实际重载。
+
+### 异常边界 try与catch
+
+try定义异常传播的局部边界。失败路径需要销毁已经成功构造的部分并释放相应存储；未构造的对象不能被析构。
+
+在第k次构造失败，列出已经存在的对象集合与待释放缓冲。
+
+### 限定转换 const_cast
+
+const_cast可以改变访问路径的限定，但不能让本来就是const的对象合法可写。常用于复用只读实现时，仍需检查底层对象是否实际可变。
+
+对非const对象的const引用与真正const对象分别分析修改是否合法。
+
+### 可选值 optional
+
+optional把不存在与存在的T区分开，T的构造和析构跟随engaged状态变化。访问前应由has_value或条件分支证明存在。
+
+把空Field状态与合法常量零区分，不能用某个普通值代替不存在。
+
+## 实现练习与验证
 
 对存在键和缺失键比较不同查找接口的行为与复制成本。
 
-参考思路：引用返回、指针返回、默认值和断言接口有不同前置条件；避免在未证明存在时调用必存在接口。
+参考推理：明确失效边界，重建后重新查找；不要把一次存在证明扩展到所有后续状态。
 
-将输入、预期结果和资源责任分成三张清单。先用最直接的实现给出可核对的答案，再替换成对应源码使用的表示；比较结果不变的条件，而不是只比较接口名字。
+每个活键从其探测起点可达；不存在的键可终止；析构仅命中占用状态的真实对象。
 
-验收依据：每个活键从其探测起点可达；不存在的键可终止；析构仅命中占用状态的真实对象。
-
-## 七、复杂度、设计取舍与其他基础库
+## 历史、跨库比较与证据
 
 对比std::unordered_map、Abseil flat_hash_map与node_hash_map时，优先比较地址稳定性、键值搬移要求和删除行为；不同实现的平均常数及负载策略需要测量。
 
-本篇的具体取舍：引用返回、指针返回、默认值和断言接口有不同前置条件；避免在未证明存在时调用必存在接口。
-
-| 观察维度 | 从源码取得证据的方法 | 本篇要避免的误判 |
-|---|---|---|
-| 时间 | 对循环次数、分派次数和重建频率分别计数 | 看到单次常数操作就断定整个操作序列是常数成本 |
-| 内存 | 区分对象本体、容量存储、间接资源和共享控制块 | 用sizeof代替总内存 |
-| 安全 | 沿构造、失败回滚、销毁与失效逐路径检查 | 把断言或非空指针当作完整安全证明 |
-| 并发 | 逐字段确认锁、发布顺序和借用寿命 | 把引用计数线程安全等同数据读写线程安全 |
-
-相关一手资料：
-
-- [C++公开工作草案](https://eel.is/c++draft/)：持续更新的工作草案；语言与标准库语义以相应章节为准。
-- [Abseil Containers](https://abseil.io/docs/cpp/guides/container)：在线版，2026-10-14查阅；引用失效按具体容器契约检查。
-
-资料用于核对契约和进一步阅读；这里没有声称外部库与Blender实现相同，也没有把上游性能数字当作本机实测。
-
-## 八、历史提交与设计演化
-
-### 2025-12-12 · Jacques Lucke
-
-[Fix: BLI: bad performance edge case in hash table implementations](https://projects.blender.org/blender/blender/commit/b242c618450e3c0011914112c3ffe31ae2e96028)
-
-完整哈希：`b242c618450e3c0011914112c3ffe31ae2e96028`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-Fix: BLI: bad performance edge case in hash table implementations
-
-The issue happened when the hash table (e.g. Map) has close to a power of two
-number of elements and repeatedly deletes and adds values. In this case the map
-is rebuild more often than is necessary, and in the worst case a rebuild happens
-each time something is removed and added again.
-
-The fix here is to make sure that each call to `realloc_and_reinsert` is
-actually worth it by making it grow the map in some cases where it previously
-wouldn't. A similar optimization already exists in
-`Vector::realloc_to_at_least`.
-
-An alternative would be to support overriding removed-slots in `Map::add`, but
-that has negative performance implications for the most common case when no
-elements are ever removed.
-
-This brings back performance to the same level before #150009:
-`60k_cubes_same_mesh.blend: old: 11.3s, main: 70s, this patch: 11.3s`
-
-Pull Request: https://projects.blender.org/blender/blender/pulls/151502
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“查找失败如何在API中表达？”判断方案改变的是表示、接口、生命周期还是调度。
-
-### 2026-06-11 · Jacques Lucke
-
-[BLI: assert on hash table keys not comparing equal to themselves](https://projects.blender.org/blender/blender/commit/44a1dc7055466e153b4ab66628034d8561f540bf)
-
-完整哈希：`44a1dc7055466e153b4ab66628034d8561f540bf`。提交标题与作者日期来自本地Git对象。
-
-提交说明原文（历史证据，不能直接作为当前API说明）：
-
-```text
-BLI: assert on hash table keys not comparing equal to themselves
-
-This helps finding issues with bad data (especially nan values) earlier.
-
-Pull Request: https://projects.blender.org/blender/blender/pulls/159974
-```
-
-阅读任务：先根据说明复述旧问题，提出一个自己的修复方案，再对照diff。结合本篇重点“查找失败如何在API中表达？”判断方案改变的是表示、接口、生命周期还是调度。
-
-## 九、反例、测试入口与掌握标准
-
-仓库测试入口：
-
-- [BLI_map_test.cc](../../../../../source/blender/blenlib/tests/BLI_map_test.cc)：阅读输入、断言与覆盖边界；本篇不把“存在测试”写成“本轮已运行”。
-
-需要实际构造的反例：
-
-- 空输入或没有结果需求：确认接口允许的空状态与不允许访问的操作。
-- 边界位置和退化结构：把长度为1、末尾位置、重复值或深链代入真实分支。
-- 生命周期结束或修改之后：检查保存的指针、引用、结果视图是否仍有效。
-- 与本篇核心不变量相冲突的输入：对存在键和缺失键比较不同查找接口的行为与复制成本。
-
-### 可运行的教学参考程序
-
-[reference_exercises.cc](../_tools/reference_exercises.cc)包含独立于Blender的C++20参考检查：视图、简化SmallVector、异常回滚、哈希碰撞与删除、偏移数组、拓扑映射、共享缓存、表达式、惰性分支、闭包和暴力最近邻。
-
-参考程序有意省略生产实现的完整能力。例如SmallVector禁止复制移动容器，不支持只能移动的元素，并禁止append参数别名到自身元素；TinyMap固定8槽，不提供增长。程序通过不能替代Blender实现测试。实际运行结果、编译器与命令见验收报告。
-
-掌握标准：离开源码解释“查找失败如何在API中表达？”；独立完成上述练习；能指出一个会破坏相等关系相关约束的最小反例，并用具体代码行说明检查或修复应放在哪里。
+[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
