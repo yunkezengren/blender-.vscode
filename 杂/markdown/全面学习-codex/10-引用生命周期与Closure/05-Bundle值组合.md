@@ -1,6 +1,6 @@
 # 10-05 Bundle值组合
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -205,8 +205,8 @@ bool operator==(const BundleSignature &a, const BundleSignature &b)
 
 **继续追踪实现**
 
-- `a.items.as_span` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L23。
-- `b.items.as_span` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L23。
+- `a.items.as_span` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L23。
+- `b.items.as_span` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L23。
 
 <!-- annotated:29b8b26f04bc04 -->
 
@@ -402,9 +402,9 @@ bool BundleKey::is_valid_key(const StringRef key)
 
 **继续追踪实现**
 
-- `key.is_empty` → [blender::nodes::Bundle::is_empty · L483](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-a112ec28493ab618)。
-- `key.trim` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L44。
-- `key.find_first_of` → [blender::StringRefBase::find_first_of · L363](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/15-StringRef%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%A7%86%E5%9B%BE.md#f-1f3c5f639269f8da)；[blender::StringRefBase::find_first_of · L369](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/15-StringRef%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%A7%86%E5%9B%BE.md#f-d68ec25e99992ba5)。同名重载需按实参类型选择。
+- `key.is_empty` → [blender::nodes::Bundle::is_empty · L483](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-a112ec28493ab618)。
+- `key.trim` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L44。
+- `key.find_first_of` → [blender::StringRefBase::find_first_of · L363](../01-基础容器与现代CPP/15-StringRef字符串视图.md#f-1f3c5f639269f8da)；[blender::StringRefBase::find_first_of · L369](../01-基础容器与现代CPP/15-StringRef字符串视图.md#f-d68ec25e99992ba5)。同名重载需按实参类型选择。
 
 <!-- annotated:3b385b9620aba0 -->
 
@@ -464,8 +464,8 @@ bool Bundle::is_valid_path(const StringRef path)
 
 **继续追踪实现**
 
-- `split_path(path).has_value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L54。
-- `split_path` → [blender::nodes::Bundle::split_path · L57](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-6be8a5b6ff42af9a)。
+- `split_path(path).has_value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L54。
+- `split_path` → [blender::nodes::Bundle::split_path · L57](05-Bundle值组合.md#f-6be8a5b6ff42af9a)。
 
 <!-- annotated:fe50faba3cf153 -->
 
@@ -583,12 +583,12 @@ std::optional<Vector<BundleKey>> Bundle::split_path(const StringRef path)
 
 **继续追踪实现**
 
-- `path.is_empty` → [blender::nodes::Bundle::is_empty · L483](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-a112ec28493ab618)。
-- `remaining.is_empty` → [blender::nodes::Bundle::is_empty · L483](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-a112ec28493ab618)。
-- `remaining.find_first_of` → [blender::StringRefBase::find_first_of · L363](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/15-StringRef%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%A7%86%E5%9B%BE.md#f-1f3c5f639269f8da)；[blender::StringRefBase::find_first_of · L369](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/15-StringRef%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%A7%86%E5%9B%BE.md#f-d68ec25e99992ba5)。同名重载需按实参类型选择。
-- `BundleKey::from_str` → [blender::nodes::BundleKey::from_str · L508](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-db6a813acf972c45)。
-- `path_elems.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `remaining.substr` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L76。
+- `path.is_empty` → [blender::nodes::Bundle::is_empty · L483](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-a112ec28493ab618)。
+- `remaining.is_empty` → [blender::nodes::Bundle::is_empty · L483](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-a112ec28493ab618)。
+- `remaining.find_first_of` → [blender::StringRefBase::find_first_of · L363](../01-基础容器与现代CPP/15-StringRef字符串视图.md#f-1f3c5f639269f8da)；[blender::StringRefBase::find_first_of · L369](../01-基础容器与现代CPP/15-StringRef字符串视图.md#f-d68ec25e99992ba5)。同名重载需按实参类型选择。
+- `BundleKey::from_str` → [blender::nodes::BundleKey::from_str · L508](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-db6a813acf972c45)。
+- `path_elems.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `remaining.substr` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L76。
 
 <!-- annotated:b8d60b21cfab2d -->
 
@@ -644,8 +644,8 @@ BundlePtr Bundle::create()
 
 **继续追踪实现**
 
-- `BundlePtr` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L90。
-- `MEM_new<Bundle>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
+- `BundlePtr` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L90。
+- `MEM_new<Bundle>` → [MEM_new · L351](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-115f9b6784f89912)。
 
 <!-- annotated:2411ee1834cb5a -->
 
@@ -702,7 +702,7 @@ void Bundle::add_new(const BundleKey key, const BundleItemValue &value)
 
 **继续追踪实现**
 
-- `items_.add_new_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L95。
+- `items_.add_new_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L95。
 
 <!-- annotated:e71e348c3fb23b -->
 
@@ -760,7 +760,7 @@ void Bundle::add_new(BundleKey key, BundleItemValue &&value)
 
 **继续追踪实现**
 
-- `items_.add_new_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L100。
+- `items_.add_new_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L100。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:ad8f39d4f1e92f -->
@@ -820,8 +820,8 @@ void Bundle::add_override(const BundleKey key, const BundleItemValue &value)
 
 **继续追踪实现**
 
-- `this->remove` → [blender::nodes::Bundle::remove · L293](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-f3474163d6d7aae9)。
-- `this->add_new` → [blender::nodes::Bundle::add_new · L93](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-024966f8ba4f7f41)；[blender::nodes::Bundle::add_new · L98](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-e23db06d4fd3b4f6)。同名重载需按实参类型选择。
+- `this->remove` → [blender::nodes::Bundle::remove · L293](05-Bundle值组合.md#f-f3474163d6d7aae9)。
+- `this->add_new` → [blender::nodes::Bundle::add_new · L93](05-Bundle值组合.md#f-024966f8ba4f7f41)；[blender::nodes::Bundle::add_new · L98](05-Bundle值组合.md#f-e23db06d4fd3b4f6)。同名重载需按实参类型选择。
 
 <!-- annotated:d0262f743b1d18 -->
 
@@ -891,8 +891,8 @@ bool Bundle::add(const BundleKey key, const BundleItemValue &value)
 
 **继续追踪实现**
 
-- `this->contains` → [blender::nodes::Bundle::contains · L322](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-403242429d751adc)。
-- `this->add_new` → [blender::nodes::Bundle::add_new · L93](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-024966f8ba4f7f41)；[blender::nodes::Bundle::add_new · L98](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-e23db06d4fd3b4f6)。同名重载需按实参类型选择。
+- `this->contains` → [blender::nodes::Bundle::contains · L322](05-Bundle值组合.md#f-403242429d751adc)。
+- `this->add_new` → [blender::nodes::Bundle::add_new · L93](05-Bundle值组合.md#f-024966f8ba4f7f41)；[blender::nodes::Bundle::add_new · L98](05-Bundle值组合.md#f-e23db06d4fd3b4f6)。同名重载需按实参类型选择。
 
 <!-- annotated:93beeeb41aba1d -->
 
@@ -963,8 +963,8 @@ bool Bundle::add(const BundleKey key, BundleItemValue &&value)
 
 **继续追踪实现**
 
-- `this->contains` → [blender::nodes::Bundle::contains · L322](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-403242429d751adc)。
-- `this->add_new` → [blender::nodes::Bundle::add_new · L93](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-024966f8ba4f7f41)；[blender::nodes::Bundle::add_new · L98](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-e23db06d4fd3b4f6)。同名重载需按实参类型选择。
+- `this->contains` → [blender::nodes::Bundle::contains · L322](05-Bundle值组合.md#f-403242429d751adc)。
+- `this->add_new` → [blender::nodes::Bundle::add_new · L93](05-Bundle值组合.md#f-024966f8ba4f7f41)；[blender::nodes::Bundle::add_new · L98](05-Bundle值组合.md#f-e23db06d4fd3b4f6)。同名重载需按实参类型选择。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:d36dc7cfbfb879 -->
@@ -1027,9 +1027,9 @@ static BundleItemValue create_nested_bundle_item()
 
 **继续追踪实现**
 
-- `bke::node_socket_type_find_static` → [blender::bke::node_socket_type_find_static · L2975](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node-89d753.md#f-8082ced6587b7cd9)。
-- `bke::SocketValueVariant::from` → [blender::bke::SocketValueVariant::from · L220](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-fa3c16e83ef6de45)。
-- `Bundle::create` → [blender::nodes::Bundle::create · L88](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-e048ba1da7751af9)。
+- `bke::node_socket_type_find_static` → [blender::bke::node_socket_type_find_static · L2975](../90-实现依赖专题/02-BKE几何与数据/intern/node.cc.md#f-8082ced6587b7cd9)。
+- `bke::SocketValueVariant::from` → [blender::bke::SocketValueVariant::from · L220](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-fa3c16e83ef6de45)。
+- `Bundle::create` → [blender::nodes::Bundle::create · L88](05-Bundle值组合.md#f-e048ba1da7751af9)。
 
 <!-- annotated:ec1f0a42174fe5 -->
 
@@ -1118,13 +1118,13 @@ void Bundle::add_path_override(const Span<BundleKey> path, const BundleItemValue
 
 **继续追踪实现**
 
-- `path.drop_back` → [blender::Span::drop_back · L186](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-fbabd5706815d493)。
-- `current->items_.lookup_or_add_cb_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L139。
-- `create_nested_bundle_item` → [blender::nodes::create_nested_bundle_item · L127](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-f6537b8b0cdae4e2)。
-- `item.as_pointer<BundlePtr>` → [blender::nodes::BundleItemValue::as_pointer · L214](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-f165f4b9fea6638b)；[blender::nodes::BundleItemValue::as_pointer · L218](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-879002168837b5f6)。同名重载需按实参类型选择。
-- `child_bundle_ptr->ensure_mutable_inplace` → [blender::ImplicitSharingPtr::ensure_mutable_inplace · L144](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-d9e9b25281edf91a)。
-- `current->items_.add_overwrite_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L149。
-- `path.last` → [blender::Span::last · L329](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-a92146c285596891)。
+- `path.drop_back` → [blender::Span::drop_back · L186](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-fbabd5706815d493)。
+- `current->items_.lookup_or_add_cb_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L139。
+- `create_nested_bundle_item` → [blender::nodes::create_nested_bundle_item · L127](05-Bundle值组合.md#f-f6537b8b0cdae4e2)。
+- `item.as_pointer<BundlePtr>` → [blender::nodes::BundleItemValue::as_pointer · L214](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-f165f4b9fea6638b)；[blender::nodes::BundleItemValue::as_pointer · L218](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-879002168837b5f6)。同名重载需按实参类型选择。
+- `child_bundle_ptr->ensure_mutable_inplace` → [blender::ImplicitSharingPtr::ensure_mutable_inplace · L144](../06-隐式共享与缓存系统/03-Mixin与共享指针封装.md#f-d9e9b25281edf91a)。
+- `current->items_.add_overwrite_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L149。
+- `path.last` → [blender::Span::last · L329](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-a92146c285596891)。
 
 <!-- annotated:70845bb7c40a16 -->
 
@@ -1185,10 +1185,10 @@ void Bundle::add_path_override(const StringRef path, const BundleItemValue &valu
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `is_valid_path` → [blender::nodes::Bundle::is_valid_path · L52](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-de824016abdd7b56)。
-- `split_path` → [blender::nodes::Bundle::split_path · L57](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-6be8a5b6ff42af9a)。
-- `this->add_path_override` → [blender::nodes::Bundle::add_path_override · L135](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-2240ee34492834c7)；[blender::nodes::Bundle::add_path_override · L152](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-6d54992a49f18ffe)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_valid_path` → [blender::nodes::Bundle::is_valid_path · L52](05-Bundle值组合.md#f-de824016abdd7b56)。
+- `split_path` → [blender::nodes::Bundle::split_path · L57](05-Bundle值组合.md#f-6be8a5b6ff42af9a)。
+- `this->add_path_override` → [blender::nodes::Bundle::add_path_override · L135](05-Bundle值组合.md#f-2240ee34492834c7)；[blender::nodes::Bundle::add_path_override · L152](05-Bundle值组合.md#f-6d54992a49f18ffe)。同名重载需按实参类型选择。
 
 <!-- annotated:507050bb8c7187 -->
 
@@ -1258,8 +1258,8 @@ bool Bundle::add_path(StringRef path, const BundleItemValue &value)
 
 **继续追踪实现**
 
-- `this->contains_path` → [blender::nodes::Bundle::contains_path · L327](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-3020ae8bbd7d0a6c)；[blender::nodes::Bundle::contains_path · L332](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-2249078481ea4fbe)。同名重载需按实参类型选择。
-- `this->add_path_new` → [blender::nodes::Bundle::add_path_new · L168](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-33903a0d3ab1017d)。
+- `this->contains_path` → [blender::nodes::Bundle::contains_path · L327](05-Bundle值组合.md#f-3020ae8bbd7d0a6c)；[blender::nodes::Bundle::contains_path · L332](05-Bundle值组合.md#f-2249078481ea4fbe)。同名重载需按实参类型选择。
+- `this->add_path_new` → [blender::nodes::Bundle::add_path_new · L168](05-Bundle值组合.md#f-33903a0d3ab1017d)。
 
 <!-- annotated:959cd61ce75af8 -->
 
@@ -1318,9 +1318,9 @@ void Bundle::add_path_new(StringRef path, const BundleItemValue &value)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->contains_path` → [blender::nodes::Bundle::contains_path · L327](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-3020ae8bbd7d0a6c)；[blender::nodes::Bundle::contains_path · L332](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-2249078481ea4fbe)。同名重载需按实参类型选择。
-- `this->add_path_override` → [blender::nodes::Bundle::add_path_override · L135](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-2240ee34492834c7)；[blender::nodes::Bundle::add_path_override · L152](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-6d54992a49f18ffe)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->contains_path` → [blender::nodes::Bundle::contains_path · L327](05-Bundle值组合.md#f-3020ae8bbd7d0a6c)；[blender::nodes::Bundle::contains_path · L332](05-Bundle值组合.md#f-2249078481ea4fbe)。同名重载需按实参类型选择。
+- `this->add_path_override` → [blender::nodes::Bundle::add_path_override · L135](05-Bundle值组合.md#f-2240ee34492834c7)；[blender::nodes::Bundle::add_path_override · L152](05-Bundle值组合.md#f-6d54992a49f18ffe)。同名重载需按实参类型选择。
 
 <!-- annotated:1627646bd91ae5 -->
 
@@ -1396,11 +1396,11 @@ Bundle &Bundle::ensure_nested_bundle(const StringRef path)
 
 **继续追踪实现**
 
-- `this->lookup_path_for_write_ptr<BundlePtr>` → [blender::nodes::Bundle::lookup_path_for_write_ptr · L336](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-73fd72c9c08ea640)；[blender::nodes::Bundle::lookup_path_for_write_ptr · L342](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-76ebbff8af4308d9)。同名重载需按实参类型选择。
-- `bundle_ptr->ensure_mutable_inplace` → [blender::ImplicitSharingPtr::ensure_mutable_inplace · L144](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-d9e9b25281edf91a)。
-- `Bundle::create` → [blender::nodes::Bundle::create · L88](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-e048ba1da7751af9)。
-- `new_bundle.ensure_mutable_inplace` → [blender::ImplicitSharingPtr::ensure_mutable_inplace · L144](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-d9e9b25281edf91a)。
-- `this->add_path_override` → [blender::nodes::Bundle::add_path_override · L135](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-2240ee34492834c7)；[blender::nodes::Bundle::add_path_override · L152](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-6d54992a49f18ffe)。同名重载需按实参类型选择。
+- `this->lookup_path_for_write_ptr<BundlePtr>` → [blender::nodes::Bundle::lookup_path_for_write_ptr · L336](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-73fd72c9c08ea640)；[blender::nodes::Bundle::lookup_path_for_write_ptr · L342](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-76ebbff8af4308d9)。同名重载需按实参类型选择。
+- `bundle_ptr->ensure_mutable_inplace` → [blender::ImplicitSharingPtr::ensure_mutable_inplace · L144](../06-隐式共享与缓存系统/03-Mixin与共享指针封装.md#f-d9e9b25281edf91a)。
+- `Bundle::create` → [blender::nodes::Bundle::create · L88](05-Bundle值组合.md#f-e048ba1da7751af9)。
+- `new_bundle.ensure_mutable_inplace` → [blender::ImplicitSharingPtr::ensure_mutable_inplace · L144](../06-隐式共享与缓存系统/03-Mixin与共享指针封装.md#f-d9e9b25281edf91a)。
+- `this->add_path_override` → [blender::nodes::Bundle::add_path_override · L135](05-Bundle值组合.md#f-2240ee34492834c7)；[blender::nodes::Bundle::add_path_override · L152](05-Bundle值组合.md#f-6d54992a49f18ffe)。同名重载需按实参类型选择。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:9866c29615aa5d -->
@@ -1461,7 +1461,7 @@ const BundleItemValue *Bundle::lookup(const BundleKey key) const
 
 **继续追踪实现**
 
-- `items_.lookup_ptr_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L188。
+- `items_.lookup_ptr_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L188。
 
 <!-- annotated:a244010f90b2ef -->
 
@@ -1521,7 +1521,7 @@ BundleItemValue *Bundle::lookup(const BundleKey key)
 
 **继续追踪实现**
 
-- `items_.lookup_ptr_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L193。
+- `items_.lookup_ptr_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L193。
 
 <!-- annotated:58be3277d70cba -->
 
@@ -1612,14 +1612,14 @@ const BundleItemValue *Bundle::lookup_path(const Span<BundleKey> path) const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `path.is_empty` → [blender::Span::is_empty · L264](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8cc1d7ba8feb50e6)。
-- `this->lookup` → [blender::nodes::Bundle::lookup · L186](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-ab104e20fea01b7b)；[blender::nodes::Bundle::lookup · L191](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-8c688818796b1bfd)。同名重载需按实参类型选择。
-- `path.size` → [blender::Span::size · L256](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `item->as<BundlePtr>().value_or` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L207。
-- `item->as<BundlePtr>` → [blender::nodes::BundleItemValue::as · L261](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-250bf8b6a94ed2b1)。
-- `child_bundle->lookup_path` → [blender::nodes::Bundle::lookup_path · L196](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-0db09ce658d6a12d)；[blender::nodes::Bundle::lookup_path · L214](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-2765e91b5514bd71)。同名重载需按实参类型选择。
-- `path.drop_front` → [blender::Span::drop_front · L175](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-932897accbde3413)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `path.is_empty` → [blender::Span::is_empty · L264](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-8cc1d7ba8feb50e6)。
+- `this->lookup` → [blender::nodes::Bundle::lookup · L186](05-Bundle值组合.md#f-ab104e20fea01b7b)；[blender::nodes::Bundle::lookup · L191](05-Bundle值组合.md#f-8c688818796b1bfd)。同名重载需按实参类型选择。
+- `path.size` → [blender::Span::size · L256](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `item->as<BundlePtr>().value_or` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L207。
+- `item->as<BundlePtr>` → [blender::nodes::BundleItemValue::as · L261](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-250bf8b6a94ed2b1)。
+- `child_bundle->lookup_path` → [blender::nodes::Bundle::lookup_path · L196](05-Bundle值组合.md#f-0db09ce658d6a12d)；[blender::nodes::Bundle::lookup_path · L214](05-Bundle值组合.md#f-2765e91b5514bd71)。同名重载需按实参类型选择。
+- `path.drop_front` → [blender::Span::drop_front · L175](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-932897accbde3413)。
 
 <!-- annotated:7348977edd33cf -->
 
@@ -1683,10 +1683,10 @@ const BundleItemValue *Bundle::lookup_path(const StringRef path) const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `is_valid_path` → [blender::nodes::Bundle::is_valid_path · L52](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-de824016abdd7b56)。
-- `split_path` → [blender::nodes::Bundle::split_path · L57](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-6be8a5b6ff42af9a)。
-- `this->lookup_path` → [blender::nodes::Bundle::lookup_path · L196](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-0db09ce658d6a12d)；[blender::nodes::Bundle::lookup_path · L214](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-2765e91b5514bd71)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_valid_path` → [blender::nodes::Bundle::is_valid_path · L52](05-Bundle值组合.md#f-de824016abdd7b56)。
+- `split_path` → [blender::nodes::Bundle::split_path · L57](05-Bundle值组合.md#f-6be8a5b6ff42af9a)。
+- `this->lookup_path` → [blender::nodes::Bundle::lookup_path · L196](05-Bundle值组合.md#f-0db09ce658d6a12d)；[blender::nodes::Bundle::lookup_path · L214](05-Bundle值组合.md#f-2765e91b5514bd71)。同名重载需按实参类型选择。
 
 <!-- annotated:b87dce0ac0cf59 -->
 
@@ -1785,14 +1785,14 @@ BundleItemValue *Bundle::lookup_path_for_write(Span<BundleKey> path)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `path.is_empty` → [blender::Span::is_empty · L264](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8cc1d7ba8feb50e6)。
-- `this->lookup` → [blender::nodes::Bundle::lookup · L186](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-ab104e20fea01b7b)；[blender::nodes::Bundle::lookup · L191](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-8c688818796b1bfd)。同名重载需按实参类型选择。
-- `path.size` → [blender::Span::size · L256](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `item->as_pointer<BundlePtr>` → [blender::nodes::BundleItemValue::as_pointer · L214](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-f165f4b9fea6638b)；[blender::nodes::BundleItemValue::as_pointer · L218](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-879002168837b5f6)。同名重载需按实参类型选择。
-- `child_bundle_ptr->ensure_mutable_inplace` → [blender::ImplicitSharingPtr::ensure_mutable_inplace · L144](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-d9e9b25281edf91a)。
-- `child_bundle.lookup_path_for_write` → [blender::nodes::Bundle::lookup_path_for_write · L221](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-bbf4231d04b83f66)；[blender::nodes::Bundle::lookup_path_for_write · L243](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-ddd6cfd6bbacec2f)。同名重载需按实参类型选择。
-- `path.drop_front` → [blender::Span::drop_front · L175](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-932897accbde3413)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `path.is_empty` → [blender::Span::is_empty · L264](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-8cc1d7ba8feb50e6)。
+- `this->lookup` → [blender::nodes::Bundle::lookup · L186](05-Bundle值组合.md#f-ab104e20fea01b7b)；[blender::nodes::Bundle::lookup · L191](05-Bundle值组合.md#f-8c688818796b1bfd)。同名重载需按实参类型选择。
+- `path.size` → [blender::Span::size · L256](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `item->as_pointer<BundlePtr>` → [blender::nodes::BundleItemValue::as_pointer · L214](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-f165f4b9fea6638b)；[blender::nodes::BundleItemValue::as_pointer · L218](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-879002168837b5f6)。同名重载需按实参类型选择。
+- `child_bundle_ptr->ensure_mutable_inplace` → [blender::ImplicitSharingPtr::ensure_mutable_inplace · L144](../06-隐式共享与缓存系统/03-Mixin与共享指针封装.md#f-d9e9b25281edf91a)。
+- `child_bundle.lookup_path_for_write` → [blender::nodes::Bundle::lookup_path_for_write · L221](05-Bundle值组合.md#f-bbf4231d04b83f66)；[blender::nodes::Bundle::lookup_path_for_write · L243](05-Bundle值组合.md#f-ddd6cfd6bbacec2f)。同名重载需按实参类型选择。
+- `path.drop_front` → [blender::Span::drop_front · L175](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-932897accbde3413)。
 
 <!-- annotated:a24f30d7533c75 -->
 
@@ -1856,10 +1856,10 @@ BundleItemValue *Bundle::lookup_path_for_write(StringRef path)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `is_valid_path` → [blender::nodes::Bundle::is_valid_path · L52](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-de824016abdd7b56)。
-- `split_path` → [blender::nodes::Bundle::split_path · L57](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-6be8a5b6ff42af9a)。
-- `this->lookup_path_for_write` → [blender::nodes::Bundle::lookup_path_for_write · L221](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-bbf4231d04b83f66)；[blender::nodes::Bundle::lookup_path_for_write · L243](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-ddd6cfd6bbacec2f)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_valid_path` → [blender::nodes::Bundle::is_valid_path · L52](05-Bundle值组合.md#f-de824016abdd7b56)。
+- `split_path` → [blender::nodes::Bundle::split_path · L57](05-Bundle值组合.md#f-6be8a5b6ff42af9a)。
+- `this->lookup_path_for_write` → [blender::nodes::Bundle::lookup_path_for_write · L221](05-Bundle值组合.md#f-bbf4231d04b83f66)；[blender::nodes::Bundle::lookup_path_for_write · L243](05-Bundle值组合.md#f-ddd6cfd6bbacec2f)。同名重载需按实参类型选择。
 
 <!-- annotated:2264eab386c404 -->
 
@@ -1919,8 +1919,8 @@ void Bundle::merge(const Bundle &other)
 
 **继续追踪实现**
 
-- `other.items_.items` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L252。
-- `this->add` → [blender::nodes::Bundle::add · L109](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-1d3f8ed0f1d1c28b)；[blender::nodes::Bundle::add · L118](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-102b881c74112c46)。同名重载需按实参类型选择。
+- `other.items_.items` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L252。
+- `this->add` → [blender::nodes::Bundle::add · L109](05-Bundle值组合.md#f-1d3f8ed0f1d1c28b)；[blender::nodes::Bundle::add · L118](05-Bundle值组合.md#f-102b881c74112c46)。同名重载需按实参类型选择。
 
 <!-- annotated:813d85678865d0 -->
 
@@ -1980,8 +1980,8 @@ void Bundle::merge_override(const Bundle &other)
 
 **继续追踪实现**
 
-- `other.items_.items` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L259。
-- `this->add_override` → [blender::nodes::Bundle::add_override · L103](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-149d390d8c299702)。
+- `other.items_.items` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L259。
+- `this->add_override` → [blender::nodes::Bundle::add_override · L103](05-Bundle值组合.md#f-149d390d8c299702)。
 
 <!-- annotated:f8ec4b9f33db07 -->
 
@@ -2041,9 +2041,9 @@ void Bundle::ensure_owns_direct_data()
 
 **继续追踪实现**
 
-- `items_.items` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L266。
+- `items_.items` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L266。
 - `std::get_if<BundleItemSocketValue>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `socket_value->value.ensure_owns_direct_data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L268。
+- `socket_value->value.ensure_owns_direct_data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L268。
 
 <!-- annotated:280cad772af138 -->
 
@@ -2114,9 +2114,9 @@ bool Bundle::owns_direct_data() const
 
 **继续追踪实现**
 
-- `items_.items` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L275。
+- `items_.items` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L275。
 - `std::get_if<BundleItemSocketValue>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `socket_value->value.owns_direct_data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L277。
+- `socket_value->value.owns_direct_data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L277。
 
 <!-- annotated:f869fecc047f49 -->
 
@@ -2182,7 +2182,7 @@ BundlePtr Bundle::copy() const
 
 **继续追踪实现**
 
-- `Bundle::create` → [blender::nodes::Bundle::create · L88](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-e048ba1da7751af9)。
+- `Bundle::create` → [blender::nodes::Bundle::create · L88](05-Bundle值组合.md#f-e048ba1da7751af9)。
 
 <!-- annotated:9c8007ae208f81 -->
 
@@ -2242,7 +2242,7 @@ bool Bundle::remove(const BundleKey key)
 
 **继续追踪实现**
 
-- `items_.remove_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L295。
+- `items_.remove_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L295。
 
 <!-- annotated:b6e9d13a6d8fb0 -->
 
@@ -2306,10 +2306,10 @@ bool Bundle::remove_path(const StringRef path)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `is_valid_path` → [blender::nodes::Bundle::is_valid_path · L52](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-de824016abdd7b56)。
-- `split_path` → [blender::nodes::Bundle::split_path · L57](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-6be8a5b6ff42af9a)。
-- `this->remove_path` → [blender::nodes::Bundle::remove_path · L298](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-13ca3b25faf3ddd5)；[blender::nodes::Bundle::remove_path · L305](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-9de74025976d6c7d)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_valid_path` → [blender::nodes::Bundle::is_valid_path · L52](05-Bundle值组合.md#f-de824016abdd7b56)。
+- `split_path` → [blender::nodes::Bundle::split_path · L57](05-Bundle值组合.md#f-6be8a5b6ff42af9a)。
+- `this->remove_path` → [blender::nodes::Bundle::remove_path · L298](05-Bundle值组合.md#f-13ca3b25faf3ddd5)；[blender::nodes::Bundle::remove_path · L305](05-Bundle值组合.md#f-9de74025976d6c7d)。同名重载需按实参类型选择。
 
 <!-- annotated:66759922038dfd -->
 
@@ -2402,16 +2402,16 @@ bool Bundle::remove_path(const Span<BundleKey> path)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->is_mutable` → [blender::ImplicitSharingInfo::is_mutable · L76](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/01-%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%86%99%E6%97%B6%E5%A4%8D%E5%88%B6.md#f-b4d31aba499caecb)。
-- `path.is_empty` → [blender::Span::is_empty · L264](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8cc1d7ba8feb50e6)。
-- `this->contains_path` → [blender::nodes::Bundle::contains_path · L327](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-3020ae8bbd7d0a6c)；[blender::nodes::Bundle::contains_path · L332](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-2249078481ea4fbe)。同名重载需按实参类型选择。
-- `path.drop_back` → [blender::Span::drop_back · L186](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-fbabd5706815d493)。
-- `current->items_.lookup_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L314。
-- `item.as_pointer<BundlePtr>` → [blender::nodes::BundleItemValue::as_pointer · L214](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-f165f4b9fea6638b)；[blender::nodes::BundleItemValue::as_pointer · L218](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-879002168837b5f6)。同名重载需按实参类型选择。
-- `child_bundle_ptr->ensure_mutable_inplace` → [blender::ImplicitSharingPtr::ensure_mutable_inplace · L144](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-d9e9b25281edf91a)。
-- `current->items_.remove_contained_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L318。
-- `path.last` → [blender::Span::last · L329](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-a92146c285596891)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->is_mutable` → [blender::ImplicitSharingInfo::is_mutable · L76](../06-隐式共享与缓存系统/01-所有权与写时复制.md#f-b4d31aba499caecb)。
+- `path.is_empty` → [blender::Span::is_empty · L264](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-8cc1d7ba8feb50e6)。
+- `this->contains_path` → [blender::nodes::Bundle::contains_path · L327](05-Bundle值组合.md#f-3020ae8bbd7d0a6c)；[blender::nodes::Bundle::contains_path · L332](05-Bundle值组合.md#f-2249078481ea4fbe)。同名重载需按实参类型选择。
+- `path.drop_back` → [blender::Span::drop_back · L186](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-fbabd5706815d493)。
+- `current->items_.lookup_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L314。
+- `item.as_pointer<BundlePtr>` → [blender::nodes::BundleItemValue::as_pointer · L214](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-f165f4b9fea6638b)；[blender::nodes::BundleItemValue::as_pointer · L218](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-879002168837b5f6)。同名重载需按实参类型选择。
+- `child_bundle_ptr->ensure_mutable_inplace` → [blender::ImplicitSharingPtr::ensure_mutable_inplace · L144](../06-隐式共享与缓存系统/03-Mixin与共享指针封装.md#f-d9e9b25281edf91a)。
+- `current->items_.remove_contained_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L318。
+- `path.last` → [blender::Span::last · L329](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-a92146c285596891)。
 
 <!-- annotated:7d1560bba75545 -->
 
@@ -2471,7 +2471,7 @@ bool Bundle::contains(const BundleKey key) const
 
 **继续追踪实现**
 
-- `items_.contains_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L324。
+- `items_.contains_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L324。
 
 <!-- annotated:d74c1caaaea5bc -->
 
@@ -2531,7 +2531,7 @@ bool Bundle::contains_path(const StringRef path) const
 
 **继续追踪实现**
 
-- `this->lookup_path` → [blender::nodes::Bundle::lookup_path · L196](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-0db09ce658d6a12d)；[blender::nodes::Bundle::lookup_path · L214](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-2765e91b5514bd71)。同名重载需按实参类型选择。
+- `this->lookup_path` → [blender::nodes::Bundle::lookup_path · L196](05-Bundle值组合.md#f-0db09ce658d6a12d)；[blender::nodes::Bundle::lookup_path · L214](05-Bundle值组合.md#f-2765e91b5514bd71)。同名重载需按实参类型选择。
 
 <!-- annotated:8323e01d2ef0f2 -->
 
@@ -2591,7 +2591,7 @@ bool Bundle::contains_path(const Span<BundleKey> path) const
 
 **继续追踪实现**
 
-- `this->lookup_path` → [blender::nodes::Bundle::lookup_path · L196](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-0db09ce658d6a12d)；[blender::nodes::Bundle::lookup_path · L214](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-2765e91b5514bd71)。同名重载需按实参类型选择。
+- `this->lookup_path` → [blender::nodes::Bundle::lookup_path · L196](05-Bundle值组合.md#f-0db09ce658d6a12d)；[blender::nodes::Bundle::lookup_path · L214](05-Bundle值组合.md#f-2765e91b5514bd71)。同名重载需按实参类型选择。
 
 <!-- annotated:ccb8032b79599f -->
 
@@ -2765,7 +2765,7 @@ void Bundle::delete_self()
 
 **继续追踪实现**
 
-- `MEM_delete` → [MEM_delete · L400](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-9049ffdd1682887c)。
+- `MEM_delete` → [MEM_delete · L400](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-9049ffdd1682887c)。
 
 <!-- annotated:ad240826bedfd3 -->
 
@@ -2817,7 +2817,7 @@ void Bundle::clear()
 
 **继续追踪实现**
 
-- `items_.clear` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L354。
+- `items_.clear` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L354。
 
 <!-- annotated:9cd403d1a3421d -->
 
@@ -2875,7 +2875,7 @@ std::optional<StringRef> Bundle::type() const
 
 **继续追踪实现**
 
-- `this->lookup_ptr<std::string>` → [blender::nodes::Bundle::lookup_ptr · L312](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-c72529922ed8c8e2)；[blender::nodes::Bundle::lookup_ptr · L330](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-22e3c8af335ad24c)。同名重载需按实参类型选择。
+- `this->lookup_ptr<std::string>` → [blender::nodes::Bundle::lookup_ptr · L312](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-c72529922ed8c8e2)；[blender::nodes::Bundle::lookup_ptr · L330](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-22e3c8af335ad24c)。同名重载需按实参类型选择。
 - `std::optional<StringRef>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 
 <!-- annotated:2c7a47819b9cbf -->
@@ -2940,9 +2940,9 @@ void Bundle::count_memory(MemoryCounter &memory) const
 
 **继续追踪实现**
 
-- `items_.items` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L365。
+- `items_.items` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L365。
 - `std::get_if<BundleItemSocketValue>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `socket_value->value.count_memory` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L367。
+- `socket_value->value.count_memory` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L367。
 
 <!-- annotated:4a40672c11e317 -->
 
@@ -3024,7 +3024,7 @@ NodeSocketInterfaceStructureType get_structure_type_for_bundle_signature(
 
 **继续追踪实现**
 
-- `NodeSocketInterfaceStructureType` → [blender::NodeSocketInterfaceStructureType](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_tree_interface_types-ffa165.md#t-12228606b9f6)。
+- `NodeSocketInterfaceStructureType` → [blender::NodeSocketInterfaceStructureType](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_tree_interface_types.h.md#t-12228606b9f6)。
 
 <!-- annotated:4d909ace7f09c9 -->
 
@@ -3086,9 +3086,9 @@ void BundleSignature::add(std::string key, const eNodeSocketDatatype socket_type
 
 **继续追踪实现**
 
-- `bke::node_socket_type_find_static` → [blender::bke::node_socket_type_find_static · L2975](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node-89d753.md#f-8082ced6587b7cd9)。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `items.add` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L390。
+- `bke::node_socket_type_find_static` → [blender::bke::node_socket_type_find_static · L2975](../90-实现依赖专题/02-BKE几何与数据/intern/node.cc.md#f-8082ced6587b7cd9)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `items.add` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L390。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:24107231aafcb6 -->
@@ -3178,13 +3178,13 @@ BundleSignature BundleSignature::from_combine_bundle_node(const bNode &node,
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `node.is_type` → [blender::bNode::is_type · L931](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-828d5e91e96da197)。
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `node.input_socket` → [blender::bNode::input_socket · L818](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-00274c021929d3dc)；[blender::bNode::input_socket · L830](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-e9c8cccac4999eb8)。同名重载需按实参类型选择。
-- `bke::node_socket_type_find_static` → [blender::bke::node_socket_type_find_static · L2975](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node-89d753.md#f-8082ced6587b7cd9)。
-- `get_structure_type_for_bundle_signature` → [blender::nodes::get_structure_type_for_bundle_signature · L372](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-e5154ce9b63c8eab)。
-- `signature.items.add` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L406。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `node.is_type` → [blender::bNode::is_type · L931](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-828d5e91e96da197)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `node.input_socket` → [blender::bNode::input_socket · L818](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-00274c021929d3dc)；[blender::bNode::input_socket · L830](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-e9c8cccac4999eb8)。同名重载需按实参类型选择。
+- `bke::node_socket_type_find_static` → [blender::bke::node_socket_type_find_static · L2975](../90-实现依赖专题/02-BKE几何与数据/intern/node.cc.md#f-8082ced6587b7cd9)。
+- `get_structure_type_for_bundle_signature` → [blender::nodes::get_structure_type_for_bundle_signature · L372](05-Bundle值组合.md#f-e5154ce9b63c8eab)。
+- `signature.items.add` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L406。
 
 <!-- annotated:fcac5ffdd12a23 -->
 
@@ -3273,13 +3273,13 @@ BundleSignature BundleSignature::from_separate_bundle_node(const bNode &node,
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `node.is_type` → [blender::bNode::is_type · L931](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-828d5e91e96da197)。
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `node.output_socket` → [blender::bNode::output_socket · L824](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-9e46f3a437215eb5)；[blender::bNode::output_socket · L836](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-39021ff32ee7c409)。同名重载需按实参类型选择。
-- `bke::node_socket_type_find_static` → [blender::bke::node_socket_type_find_static · L2975](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node-89d753.md#f-8082ced6587b7cd9)。
-- `get_structure_type_for_bundle_signature` → [blender::nodes::get_structure_type_for_bundle_signature · L372](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-e5154ce9b63c8eab)。
-- `signature.items.add` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L425。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `node.is_type` → [blender::bNode::is_type · L931](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-828d5e91e96da197)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `node.output_socket` → [blender::bNode::output_socket · L824](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-9e46f3a437215eb5)；[blender::bNode::output_socket · L836](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-39021ff32ee7c409)。同名重载需按实参类型选择。
+- `bke::node_socket_type_find_static` → [blender::bke::node_socket_type_find_static · L2975](../90-实现依赖专题/02-BKE几何与数据/intern/node.cc.md#f-8082ced6587b7cd9)。
+- `get_structure_type_for_bundle_signature` → [blender::nodes::get_structure_type_for_bundle_signature · L372](05-Bundle值组合.md#f-e5154ce9b63c8eab)。
+- `signature.items.add` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L425。
 
 <!-- annotated:ce21eeb1b8328a -->
 
@@ -3433,8 +3433,8 @@ std::optional<BundleSignature> LinkedBundleSignatures::get_merged_signature() co
 
 **继续追踪实现**
 
-- `signature.items.add` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L446。
-- `signature.items.lookup_key_ptr_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L447。
+- `signature.items.add` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L446。
+- `signature.items.lookup_key_ptr_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L447。
 
 <!-- annotated:92b1c814b28df3 -->
 
@@ -3530,15 +3530,15 @@ static void foreach_nested_bundle_item_recursive(
 
 **继续追踪实现**
 
-- `bundle.items` → [blender::nodes::Bundle::items · L473](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-616ba9c6736bfe47)；[blender::nodes::Bundle::items · L478](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-3d168e026e1c4226)。同名重载需按实参类型选择。
-- `r_path.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `BLI_SCOPED_DEFER` → [BLI_SCOPED_DEFER · L367](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-BLI_memory_utils-e249c3.md#m-f6328443021d)。宏定义由构建条件选择。
-- `r_path.pop_last` → [blender::Vector::pop_last · L815](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-e001e773e04130ce)。
-- `child_item.value.as_pointer<BundlePtr>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L470。
-- `child_bundle.type().has_value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L473。
-- `child_bundle.type` → [blender::nodes::Bundle::type · L357](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-eca9354f24640657)。
-- `foreach_nested_bundle_item_recursive` → [blender::nodes::foreach_nested_bundle_item_recursive · L461](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-03f4da0be6c7917d)。
-- `fn` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L479。
+- `bundle.items` → [blender::nodes::Bundle::items · L473](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-616ba9c6736bfe47)；[blender::nodes::Bundle::items · L478](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-3d168e026e1c4226)。同名重载需按实参类型选择。
+- `r_path.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `BLI_SCOPED_DEFER` → [BLI_SCOPED_DEFER · L367](../90-实现依赖专题/01-BLI基础库/BLI_memory_utils.hh.md#m-f6328443021d)。宏定义由构建条件选择。
+- `r_path.pop_last` → [blender::Vector::pop_last · L815](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-e001e773e04130ce)。
+- `child_item.value.as_pointer<BundlePtr>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L470。
+- `child_bundle.type().has_value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L473。
+- `child_bundle.type` → [blender::nodes::Bundle::type · L357](05-Bundle值组合.md#f-eca9354f24640657)。
+- `foreach_nested_bundle_item_recursive` → [blender::nodes::foreach_nested_bundle_item_recursive · L461](05-Bundle值组合.md#f-03f4da0be6c7917d)。
+- `fn` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L479。
 
 <!-- annotated:13a581f075035c -->
 
@@ -3603,7 +3603,7 @@ void foreach_nested_bundle_item(
 
 **继续追踪实现**
 
-- `foreach_nested_bundle_item_recursive` → [blender::nodes::foreach_nested_bundle_item_recursive · L461](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-03f4da0be6c7917d)。
+- `foreach_nested_bundle_item_recursive` → [blender::nodes::foreach_nested_bundle_item_recursive · L461](05-Bundle值组合.md#f-03f4da0be6c7917d)。
 
 <!-- annotated:92e4431555fd07 -->
 
@@ -3694,12 +3694,12 @@ Vector<std::string> gather_bundle_paths_by_bundle_type(
 
 **继续追踪实现**
 
-- `foreach_nested_bundle_item` → [blender::nodes::foreach_nested_bundle_item · L483](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-f419d75e748cb011)。
-- `value.as_pointer<BundlePtr>` → [blender::nodes::BundleItemValue::as_pointer · L214](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-f165f4b9fea6638b)；[blender::nodes::BundleItemValue::as_pointer · L218](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_bundle-f07f4e.md#f-879002168837b5f6)。同名重载需按实参类型选择。
-- `(*child_bundle_ptr)->type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L499。
-- `type_filter_fn` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L500。
-- `paths.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `Bundle::combine_path` → [blender::nodes::Bundle::combine_path · L337](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-be98aa769e8e9e48)；[blender::nodes::Bundle::combine_path · L342](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-50fe26841466a915)。同名重载需按实参类型选择。
+- `foreach_nested_bundle_item` → [blender::nodes::foreach_nested_bundle_item · L483](05-Bundle值组合.md#f-f419d75e748cb011)。
+- `value.as_pointer<BundlePtr>` → [blender::nodes::BundleItemValue::as_pointer · L214](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-f165f4b9fea6638b)；[blender::nodes::BundleItemValue::as_pointer · L218](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_bundle.hh.md#f-879002168837b5f6)。同名重载需按实参类型选择。
+- `(*child_bundle_ptr)->type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L499。
+- `type_filter_fn` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L500。
+- `paths.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `Bundle::combine_path` → [blender::nodes::Bundle::combine_path · L337](05-Bundle值组合.md#f-be98aa769e8e9e48)；[blender::nodes::Bundle::combine_path · L342](05-Bundle值组合.md#f-50fe26841466a915)。同名重载需按实参类型选择。
 
 <!-- annotated:63e7aed1e447de -->
 
@@ -3781,10 +3781,10 @@ Vector<std::string> gather_bundle_paths_by_data_type(const Bundle &bundle,
 
 **继续追踪实现**
 
-- `foreach_nested_bundle_item` → [blender::nodes::foreach_nested_bundle_item · L483](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-f419d75e748cb011)。
+- `foreach_nested_bundle_item` → [blender::nodes::foreach_nested_bundle_item · L483](05-Bundle值组合.md#f-f419d75e748cb011)。
 - `std::get_if<BundleItemSocketValue>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `paths.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `Bundle::combine_path` → [blender::nodes::Bundle::combine_path · L337](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-be98aa769e8e9e48)；[blender::nodes::Bundle::combine_path · L342](05-Bundle%E5%80%BC%E7%BB%84%E5%90%88.md#f-50fe26841466a915)。同名重载需按实参类型选择。
+- `paths.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `Bundle::combine_path` → [blender::nodes::Bundle::combine_path · L337](05-Bundle值组合.md#f-be98aa769e8e9e48)；[blender::nodes::Bundle::combine_path · L342](05-Bundle值组合.md#f-50fe26841466a915)。同名重载需按实参类型选择。
 
 <!-- annotated:caa2a7fd28cead -->
 
@@ -3864,7 +3864,7 @@ std::optional<bke::SocketValueVariant> BundleItemValue::as_socket_value(
 **继续追踪实现**
 
 - `std::get_if<BundleItemSocketValue>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `copy.try_convert` → [blender::bke::SocketValueVariant::try_convert · L235](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-dc6b18e59a681c72)；[blender::bke::SocketValueVariant::try_convert · L256](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-8b47ae436faf6028)。同名重载需按实参类型选择。
+- `copy.try_convert` → [blender::bke::SocketValueVariant::try_convert · L235](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-dc6b18e59a681c72)；[blender::bke::SocketValueVariant::try_convert · L256](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-8b47ae436faf6028)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · geometry_nodes_bundle.cc L538—L539
 
@@ -3961,4 +3961,4 @@ optional把不存在与存在的T区分开，T的构造和析构跟随engaged状
 
 与C++ lambda、shared_ptr图和编译器活跃性分析比较：捕获环境保障寿命，引用集合保障所需数据传播，二者承担不同责任。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

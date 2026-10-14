@@ -1,6 +1,6 @@
 # 01-17 Any类型擦除存储
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -671,10 +671,10 @@ class Any {
 
 **继续追踪实现**
 
-- `info_->copy_construct` → [blender::CPPType::copy_construct · L594](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-cfda413a9784073e)。
+- `info_->copy_construct` → [blender::CPPType::copy_construct · L594](../03-内存分配与运行时类型/09-CPPType复制移动重定位.md#f-cfda413a9784073e)。
 - `std::copy_n` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `other.buffer_.ptr` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L174。
-- `buffer_.ptr` → [blender::AlignedBuffer::ptr · L138](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-bfe745bcb7c7811c)；[blender::AlignedBuffer::ptr · L143](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-f24632360e6cd028)。同名重载需按实参类型选择。
+- `other.buffer_.ptr` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L174。
+- `buffer_.ptr` → [blender::AlignedBuffer::ptr · L138](01-对象生命周期与值类别.md#f-bfe745bcb7c7811c)；[blender::AlignedBuffer::ptr · L143](01-对象生命周期与值类别.md#f-f24632360e6cd028)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L180—L184
 
@@ -758,10 +758,10 @@ class Any {
 
 **继续追踪实现**
 
-- `info_->move_construct` → [blender::CPPType::move_construct · L633](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-12275cc6e59e9740)。
+- `info_->move_construct` → [blender::CPPType::move_construct · L633](../03-内存分配与运行时类型/09-CPPType复制移动重定位.md#f-12275cc6e59e9740)。
 - `std::copy_n` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `other.buffer_.ptr` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L192。
-- `buffer_.ptr` → [blender::AlignedBuffer::ptr · L138](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-bfe745bcb7c7811c)；[blender::AlignedBuffer::ptr · L143](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-f24632360e6cd028)。同名重载需按实参类型选择。
+- `other.buffer_.ptr` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L192。
+- `buffer_.ptr` → [blender::AlignedBuffer::ptr · L138](01-对象生命周期与值类别.md#f-bfe745bcb7c7811c)；[blender::AlignedBuffer::ptr · L143](01-对象生命周期与值类别.md#f-f24632360e6cd028)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L198—L202
 
@@ -830,7 +830,7 @@ class Any {
 
 **继续追踪实现**
 
-- `this->emplace_on_empty<T>` → [blender::Any::emplace_on_empty · L282](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-1eef4d2176fe3b60)。
+- `this->emplace_on_empty<T>` → [blender::Any::emplace_on_empty · L282](17-Any类型擦除存储.md#f-1eef4d2176fe3b60)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L208—L211
@@ -959,7 +959,7 @@ class Any {
 
 **继续追踪实现**
 
-- `info_->destruct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L223。
+- `info_->destruct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L223。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L227—L230
 
@@ -1037,7 +1037,7 @@ class Any {
 
 **继续追踪实现**
 
-- `this->~Any` → [blender::Any::~Any · L219](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-9f23446bc07e3137)。
+- `this->~Any` → [blender::Any::~Any · L219](17-Any类型擦除存储.md#f-9f23446bc07e3137)。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L240—L241
 
@@ -1116,7 +1116,7 @@ class Any {
 
 **继续追踪实现**
 
-- `this->~Any` → [blender::Any::~Any · L219](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-9f23446bc07e3137)。
+- `this->~Any` → [blender::Any::~Any · L219](17-Any类型擦除存储.md#f-9f23446bc07e3137)。
 - `std::forward<T>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L253—L254
@@ -1187,7 +1187,7 @@ class Any {
 
 **继续追踪实现**
 
-- `info_->destruct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L259。
+- `info_->destruct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L259。
 
 <!-- annotated:c475de5f0d5102 -->
 
@@ -1243,7 +1243,7 @@ class Any {
 
 **继续追踪实现**
 
-- `this->has_value` → [blender::Any::has_value · L270](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-8aa6656a044be07e)。
+- `this->has_value` → [blender::Any::has_value · L270](17-Any类型擦除存储.md#f-8aa6656a044be07e)。
 
 <!-- annotated:44d692c9e326b7 -->
 
@@ -1360,9 +1360,9 @@ class Any {
 
 **继续追踪实现**
 
-- `this->~Any` → [blender::Any::~Any · L219](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-9f23446bc07e3137)。
+- `this->~Any` → [blender::Any::~Any · L219](17-Any类型擦除存储.md#f-9f23446bc07e3137)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `this->get<T>` → [blender::Any::get · L339](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-d13d53cda71870a4)；[blender::Any::get · L349](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-26e8db7340c50d4c)；[blender::Any::get · L362](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-ac2a1c7c9a117c3b)；[blender::Any::get · L372](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-bd73cf50e0cf156d)。同名重载需按实参类型选择。
+- `this->get<T>` → [blender::Any::get · L339](17-Any类型擦除存储.md#f-d13d53cda71870a4)；[blender::Any::get · L349](17-Any类型擦除存储.md#f-26e8db7340c50d4c)；[blender::Any::get · L362](17-Any类型擦除存储.md#f-ac2a1c7c9a117c3b)；[blender::Any::get · L372](17-Any类型擦除存储.md#f-bd73cf50e0cf156d)。同名重载需按实参类型选择。
 
 <!-- annotated:31287b8eed5f4b -->
 
@@ -1454,9 +1454,9 @@ class Any {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->has_value` → [blender::Any::has_value · L270](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-8aa6656a044be07e)。
-- `this->template get_info<DecayT>` → [blender::Any::get_info · L152](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-66742acac22e5594)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->has_value` → [blender::Any::has_value · L270](17-Any类型擦除存储.md#f-8aa6656a044be07e)。
+- `this->template get_info<DecayT>` → [blender::Any::get_info · L152](17-Any类型擦除存储.md#f-66742acac22e5594)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L301—L305
@@ -1525,8 +1525,8 @@ class Any {
 
 **继续追踪实现**
 
-- `this->reset` → [blender::Any::reset · L255](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-4aaa848556386cca)。
-- `this->allocate_on_empty<T>` → [blender::Any::allocate_on_empty · L316](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-148792036eb63c4f)。
+- `this->reset` → [blender::Any::reset · L255](17-Any类型擦除存储.md#f-4aaa848556386cca)。
+- `this->allocate_on_empty<T>` → [blender::Any::allocate_on_empty · L316](17-Any类型擦除存储.md#f-148792036eb63c4f)。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L311—L315
 
@@ -1619,11 +1619,11 @@ class Any {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->has_value` → [blender::Any::has_value · L270](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-8aa6656a044be07e)。
-- `this->template get_info<T>` → [blender::Any::get_info · L152](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-66742acac22e5594)。
-- `buffer_.ptr` → [blender::AlignedBuffer::ptr · L138](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-bfe745bcb7c7811c)；[blender::AlignedBuffer::ptr · L143](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-f24632360e6cd028)。同名重载需按实参类型选择。
-- `::operator new` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L326。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->has_value` → [blender::Any::has_value · L270](17-Any类型擦除存储.md#f-8aa6656a044be07e)。
+- `this->template get_info<T>` → [blender::Any::get_info · L152](17-Any类型擦除存储.md#f-66742acac22e5594)。
+- `buffer_.ptr` → [blender::AlignedBuffer::ptr · L138](01-对象生命周期与值类别.md#f-bfe745bcb7c7811c)；[blender::AlignedBuffer::ptr · L143](01-对象生命周期与值类别.md#f-f24632360e6cd028)。同名重载需按实参类型选择。
+- `::operator new` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L326。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L331—L332
 
@@ -1683,7 +1683,7 @@ class Any {
 
 **继续追踪实现**
 
-- `this->template get_info<T>` → [blender::Any::get_info · L152](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-66742acac22e5594)。
+- `this->template get_info<T>` → [blender::Any::get_info · L152](17-Any类型擦除存储.md#f-66742acac22e5594)。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L337—L338
 
@@ -1752,8 +1752,8 @@ class Any {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `info_->get` → [blender::Any::get · L339](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-d13d53cda71870a4)；[blender::Any::get · L349](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-26e8db7340c50d4c)；[blender::Any::get · L362](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-ac2a1c7c9a117c3b)；[blender::Any::get · L372](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-bd73cf50e0cf156d)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `info_->get` → [blender::Any::get · L339](17-Any类型擦除存储.md#f-d13d53cda71870a4)；[blender::Any::get · L349](17-Any类型擦除存储.md#f-26e8db7340c50d4c)；[blender::Any::get · L362](17-Any类型擦除存储.md#f-ac2a1c7c9a117c3b)；[blender::Any::get · L372](17-Any类型擦除存储.md#f-bd73cf50e0cf156d)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L347—L348
 
@@ -1822,8 +1822,8 @@ class Any {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `info_->get` → [blender::Any::get · L339](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-d13d53cda71870a4)；[blender::Any::get · L349](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-26e8db7340c50d4c)；[blender::Any::get · L362](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-ac2a1c7c9a117c3b)；[blender::Any::get · L372](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-bd73cf50e0cf156d)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `info_->get` → [blender::Any::get · L339](17-Any类型擦除存储.md#f-d13d53cda71870a4)；[blender::Any::get · L349](17-Any类型擦除存储.md#f-26e8db7340c50d4c)；[blender::Any::get · L362](17-Any类型擦除存储.md#f-ac2a1c7c9a117c3b)；[blender::Any::get · L372](17-Any类型擦除存储.md#f-bd73cf50e0cf156d)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L357—L361
 
@@ -1891,7 +1891,7 @@ class Any {
 
 **继续追踪实现**
 
-- `const_cast<const Any *>(this)->get<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L365。
+- `const_cast<const Any *>(this)->get<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L365。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L367—L371
 
@@ -1982,9 +1982,9 @@ class Any {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->is<T>` → [blender::Any::is · L333](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-9ca1778afa1df154)。
-- `info_->get` → [blender::Any::get · L339](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-d13d53cda71870a4)；[blender::Any::get · L349](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-26e8db7340c50d4c)；[blender::Any::get · L362](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-ac2a1c7c9a117c3b)；[blender::Any::get · L372](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-bd73cf50e0cf156d)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->is<T>` → [blender::Any::is · L333](17-Any类型擦除存储.md#f-9ca1778afa1df154)。
+- `info_->get` → [blender::Any::get · L339](17-Any类型擦除存储.md#f-d13d53cda71870a4)；[blender::Any::get · L349](17-Any类型擦除存储.md#f-26e8db7340c50d4c)；[blender::Any::get · L362](17-Any类型擦除存储.md#f-ac2a1c7c9a117c3b)；[blender::Any::get · L372](17-Any类型擦除存储.md#f-bd73cf50e0cf156d)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L386—L389
 
@@ -2050,7 +2050,7 @@ class Any {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_any.hh L395—L397
 
@@ -2191,4 +2191,4 @@ unique_ptr通过移动转移拥有关系，默认删除策略必须与资源来�
 
 对比std::vector、std::array、std::span与LLVM SmallVector、ArrayRef时，分别比较拥有关系、内嵌存储、大小是否属于类型和失效条件。不要根据同名方法推断完全相同契约。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

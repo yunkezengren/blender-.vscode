@@ -1,6 +1,6 @@
 # 03-04 ChunkedList分块容器
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -482,7 +482,7 @@ template<typename T, int64_t SegmentCapacity = 4> class ChunkedList : NonCopyabl
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
 - `std::destroy_at` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 
 <!-- annotated:08195d356f216d -->
@@ -622,7 +622,7 @@ template<typename T, int64_t SegmentCapacity = 4> class ChunkedList : NonCopyabl
 
 **继续追踪实现**
 
-- `this->append_as` → [blender::linear_allocator::ChunkedList::append_as · L116](04-ChunkedList%E5%88%86%E5%9D%97%E5%AE%B9%E5%99%A8.md#f-317889722ec9d79d)。
+- `this->append_as` → [blender::linear_allocator::ChunkedList::append_as · L116](04-ChunkedList分块容器.md#f-317889722ec9d79d)。
 
 <!-- annotated:e6ec093068d830 -->
 
@@ -680,7 +680,7 @@ template<typename T, int64_t SegmentCapacity = 4> class ChunkedList : NonCopyabl
 
 **继续追踪实现**
 
-- `this->append_as` → [blender::linear_allocator::ChunkedList::append_as · L116](04-ChunkedList%E5%88%86%E5%9D%97%E5%AE%B9%E5%99%A8.md#f-317889722ec9d79d)。
+- `this->append_as` → [blender::linear_allocator::ChunkedList::append_as · L116](04-ChunkedList分块容器.md#f-317889722ec9d79d)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:9a9e3613d413bd -->
@@ -759,8 +759,8 @@ template<typename T, int64_t SegmentCapacity = 4> class ChunkedList : NonCopyabl
 
 **继续追踪实现**
 
-- `allocator.construct<Segment>().release` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L121。
-- `allocator.construct<Segment>` → [blender::LinearAllocator::construct · L135](02-LinearAllocator%E5%B8%83%E5%B1%80.md#f-437c16eedf07fa2a)。
+- `allocator.construct<Segment>().release` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L121。
+- `allocator.construct<Segment>` → [blender::LinearAllocator::construct · L135](02-LinearAllocator布局.md#f-437c16eedf07fa2a)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_linear_allocator_chunked_list.hh L128—L134
@@ -1297,7 +1297,7 @@ template<typename T, int64_t SegmentCapacity = 4> class ChunkedList : NonCopyabl
 
 **继续追踪实现**
 
-- `ConstIterator` → [blender::linear_allocator::ChunkedList::ConstIterator::ConstIterator · L135](04-ChunkedList%E5%88%86%E5%9D%97%E5%AE%B9%E5%99%A8.md#f-e4eb78e35108224c)；[blender::linear_allocator::ChunkedList::ConstIterator::ConstIterator · L136](04-ChunkedList%E5%88%86%E5%9D%97%E5%AE%B9%E5%99%A8.md#f-90c0bea7d2c67399)。同名重载需按实参类型选择。
+- `ConstIterator` → [blender::linear_allocator::ChunkedList::ConstIterator::ConstIterator · L135](04-ChunkedList分块容器.md#f-e4eb78e35108224c)；[blender::linear_allocator::ChunkedList::ConstIterator::ConstIterator · L136](04-ChunkedList分块容器.md#f-90c0bea7d2c67399)。同名重载需按实参类型选择。
 
 <!-- annotated:cd962aab73f4fd -->
 
@@ -1353,7 +1353,7 @@ template<typename T, int64_t SegmentCapacity = 4> class ChunkedList : NonCopyabl
 
 **继续追踪实现**
 
-- `ConstIterator` → [blender::linear_allocator::ChunkedList::ConstIterator::ConstIterator · L135](04-ChunkedList%E5%88%86%E5%9D%97%E5%AE%B9%E5%99%A8.md#f-e4eb78e35108224c)；[blender::linear_allocator::ChunkedList::ConstIterator::ConstIterator · L136](04-ChunkedList%E5%88%86%E5%9D%97%E5%AE%B9%E5%99%A8.md#f-90c0bea7d2c67399)。同名重载需按实参类型选择。
+- `ConstIterator` → [blender::linear_allocator::ChunkedList::ConstIterator::ConstIterator · L135](04-ChunkedList分块容器.md#f-e4eb78e35108224c)；[blender::linear_allocator::ChunkedList::ConstIterator::ConstIterator · L136](04-ChunkedList分块容器.md#f-90c0bea7d2c67399)。同名重载需按实参类型选择。
 
 <!-- annotated:45f090d85ef8a0 -->
 
@@ -1409,7 +1409,7 @@ template<typename T, int64_t SegmentCapacity = 4> class ChunkedList : NonCopyabl
 
 **继续追踪实现**
 
-- `MutableIterator` → [blender::linear_allocator::ChunkedList::MutableIterator::MutableIterator · L162](04-ChunkedList%E5%88%86%E5%9D%97%E5%AE%B9%E5%99%A8.md#f-cf33778d178da43b)；[blender::linear_allocator::ChunkedList::MutableIterator::MutableIterator · L163](04-ChunkedList%E5%88%86%E5%9D%97%E5%AE%B9%E5%99%A8.md#f-2a12b1ed71ab22d3)。同名重载需按实参类型选择。
+- `MutableIterator` → [blender::linear_allocator::ChunkedList::MutableIterator::MutableIterator · L162](04-ChunkedList分块容器.md#f-cf33778d178da43b)；[blender::linear_allocator::ChunkedList::MutableIterator::MutableIterator · L163](04-ChunkedList分块容器.md#f-2a12b1ed71ab22d3)。同名重载需按实参类型选择。
 
 <!-- annotated:5f8d99b018bf9b -->
 
@@ -1465,7 +1465,7 @@ template<typename T, int64_t SegmentCapacity = 4> class ChunkedList : NonCopyabl
 
 **继续追踪实现**
 
-- `MutableIterator` → [blender::linear_allocator::ChunkedList::MutableIterator::MutableIterator · L162](04-ChunkedList%E5%88%86%E5%9D%97%E5%AE%B9%E5%99%A8.md#f-cf33778d178da43b)；[blender::linear_allocator::ChunkedList::MutableIterator::MutableIterator · L163](04-ChunkedList%E5%88%86%E5%9D%97%E5%AE%B9%E5%99%A8.md#f-2a12b1ed71ab22d3)。同名重载需按实参类型选择。
+- `MutableIterator` → [blender::linear_allocator::ChunkedList::MutableIterator::MutableIterator · L162](04-ChunkedList分块容器.md#f-cf33778d178da43b)；[blender::linear_allocator::ChunkedList::MutableIterator::MutableIterator · L163](04-ChunkedList分块容器.md#f-2a12b1ed71ab22d3)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_linear_allocator_chunked_list.hh L207—L209
 
@@ -1558,4 +1558,4 @@ friend授予指定函数或类访问非公开成员的权限，并不意味着�
 
 与std::pmr::monotonic_buffer_resource比较批量存储回收，与std::any比较拥有型类型擦除；CPPType描述类型操作，本身不保存每个值。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

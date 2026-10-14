@@ -1,6 +1,6 @@
 # 04-01 VArray表示与值语义
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -426,7 +426,7 @@ template<typename T> class VArrayImpl {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:9d760155a08efe -->
 
@@ -686,8 +686,8 @@ template<typename T> class VArrayImpl {
 
 **继续追踪实现**
 
-- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
-- `this->get` → [blender::VArrayImpl_For_Span::get · L217](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-b5d536dcfede9ac0)；[blender::VArrayImpl_For_Single::get · L325](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-62c705cc3442334e)；[blender::VArrayImpl_For_Func::get · L386](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-0dda53e7719f99d6)；[blender::VArrayImpl_For_DerivedSpan::get · L449](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-9a7d40e70a914814)；[blender::VArrayCommon::get · L560](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-dce84cee97df9ded)。同名重载需按实参类型选择。
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-分段存储与遍历.md#f-cd6cd317e2e2812c)。
+- `this->get` → [blender::VArrayImpl_For_Span::get · L217](01-VArray表示与值语义.md#f-b5d536dcfede9ac0)；[blender::VArrayImpl_For_Single::get · L325](02-VArrayImpl实现接口.md#f-62c705cc3442334e)；[blender::VArrayImpl_For_Func::get · L386](02-VArrayImpl实现接口.md#f-0dda53e7719f99d6)；[blender::VArrayImpl_For_DerivedSpan::get · L449](02-VArrayImpl实现接口.md#f-9a7d40e70a914814)；[blender::VArrayCommon::get · L560](02-VArrayImpl实现接口.md#f-dce84cee97df9ded)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L127—L132
 
@@ -783,8 +783,8 @@ template<typename T> class VArrayImpl {
 
 **继续追踪实现**
 
-- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
-- `this->get` → [blender::VArrayImpl_For_Span::get · L217](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-b5d536dcfede9ac0)；[blender::VArrayImpl_For_Single::get · L325](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-62c705cc3442334e)；[blender::VArrayImpl_For_Func::get · L386](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-0dda53e7719f99d6)；[blender::VArrayImpl_For_DerivedSpan::get · L449](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-9a7d40e70a914814)；[blender::VArrayCommon::get · L560](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-dce84cee97df9ded)。同名重载需按实参类型选择。
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-分段存储与遍历.md#f-cd6cd317e2e2812c)。
+- `this->get` → [blender::VArrayImpl_For_Span::get · L217](01-VArray表示与值语义.md#f-b5d536dcfede9ac0)；[blender::VArrayImpl_For_Single::get · L325](02-VArrayImpl实现接口.md#f-62c705cc3442334e)；[blender::VArrayImpl_For_Func::get · L386](02-VArrayImpl实现接口.md#f-0dda53e7719f99d6)；[blender::VArrayImpl_For_DerivedSpan::get · L449](02-VArrayImpl实现接口.md#f-9a7d40e70a914814)；[blender::VArrayCommon::get · L560](02-VArrayImpl实现接口.md#f-dce84cee97df9ded)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L150—L156
 
@@ -971,10 +971,10 @@ template<typename T> class VMutableArrayImpl : public VArrayImpl<T> {
 
 **继续追踪实现**
 
-- `this->common_info` → [blender::VArrayImpl::common_info · L104](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-68078b4f5e7a53d4)；[blender::VArrayImpl_For_Span::common_info · L227](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-fb3c90a88b5b3bd8)；[blender::VArrayImpl_For_Span_final::common_info · L281](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-93f2eaf44ff4a315)；[blender::VArrayImpl_For_Single::common_info · L330](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-8b3462728d95d9b1)；[blender::VArrayCommon::common_info · L602](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-087793fc5c4b8977)。同名重载需按实参类型选择。
-- `initialized_copy_n` → [blender::initialized_copy_n · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-7e8b9229298df6c5)。
-- `src.data` → [blender::Span::data · L219](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-10c5889198935800)。
-- `this->set` → [blender::VArrayImpl_For_Span::set · L222](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-3b037517ba01e8be)；[blender::VArrayImpl_For_DerivedSpan::set · L454](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-85b0b72dcbb29644)；[blender::VMutableArray::set · L898](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-05bfe1c89a3b807f)。同名重载需按实参类型选择。
+- `this->common_info` → [blender::VArrayImpl::common_info · L104](01-VArray表示与值语义.md#f-68078b4f5e7a53d4)；[blender::VArrayImpl_For_Span::common_info · L227](01-VArray表示与值语义.md#f-fb3c90a88b5b3bd8)；[blender::VArrayImpl_For_Span_final::common_info · L281](01-VArray表示与值语义.md#f-93f2eaf44ff4a315)；[blender::VArrayImpl_For_Single::common_info · L330](02-VArrayImpl实现接口.md#f-8b3462728d95d9b1)；[blender::VArrayCommon::common_info · L602](02-VArrayImpl实现接口.md#f-087793fc5c4b8977)。同名重载需按实参类型选择。
+- `initialized_copy_n` → [blender::initialized_copy_n · L48](../01-基础容器与现代CPP/01-对象生命周期与值类别.md#f-7e8b9229298df6c5)。
+- `src.data` → [blender::Span::data · L219](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-10c5889198935800)。
+- `this->set` → [blender::VArrayImpl_For_Span::set · L222](01-VArray表示与值语义.md#f-3b037517ba01e8be)；[blender::VArrayImpl_For_DerivedSpan::set · L454](02-VArrayImpl实现接口.md#f-85b0b72dcbb29644)；[blender::VMutableArray::set · L898](03-单值与Span表示.md#f-05bfe1c89a3b807f)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L190—L193
 
@@ -1357,7 +1357,7 @@ template<typename T> class VArrayImpl_For_Span : public VMutableArrayImpl<T> {
 
 **继续追踪实现**
 
-- `CommonVArrayInfo` → [blender::CommonVArrayInfo::CommonVArrayInfo · L66](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-a716088fcd760d27)；[blender::CommonVArrayInfo::CommonVArrayInfo · L67](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-018a4490310fea4d)。同名重载需按实参类型选择。
+- `CommonVArrayInfo` → [blender::CommonVArrayInfo::CommonVArrayInfo · L66](01-VArray表示与值语义.md#f-a716088fcd760d27)；[blender::CommonVArrayInfo::CommonVArrayInfo · L67](01-VArray表示与值语义.md#f-018a4490310fea4d)。同名重载需按实参类型选择。
 
 <!-- annotated:4673000ae99aa9 -->
 
@@ -1435,8 +1435,8 @@ template<typename T> class VArrayImpl_For_Span : public VMutableArrayImpl<T> {
 
 **继续追踪实现**
 
-- `index_mask::detail::copy_assign` → [blender::index_mask::detail::copy_assign · L1231](12-%E9%87%8D%E6%9E%84%E5%8E%86%E5%8F%B2%E4%B8%8E%E5%9F%BA%E5%87%86%E7%BB%83%E4%B9%A0.md#f-be4df34f277f2f95)。
-- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
+- `index_mask::detail::copy_assign` → [blender::index_mask::detail::copy_assign · L1231](12-重构历史与基准练习.md#f-be4df34f277f2f95)。
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-分段存储与遍历.md#f-cd6cd317e2e2812c)。
 
 <!-- annotated:ce24aaee3777f7 -->
 
@@ -1520,8 +1520,8 @@ template<typename T> class VArrayImpl_For_Span : public VMutableArrayImpl<T> {
 
 **继续追踪实现**
 
-- `index_mask::detail::gather_assign` → [blender::index_mask::detail::gather_assign · L1239](12-%E9%87%8D%E6%9E%84%E5%8E%86%E5%8F%B2%E4%B8%8E%E5%9F%BA%E5%87%86%E7%BB%83%E4%B9%A0.md#f-6ca85cf84b731900)。
-- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
+- `index_mask::detail::gather_assign` → [blender::index_mask::detail::gather_assign · L1239](12-重构历史与基准练习.md#f-6ca85cf84b731900)。
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-分段存储与遍历.md#f-cd6cd317e2e2812c)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L264—L273
 
@@ -1661,7 +1661,7 @@ template<typename T> class VArrayImpl_For_Span_final final : public VArrayImpl_F
 
 **继续追踪实现**
 
-- `CommonVArrayInfo` → [blender::CommonVArrayInfo::CommonVArrayInfo · L66](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-a716088fcd760d27)；[blender::CommonVArrayInfo::CommonVArrayInfo · L67](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-018a4490310fea4d)。同名重载需按实参类型选择。
+- `CommonVArrayInfo` → [blender::CommonVArrayInfo::CommonVArrayInfo · L66](01-VArray表示与值语义.md#f-a716088fcd760d27)；[blender::CommonVArrayInfo::CommonVArrayInfo · L67](01-VArray表示与值语义.md#f-018a4490310fea4d)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L285—L301
 
@@ -1763,7 +1763,7 @@ class VArrayImpl_For_ArrayContainer : public VArrayImpl_For_Span<T> {
 
 **继续追踪实现**
 
-- `container_.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L305。
+- `container_.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L305。
 
 ## 语法与相关类型
 
@@ -1869,4 +1869,4 @@ override要求函数确实覆盖基类虚函数，可捕获参数类型和const�
 
 对比普通Span、标准ranges惰性视图和虚拟数组时，明确随机索引能力、批量物化、类型擦除和拥有关系；接口外观相近不代表同一抽象。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

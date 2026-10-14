@@ -1,6 +1,6 @@
 # 01-14 VectorSet稳定索引与去重
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -715,7 +715,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->add_multiple` → [blender::VectorSet::add_multiple · L394](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-911e364c3013b35e)。
+- `this->add_multiple` → [blender::VectorSet::add_multiple · L394](14-VectorSet稳定索引与去重.md#f-911e364c3013b35e)。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L200—L203
 
@@ -839,9 +839,9 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L211。
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
-- `this->deallocate_keys_array` → [blender::VectorSet::deallocate_keys_array · L1105](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-909355f38a511e1a)。
+- `destruct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L211。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
+- `this->deallocate_keys_array` → [blender::VectorSet::deallocate_keys_array · L1105](14-VectorSet稳定索引与去重.md#f-909355f38a511e1a)。
 
 <!-- annotated:df20369ec4ee8c -->
 
@@ -954,10 +954,10 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `other.size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
-- `this->allocate_keys_array` → [blender::VectorSet::allocate_keys_array · L1099](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-802358992d1629aa)。
-- `uninitialized_copy_n` → [blender::uninitialized_copy_n · L53](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-6cd63ebede164cd2)。
-- `this->deallocate_keys_array` → [blender::VectorSet::deallocate_keys_array · L1105](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-909355f38a511e1a)。
+- `other.size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
+- `this->allocate_keys_array` → [blender::VectorSet::allocate_keys_array · L1099](14-VectorSet稳定索引与去重.md#f-802358992d1629aa)。
+- `uninitialized_copy_n` → [blender::uninitialized_copy_n · L53](01-对象生命周期与值类别.md#f-6cd63ebede164cd2)。
+- `this->deallocate_keys_array` → [blender::VectorSet::deallocate_keys_array · L1105](14-VectorSet稳定索引与去重.md#f-909355f38a511e1a)。
 
 <!-- annotated:df922090d5c9b8 -->
 
@@ -984,7 +984,8 @@ class VectorSet {
 
 接口参数：
 
-- `VectorSet<Key, OtherInlineBufferCapacity, ProbingStrategy, Hash, IsEqual, Slot, Allocator>           &&other`
+- `VectorSet<Key, OtherInlineBufferCapacity, ProbingStrategy, Hash, IsEqual, Slot, Allocator>
+           &&other`
 
 **教学注释版**
 
@@ -1112,12 +1113,12 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `other.is_inline` → [blender::VectorSet::is_inline · L603](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-bafc33380df75ae3)。
-- `other.size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
+- `other.is_inline` → [blender::VectorSet::is_inline · L603](14-VectorSet稳定索引与去重.md#f-bafc33380df75ae3)。
+- `other.size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
 - `memcpy` → [外部契约](https://eel.is/c++draft/cstring.syn)：复制字节，源与目标不应重叠。类型生命周期、对齐和可复制表示须由调用者证明，不是任意对象的复制构造。
-- `this->allocate_keys_array` → [blender::VectorSet::allocate_keys_array · L1099](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-802358992d1629aa)。
-- `uninitialized_relocate_n` → [blender::uninitialized_relocate_n · L80](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-9de0365b9a47fd68)。
-- `SlotArray` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L286。
+- `this->allocate_keys_array` → [blender::VectorSet::allocate_keys_array · L1099](14-VectorSet稳定索引与去重.md#f-802358992d1629aa)。
+- `uninitialized_relocate_n` → [blender::uninitialized_relocate_n · L80](01-对象生命周期与值类别.md#f-9de0365b9a47fd68)。
+- `SlotArray` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L286。
 
 <!-- annotated:bc779cd5b4ae1b -->
 
@@ -1177,7 +1178,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `copy_assign_container` → [blender::copy_assign_container · L284](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-546a45b4d8b5ab44)。
+- `copy_assign_container` → [blender::copy_assign_container · L284](../03-内存分配与运行时类型/01-对齐与未初始化存储.md#f-546a45b4d8b5ab44)。
 
 <!-- annotated:db4f0a461dfa15 -->
 
@@ -1238,7 +1239,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `move_assign_container` → [blender::move_assign_container · L300](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-5144b56be86e6f42)。
+- `move_assign_container` → [blender::move_assign_container · L300](../03-内存分配与运行时类型/01-对齐与未初始化存储.md#f-5144b56be86e6f42)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L299—L302
@@ -1312,8 +1313,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
 
 <!-- annotated:d2fab8a4c744bf -->
 
@@ -1370,8 +1371,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `Span<Key>` → [blender::Span](%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
+- `Span<Key>` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
 
 <!-- annotated:a1ebad222fc3bc -->
 
@@ -1432,8 +1433,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `a.as_span` → [blender::VectorSet::as_span · L326](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-76ed81b1cfbe99ad)。
-- `b.as_span` → [blender::VectorSet::as_span · L326](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-76ed81b1cfbe99ad)。
+- `a.as_span` → [blender::VectorSet::as_span · L326](14-VectorSet稳定索引与去重.md#f-76ed81b1cfbe99ad)。
+- `b.as_span` → [blender::VectorSet::as_span · L326](14-VectorSet稳定索引与去重.md#f-76ed81b1cfbe99ad)。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L319—L325
 
@@ -1577,8 +1578,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->add_new__impl` → [blender::VectorSet::add_new__impl · L879](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-c253f642df98f383)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L338。
+- `this->add_new__impl` → [blender::VectorSet::add_new__impl · L879](14-VectorSet稳定索引与去重.md#f-c253f642df98f383)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L338。
 
 <a id="f-ef9174f041011a6b"></a>
 
@@ -1624,9 +1625,9 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->add_new__impl` → [blender::VectorSet::add_new__impl · L879](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-c253f642df98f383)。
+- `this->add_new__impl` → [blender::VectorSet::add_new__impl · L879](14-VectorSet稳定索引与去重.md#f-c253f642df98f383)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L342。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L342。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L344—L350
 
@@ -1707,7 +1708,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->add_as` → [blender::VectorSet::add_as · L359](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-867376d1e0927f2f)。
+- `this->add_as` → [blender::VectorSet::add_as · L359](14-VectorSet稳定索引与去重.md#f-867376d1e0927f2f)。
 
 <a id="f-c0474f6a0568033b"></a>
 
@@ -1757,7 +1758,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->add_as` → [blender::VectorSet::add_as · L359](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-867376d1e0927f2f)。
+- `this->add_as` → [blender::VectorSet::add_as · L359](14-VectorSet稳定索引与去重.md#f-867376d1e0927f2f)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-867376d1e0927f2f"></a>
@@ -1808,9 +1809,9 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->add__impl` → [blender::VectorSet::add__impl · L900](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-63127658674c7b47)。
+- `this->add__impl` → [blender::VectorSet::add__impl · L900](14-VectorSet稳定索引与去重.md#f-63127658674c7b47)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L361。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L361。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L363—L373
 
@@ -1892,7 +1893,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->add_overwrite_as` → [blender::VectorSet::add_overwrite_as · L382](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f87302184f0820f5)。
+- `this->add_overwrite_as` → [blender::VectorSet::add_overwrite_as · L382](14-VectorSet稳定索引与去重.md#f-f87302184f0820f5)。
 
 <a id="f-e434899875503db7"></a>
 
@@ -1936,7 +1937,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->add_overwrite_as` → [blender::VectorSet::add_overwrite_as · L382](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f87302184f0820f5)。
+- `this->add_overwrite_as` → [blender::VectorSet::add_overwrite_as · L382](14-VectorSet稳定索引与去重.md#f-f87302184f0820f5)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-f87302184f0820f5"></a>
@@ -1981,9 +1982,9 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->add_overwrite__impl` → [blender::VectorSet::add_overwrite__impl · L922](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-60d9c2d278ec1cad)。
+- `this->add_overwrite__impl` → [blender::VectorSet::add_overwrite__impl · L922](14-VectorSet稳定索引与去重.md#f-60d9c2d278ec1cad)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L384。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L384。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L386—L393
 
@@ -2060,7 +2061,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->add` → [blender::VectorSet::add · L351](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-96bfe2bf376d6298)；[blender::VectorSet::add · L355](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-c0474f6a0568033b)。同名重载需按实参类型选择。
+- `this->add` → [blender::VectorSet::add · L351](14-VectorSet稳定索引与去重.md#f-96bfe2bf376d6298)；[blender::VectorSet::add · L355](14-VectorSet稳定索引与去重.md#f-c0474f6a0568033b)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L400—L405
 
@@ -2139,7 +2140,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->contains_as` → [blender::VectorSet::contains_as · L410](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-a92a57eabddbbac3)。
+- `this->contains_as` → [blender::VectorSet::contains_as · L410](14-VectorSet稳定索引与去重.md#f-a92a57eabddbbac3)。
 
 <a id="f-a92a57eabddbbac3"></a>
 
@@ -2188,8 +2189,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->contains__impl` → [blender::VectorSet::contains__impl · L865](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-9309cfac0b39917e)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L412。
+- `this->contains__impl` → [blender::VectorSet::contains__impl · L865](14-VectorSet稳定索引与去重.md#f-9309cfac0b39917e)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L412。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L414—L422
 
@@ -2274,7 +2275,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->remove_as` → [blender::VectorSet::remove_as · L427](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-7ab1ff5e5a4c8ba6)。
+- `this->remove_as` → [blender::VectorSet::remove_as · L427](14-VectorSet稳定索引与去重.md#f-7ab1ff5e5a4c8ba6)。
 
 <a id="f-7ab1ff5e5a4c8ba6"></a>
 
@@ -2323,8 +2324,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->remove__impl` → [blender::VectorSet::remove__impl · L1018](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-5b2e5fc7250db5d2)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L429。
+- `this->remove__impl` → [blender::VectorSet::remove__impl · L1018](14-VectorSet稳定索引与去重.md#f-5b2e5fc7250db5d2)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L429。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L431—L435
 
@@ -2397,7 +2398,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->remove_contained_as` → [blender::VectorSet::remove_contained_as · L440](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-1a20b5c93335cac9)。
+- `this->remove_contained_as` → [blender::VectorSet::remove_contained_as · L440](14-VectorSet稳定索引与去重.md#f-1a20b5c93335cac9)。
 
 <a id="f-1a20b5c93335cac9"></a>
 
@@ -2442,8 +2443,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->remove_contained__impl` → [blender::VectorSet::remove_contained__impl · L1032](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-251c8f6a488ee4ba)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L442。
+- `this->remove_contained__impl` → [blender::VectorSet::remove_contained__impl · L1032](14-VectorSet稳定索引与去重.md#f-251c8f6a488ee4ba)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L442。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L444—L450
 
@@ -2538,11 +2539,11 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
-- `slot.is_occupied` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L455。
-- `slot.index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L456。
-- `predicate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L458。
-- `this->remove_key_internal` → [blender::VectorSet::remove_key_internal · L1046](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-a2b67739e9907a9a)。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
+- `slot.is_occupied` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L455。
+- `slot.index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L456。
+- `predicate` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L458。
+- `this->remove_key_internal` → [blender::VectorSet::remove_key_internal · L1046](14-VectorSet稳定索引与去重.md#f-a2b67739e9907a9a)。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L465—L469
 
@@ -2614,7 +2615,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->pop__impl` → [blender::VectorSet::pop__impl · L998](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-e816f0df588785fa)。
+- `this->pop__impl` → [blender::VectorSet::pop__impl · L998](14-VectorSet稳定索引与去重.md#f-e816f0df588785fa)。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L474—L478
 
@@ -2684,7 +2685,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->index_of_as` → [blender::VectorSet::index_of_as · L483](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-ef6b2f218e6bfa50)。
+- `this->index_of_as` → [blender::VectorSet::index_of_as · L483](14-VectorSet稳定索引与去重.md#f-ef6b2f218e6bfa50)。
 
 <a id="f-ef6b2f218e6bfa50"></a>
 
@@ -2727,8 +2728,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->index_of__impl` → [blender::VectorSet::index_of__impl · L948](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-258b74cfad3e0910)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L485。
+- `this->index_of__impl` → [blender::VectorSet::index_of__impl · L948](14-VectorSet稳定索引与去重.md#f-258b74cfad3e0910)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L485。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L487—L491
 
@@ -2798,7 +2799,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->index_of_try_as` → [blender::VectorSet::index_of_try_as · L496](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-285bbcbc191f95f7)。
+- `this->index_of_try_as` → [blender::VectorSet::index_of_try_as · L496](14-VectorSet稳定索引与去重.md#f-285bbcbc191f95f7)。
 
 <a id="f-285bbcbc191f95f7"></a>
 
@@ -2841,8 +2842,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->index_of_try__impl` → [blender::VectorSet::index_of_try__impl · L961](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-bef61fedf126c26b)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L498。
+- `this->index_of_try__impl` → [blender::VectorSet::index_of_try__impl · L961](14-VectorSet稳定索引与去重.md#f-bef61fedf126c26b)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L498。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L500—L504
 
@@ -2912,7 +2913,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->index_of_or_add_as` → [blender::VectorSet::index_of_or_add_as · L513](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-d4650cfa1aade2a7)。
+- `this->index_of_or_add_as` → [blender::VectorSet::index_of_or_add_as · L513](14-VectorSet稳定索引与去重.md#f-d4650cfa1aade2a7)。
 
 <a id="f-7134ab7d140dfd6a"></a>
 
@@ -2956,7 +2957,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->index_of_or_add_as` → [blender::VectorSet::index_of_or_add_as · L513](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-d4650cfa1aade2a7)。
+- `this->index_of_or_add_as` → [blender::VectorSet::index_of_or_add_as · L513](14-VectorSet稳定索引与去重.md#f-d4650cfa1aade2a7)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-d4650cfa1aade2a7"></a>
@@ -3001,9 +3002,9 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->index_of_or_add__impl` → [blender::VectorSet::index_of_or_add__impl · L975](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-c136cdd2d71e9ac0)。
+- `this->index_of_or_add__impl` → [blender::VectorSet::index_of_or_add__impl · L975](14-VectorSet稳定索引与去重.md#f-c136cdd2d71e9ac0)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L515。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L515。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L517—L521
 
@@ -3073,7 +3074,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->lookup_key_as` → [blender::VectorSet::lookup_key_as · L526](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-52f779df092b62f1)。
+- `this->lookup_key_as` → [blender::VectorSet::lookup_key_as · L526](14-VectorSet稳定索引与去重.md#f-52f779df092b62f1)。
 
 <a id="f-52f779df092b62f1"></a>
 
@@ -3120,8 +3121,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->lookup_key_ptr_as` → [blender::VectorSet::lookup_key_ptr_as · L559](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-ad623973b7164fb6)。
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->lookup_key_ptr_as` → [blender::VectorSet::lookup_key_ptr_as · L559](14-VectorSet稳定索引与去重.md#f-ad623973b7164fb6)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L532—L536
 
@@ -3192,7 +3193,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->lookup_key_default_as` → [blender::VectorSet::lookup_key_default_as · L541](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-8e827b6a3df1eb0a)。
+- `this->lookup_key_default_as` → [blender::VectorSet::lookup_key_default_as · L541](14-VectorSet稳定索引与去重.md#f-8e827b6a3df1eb0a)。
 
 <a id="f-8e827b6a3df1eb0a"></a>
 
@@ -3247,8 +3248,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->lookup_key_ptr_as` → [blender::VectorSet::lookup_key_ptr_as · L559](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-ad623973b7164fb6)。
-- `Key` → [blender::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-readfile-fd4161.md#t-f4374ee783d4)；[blender::seq::SourceImageCache::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-source_image_cache-cd1224.md#t-81b679c7178a)；[blender::seq::FinalImageCache::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-final_image_cache-1c7855.md#t-88289eb9b31b)；[blender::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-usd_blend_shape_utils-d23b47.md#t-e10ccb918663)；[blender::bke::bSoundFrequencySampler::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_sound_sample-57af36.md#t-5b79f7774b1a)；[blender::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_main-626d8f.md#t-1784a0f20281)；[blender::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_main-626d8f.md#t-348ab9627782)；[blender::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_key-b867b5.md#t-1740ccb0acec)；[blender::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-fbx_import_util-0b8fc3.md#t-fba4c46dc2d5)；[blender::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-c07b09941a03)；[blender::Mesh::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-5259e892f15f)；[blender::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_lattice_types-0d327e.md#t-53e9b345da62)；[blender::Lattice::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_lattice_types-0d327e.md#t-6372358baa3d)；[blender::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_key_types-60acde.md#t-5af61269bbd5)；[blender::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_curve_types-befcca.md#t-f9ebdb5e9abb)；[blender::Curve::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_curve_types-befcca.md#t-e0bde3ada318)；[blender::Key](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-sculpt_intern-9e9479.md#t-31fd3bde696a)；[blender::Key](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/%E4%BE%9D%E8%B5%96-deg_builder_relations-ee8e7a.md#t-ed0388dbfde1)；[blender::Key](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/%E4%BE%9D%E8%B5%96-deg_builder_nodes-c95998.md#t-46b0384127c0)。
+- `this->lookup_key_ptr_as` → [blender::VectorSet::lookup_key_ptr_as · L559](14-VectorSet稳定索引与去重.md#f-ad623973b7164fb6)。
+- `Key` → [blender::Key](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/readfile.hh.md#t-f4374ee783d4)；[blender::seq::SourceImageCache::Key](../90-实现依赖专题/08-其他Blender模块/sequencer/intern/cache/source_image_cache.cc.md#t-81b679c7178a)；[blender::seq::FinalImageCache::Key](../90-实现依赖专题/08-其他Blender模块/sequencer/intern/cache/final_image_cache.cc.md#t-88289eb9b31b)；[blender::Key](../90-实现依赖专题/08-其他Blender模块/io/usd/intern/usd_blend_shape_utils.hh.md#t-e10ccb918663)；[blender::bke::bSoundFrequencySampler::Key](../90-实现依赖专题/02-BKE几何与数据/BKE_sound_sample.hh.md#t-5b79f7774b1a)；[blender::Key](../90-实现依赖专题/02-BKE几何与数据/BKE_main.hh.md#t-1784a0f20281)；[blender::Key](../90-实现依赖专题/02-BKE几何与数据/BKE_main.hh.md#t-348ab9627782)；[blender::Key](../90-实现依赖专题/02-BKE几何与数据/BKE_key.hh.md#t-1740ccb0acec)；[blender::Key](../90-实现依赖专题/08-其他Blender模块/io/fbx/importer/fbx_import_util.hh.md#t-fba4c46dc2d5)；[blender::Key](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-c07b09941a03)；[blender::Mesh::Key](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-5259e892f15f)；[blender::Key](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_lattice_types.h.md#t-53e9b345da62)；[blender::Lattice::Key](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_lattice_types.h.md#t-6372358baa3d)；[blender::Key](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_key_types.h.md#t-5af61269bbd5)；[blender::Key](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_curve_types.h.md#t-f9ebdb5e9abb)；[blender::Curve::Key](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_curve_types.h.md#t-e0bde3ada318)；[blender::Key](../90-实现依赖专题/08-其他Blender模块/editors/sculpt_paint/mesh/sculpt_intern.hh.md#t-31fd3bde696a)；[blender::Key](../90-实现依赖专题/06-Depsgraph依赖图/intern/builder/deg_builder_relations.h.md#t-ed0388dbfde1)；[blender::Key](../90-实现依赖专题/06-Depsgraph依赖图/intern/builder/deg_builder_nodes.h.md#t-46b0384127c0)。
 - `std::forward<ForwardDefault>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L550—L554
@@ -3319,7 +3320,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->lookup_key_ptr_as` → [blender::VectorSet::lookup_key_ptr_as · L559](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-ad623973b7164fb6)。
+- `this->lookup_key_ptr_as` → [blender::VectorSet::lookup_key_ptr_as · L559](14-VectorSet稳定索引与去重.md#f-ad623973b7164fb6)。
 
 <a id="f-ad623973b7164fb6"></a>
 
@@ -3371,8 +3372,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->index_of_try__impl` → [blender::VectorSet::index_of_try__impl · L961](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-bef61fedf126c26b)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L561。
+- `this->index_of_try__impl` → [blender::VectorSet::index_of_try__impl · L961](14-VectorSet稳定索引与去重.md#f-bef61fedf126c26b)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L561。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L567—L570
 
@@ -3549,7 +3550,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L585—L588
 
@@ -3614,8 +3615,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L593—L596
 
@@ -3681,8 +3682,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->as_span` → [blender::VectorSet::as_span · L326](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-76ed81b1cfbe99ad)。
-- `stats.print` → [blender::HashTableStats::print · L16](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-hash_tables-5853e7.md#f-be761e16ade883cd)。
+- `this->as_span` → [blender::VectorSet::as_span · L326](14-VectorSet稳定索引与去重.md#f-76ed81b1cfbe99ad)。
+- `stats.print` → [blender::HashTableStats::print · L16](../90-实现依赖专题/01-BLI基础库/intern/hash_tables.cc.md#f-be761e16ade883cd)。
 
 <!-- annotated:800b92ae0de9a7 -->
 
@@ -3943,7 +3944,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `slots_.size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
+- `slots_.size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L631—L634
 
@@ -4138,7 +4139,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `slots_.size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
+- `slots_.size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L656—L659
 
@@ -4213,7 +4214,7 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->realloc_and_reinsert` → [blender::VectorSet::realloc_and_reinsert · L749](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-154b4bb42d30807e)。
+- `this->realloc_and_reinsert` → [blender::VectorSet::realloc_and_reinsert · L749](14-VectorSet稳定索引与去重.md#f-154b4bb42d30807e)。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L666—L669
 
@@ -4369,9 +4370,9 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L685。
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
-- `slot.~Slot` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L687。
+- `destruct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L685。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
+- `slot.~Slot` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L687。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L694—L698
 
@@ -4441,8 +4442,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->count_collisions__impl` → [blender::VectorSet::count_collisions__impl · L1074](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-a277d462ec35ca72)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L701。
+- `this->count_collisions__impl` → [blender::VectorSet::count_collisions__impl · L1074](14-VectorSet稳定索引与去重.md#f-a277d462ec35ca72)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L701。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L703—L714
 
@@ -4591,13 +4592,13 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
-- `this->is_inline` → [blender::VectorSet::is_inline · L603](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-bafc33380df75ae3)。
-- `this->allocate_keys_array` → [blender::VectorSet::allocate_keys_array · L1099](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-802358992d1629aa)。
-- `uninitialized_relocate_n` → [blender::uninitialized_relocate_n · L80](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-9de0365b9a47fd68)。
-- `this->deallocate_keys_array` → [blender::VectorSet::deallocate_keys_array · L1105](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-909355f38a511e1a)。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
+- `this->is_inline` → [blender::VectorSet::is_inline · L603](14-VectorSet稳定索引与去重.md#f-bafc33380df75ae3)。
+- `this->allocate_keys_array` → [blender::VectorSet::allocate_keys_array · L1099](14-VectorSet稳定索引与去重.md#f-802358992d1629aa)。
+- `uninitialized_relocate_n` → [blender::uninitialized_relocate_n · L80](01-对象生命周期与值类别.md#f-9de0365b9a47fd68)。
+- `this->deallocate_keys_array` → [blender::VectorSet::deallocate_keys_array · L1105](14-VectorSet稳定索引与去重.md#f-909355f38a511e1a)。
 - `std::destroy_at` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `VectorT` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L745。
+- `VectorT` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L745。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L747—L748
 
@@ -4859,19 +4860,19 @@ class VectorSet {
 **继续追踪实现**
 
 - `std::max` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
-- `max_load_factor_.compute_total_and_usable_slots` → [blender::LoadFactor::compute_total_and_usable_slots · L85](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/03-%E6%A7%BD%E4%BD%8D%E7%8A%B6%E6%80%81%E4%B8%8E%E6%8E%A2%E6%B5%8B.md#f-23ebf500254e8be7)。
-- `SlotArray::inline_buffer_capacity` → [blender::Array::inline_buffer_capacity · L421](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-bbe69b0556f92519)。
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `slots_.reinitialize` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L764。
-- `this->allocate_keys_array` → [blender::VectorSet::allocate_keys_array · L1099](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-802358992d1629aa)。
-- `this->deallocate_keys_array` → [blender::VectorSet::deallocate_keys_array · L1105](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-909355f38a511e1a)。
-- `this->noexcept_reset` → [blender::VectorSet::noexcept_reset · L858](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-1288e4acf7c8092a)。
-- `slot.is_occupied` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L795。
-- `this->add_after_grow` → [blender::VectorSet::add_after_grow · L843](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-fa3c248e441c09f0)。
-- `slot.remove` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L797。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
+- `max_load_factor_.compute_total_and_usable_slots` → [blender::LoadFactor::compute_total_and_usable_slots · L85](../02-哈希表与关联数据结构/03-槽位状态与探测.md#f-23ebf500254e8be7)。
+- `SlotArray::inline_buffer_capacity` → [blender::Array::inline_buffer_capacity · L421](08-Array复制移动与销毁.md#f-bbe69b0556f92519)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `slots_.reinitialize` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L764。
+- `this->allocate_keys_array` → [blender::VectorSet::allocate_keys_array · L1099](14-VectorSet稳定索引与去重.md#f-802358992d1629aa)。
+- `this->deallocate_keys_array` → [blender::VectorSet::deallocate_keys_array · L1105](14-VectorSet稳定索引与去重.md#f-909355f38a511e1a)。
+- `this->noexcept_reset` → [blender::VectorSet::noexcept_reset · L858](14-VectorSet稳定索引与去重.md#f-1288e4acf7c8092a)。
+- `slot.is_occupied` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L795。
+- `this->add_after_grow` → [blender::VectorSet::add_after_grow · L843](14-VectorSet稳定索引与去重.md#f-fa3c248e441c09f0)。
+- `slot.remove` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L797。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `uninitialized_relocate_n` → [blender::uninitialized_relocate_n · L80](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-9de0365b9a47fd68)。
+- `uninitialized_relocate_n` → [blender::uninitialized_relocate_n · L80](01-对象生命周期与值类别.md#f-9de0365b9a47fd68)。
 
 <!-- annotated:4539ce311badc0 -->
 
@@ -4949,12 +4950,12 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `old_slot.index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L845。
-- `old_slot.get_hash` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L846。
-- `Hash` → [SubEdge::Hash](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-subpatch-ee57c2.md#t-5fba122deac5)；[ImageCache::DeviceImageKey::Hash](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-image_cache-ab8b3b.md#t-6c0191c65525)。
-- `slot.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L850。
-- `slot.occupy` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L851。
-- `SLOT_PROBING_END` → [SLOT_PROBING_END · L225](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_probing_strategies-75cda3.md#m-04aac9863679)。宏定义由构建条件选择。
+- `old_slot.index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L845。
+- `old_slot.get_hash` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L846。
+- `Hash` → [SubEdge::Hash](../90-实现依赖专题/07-Intern运行时与平台/cycles/subd/subpatch.h.md#t-5fba122deac5)；[ImageCache::DeviceImageKey::Hash](../90-实现依赖专题/07-Intern运行时与平台/cycles/scene/image_cache.h.md#t-6c0191c65525)。
+- `slot.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L850。
+- `slot.occupy` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L851。
+- `SLOT_PROBING_END` → [SLOT_PROBING_END · L225](../90-实现依赖专题/01-BLI基础库/BLI_probing_strategies.hh.md#m-04aac9863679)。宏定义由构建条件选择。
 
 <!-- annotated:87f7d5710c046c -->
 
@@ -5010,9 +5011,9 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `slots_.allocator` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L860。
-- `this->~VectorSet` → [blender::VectorSet::~VectorSet · L209](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-9200961caf9a19e8)。
-- `NoExceptConstructor` → [blender::NoExceptConstructor](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-BLI_memory_utils-e249c3.md#t-4970c3d9f442)。
+- `slots_.allocator` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L860。
+- `this->~VectorSet` → [blender::VectorSet::~VectorSet · L209](14-VectorSet稳定索引与去重.md#f-9200961caf9a19e8)。
+- `NoExceptConstructor` → [blender::NoExceptConstructor](../90-实现依赖专题/01-BLI基础库/BLI_memory_utils.hh.md#t-4970c3d9f442)。
 
 <!-- annotated:ed83d4c2b45107 -->
 
@@ -5092,9 +5093,9 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `slot.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L869。
-- `slot.contains` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L872。
-- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_vector_set-e2d790.md#m-296888b4d341)。宏定义由构建条件选择。
+- `slot.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L869。
+- `slot.contains` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L872。
+- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../90-实现依赖专题/01-BLI基础库/BLI_vector_set.hh.md#m-296888b4d341)。宏定义由构建条件选择。
 
 <!-- annotated:88bcf9318b2b0e -->
 
@@ -5186,16 +5187,16 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->contains_as` → [blender::VectorSet::contains_as · L410](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-a92a57eabddbbac3)。
-- `this->ensure_can_add` → [blender::VectorSet::ensure_can_add · L1091](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-624cfa9690c23a8c)。
-- `slot.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L886。
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->contains_as` → [blender::VectorSet::contains_as · L410](14-VectorSet稳定索引与去重.md#f-a92a57eabddbbac3)。
+- `this->ensure_can_add` → [blender::VectorSet::ensure_can_add · L1091](14-VectorSet稳定索引与去重.md#f-624cfa9690c23a8c)。
+- `slot.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L886。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L890。
-- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L891。
-- `slot.occupy` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L892。
-- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_vector_set-e2d790.md#m-296888b4d341)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L890。
+- `is_equal_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L891。
+- `slot.occupy` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L892。
+- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../90-实现依赖专题/01-BLI基础库/BLI_vector_set.hh.md#m-296888b4d341)。宏定义由构建条件选择。
 
 <!-- annotated:37697340280d30 -->
 
@@ -5293,16 +5294,16 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->ensure_can_add` → [blender::VectorSet::ensure_can_add · L1091](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-624cfa9690c23a8c)。
-- `slot.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L905。
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
+- `this->ensure_can_add` → [blender::VectorSet::ensure_can_add · L1091](14-VectorSet稳定索引与去重.md#f-624cfa9690c23a8c)。
+- `slot.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L905。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L909。
-- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L910。
-- `slot.occupy` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L911。
-- `slot.contains` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L915。
-- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_vector_set-e2d790.md#m-296888b4d341)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L909。
+- `is_equal_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L910。
+- `slot.occupy` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L911。
+- `slot.contains` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L915。
+- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../90-实现依赖专题/01-BLI基础库/BLI_vector_set.hh.md#m-296888b4d341)。宏定义由构建条件选择。
 
 <!-- annotated:ad9f052315e9de -->
 
@@ -5412,17 +5413,17 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->ensure_can_add` → [blender::VectorSet::ensure_can_add · L1091](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-624cfa9690c23a8c)。
-- `slot.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L927。
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
+- `this->ensure_can_add` → [blender::VectorSet::ensure_can_add · L1091](14-VectorSet稳定索引与去重.md#f-624cfa9690c23a8c)。
+- `slot.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L927。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L931。
-- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L932。
-- `slot.occupy` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L933。
-- `slot.contains` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L937。
-- `slot.index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L938。
-- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_vector_set-e2d790.md#m-296888b4d341)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L931。
+- `is_equal_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L932。
+- `slot.occupy` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L933。
+- `slot.contains` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L937。
+- `slot.index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L938。
+- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../90-实现依赖专题/01-BLI基础库/BLI_vector_set.hh.md#m-296888b4d341)。宏定义由构建条件选择。
 
 <!-- annotated:ee2971bdc62abc -->
 
@@ -5500,11 +5501,11 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->contains_as` → [blender::VectorSet::contains_as · L410](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-a92a57eabddbbac3)。
-- `slot.contains` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L954。
-- `slot.index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L955。
-- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_vector_set-e2d790.md#m-296888b4d341)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->contains_as` → [blender::VectorSet::contains_as · L410](14-VectorSet稳定索引与去重.md#f-a92a57eabddbbac3)。
+- `slot.contains` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L954。
+- `slot.index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L955。
+- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../90-实现依赖专题/01-BLI基础库/BLI_vector_set.hh.md#m-296888b4d341)。宏定义由构建条件选择。
 
 <!-- annotated:ba938335fbe019 -->
 
@@ -5584,10 +5585,10 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `slot.contains` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L965。
-- `slot.index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L966。
-- `slot.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L968。
-- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_vector_set-e2d790.md#m-296888b4d341)。宏定义由构建条件选择。
+- `slot.contains` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L965。
+- `slot.index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L966。
+- `slot.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L968。
+- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../90-实现依赖专题/01-BLI基础库/BLI_vector_set.hh.md#m-296888b4d341)。宏定义由构建条件选择。
 
 <!-- annotated:498d454f0f2deb -->
 
@@ -5687,17 +5688,17 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->ensure_can_add` → [blender::VectorSet::ensure_can_add · L1091](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-624cfa9690c23a8c)。
-- `slot.contains` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L981。
-- `slot.index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L982。
-- `slot.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L984。
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
+- `this->ensure_can_add` → [blender::VectorSet::ensure_can_add · L1091](14-VectorSet稳定索引与去重.md#f-624cfa9690c23a8c)。
+- `slot.contains` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L981。
+- `slot.index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L982。
+- `slot.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L984。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L988。
-- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L989。
-- `slot.occupy` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L990。
-- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_vector_set-e2d790.md#m-296888b4d341)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L988。
+- `is_equal_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L989。
+- `slot.occupy` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L990。
+- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../90-实现依赖专题/01-BLI基础库/BLI_vector_set.hh.md#m-296888b4d341)。宏定义由构建条件选择。
 
 <!-- annotated:128a1ebe4fe6ef -->
 
@@ -5785,14 +5786,14 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `keys_[index_to_pop].~Key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1004。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L1005。
-- `slot.has_index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1010。
-- `slot.remove` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1011。
-- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_vector_set-e2d790.md#m-296888b4d341)。宏定义由构建条件选择。
+- `keys_[index_to_pop].~Key` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1004。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L1005。
+- `slot.has_index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1010。
+- `slot.remove` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1011。
+- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../90-实现依赖专题/01-BLI基础库/BLI_vector_set.hh.md#m-296888b4d341)。宏定义由构建条件选择。
 
 <!-- annotated:aa9ee1ca2e7605 -->
 
@@ -5872,10 +5873,10 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `slot.contains` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1021。
-- `this->remove_key_internal` → [blender::VectorSet::remove_key_internal · L1046](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-a2b67739e9907a9a)。
-- `slot.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1025。
-- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_vector_set-e2d790.md#m-296888b4d341)。宏定义由构建条件选择。
+- `slot.contains` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1021。
+- `this->remove_key_internal` → [blender::VectorSet::remove_key_internal · L1046](14-VectorSet稳定索引与去重.md#f-a2b67739e9907a9a)。
+- `slot.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1025。
+- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../90-实现依赖专题/01-BLI基础库/BLI_vector_set.hh.md#m-296888b4d341)。宏定义由构建条件选择。
 
 <!-- annotated:c70df9960f486e -->
 
@@ -5951,11 +5952,11 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->contains_as` → [blender::VectorSet::contains_as · L410](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-a92a57eabddbbac3)。
-- `slot.contains` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1038。
-- `this->remove_key_internal` → [blender::VectorSet::remove_key_internal · L1046](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-a2b67739e9907a9a)。
-- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_vector_set-e2d790.md#m-296888b4d341)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->contains_as` → [blender::VectorSet::contains_as · L410](14-VectorSet稳定索引与去重.md#f-a92a57eabddbbac3)。
+- `slot.contains` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1038。
+- `this->remove_key_internal` → [blender::VectorSet::remove_key_internal · L1046](14-VectorSet稳定索引与去重.md#f-a2b67739e9907a9a)。
+- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../90-实现依赖专题/01-BLI基础库/BLI_vector_set.hh.md#m-296888b4d341)。宏定义由构建条件选择。
 
 <!-- annotated:8f173db3dbb1bc -->
 
@@ -6039,12 +6040,12 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `slot.index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L1048。
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
+- `slot.index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L1048。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `this->update_slot_index` → [blender::VectorSet::update_slot_index · L1062](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-91ad767e12fdf326)。
-- `keys_[last_element_index].~Key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1057。
-- `slot.remove` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L1058。
+- `this->update_slot_index` → [blender::VectorSet::update_slot_index · L1062](14-VectorSet稳定索引与去重.md#f-91ad767e12fdf326)。
+- `keys_[last_element_index].~Key` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1057。
+- `slot.remove` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L1058。
 
 <!-- annotated:eb399e869c3577 -->
 
@@ -6116,10 +6117,10 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L1064。
-- `slot.has_index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1066。
-- `slot.update_index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1067。
-- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_vector_set-e2d790.md#m-296888b4d341)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L1064。
+- `slot.has_index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1066。
+- `slot.update_index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1067。
+- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../90-实现依赖专题/01-BLI基础库/BLI_vector_set.hh.md#m-296888b4d341)。宏定义由构建条件选择。
 
 <!-- annotated:3f426af645fe28 -->
 
@@ -6204,9 +6205,9 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `slot.contains` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1080。
-- `slot.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1083。
-- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_vector_set-e2d790.md#m-296888b4d341)。宏定义由构建条件选择。
+- `slot.contains` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1080。
+- `slot.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1083。
+- `VECTOR_SET_SLOT_PROBING_END` → [VECTOR_SET_SLOT_PROBING_END · L157](../90-实现依赖专题/01-BLI基础库/BLI_vector_set.hh.md#m-296888b4d341)。宏定义由构建条件选择。
 
 <!-- annotated:6427c0ff2ce563 -->
 
@@ -6265,9 +6266,9 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `this->realloc_and_reinsert` → [blender::VectorSet::realloc_and_reinsert · L749](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-154b4bb42d30807e)。
-- `this->size` → [blender::VectorSet::size · L611](14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-f42667f4f31e3349)。
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->realloc_and_reinsert` → [blender::VectorSet::realloc_and_reinsert · L749](14-VectorSet稳定索引与去重.md#f-154b4bb42d30807e)。
+- `this->size` → [blender::VectorSet::size · L611](14-VectorSet稳定索引与去重.md#f-f42667f4f31e3349)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:56109f334531c3 -->
 
@@ -6329,8 +6330,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `slots_.allocator().allocate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1102。
-- `slots_.allocator` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L1102。
+- `slots_.allocator().allocate` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1102。
+- `slots_.allocator` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L1102。
 
 <!-- annotated:793d2bc5de2203 -->
 
@@ -6386,8 +6387,8 @@ class VectorSet {
 
 **继续追踪实现**
 
-- `slots_.allocator().deallocate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1107。
-- `slots_.allocator` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L1107。
+- `slots_.allocator().deallocate` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1107。
+- `slots_.allocator` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L1107。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L1109—L1126
 
@@ -6485,8 +6486,8 @@ template<typename T, typename GetIDFn> struct CustomIDHash {
 
 **继续追踪实现**
 
-- `get_default_hash` → [blender::get_default_hash · L251](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/01-%E5%93%88%E5%B8%8C%E4%B8%8E%E7%9B%B8%E7%AD%89%E5%A5%91%E7%BA%A6.md#f-5f2c246aedf3dc0a)。
-- `GetIDFn{}` → [blender::TypeTable::GetIDFn](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-makesdna-e966d1.md#t-d30839b6061f)。
+- `get_default_hash` → [blender::get_default_hash · L251](../02-哈希表与关联数据结构/01-哈希与相等契约.md#f-5f2c246aedf3dc0a)。
+- `GetIDFn{}` → [blender::TypeTable::GetIDFn](../90-实现依赖专题/08-其他Blender模块/makesdna/intern/makesdna.cc.md#t-d30839b6061f)。
 
 <a id="f-e2827311129b9658"></a>
 
@@ -6529,7 +6530,7 @@ template<typename T, typename GetIDFn> struct CustomIDHash {
 
 **继续追踪实现**
 
-- `get_default_hash` → [blender::get_default_hash · L251](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/01-%E5%93%88%E5%B8%8C%E4%B8%8E%E7%9B%B8%E7%AD%89%E5%A5%91%E7%BA%A6.md#f-5f2c246aedf3dc0a)。
+- `get_default_hash` → [blender::get_default_hash · L251](../02-哈希表与关联数据结构/01-哈希与相等契约.md#f-5f2c246aedf3dc0a)。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L1135—L1139
 
@@ -6602,7 +6603,7 @@ template<typename T, typename GetIDFn> struct CustomIDEqual {
 
 **继续追踪实现**
 
-- `GetIDFn{}` → [blender::TypeTable::GetIDFn](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-makesdna-e966d1.md#t-d30839b6061f)。
+- `GetIDFn{}` → [blender::TypeTable::GetIDFn](../90-实现依赖专题/08-其他Blender模块/makesdna/intern/makesdna.cc.md#t-d30839b6061f)。
 
 <a id="f-ba0614905f20feee"></a>
 
@@ -6646,7 +6647,7 @@ template<typename T, typename GetIDFn> struct CustomIDEqual {
 
 **继续追踪实现**
 
-- `GetIDFn{}` → [blender::TypeTable::GetIDFn](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-makesdna-e966d1.md#t-d30839b6061f)。
+- `GetIDFn{}` → [blender::TypeTable::GetIDFn](../90-实现依赖专题/08-其他Blender模块/makesdna/intern/makesdna.cc.md#t-d30839b6061f)。
 
 <a id="f-e293e23747c183d5"></a>
 
@@ -6690,7 +6691,7 @@ template<typename T, typename GetIDFn> struct CustomIDEqual {
 
 **继续追踪实现**
 
-- `GetIDFn{}` → [blender::TypeTable::GetIDFn](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-makesdna-e966d1.md#t-d30839b6061f)。
+- `GetIDFn{}` → [blender::TypeTable::GetIDFn](../90-实现依赖专题/08-其他Blender模块/makesdna/intern/makesdna.cc.md#t-d30839b6061f)。
 
 ### 类型布局、声明与编译条件 · BLI_vector_set.hh L1152—L1168
 
@@ -6853,4 +6854,4 @@ friend授予指定函数或类访问非公开成员的权限，并不意味着�
 
 对比std::vector、std::array、std::span与LLVM SmallVector、ArrayRef时，分别比较拥有关系、内嵌存储、大小是否属于类型和失效条件。不要根据同名方法推断完全相同契约。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

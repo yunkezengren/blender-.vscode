@@ -1,6 +1,6 @@
 # 06-05 GeometrySet读写与复制
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -332,8 +332,8 @@ GeometryComponentPtr GeometryComponent::create(Type component_type)
 
 **继续追踪实现**
 
-- `GeometryComponentPtr` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L45。
-- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
+- `GeometryComponentPtr` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L45。
+- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
 
 <!-- annotated:6df6b52290fe71 -->
 
@@ -408,8 +408,8 @@ int GeometryComponent::attribute_domain_size(const AttrDomain domain) const
 
 **继续追踪实现**
 
-- `this->is_empty` → [blender::bke::GeometryComponent::is_empty · L91](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b4b017a3f04968a2)。
-- `this->attributes` → [blender::bke::GeometryComponent::attributes · L75](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-d58a41ede5a46f2c)。
+- `this->is_empty` → [blender::bke::GeometryComponent::is_empty · L91](05-GeometrySet读写与复制.md#f-b4b017a3f04968a2)。
+- `this->attributes` → [blender::bke::GeometryComponent::attributes · L75](05-GeometrySet读写与复制.md#f-d58a41ede5a46f2c)。
 - `attributes.has_value` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 - `attributes->domain_size` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 
@@ -772,7 +772,7 @@ void GeometryComponent::delete_data_only()
 
 **继续追踪实现**
 
-- `this->clear` → [blender::bke::GeometrySet::clear · L265](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-8c0f2e9da85aab58)。
+- `this->clear` → [blender::bke::GeometrySet::clear · L265](05-GeometrySet读写与复制.md#f-8c0f2e9da85aab58)。
 
 ### 类型布局、声明与编译条件 · geometry_set.cc L105—L111
 
@@ -1007,8 +1007,8 @@ GeometryComponent &GeometrySet::get_component_for_write(GeometryComponent::Type 
 
 **继续追踪实现**
 
-- `GeometryComponent::create` → [blender::bke::GeometryComponent::create · L41](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-057aed72adfa658c)。
-- `component_ptr.ensure_mutable_inplace` → [blender::ImplicitSharingPtr::ensure_mutable_inplace · L144](03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-d9e9b25281edf91a)。
+- `GeometryComponent::create` → [blender::bke::GeometryComponent::create · L41](05-GeometrySet读写与复制.md#f-057aed72adfa658c)。
+- `component_ptr.ensure_mutable_inplace` → [blender::ImplicitSharingPtr::ensure_mutable_inplace · L144](03-Mixin与共享指针封装.md#f-d9e9b25281edf91a)。
 
 <!-- annotated:8bcfef2d4226cb -->
 
@@ -1075,8 +1075,8 @@ GeometryComponent *GeometrySet::get_component_for_write_ptr(GeometryComponent::T
 
 **继续追踪实现**
 
-- `this->has` → [blender::bke::GeometrySet::has · L142](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-5777be605a5451b6)。
-- `this->get_component_for_write` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
+- `this->has` → [blender::bke::GeometrySet::has · L142](05-GeometrySet读写与复制.md#f-5777be605a5451b6)。
+- `this->get_component_for_write` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet读写与复制.md#f-21eccb196f5b9a78)。
 
 <!-- annotated:8ac5bddf9c7fba -->
 
@@ -1136,7 +1136,7 @@ const GeometryComponent *GeometrySet::get_component(GeometryComponent::Type comp
 
 **继续追踪实现**
 
-- `components_[size_t(component_type)].get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L139。
+- `components_[size_t(component_type)].get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L139。
 
 <!-- annotated:d0e69d0d860c74 -->
 
@@ -1198,8 +1198,8 @@ bool GeometrySet::has(const GeometryComponent::Type component_type) const
 
 **继续追踪实现**
 
-- `component.has_value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L145。
-- `component->is_empty` → [blender::bke::GeometryComponent::is_empty · L91](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b4b017a3f04968a2)；[blender::bke::GeometrySet::is_empty · L421](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-20c815c1f8a499ee)。同名重载需按实参类型选择。
+- `component.has_value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L145。
+- `component->is_empty` → [blender::bke::GeometryComponent::is_empty · L91](05-GeometrySet读写与复制.md#f-b4b017a3f04968a2)；[blender::bke::GeometrySet::is_empty · L421](05-GeometrySet读写与复制.md#f-20c815c1f8a499ee)。同名重载需按实参类型选择。
 
 <!-- annotated:719603edb98545 -->
 
@@ -1255,7 +1255,7 @@ void GeometrySet::remove(const GeometryComponent::Type component_type)
 
 **继续追踪实现**
 
-- `components_[size_t(component_type)].reset` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L150。
+- `components_[size_t(component_type)].reset` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L150。
 
 <!-- annotated:9ad552234ee4d9 -->
 
@@ -1323,9 +1323,9 @@ void GeometrySet::keep_only(const Span<GeometryComponent::Type> component_types)
 
 **继续追踪实现**
 
-- `component_types.contains` → [blender::Span::contains · L281](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-7caee498c984f2c0)。
-- `component_ptr->type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L157。
-- `component_ptr.reset` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L158。
+- `component_types.contains` → [blender::Span::contains · L281](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-7caee498c984f2c0)。
+- `component_ptr->type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L157。
+- `component_ptr.reset` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L158。
 
 <!-- annotated:25f0be3384ac5a -->
 
@@ -1387,10 +1387,10 @@ void GeometrySet::add(const GeometryComponent &component)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `component.type` → [blender::bke::GeometryComponent::type · L86](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-f73336c224943890)。
-- `component.add_user` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L167。
-- `GeometryComponentPtr` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L168。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `component.type` → [blender::bke::GeometryComponent::type · L86](05-GeometrySet读写与复制.md#f-f73336c224943890)。
+- `component.add_user` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L167。
+- `GeometryComponentPtr` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L168。
 
 <!-- annotated:b671843943b9b6 -->
 
@@ -1459,8 +1459,8 @@ Vector<const GeometryComponent *> GeometrySet::get_components() const
 
 **继续追踪实现**
 
-- `components.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `component_ptr.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L177。
+- `components.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `component_ptr.get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L177。
 
 <!-- annotated:60a1d9ee16872a -->
 
@@ -1576,19 +1576,19 @@ std::optional<Bounds<float3>> GeometrySet::compute_boundbox_without_instances(
 
 **继续追踪实现**
 
-- `this->get_pointcloud` → [blender::bke::GeometrySet::get_pointcloud · L327](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e9c60234d315f635)。
-- `bounds::merge` → [blender::bounds::merge · L27](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-26dade32771df176)；[blender::bounds::merge · L32](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
-- `pointcloud->bounds_min_max` → [blender::PointCloud::bounds_min_max · L261](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-pointcloud-49a366.md#f-608e12c4a3f505af)。
-- `this->get_mesh` → [blender::bke::GeometrySet::get_mesh · L315](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-25151145065d998b)。
-- `mesh->runtime->mesh_eval->bounds_min_max` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L193。
-- `mesh->bounds_min_max` → [Mesh::bounds_min_max · L1942](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-1a7c466d855d52a6)。
-- `this->get_volume` → [blender::bke::GeometrySet::get_volume · L333](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e4dddefabca41664)。
-- `BKE_volume_min_max` → [blender::BKE_volume_min_max · L627](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-volume-8dd0eb.md#f-0fcf2afc72eedde9)。
-- `this->get_curves` → [blender::bke::GeometrySet::get_curves · L339](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-1d7b3a3ddbc6c57b)。
-- `curves_id->geometry.wrap().bounds_min_max` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L203。
-- `curves_id->geometry.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L203。
-- `this->get_grease_pencil` → [blender::bke::GeometrySet::get_grease_pencil · L369](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-4c73d7995c66f8bf)。
-- `grease_pencil->bounds_min_max_eval` → [blender::GreasePencil::bounds_min_max_eval · L3942](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-f2b961f319385dd6)。
+- `this->get_pointcloud` → [blender::bke::GeometrySet::get_pointcloud · L327](05-GeometrySet读写与复制.md#f-e9c60234d315f635)。
+- `bounds::merge` → [blender::bounds::merge · L27](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-26dade32771df176)；[blender::bounds::merge · L32](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
+- `pointcloud->bounds_min_max` → [blender::PointCloud::bounds_min_max · L261](../90-实现依赖专题/02-BKE几何与数据/intern/pointcloud.cc.md#f-608e12c4a3f505af)。
+- `this->get_mesh` → [blender::bke::GeometrySet::get_mesh · L315](05-GeometrySet读写与复制.md#f-25151145065d998b)。
+- `mesh->runtime->mesh_eval->bounds_min_max` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L193。
+- `mesh->bounds_min_max` → [Mesh::bounds_min_max · L1942](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-1a7c466d855d52a6)。
+- `this->get_volume` → [blender::bke::GeometrySet::get_volume · L333](05-GeometrySet读写与复制.md#f-e4dddefabca41664)。
+- `BKE_volume_min_max` → [blender::BKE_volume_min_max · L627](../90-实现依赖专题/02-BKE几何与数据/intern/volume.cc.md#f-0fcf2afc72eedde9)。
+- `this->get_curves` → [blender::bke::GeometrySet::get_curves · L339](05-GeometrySet读写与复制.md#f-1d7b3a3ddbc6c57b)。
+- `curves_id->geometry.wrap().bounds_min_max` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L203。
+- `curves_id->geometry.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L203。
+- `this->get_grease_pencil` → [blender::bke::GeometrySet::get_grease_pencil · L369](05-GeometrySet读写与复制.md#f-4c73d7995c66f8bf)。
+- `grease_pencil->bounds_min_max_eval` → [blender::GreasePencil::bounds_min_max_eval · L3942](../90-实现依赖专题/02-BKE几何与数据/intern/grease_pencil.cc.md#f-f2b961f319385dd6)。
 
 <!-- annotated:0a7018eed8f187 -->
 
@@ -1749,27 +1749,27 @@ std::ostream &operator<<(std::ostream &stream, const GeometrySet &geometry_set)
 
 **继续追踪实现**
 
-- `geometry_set.name().is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L214。
-- `geometry_set.name` → [blender::bke::GeometrySet::name · L810](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-8cf6870c2e71a4aa)。
-- `parts.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `geometry_set.name().is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L214。
+- `geometry_set.name` → [blender::bke::GeometrySet::name · L810](05-GeometrySet读写与复制.md#f-8cf6870c2e71a4aa)。
+- `parts.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
 - `fmt::format` → [外部契约](https://fmt.dev/latest/api/)：按fmt接口的格式字符串与参数类型契约使用，格式化不改变被格式化对象的拥有关系。
-- `geometry_set.get_mesh` → [blender::bke::GeometrySet::get_mesh · L315](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-25151145065d998b)。
+- `geometry_set.get_mesh` → [blender::bke::GeometrySet::get_mesh · L315](05-GeometrySet读写与复制.md#f-25151145065d998b)。
 - `std::to_string` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `is_power_of_2_i` → [blender::is_power_of_2_i · L105](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_base_inline-546b00.md#f-122f291f1e7250f2)。
-- `log2_floor` → [blender::log2_floor · L176](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#f-6156427b768ba020)。
-- `geometry_set.get_curves` → [blender::bke::GeometrySet::get_curves · L339](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-1d7b3a3ddbc6c57b)。
-- `geometry_set.get_grease_pencil` → [blender::bke::GeometrySet::get_grease_pencil · L369](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-4c73d7995c66f8bf)。
-- `grease_pencil->layers().size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L239。
-- `grease_pencil->layers` → [blender::GreasePencil::layers · L3983](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-15d64ed11a2babc0)。
-- `geometry_set.get_pointcloud` → [blender::bke::GeometrySet::get_pointcloud · L327](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e9c60234d315f635)。
-- `geometry_set.get_volume` → [blender::bke::GeometrySet::get_volume · L333](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e4dddefabca41664)。
-- `BKE_volume_num_grids` → [blender::BKE_volume_num_grids · L856](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-volume-8dd0eb.md#f-bba3632a80fe4c9d)。
-- `geometry_set.has_instances` → [blender::bke::GeometrySet::has_instances · L381](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-96f474fc46f602f1)。
-- `geometry_set.get_instances()->instances_num` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L248。
-- `geometry_set.get_instances` → [blender::bke::GeometrySet::get_instances · L345](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-75fcc67a0b3c0fa1)。
-- `geometry_set.get_curve_edit_hints` → [blender::bke::GeometrySet::get_curve_edit_hints · L351](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-0f0a70818546603c)。
-- `parts.index_range` → [blender::Vector::index_range · L1026](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-ac29cf36ef185ab9)。
-- `parts.size` → [blender::Vector::size · L780](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `is_power_of_2_i` → [blender::is_power_of_2_i · L105](../90-实现依赖专题/01-BLI基础库/intern/math_base_inline.cc.md#f-122f291f1e7250f2)。
+- `log2_floor` → [blender::log2_floor · L176](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#f-6156427b768ba020)。
+- `geometry_set.get_curves` → [blender::bke::GeometrySet::get_curves · L339](05-GeometrySet读写与复制.md#f-1d7b3a3ddbc6c57b)。
+- `geometry_set.get_grease_pencil` → [blender::bke::GeometrySet::get_grease_pencil · L369](05-GeometrySet读写与复制.md#f-4c73d7995c66f8bf)。
+- `grease_pencil->layers().size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L239。
+- `grease_pencil->layers` → [blender::GreasePencil::layers · L3983](../90-实现依赖专题/02-BKE几何与数据/intern/grease_pencil.cc.md#f-15d64ed11a2babc0)。
+- `geometry_set.get_pointcloud` → [blender::bke::GeometrySet::get_pointcloud · L327](05-GeometrySet读写与复制.md#f-e9c60234d315f635)。
+- `geometry_set.get_volume` → [blender::bke::GeometrySet::get_volume · L333](05-GeometrySet读写与复制.md#f-e4dddefabca41664)。
+- `BKE_volume_num_grids` → [blender::BKE_volume_num_grids · L856](../90-实现依赖专题/02-BKE几何与数据/intern/volume.cc.md#f-bba3632a80fe4c9d)。
+- `geometry_set.has_instances` → [blender::bke::GeometrySet::has_instances · L381](05-GeometrySet读写与复制.md#f-96f474fc46f602f1)。
+- `geometry_set.get_instances()->instances_num` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L248。
+- `geometry_set.get_instances` → [blender::bke::GeometrySet::get_instances · L345](05-GeometrySet读写与复制.md#f-75fcc67a0b3c0fa1)。
+- `geometry_set.get_curve_edit_hints` → [blender::bke::GeometrySet::get_curve_edit_hints · L351](05-GeometrySet读写与复制.md#f-0f0a70818546603c)。
+- `parts.index_range` → [blender::Vector::index_range · L1026](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-ac29cf36ef185ab9)。
+- `parts.size` → [blender::Vector::size · L780](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-714773731767349c)。
 
 <!-- annotated:07be0a0ba45a25 -->
 
@@ -1825,7 +1825,7 @@ void GeometrySet::clear()
 
 **继续追踪实现**
 
-- `component_ptr.reset` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L268。
+- `component_ptr.reset` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L268。
 
 <!-- annotated:43eee5726440a5 -->
 
@@ -1895,10 +1895,10 @@ void GeometrySet::ensure_owns_direct_data()
 
 **继续追踪实现**
 
-- `component_ptr->owns_direct_data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L278。
-- `this->get_component_for_write` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
-- `component_ptr->type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L281。
-- `component_for_write.ensure_owns_direct_data` → [blender::bke::GeometrySet::ensure_owns_direct_data · L272](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-9626a230081195a6)。
+- `component_ptr->owns_direct_data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L278。
+- `this->get_component_for_write` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet读写与复制.md#f-21eccb196f5b9a78)。
+- `component_ptr->type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L281。
+- `component_for_write.ensure_owns_direct_data` → [blender::bke::GeometrySet::ensure_owns_direct_data · L272](05-GeometrySet读写与复制.md#f-9626a230081195a6)。
 
 <!-- annotated:494b8077cd7b2e -->
 
@@ -1956,9 +1956,9 @@ void GeometrySet::ensure_owns_all_data()
 
 **继续追踪实现**
 
-- `this->get_instances_for_write` → [blender::bke::GeometrySet::get_instances_for_write · L586](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e2fefbfed77f753f)。
-- `instances->ensure_geometry_instances` → [blender::bke::Instances::ensure_geometry_instances · L111](%E4%BE%9D%E8%B5%96-geometry_set_instances-cb6843.md#f-c6c307192970c4f3)。
-- `this->ensure_owns_direct_data` → [blender::bke::GeometrySet::ensure_owns_direct_data · L272](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-9626a230081195a6)。
+- `this->get_instances_for_write` → [blender::bke::GeometrySet::get_instances_for_write · L586](05-GeometrySet读写与复制.md#f-e2fefbfed77f753f)。
+- `instances->ensure_geometry_instances` → [blender::bke::Instances::ensure_geometry_instances · L111](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_set_instances.cc.md#f-c6c307192970c4f3)。
+- `this->ensure_owns_direct_data` → [blender::bke::GeometrySet::ensure_owns_direct_data · L272](05-GeometrySet读写与复制.md#f-9626a230081195a6)。
 
 <!-- annotated:244f4c7a1bf031 -->
 
@@ -2029,7 +2029,7 @@ bool GeometrySet::owns_direct_data() const
 
 **继续追踪实现**
 
-- `component_ptr->owns_direct_data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L298。
+- `component_ptr->owns_direct_data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L298。
 
 <!-- annotated:535b18906eea6b -->
 
@@ -2089,10 +2089,10 @@ void GeometrySet::ensure_no_shared_components()
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `this->components_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L308。
-- `this->get_component_for_write` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
-- `GeometryComponent::Type` → [blender::animrig::Strip::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-ANIM_action-8e402f.md#t-29906b03c516)；[TextureMapping::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-shader_nodes-5bcedf.md#t-9c57c6f722bf)；[blender::ed::asset::index::ReadingResult::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-asset_index-66abf0.md#t-c221900abec9)；[blender::index_mask::CoarseSegment::Type](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/%E4%BE%9D%E8%B5%96-index_mask_expression-5c3c91.md#t-428fd56d68ee)；[blender::index_mask::EvaluatedSegment::Type](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/%E4%BE%9D%E8%B5%96-index_mask_expression-5c3c91.md#t-054feedeb190)；[blender::CommonVArrayInfo::Type](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/%E4%BE%9D%E8%B5%96-BLI_virtual_array-6ba937.md#t-04df5f3c724c)；[blender::threading::TaskSizeHints::Type](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_task_size_hints-5d752d.md#t-91f12014c9c0)；[blender::index_mask::Expr::Type](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/%E4%BE%9D%E8%B5%96-BLI_index_mask_expression-5ed666.md#t-e9daffc6d81d)；[blender::bke::pbvh::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_paint_bvh-80f563.md#t-577732ca584f)；[blender::bke::InstanceReference::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_instances-b32a94.md#t-017105a1b260)；[blender::bke::GeometryComponent::Type](%E4%BE%9D%E8%B5%96-BKE_geometry_set-0a0da4.md#t-f8bb9559f14a)；[blender::bke::AttributeInit::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_attribute-eeea72.md#t-a7c00c9714bd)；[blender::nodes::materialx::NodeItem::Type](../09-LazyFunction%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E6%9E%B6%E6%9E%84/%E4%BE%9D%E8%B5%96-node_item-b3dda6.md#t-ae3b6f3dd627)；[blender::ed::AnimTransformable::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-ED_anim_transformable-359a00.md#t-fd930519ca3c)；[blender::ed::space_node::flat_item::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_draw-1281fc.md#t-004436df6e09)；[blender::draw::command::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-draw_command-8da745.md#t-55fee021105a)；[blender::draw::command::ResourceBind::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-draw_command-8da745.md#t-d5622322174c)；[blender::draw::command::PushConstant::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-draw_command-8da745.md#t-bbbd52482021)；[blender::draw::command::SpecializeConstant::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-draw_command-8da745.md#t-ea902994ca69)；[blender::gpu::BindSpaceStorageBuffers::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-vk_state_manager-1261e9.md#t-e8e5b0e224e8)；[blender::gpu::BindSpaceTextures::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-vk_state_manager-1261e9.md#t-ddfccdb4e21c)；[blender::gpu::shader::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GPU_common_types-5aca01.md#t-5085282c1968)；[blender::gpu::shader::metadata::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-metadata-87b831.md#t-06393d8b3356)；[bsl::SymbolScope::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-symbol_scope-47b254.md#t-90c7c3cd8bbf)；[bsl::SymbolFunction::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-symbol_function-c29cbb.md#t-a24e73036996)；[bsl::ConstexprValue::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-constexpr-0326d6.md#t-dad1ce3a0df3)；[blender::ed::sculpt_paint::undo::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-sculpt_undo-b1770a.md#t-1ae7ec966b3f)；[blender::ed::sculpt_paint::undo::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-sculpt_intern-9e9479.md#t-6c19b049a733)；[blender::ed::sculpt_paint::undo::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-sculpt_filter-b9a899.md#t-63b907e5dbc2)；[SocketType::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_type-22d623.md#t-27ad60951e7a)；[NodeType::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_type-22d623.md#t-8d45d96bad39)；[blender::fn::multi_function::InstructionCursor::Type](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/%E4%BE%9D%E8%B5%96-FN_multi_function_procedure-70e3b3.md#t-22831e82eae2)；[GPUVertAttr::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GPU_vertex_format-ef1cca.md#t-462926d0d19f)；[DeviceKernelArguments::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-queue-9648eb.md#t-b7b205962403)；[blender::gpu::ShaderSourceHeader::Type](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-gl_compilation_subprocess-10c771.md#t-ca988b710609)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `this->components_.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L308。
+- `this->get_component_for_write` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet读写与复制.md#f-21eccb196f5b9a78)。
+- `GeometryComponent::Type` → [blender::animrig::Strip::Type](../90-实现依赖专题/08-其他Blender模块/animrig/ANIM_action.hh.md#t-29906b03c516)；[TextureMapping::Type](../90-实现依赖专题/07-Intern运行时与平台/cycles/scene/shader_nodes.h.md#t-9c57c6f722bf)；[blender::ed::asset::index::ReadingResult::Type](../90-实现依赖专题/08-其他Blender模块/editors/asset/intern/asset_index.hh.md#t-c221900abec9)；[blender::index_mask::CoarseSegment::Type](../90-实现依赖专题/01-BLI基础库/intern/index_mask_expression.cc.md#t-428fd56d68ee)；[blender::index_mask::EvaluatedSegment::Type](../90-实现依赖专题/01-BLI基础库/intern/index_mask_expression.cc.md#t-054feedeb190)；[blender::CommonVArrayInfo::Type](../90-实现依赖专题/01-BLI基础库/BLI_virtual_array.hh.md#t-04df5f3c724c)；[blender::threading::TaskSizeHints::Type](../90-实现依赖专题/01-BLI基础库/BLI_task_size_hints.hh.md#t-91f12014c9c0)；[blender::index_mask::Expr::Type](../90-实现依赖专题/01-BLI基础库/BLI_index_mask_expression.hh.md#t-e9daffc6d81d)；[blender::bke::pbvh::Type](../90-实现依赖专题/02-BKE几何与数据/BKE_paint_bvh.hh.md#t-577732ca584f)；[blender::bke::InstanceReference::Type](../90-实现依赖专题/02-BKE几何与数据/BKE_instances.hh.md#t-017105a1b260)；[blender::bke::GeometryComponent::Type](../90-实现依赖专题/02-BKE几何与数据/BKE_geometry_set.hh.md#t-f8bb9559f14a)；[blender::bke::AttributeInit::Type](../90-实现依赖专题/02-BKE几何与数据/BKE_attribute.hh.md#t-a7c00c9714bd)；[blender::nodes::materialx::NodeItem::Type](../90-实现依赖专题/04-Nodes节点系统/shader/materialx/node_item.h.md#t-ae3b6f3dd627)；[blender::ed::AnimTransformable::Type](../90-实现依赖专题/08-其他Blender模块/editors/include/ED_anim_transformable.hh.md#t-fd930519ca3c)；[blender::ed::space_node::flat_item::Type](../90-实现依赖专题/08-其他Blender模块/editors/space_node/node_draw.cc.md#t-004436df6e09)；[blender::draw::command::Type](../90-实现依赖专题/08-其他Blender模块/draw/intern/draw_command.hh.md#t-55fee021105a)；[blender::draw::command::ResourceBind::Type](../90-实现依赖专题/08-其他Blender模块/draw/intern/draw_command.hh.md#t-d5622322174c)；[blender::draw::command::PushConstant::Type](../90-实现依赖专题/08-其他Blender模块/draw/intern/draw_command.hh.md#t-bbbd52482021)；[blender::draw::command::SpecializeConstant::Type](../90-实现依赖专题/08-其他Blender模块/draw/intern/draw_command.hh.md#t-ea902994ca69)；[blender::gpu::BindSpaceStorageBuffers::Type](../90-实现依赖专题/08-其他Blender模块/gpu/vulkan/vk_state_manager.hh.md#t-e8e5b0e224e8)；[blender::gpu::BindSpaceTextures::Type](../90-实现依赖专题/08-其他Blender模块/gpu/vulkan/vk_state_manager.hh.md#t-ddfccdb4e21c)；[blender::gpu::shader::Type](../90-实现依赖专题/08-其他Blender模块/gpu/GPU_common_types.hh.md#t-5085282c1968)；[blender::gpu::shader::metadata::Type](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/metadata.hh.md#t-06393d8b3356)；[bsl::SymbolScope::Type](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/bsl/symbol_scope.hh.md#t-90c7c3cd8bbf)；[bsl::SymbolFunction::Type](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/bsl/symbol_function.hh.md#t-a24e73036996)；[bsl::ConstexprValue::Type](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/bsl/constexpr.hh.md#t-dad1ce3a0df3)；[blender::ed::sculpt_paint::undo::Type](../90-实现依赖专题/08-其他Blender模块/editors/sculpt_paint/mesh/sculpt_undo.hh.md#t-1ae7ec966b3f)；[blender::ed::sculpt_paint::undo::Type](../90-实现依赖专题/08-其他Blender模块/editors/sculpt_paint/mesh/sculpt_intern.hh.md#t-6c19b049a733)；[blender::ed::sculpt_paint::undo::Type](../90-实现依赖专题/08-其他Blender模块/editors/sculpt_paint/mesh/sculpt_filter.hh.md#t-63b907e5dbc2)；[SocketType::Type](../90-实现依赖专题/07-Intern运行时与平台/cycles/graph/node_type.h.md#t-27ad60951e7a)；[NodeType::Type](../90-实现依赖专题/07-Intern运行时与平台/cycles/graph/node_type.h.md#t-8d45d96bad39)；[blender::fn::multi_function::InstructionCursor::Type](../90-实现依赖专题/03-FN函数与求值/FN_multi_function_procedure.hh.md#t-22831e82eae2)；[GPUVertAttr::Type](../90-实现依赖专题/08-其他Blender模块/gpu/GPU_vertex_format.hh.md#t-462926d0d19f)；[DeviceKernelArguments::Type](../90-实现依赖专题/07-Intern运行时与平台/cycles/device/queue.h.md#t-b7b205962403)；[blender::gpu::ShaderSourceHeader::Type](../90-实现依赖专题/08-其他Blender模块/gpu/opengl/gl_compilation_subprocess.hh.md#t-ca988b710609)。
 
 <!-- annotated:f692687a6af895 -->
 
@@ -2150,8 +2150,8 @@ const Mesh *GeometrySet::get_mesh() const
 
 **继续追踪实现**
 
-- `this->get_component<MeshComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->get` → [blender::bke::MeshComponent::get · L78](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_mesh-de716f.md#f-10a41ea54073cd9c)。
+- `this->get_component<MeshComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::MeshComponent::get · L78](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_mesh.cc.md#f-10a41ea54073cd9c)。
 
 <!-- annotated:ad64479406d30c -->
 
@@ -2209,8 +2209,8 @@ bool GeometrySet::has_mesh() const
 
 **继续追踪实现**
 
-- `this->get_component<MeshComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->has_mesh` → [blender::bke::MeshComponent::has_mesh · L57](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_mesh-de716f.md#f-21df30703362b529)。
+- `this->get_component<MeshComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->has_mesh` → [blender::bke::MeshComponent::has_mesh · L57](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_mesh.cc.md#f-21df30703362b529)。
 
 <!-- annotated:5670b856aceee6 -->
 
@@ -2268,8 +2268,8 @@ const PointCloud *GeometrySet::get_pointcloud() const
 
 **继续追踪实现**
 
-- `this->get_component<PointCloudComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->get` → [blender::bke::PointCloudComponent::get · L77](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_pointcloud-0caac6.md#f-fe39c478efa2050c)。
+- `this->get_component<PointCloudComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::PointCloudComponent::get · L77](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_pointcloud.cc.md#f-fe39c478efa2050c)。
 
 <!-- annotated:a8c19c65f1cd04 -->
 
@@ -2327,8 +2327,8 @@ const Volume *GeometrySet::get_volume() const
 
 **继续追踪实现**
 
-- `this->get_component<VolumeComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->get` → [blender::bke::VolumeComponent::get · L68](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_volume-b14dd5.md#f-f542e2b53c8bf289)。
+- `this->get_component<VolumeComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::VolumeComponent::get · L68](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_volume.cc.md#f-f542e2b53c8bf289)。
 
 <!-- annotated:c8956876b816b1 -->
 
@@ -2386,8 +2386,8 @@ const Curves *GeometrySet::get_curves() const
 
 **继续追踪实现**
 
-- `this->get_component<CurveComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->get` → [blender::bke::CurveComponent::get · L85](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_curves-b84d24.md#f-dcafa3852e73eb1e)。
+- `this->get_component<CurveComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::CurveComponent::get · L85](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_curves.cc.md#f-dcafa3852e73eb1e)。
 
 <!-- annotated:66ddeb0477d5d7 -->
 
@@ -2445,8 +2445,8 @@ const Instances *GeometrySet::get_instances() const
 
 **继续追踪实现**
 
-- `this->get_component<InstancesComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->get` → [blender::bke::InstancesComponent::get · L74](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_instances-4b1341.md#f-4c08d16e1f4a620c)。
+- `this->get_component<InstancesComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::InstancesComponent::get · L74](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_instances.cc.md#f-4c08d16e1f4a620c)。
 
 <!-- annotated:2527fe6aa9e4e4 -->
 
@@ -2504,8 +2504,8 @@ const CurvesEditHints *GeometrySet::get_curve_edit_hints() const
 
 **继续追踪实现**
 
-- `this->get_component<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->curves_edit_hints_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L354。
+- `this->get_component<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->curves_edit_hints_.get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L354。
 
 <!-- annotated:dc695bfad04f2d -->
 
@@ -2563,8 +2563,8 @@ const GreasePencilEditHints *GeometrySet::get_grease_pencil_edit_hints() const
 
 **继续追踪实现**
 
-- `this->get_component<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->grease_pencil_edit_hints_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L360。
+- `this->get_component<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->grease_pencil_edit_hints_.get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L360。
 
 <!-- annotated:e9ee0435b7a53c -->
 
@@ -2622,8 +2622,8 @@ const GizmoEditHints *GeometrySet::get_gizmo_edit_hints() const
 
 **继续追踪实现**
 
-- `this->get_component<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->gizmo_edit_hints_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L366。
+- `this->get_component<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->gizmo_edit_hints_.get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L366。
 
 <!-- annotated:bb71e425388b5d -->
 
@@ -2681,8 +2681,8 @@ const GreasePencil *GeometrySet::get_grease_pencil() const
 
 **继续追踪实现**
 
-- `this->get_component<GreasePencilComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->get` → [blender::bke::GreasePencilComponent::get · L72](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_grease_pencil-01c648.md#f-5a16e7ffc6574319)。
+- `this->get_component<GreasePencilComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::GreasePencilComponent::get · L72](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_grease_pencil.cc.md#f-5a16e7ffc6574319)。
 
 <!-- annotated:3474118f0d1079 -->
 
@@ -2740,8 +2740,8 @@ bool GeometrySet::has_pointcloud() const
 
 **继续追踪实现**
 
-- `this->get_component<PointCloudComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->has_pointcloud` → [blender::bke::PointCloudComponent::has_pointcloud · L56](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_pointcloud-0caac6.md#f-0421dfc034083b44)。
+- `this->get_component<PointCloudComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->has_pointcloud` → [blender::bke::PointCloudComponent::has_pointcloud · L56](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_pointcloud.cc.md#f-0421dfc034083b44)。
 
 <!-- annotated:3eb27817edf0fc -->
 
@@ -2801,9 +2801,9 @@ bool GeometrySet::has_instances() const
 
 **继续追踪实现**
 
-- `this->get_component<InstancesComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->get` → [blender::bke::InstancesComponent::get · L74](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_instances-4b1341.md#f-4c08d16e1f4a620c)。
-- `component->get()->instances_num` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L385。
+- `this->get_component<InstancesComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->get` → [blender::bke::InstancesComponent::get · L74](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_instances.cc.md#f-4c08d16e1f4a620c)。
+- `component->get()->instances_num` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L385。
 
 <!-- annotated:8c3c00f7f54df8 -->
 
@@ -2861,8 +2861,8 @@ bool GeometrySet::has_volume() const
 
 **继续追踪实现**
 
-- `this->get_component<VolumeComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->has_volume` → [blender::bke::VolumeComponent::has_volume · L47](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_volume-b14dd5.md#f-8c678e4bb96e6d5f)。
+- `this->get_component<VolumeComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->has_volume` → [blender::bke::VolumeComponent::has_volume · L47](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_volume.cc.md#f-8c678e4bb96e6d5f)。
 
 <!-- annotated:a4f9fd9423e930 -->
 
@@ -2920,8 +2920,8 @@ bool GeometrySet::has_curves() const
 
 **继续追踪实现**
 
-- `this->get_component<CurveComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->has_curves` → [blender::bke::CurveComponent::has_curves · L64](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_curves-b84d24.md#f-129378f4a9769c06)。
+- `this->get_component<CurveComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->has_curves` → [blender::bke::CurveComponent::has_curves · L64](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_curves.cc.md#f-129378f4a9769c06)。
 
 <!-- annotated:0ac5c6a8ce0016 -->
 
@@ -2998,8 +2998,8 @@ bool GeometrySet::has_realized_data() const
 
 **继续追踪实现**
 
-- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
-- `component_ptr->type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L404。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `component_ptr->type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L404。
 
 <!-- annotated:dcf5bea57e3744 -->
 
@@ -3057,8 +3057,8 @@ bool GeometrySet::has_grease_pencil() const
 
 **继续追踪实现**
 
-- `this->get_component<GreasePencilComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component->has_grease_pencil` → [blender::bke::GreasePencilComponent::has_grease_pencil · L51](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_grease_pencil-01c648.md#f-1f40b37cc4921df2)。
+- `this->get_component<GreasePencilComponent>` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component->has_grease_pencil` → [blender::bke::GreasePencilComponent::has_grease_pencil · L51](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_grease_pencil.cc.md#f-1f40b37cc4921df2)。
 
 <!-- annotated:9167ceaba6923b -->
 
@@ -3116,12 +3116,12 @@ bool GeometrySet::is_empty() const
 
 **继续追踪实现**
 
-- `this->has_mesh` → [blender::bke::GeometrySet::has_mesh · L321](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-8d9a6e8a3a3c9006)。
-- `this->has_curves` → [blender::bke::GeometrySet::has_curves · L394](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-56204772a0e108bd)。
-- `this->has_pointcloud` → [blender::bke::GeometrySet::has_pointcloud · L375](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-9760ce952821b1a7)。
-- `this->has_volume` → [blender::bke::GeometrySet::has_volume · L388](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b4653e73439de63b)。
-- `this->has_instances` → [blender::bke::GeometrySet::has_instances · L381](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-96f474fc46f602f1)。
-- `this->has_grease_pencil` → [blender::bke::GeometrySet::has_grease_pencil · L415](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-357bcb62da7a8afd)。
+- `this->has_mesh` → [blender::bke::GeometrySet::has_mesh · L321](05-GeometrySet读写与复制.md#f-8d9a6e8a3a3c9006)。
+- `this->has_curves` → [blender::bke::GeometrySet::has_curves · L394](05-GeometrySet读写与复制.md#f-56204772a0e108bd)。
+- `this->has_pointcloud` → [blender::bke::GeometrySet::has_pointcloud · L375](05-GeometrySet读写与复制.md#f-9760ce952821b1a7)。
+- `this->has_volume` → [blender::bke::GeometrySet::has_volume · L388](05-GeometrySet读写与复制.md#f-b4653e73439de63b)。
+- `this->has_instances` → [blender::bke::GeometrySet::has_instances · L381](05-GeometrySet读写与复制.md#f-96f474fc46f602f1)。
+- `this->has_grease_pencil` → [blender::bke::GeometrySet::has_grease_pencil · L415](05-GeometrySet读写与复制.md#f-357bcb62da7a8afd)。
 
 <!-- annotated:4c7d2ad0280792 -->
 
@@ -3186,7 +3186,7 @@ GeometrySet GeometrySet::from_mesh(Mesh *mesh, GeometryOwnershipType ownership)
 
 **继续追踪实现**
 
-- `geometry_set.replace_mesh` → [blender::bke::GeometrySet::replace_mesh · L477](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-bf82c30bb38f2007)。
+- `geometry_set.replace_mesh` → [blender::bke::GeometrySet::replace_mesh · L477](05-GeometrySet读写与复制.md#f-bf82c30bb38f2007)。
 
 <!-- annotated:d0ed1d319e0950 -->
 
@@ -3251,7 +3251,7 @@ GeometrySet GeometrySet::from_volume(Volume *volume, GeometryOwnershipType owner
 
 **继续追踪实现**
 
-- `geometry_set.replace_volume` → [blender::bke::GeometrySet::replace_volume · L533](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-9abc34c3f65e4d7c)。
+- `geometry_set.replace_volume` → [blender::bke::GeometrySet::replace_volume · L533](05-GeometrySet读写与复制.md#f-9abc34c3f65e4d7c)。
 
 <!-- annotated:c8f2351f30c74d -->
 
@@ -3316,7 +3316,7 @@ GeometrySet GeometrySet::from_pointcloud(PointCloud *pointcloud, GeometryOwnersh
 
 **继续追踪实现**
 
-- `geometry_set.replace_pointcloud` → [blender::bke::GeometrySet::replace_pointcloud · L519](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-02414356dff40c94)。
+- `geometry_set.replace_pointcloud` → [blender::bke::GeometrySet::replace_pointcloud · L519](05-GeometrySet读写与复制.md#f-02414356dff40c94)。
 
 <!-- annotated:0299c900e728f7 -->
 
@@ -3381,7 +3381,7 @@ GeometrySet GeometrySet::from_curves(Curves *curves, GeometryOwnershipType owner
 
 **继续追踪实现**
 
-- `geometry_set.replace_curves` → [blender::bke::GeometrySet::replace_curves · L491](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-2ca8a73c1f6ef2f1)。
+- `geometry_set.replace_curves` → [blender::bke::GeometrySet::replace_curves · L491](05-GeometrySet读写与复制.md#f-2ca8a73c1f6ef2f1)。
 
 <!-- annotated:4321c8e25d1cbb -->
 
@@ -3446,7 +3446,7 @@ GeometrySet GeometrySet::from_instances(Instances *instances, GeometryOwnershipT
 
 **继续追踪实现**
 
-- `geometry_set.replace_instances` → [blender::bke::GeometrySet::replace_instances · L505](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b26122377a17a66c)。
+- `geometry_set.replace_instances` → [blender::bke::GeometrySet::replace_instances · L505](05-GeometrySet读写与复制.md#f-b26122377a17a66c)。
 
 <!-- annotated:6a356106b45cba -->
 
@@ -3510,7 +3510,7 @@ GeometrySet GeometrySet::from_instances(std::unique_ptr<Instances> instances)
 
 **继续追踪实现**
 
-- `geometry_set.replace_instances` → [blender::bke::GeometrySet::replace_instances · L505](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b26122377a17a66c)。
+- `geometry_set.replace_instances` → [blender::bke::GeometrySet::replace_instances · L505](05-GeometrySet读写与复制.md#f-b26122377a17a66c)。
 - `instances.release` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 
 <!-- annotated:b3a6931075082a -->
@@ -3578,7 +3578,7 @@ GeometrySet GeometrySet::from_grease_pencil(GreasePencil *grease_pencil,
 
 **继续追踪实现**
 
-- `geometry_set.replace_grease_pencil` → [blender::bke::GeometrySet::replace_grease_pencil · L547](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-4e75c59c90c26e32)。
+- `geometry_set.replace_grease_pencil` → [blender::bke::GeometrySet::replace_grease_pencil · L547](05-GeometrySet读写与复制.md#f-4e75c59c90c26e32)。
 
 <!-- annotated:76c54d111eb362 -->
 
@@ -3653,10 +3653,10 @@ void GeometrySet::replace_mesh(Mesh *mesh, GeometryOwnershipType ownership)
 
 **继续追踪实现**
 
-- `this->remove<MeshComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32c960ae92da98ca)。
-- `this->get_mesh` → [blender::bke::GeometrySet::get_mesh · L315](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-25151145065d998b)。
-- `this->get_component_for_write<MeshComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
-- `component.replace` → [blender::bke::MeshComponent::replace · L62](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_mesh-de716f.md#f-625ad7d7cc6f2308)。
+- `this->remove<MeshComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet读写与复制.md#f-32c960ae92da98ca)。
+- `this->get_mesh` → [blender::bke::GeometrySet::get_mesh · L315](05-GeometrySet读写与复制.md#f-25151145065d998b)。
+- `this->get_component_for_write<MeshComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet读写与复制.md#f-21eccb196f5b9a78)。
+- `component.replace` → [blender::bke::MeshComponent::replace · L62](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_mesh.cc.md#f-625ad7d7cc6f2308)。
 
 <!-- annotated:d5d30312aa7bf8 -->
 
@@ -3731,10 +3731,10 @@ void GeometrySet::replace_curves(Curves *curves, GeometryOwnershipType ownership
 
 **继续追踪实现**
 
-- `this->remove<CurveComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32c960ae92da98ca)。
-- `this->get_curves` → [blender::bke::GeometrySet::get_curves · L339](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-1d7b3a3ddbc6c57b)。
-- `this->get_component_for_write<CurveComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
-- `component.replace` → [blender::bke::CurveComponent::replace · L69](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_curves-b84d24.md#f-b53b6e068bec94b6)。
+- `this->remove<CurveComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet读写与复制.md#f-32c960ae92da98ca)。
+- `this->get_curves` → [blender::bke::GeometrySet::get_curves · L339](05-GeometrySet读写与复制.md#f-1d7b3a3ddbc6c57b)。
+- `this->get_component_for_write<CurveComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet读写与复制.md#f-21eccb196f5b9a78)。
+- `component.replace` → [blender::bke::CurveComponent::replace · L69](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_curves.cc.md#f-b53b6e068bec94b6)。
 
 <!-- annotated:f41671d09b5531 -->
 
@@ -3809,10 +3809,10 @@ void GeometrySet::replace_instances(Instances *instances, GeometryOwnershipType 
 
 **继续追踪实现**
 
-- `this->remove<InstancesComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32c960ae92da98ca)。
-- `this->get_instances` → [blender::bke::GeometrySet::get_instances · L345](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-75fcc67a0b3c0fa1)。
-- `this->get_component_for_write<InstancesComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
-- `component.replace` → [blender::bke::InstancesComponent::replace · L89](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_instances-4b1341.md#f-8cc31b6fbb24a242)。
+- `this->remove<InstancesComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet读写与复制.md#f-32c960ae92da98ca)。
+- `this->get_instances` → [blender::bke::GeometrySet::get_instances · L345](05-GeometrySet读写与复制.md#f-75fcc67a0b3c0fa1)。
+- `this->get_component_for_write<InstancesComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet读写与复制.md#f-21eccb196f5b9a78)。
+- `component.replace` → [blender::bke::InstancesComponent::replace · L89](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_instances.cc.md#f-8cc31b6fbb24a242)。
 
 <!-- annotated:b690c84e5a9754 -->
 
@@ -3887,10 +3887,10 @@ void GeometrySet::replace_pointcloud(PointCloud *pointcloud, GeometryOwnershipTy
 
 **继续追踪实现**
 
-- `this->remove<PointCloudComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32c960ae92da98ca)。
-- `this->get_pointcloud` → [blender::bke::GeometrySet::get_pointcloud · L327](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e9c60234d315f635)。
-- `this->get_component_for_write<PointCloudComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
-- `component.replace` → [blender::bke::PointCloudComponent::replace · L61](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_pointcloud-0caac6.md#f-3ec2070a3f242dfc)。
+- `this->remove<PointCloudComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet读写与复制.md#f-32c960ae92da98ca)。
+- `this->get_pointcloud` → [blender::bke::GeometrySet::get_pointcloud · L327](05-GeometrySet读写与复制.md#f-e9c60234d315f635)。
+- `this->get_component_for_write<PointCloudComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet读写与复制.md#f-21eccb196f5b9a78)。
+- `component.replace` → [blender::bke::PointCloudComponent::replace · L61](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_pointcloud.cc.md#f-3ec2070a3f242dfc)。
 
 <!-- annotated:fbdf2051098d9c -->
 
@@ -3965,10 +3965,10 @@ void GeometrySet::replace_volume(Volume *volume, GeometryOwnershipType ownership
 
 **继续追踪实现**
 
-- `this->remove<VolumeComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32c960ae92da98ca)。
-- `this->get_volume` → [blender::bke::GeometrySet::get_volume · L333](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e4dddefabca41664)。
-- `this->get_component_for_write<VolumeComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
-- `component.replace` → [blender::bke::VolumeComponent::replace · L52](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_volume-b14dd5.md#f-88828f1924564921)。
+- `this->remove<VolumeComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet读写与复制.md#f-32c960ae92da98ca)。
+- `this->get_volume` → [blender::bke::GeometrySet::get_volume · L333](05-GeometrySet读写与复制.md#f-e4dddefabca41664)。
+- `this->get_component_for_write<VolumeComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet读写与复制.md#f-21eccb196f5b9a78)。
+- `component.replace` → [blender::bke::VolumeComponent::replace · L52](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_volume.cc.md#f-88828f1924564921)。
 
 <!-- annotated:49df01388545b7 -->
 
@@ -4045,10 +4045,10 @@ void GeometrySet::replace_grease_pencil(GreasePencil *grease_pencil,
 
 **继续追踪实现**
 
-- `this->remove<GreasePencilComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32c960ae92da98ca)。
-- `this->get_grease_pencil` → [blender::bke::GeometrySet::get_grease_pencil · L369](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-4c73d7995c66f8bf)。
-- `this->get_component_for_write<GreasePencilComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
-- `component.replace` → [blender::bke::GreasePencilComponent::replace · L56](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_grease_pencil-01c648.md#f-7a8bec90d2a1aa61)。
+- `this->remove<GreasePencilComponent>` → [blender::bke::GeometrySet::remove · L148](05-GeometrySet读写与复制.md#f-32c960ae92da98ca)。
+- `this->get_grease_pencil` → [blender::bke::GeometrySet::get_grease_pencil · L369](05-GeometrySet读写与复制.md#f-4c73d7995c66f8bf)。
+- `this->get_component_for_write<GreasePencilComponent>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet读写与复制.md#f-21eccb196f5b9a78)。
+- `component.replace` → [blender::bke::GreasePencilComponent::replace · L56](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_grease_pencil.cc.md#f-7a8bec90d2a1aa61)。
 
 <!-- annotated:7a7a7aa6fdad1b -->
 
@@ -4106,8 +4106,8 @@ Mesh *GeometrySet::get_mesh_for_write()
 
 **继续追踪实现**
 
-- `this->get_component_for_write_ptr<MeshComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b077f987c95b3425)。
-- `component->get_for_write` → [blender::bke::MeshComponent::get_for_write · L83](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_mesh-de716f.md#f-ef827f2b2d08d953)。
+- `this->get_component_for_write_ptr<MeshComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet读写与复制.md#f-b077f987c95b3425)。
+- `component->get_for_write` → [blender::bke::MeshComponent::get_for_write · L83](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_mesh.cc.md#f-ef827f2b2d08d953)。
 
 <!-- annotated:b4474c2fe10b1e -->
 
@@ -4165,8 +4165,8 @@ PointCloud *GeometrySet::get_pointcloud_for_write()
 
 **继续追踪实现**
 
-- `this->get_component_for_write_ptr<PointCloudComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b077f987c95b3425)。
-- `component->get_for_write` → [blender::bke::PointCloudComponent::get_for_write · L82](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_pointcloud-0caac6.md#f-e5ce259db1290094)。
+- `this->get_component_for_write_ptr<PointCloudComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet读写与复制.md#f-b077f987c95b3425)。
+- `component->get_for_write` → [blender::bke::PointCloudComponent::get_for_write · L82](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_pointcloud.cc.md#f-e5ce259db1290094)。
 
 <!-- annotated:7409d9de8c3227 -->
 
@@ -4224,8 +4224,8 @@ Volume *GeometrySet::get_volume_for_write()
 
 **继续追踪实现**
 
-- `this->get_component_for_write_ptr<VolumeComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b077f987c95b3425)。
-- `component->get_for_write` → [blender::bke::VolumeComponent::get_for_write · L73](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_volume-b14dd5.md#f-7ea19c03e5ff914b)。
+- `this->get_component_for_write_ptr<VolumeComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet读写与复制.md#f-b077f987c95b3425)。
+- `component->get_for_write` → [blender::bke::VolumeComponent::get_for_write · L73](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_volume.cc.md#f-7ea19c03e5ff914b)。
 
 <!-- annotated:bb265894fd6e94 -->
 
@@ -4283,8 +4283,8 @@ Curves *GeometrySet::get_curves_for_write()
 
 **继续追踪实现**
 
-- `this->get_component_for_write_ptr<CurveComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b077f987c95b3425)。
-- `component->get_for_write` → [blender::bke::CurveComponent::get_for_write · L90](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_curves-b84d24.md#f-b977e455f03f4551)。
+- `this->get_component_for_write_ptr<CurveComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet读写与复制.md#f-b077f987c95b3425)。
+- `component->get_for_write` → [blender::bke::CurveComponent::get_for_write · L90](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_curves.cc.md#f-b977e455f03f4551)。
 
 <!-- annotated:1108f4e2bec377 -->
 
@@ -4342,8 +4342,8 @@ Instances *GeometrySet::get_instances_for_write()
 
 **继续追踪实现**
 
-- `this->get_component_for_write_ptr<InstancesComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b077f987c95b3425)。
-- `component->get_for_write` → [blender::bke::InstancesComponent::get_for_write · L79](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_instances-4b1341.md#f-4489915c6bc73234)。
+- `this->get_component_for_write_ptr<InstancesComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet读写与复制.md#f-b077f987c95b3425)。
+- `component->get_for_write` → [blender::bke::InstancesComponent::get_for_write · L79](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_instances.cc.md#f-4489915c6bc73234)。
 
 <!-- annotated:3e1a707a540d0f -->
 
@@ -4410,9 +4410,9 @@ CurvesEditHints *GeometrySet::get_curve_edit_hints_for_write()
 
 **继续追踪实现**
 
-- `this->has<GeometryComponentEditData>` → [blender::bke::GeometrySet::has · L142](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-5777be605a5451b6)。
-- `this->get_component_for_write<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
-- `component.curves_edit_hints_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L599。
+- `this->has<GeometryComponentEditData>` → [blender::bke::GeometrySet::has · L142](05-GeometrySet读写与复制.md#f-5777be605a5451b6)。
+- `this->get_component_for_write<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet读写与复制.md#f-21eccb196f5b9a78)。
+- `component.curves_edit_hints_.get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L599。
 
 <!-- annotated:ef02c655b5576d -->
 
@@ -4479,9 +4479,9 @@ GreasePencilEditHints *GeometrySet::get_grease_pencil_edit_hints_for_write()
 
 **继续追踪实现**
 
-- `this->has<GeometryComponentEditData>` → [blender::bke::GeometrySet::has · L142](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-5777be605a5451b6)。
-- `this->get_component_for_write<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
-- `component.grease_pencil_edit_hints_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L609。
+- `this->has<GeometryComponentEditData>` → [blender::bke::GeometrySet::has · L142](05-GeometrySet读写与复制.md#f-5777be605a5451b6)。
+- `this->get_component_for_write<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet读写与复制.md#f-21eccb196f5b9a78)。
+- `component.grease_pencil_edit_hints_.get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L609。
 
 <!-- annotated:6ea5d8f7099013 -->
 
@@ -4548,9 +4548,9 @@ GizmoEditHints *GeometrySet::get_gizmo_edit_hints_for_write()
 
 **继续追踪实现**
 
-- `this->has<GeometryComponentEditData>` → [blender::bke::GeometrySet::has · L142](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-5777be605a5451b6)。
-- `this->get_component_for_write<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-21eccb196f5b9a78)。
-- `component.gizmo_edit_hints_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L619。
+- `this->has<GeometryComponentEditData>` → [blender::bke::GeometrySet::has · L142](05-GeometrySet读写与复制.md#f-5777be605a5451b6)。
+- `this->get_component_for_write<GeometryComponentEditData>` → [blender::bke::GeometrySet::get_component_for_write · L119](05-GeometrySet读写与复制.md#f-21eccb196f5b9a78)。
+- `component.gizmo_edit_hints_.get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L619。
 
 <!-- annotated:4a8499d28d8bc0 -->
 
@@ -4608,8 +4608,8 @@ GreasePencil *GeometrySet::get_grease_pencil_for_write()
 
 **继续追踪实现**
 
-- `this->get_component_for_write_ptr<GreasePencilComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-b077f987c95b3425)。
-- `component->get_for_write` → [blender::bke::GreasePencilComponent::get_for_write · L77](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-geometry_component_grease_pencil-01c648.md#f-b399cde6e81f49c4)。
+- `this->get_component_for_write_ptr<GreasePencilComponent>` → [blender::bke::GeometrySet::get_component_for_write_ptr · L129](05-GeometrySet读写与复制.md#f-b077f987c95b3425)。
+- `component->get_for_write` → [blender::bke::GreasePencilComponent::get_for_write · L77](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_component_grease_pencil.cc.md#f-b399cde6e81f49c4)。
 
 <!-- annotated:5e2159587a3e90 -->
 
@@ -4677,9 +4677,9 @@ void GeometrySet::count_memory(MemoryCounter &memory) const
 
 **继续追踪实现**
 
-- `memory.add_shared` → [blender::memory_counter::MemoryCounter::add_shared · L20](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-memory_counter-6403e6.md#f-0a7db687f64344cf)；[blender::memory_counter::MemoryCounter::add_shared · L38](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-memory_counter-6403e6.md#f-63a65a1c4c176990)。同名重载需按实参类型选择。
-- `component.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L632。
-- `component->count_memory` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L633。
+- `memory.add_shared` → [blender::memory_counter::MemoryCounter::add_shared · L20](../90-实现依赖专题/01-BLI基础库/intern/memory_counter.cc.md#f-0a7db687f64344cf)；[blender::memory_counter::MemoryCounter::add_shared · L38](../90-实现依赖专题/01-BLI基础库/intern/memory_counter.cc.md#f-63a65a1c4c176990)。同名重载需按实参类型选择。
+- `component.get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L632。
+- `component->count_memory` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L633。
 
 <!-- annotated:ad035c7af47949 -->
 
@@ -4799,22 +4799,22 @@ void GeometrySet::attribute_foreach(const Span<GeometryComponent::Type> componen
 
 **继续追踪实现**
 
-- `this->has` → [blender::bke::GeometrySet::has · L142](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-5777be605a5451b6)。
-- `this->get_component` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-26f915a73bb3d7e8)。
-- `component.attributes` → [blender::bke::GeometryComponent::attributes · L75](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-d58a41ede5a46f2c)。
-- `attributes.has_value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L649。
-- `attributes->foreach_attribute` → [blender::bke::AttributeAccessor::foreach_attribute · L687](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-44723ac57e0d1fa4)。
-- `callback` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L651。
-- `this->get_grease_pencil` → [blender::bke::GeometrySet::get_grease_pencil · L369](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-4c73d7995c66f8bf)。
-- `grease_pencil.layers` → [blender::GreasePencil::layers · L3983](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-15d64ed11a2babc0)。
-- `grease_pencil.get_eval_drawing` → [blender::GreasePencil::get_eval_drawing · L3877](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-90fc4aad8697fbb6)；[blender::GreasePencil::get_eval_drawing · L3883](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-c0c3d7e7fffac861)。同名重载需按实参类型选择。
-- `drawing->strokes().attributes` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L659。
-- `drawing->strokes` → [blender::bke::greasepencil::Drawing::strokes · L1007](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-59e6522a8e8ac409)。
-- `attributes.foreach_attribute` → [blender::bke::AttributeAccessor::foreach_attribute · L687](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-44723ac57e0d1fa4)。
-- `this->has_instances` → [blender::bke::GeometrySet::has_instances · L381](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-96f474fc46f602f1)。
-- `this->get_instances` → [blender::bke::GeometrySet::get_instances · L345](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-75fcc67a0b3c0fa1)。
-- `instances.foreach_referenced_geometry` → [blender::bke::Instances::foreach_referenced_geometry · L79](%E4%BE%9D%E8%B5%96-geometry_set_instances-cb6843.md#f-f22fd0d0114d3f20)。
-- `instance_geometry_set.attribute_foreach` → [blender::bke::GeometrySet::attribute_foreach · L639](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-80d996c309d0e8b2)。
+- `this->has` → [blender::bke::GeometrySet::has · L142](05-GeometrySet读写与复制.md#f-5777be605a5451b6)。
+- `this->get_component` → [blender::bke::GeometrySet::get_component · L137](05-GeometrySet读写与复制.md#f-26f915a73bb3d7e8)。
+- `component.attributes` → [blender::bke::GeometryComponent::attributes · L75](05-GeometrySet读写与复制.md#f-d58a41ede5a46f2c)。
+- `attributes.has_value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L649。
+- `attributes->foreach_attribute` → [blender::bke::AttributeAccessor::foreach_attribute · L687](../05-几何存储与拓扑映射/08-AttributeAccessor接口.md#f-44723ac57e0d1fa4)。
+- `callback` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L651。
+- `this->get_grease_pencil` → [blender::bke::GeometrySet::get_grease_pencil · L369](05-GeometrySet读写与复制.md#f-4c73d7995c66f8bf)。
+- `grease_pencil.layers` → [blender::GreasePencil::layers · L3983](../90-实现依赖专题/02-BKE几何与数据/intern/grease_pencil.cc.md#f-15d64ed11a2babc0)。
+- `grease_pencil.get_eval_drawing` → [blender::GreasePencil::get_eval_drawing · L3877](../90-实现依赖专题/02-BKE几何与数据/intern/grease_pencil.cc.md#f-90fc4aad8697fbb6)；[blender::GreasePencil::get_eval_drawing · L3883](../90-实现依赖专题/02-BKE几何与数据/intern/grease_pencil.cc.md#f-c0c3d7e7fffac861)。同名重载需按实参类型选择。
+- `drawing->strokes().attributes` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L659。
+- `drawing->strokes` → [blender::bke::greasepencil::Drawing::strokes · L1007](../90-实现依赖专题/02-BKE几何与数据/intern/grease_pencil.cc.md#f-59e6522a8e8ac409)。
+- `attributes.foreach_attribute` → [blender::bke::AttributeAccessor::foreach_attribute · L687](../05-几何存储与拓扑映射/08-AttributeAccessor接口.md#f-44723ac57e0d1fa4)。
+- `this->has_instances` → [blender::bke::GeometrySet::has_instances · L381](05-GeometrySet读写与复制.md#f-96f474fc46f602f1)。
+- `this->get_instances` → [blender::bke::GeometrySet::get_instances · L345](05-GeometrySet读写与复制.md#f-75fcc67a0b3c0fa1)。
+- `instances.foreach_referenced_geometry` → [blender::bke::Instances::foreach_referenced_geometry · L79](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_set_instances.cc.md#f-f22fd0d0114d3f20)。
+- `instance_geometry_set.attribute_foreach` → [blender::bke::GeometrySet::attribute_foreach · L639](05-GeometrySet读写与复制.md#f-80d996c309d0e8b2)。
 
 <!-- annotated:a8bf3b9814195c -->
 
@@ -4939,14 +4939,14 @@ bool attribute_is_builtin_on_component_type(const GeometryComponent::Type type,
 
 **继续追踪实现**
 
-- `GeometryComponent::create` → [blender::bke::GeometryComponent::create · L41](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-057aed72adfa658c)。
-- `component->attributes()->is_builtin` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L681。
-- `component->attributes` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L681。
-- `grease_pencil_component->attributes()->is_builtin` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L699。
-- `grease_pencil_component->attributes` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L699。
-- `curves_component->attributes()->is_builtin` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L700。
-- `curves_component->attributes` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L700。
-- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
+- `GeometryComponent::create` → [blender::bke::GeometryComponent::create · L41](05-GeometrySet读写与复制.md#f-057aed72adfa658c)。
+- `component->attributes()->is_builtin` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L681。
+- `component->attributes` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L681。
+- `grease_pencil_component->attributes()->is_builtin` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L699。
+- `grease_pencil_component->attributes` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L699。
+- `curves_component->attributes()->is_builtin` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L700。
+- `curves_component->attributes` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L700。
+- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
 
 <!-- annotated:7bb693659c166b -->
 
@@ -5026,11 +5026,11 @@ void GeometrySet::GatheredAttributes::add(const StringRef name, const AttributeD
 
 **继续追踪实现**
 
-- `this->names.index_of_or_add` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L713。
-- `this->kinds.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L714。
-- `this->kinds.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L715。
-- `bke::attribute_domain_highest_priority` → [blender::bke::attribute_domain_highest_priority · L327](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-4577347bd2fe8cf9)。
-- `bke::attribute_data_type_highest_complexity` → [blender::bke::attribute_data_type_highest_complexity · L283](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-c82c512ea46b8658)。
+- `this->names.index_of_or_add` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L713。
+- `this->kinds.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L714。
+- `this->kinds.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L715。
+- `bke::attribute_domain_highest_priority` → [blender::bke::attribute_domain_highest_priority · L327](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-4577347bd2fe8cf9)。
+- `bke::attribute_data_type_highest_complexity` → [blender::bke::attribute_data_type_highest_complexity · L283](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-c82c512ea46b8658)。
 
 <!-- annotated:98c5774915a65c -->
 
@@ -5131,13 +5131,13 @@ static void gather_component_types_recursive(const GeometrySet &geometry_set,
 
 **继续追踪实现**
 
-- `geometry_set.get_components` → [blender::bke::GeometrySet::get_components · L172](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-cc37b529b336a65e)。
-- `component->is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L732。
-- `r_types.append_non_duplicates` → [blender::Vector::append_non_duplicates · L537](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-7741238254851c96)。
-- `component->type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L736。
-- `geometry_set.get_instances` → [blender::bke::GeometrySet::get_instances · L345](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-75fcc67a0b3c0fa1)。
-- `instances->foreach_referenced_geometry` → [blender::bke::Instances::foreach_referenced_geometry · L79](%E4%BE%9D%E8%B5%96-geometry_set_instances-cb6843.md#f-f22fd0d0114d3f20)。
-- `gather_component_types_recursive` → [blender::bke::gather_component_types_recursive · L725](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-1c207465a47ea46b)。
+- `geometry_set.get_components` → [blender::bke::GeometrySet::get_components · L172](05-GeometrySet读写与复制.md#f-cc37b529b336a65e)。
+- `component->is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L732。
+- `r_types.append_non_duplicates` → [blender::Vector::append_non_duplicates · L537](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-7741238254851c96)。
+- `component->type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L736。
+- `geometry_set.get_instances` → [blender::bke::GeometrySet::get_instances · L345](05-GeometrySet读写与复制.md#f-75fcc67a0b3c0fa1)。
+- `instances->foreach_referenced_geometry` → [blender::bke::Instances::foreach_referenced_geometry · L79](../90-实现依赖专题/02-BKE几何与数据/intern/geometry_set_instances.cc.md#f-f22fd0d0114d3f20)。
+- `gather_component_types_recursive` → [blender::bke::gather_component_types_recursive · L725](05-GeometrySet读写与复制.md#f-1c207465a47ea46b)。
 
 <!-- annotated:b021494e604050 -->
 
@@ -5204,7 +5204,7 @@ Vector<GeometryComponent::Type> GeometrySet::gather_component_types(const bool i
 
 **继续追踪实现**
 
-- `gather_component_types_recursive` → [blender::bke::gather_component_types_recursive · L725](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-1c207465a47ea46b)。
+- `gather_component_types_recursive` → [blender::bke::gather_component_types_recursive · L725](05-GeometrySet读写与复制.md#f-1c207465a47ea46b)。
 
 <!-- annotated:104ad634818701 -->
 
@@ -5316,7 +5316,7 @@ const nodes::Bundle *GeometrySet::bundle() const
 
 **继续追踪实现**
 
-- `bundle_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L766。
+- `bundle_.get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L766。
 
 <!-- annotated:fac4935e3ff0c5 -->
 
@@ -5494,8 +5494,8 @@ nodes::Bundle &GeometrySet::bundle_for_write()
 
 **继续追踪实现**
 
-- `nodes::Bundle::create` → [blender::bke::GeometryComponent::create · L41](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-057aed72adfa658c)。
-- `bundle_.ensure_mutable_inplace` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L784。
+- `nodes::Bundle::create` → [blender::bke::GeometryComponent::create · L41](05-GeometrySet读写与复制.md#f-057aed72adfa658c)。
+- `bundle_.ensure_mutable_inplace` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L784。
 
 <!-- annotated:fbf9c15c33aacb -->
 
@@ -5627,11 +5627,11 @@ void GeometrySet::merge_bundle_from(const GeometrySet &other)
 
 **继续追踪实现**
 
-- `other.has_bundle` → [blender::bke::GeometrySet::has_bundle · L759](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-607ccecfa5f4141f)。
-- `this->bundle_for_write().merge` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L798。
-- `this->bundle_for_write` → [blender::bke::GeometrySet::bundle_for_write · L779](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-9f3eaefe0279cab7)。
-- `other.bundle` → [blender::bke::GeometrySet::bundle · L764](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-96d381ad16719cfb)。
-- `this->copy_bundle_from` → [blender::bke::GeometrySet::copy_bundle_from · L787](05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-32e6a8e8cd4cc25c)。
+- `other.has_bundle` → [blender::bke::GeometrySet::has_bundle · L759](05-GeometrySet读写与复制.md#f-607ccecfa5f4141f)。
+- `this->bundle_for_write().merge` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L798。
+- `this->bundle_for_write` → [blender::bke::GeometrySet::bundle_for_write · L779](05-GeometrySet读写与复制.md#f-9f3eaefe0279cab7)。
+- `other.bundle` → [blender::bke::GeometrySet::bundle · L764](05-GeometrySet读写与复制.md#f-96d381ad16719cfb)。
+- `this->copy_bundle_from` → [blender::bke::GeometrySet::copy_bundle_from · L787](05-GeometrySet读写与复制.md#f-32e6a8e8cd4cc25c)。
 
 <!-- annotated:1dbc2882c09f0a -->
 
@@ -5857,13 +5857,13 @@ bool object_has_geometry_set_instances(const Object &object)
 
 **继续追踪实现**
 
-- `geometry_set->has_component<InstancesComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent%E5%85%B1%E4%BA%AB.md#f-b8d4ee0c445a53ad)。
-- `geometry_set->has_component<MeshComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent%E5%85%B1%E4%BA%AB.md#f-b8d4ee0c445a53ad)。
-- `geometry_set->has_component<PointCloudComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent%E5%85%B1%E4%BA%AB.md#f-b8d4ee0c445a53ad)。
-- `geometry_set->has_component<VolumeComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent%E5%85%B1%E4%BA%AB.md#f-b8d4ee0c445a53ad)。
-- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
-- `geometry_set->has_component<CurveComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent%E5%85%B1%E4%BA%AB.md#f-b8d4ee0c445a53ad)。
-- `geometry_set->has_component<GreasePencilComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent%E5%85%B1%E4%BA%AB.md#f-b8d4ee0c445a53ad)。
+- `geometry_set->has_component<InstancesComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent共享.md#f-b8d4ee0c445a53ad)。
+- `geometry_set->has_component<MeshComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent共享.md#f-b8d4ee0c445a53ad)。
+- `geometry_set->has_component<PointCloudComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent共享.md#f-b8d4ee0c445a53ad)。
+- `geometry_set->has_component<VolumeComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent共享.md#f-b8d4ee0c445a53ad)。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `geometry_set->has_component<CurveComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent共享.md#f-b8d4ee0c445a53ad)。
+- `geometry_set->has_component<GreasePencilComponent>` → [blender::bke::GeometrySet::has_component · L208](04-GeometryComponent共享.md#f-b8d4ee0c445a53ad)。
 
 ### 类型布局、声明与编译条件 · geometry_set.cc L843—L846
 
@@ -5952,4 +5952,4 @@ unique_ptr通过移动转移拥有关系，默认删除策略必须与资源来�
 
 与shared_ptr比较寿命管理，与写时复制容器比较写边界，与普通memoization比较键的等价性；SharedCache把等价对象的派生结果放在共同控制对象中。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

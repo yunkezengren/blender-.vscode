@@ -1,6 +1,6 @@
 # 06-06 CacheMutex惰性初始化
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -340,7 +340,7 @@ class CacheMutex {
 **继续追踪实现**
 
 - `cache_valid_.load` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `this->ensure_impl` → [blender::CacheMutex::ensure_impl · L14](%E4%BE%9D%E8%B5%96-cache_mutex-0631e4.md#f-7eab37292dbb3e30)。
+- `this->ensure_impl` → [blender::CacheMutex::ensure_impl · L14](../90-实现依赖专题/01-BLI基础库/intern/cache_mutex.cc.md#f-7eab37292dbb3e30)。
 
 ### 类型布局、声明与编译条件 · BLI_cache_mutex.hh L93—L96
 
@@ -464,7 +464,7 @@ class CacheMutex {
 
 **继续追踪实现**
 
-- `this->is_cached` → [blender::CacheMutex::is_cached · L113](06-CacheMutex%E6%83%B0%E6%80%A7%E5%88%9D%E5%A7%8B%E5%8C%96.md#f-f7e9b4cd645b17b2)。
+- `this->is_cached` → [blender::CacheMutex::is_cached · L113](06-CacheMutex惰性初始化.md#f-f7e9b4cd645b17b2)。
 
 ### 类型布局、声明与编译条件 · BLI_cache_mutex.hh L109—L112
 
@@ -591,4 +591,4 @@ const约束当前访问路径可做的修改。const指针、指向const的指�
 
 与shared_ptr比较寿命管理，与写时复制容器比较写边界，与普通memoization比较键的等价性；SharedCache把等价对象的派生结果放在共同控制对象中。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

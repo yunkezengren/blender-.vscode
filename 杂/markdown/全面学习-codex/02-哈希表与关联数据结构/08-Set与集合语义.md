@@ -1,6 +1,6 @@
 # 02-08 Set与集合语义
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -624,7 +624,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->add_multiple` → [blender::Set::add_multiple · L287](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-18a099a39b0fcf37)。
+- `this->add_multiple` → [blender::Set::add_multiple · L287](08-Set与集合语义.md#f-18a099a39b0fcf37)。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L183—L186
 
@@ -886,7 +886,7 @@ class Set {
 **继续追踪实现**
 
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `other.noexcept_reset` → [blender::Set::noexcept_reset · L779](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-8e129637c06ba7df)。
+- `other.noexcept_reset` → [blender::Set::noexcept_reset · L779](08-Set与集合语义.md#f-8e129637c06ba7df)。
 
 <!-- annotated:5f178c6ff389fd -->
 
@@ -946,7 +946,7 @@ class Set {
 
 **继续追踪实现**
 
-- `copy_assign_container` → [blender::copy_assign_container · L284](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-546a45b4d8b5ab44)。
+- `copy_assign_container` → [blender::copy_assign_container · L284](../03-内存分配与运行时类型/01-对齐与未初始化存储.md#f-546a45b4d8b5ab44)。
 
 <!-- annotated:a49b0fb14f8e6e -->
 
@@ -1007,7 +1007,7 @@ class Set {
 
 **继续追踪实现**
 
-- `move_assign_container` → [blender::move_assign_container · L300](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-5144b56be86e6f42)。
+- `move_assign_container` → [blender::move_assign_container · L300](../03-内存分配与运行时类型/01-对齐与未初始化存储.md#f-5144b56be86e6f42)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L227—L232
@@ -1082,8 +1082,8 @@ class Set {
 
 **继续追踪实现**
 
-- `this->add_new__impl` → [blender::Set::add_new__impl · L827](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-bc4ae48abcde6959)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L235。
+- `this->add_new__impl` → [blender::Set::add_new__impl · L827](08-Set与集合语义.md#f-bc4ae48abcde6959)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L235。
 
 <a id="f-9c46c167cdd9bb73"></a>
 
@@ -1129,9 +1129,9 @@ class Set {
 
 **继续追踪实现**
 
-- `this->add_new__impl` → [blender::Set::add_new__impl · L827](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-bc4ae48abcde6959)。
+- `this->add_new__impl` → [blender::Set::add_new__impl · L827](08-Set与集合语义.md#f-bc4ae48abcde6959)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L239。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L239。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L241—L247
 
@@ -1212,7 +1212,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->add_as` → [blender::Set::add_as · L256](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-ce49561a490e821a)。
+- `this->add_as` → [blender::Set::add_as · L256](08-Set与集合语义.md#f-ce49561a490e821a)。
 
 <a id="f-e3ac8d1c52c03c2b"></a>
 
@@ -1262,7 +1262,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->add_as` → [blender::Set::add_as · L256](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-ce49561a490e821a)。
+- `this->add_as` → [blender::Set::add_as · L256](08-Set与集合语义.md#f-ce49561a490e821a)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-ce49561a490e821a"></a>
@@ -1313,9 +1313,9 @@ class Set {
 
 **继续追踪实现**
 
-- `this->add__impl` → [blender::Set::add__impl · L845](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-f71ddee9127387aa)。
+- `this->add__impl` → [blender::Set::add__impl · L845](08-Set与集合语义.md#f-f71ddee9127387aa)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L258。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L258。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L260—L266
 
@@ -1389,7 +1389,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->add_overwrite_as` → [blender::Set::add_overwrite_as · L275](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-ac8df34dd60f4eda)。
+- `this->add_overwrite_as` → [blender::Set::add_overwrite_as · L275](08-Set与集合语义.md#f-ac8df34dd60f4eda)。
 
 <a id="f-2811f2e733a12f8f"></a>
 
@@ -1433,7 +1433,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->add_overwrite_as` → [blender::Set::add_overwrite_as · L275](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-ac8df34dd60f4eda)。
+- `this->add_overwrite_as` → [blender::Set::add_overwrite_as · L275](08-Set与集合语义.md#f-ac8df34dd60f4eda)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-ac8df34dd60f4eda"></a>
@@ -1478,9 +1478,9 @@ class Set {
 
 **继续追踪实现**
 
-- `this->add_overwrite__impl` → [blender::Set::add_overwrite__impl · L864](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-021aba3aad404275)。
+- `this->add_overwrite__impl` → [blender::Set::add_overwrite__impl · L864](08-Set与集合语义.md#f-021aba3aad404275)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L277。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L277。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L279—L286
 
@@ -1557,7 +1557,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->add` → [blender::Set::add · L248](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-c7498809c2327fba)；[blender::Set::add · L252](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-e3ac8d1c52c03c2b)。同名重载需按实参类型选择。
+- `this->add` → [blender::Set::add · L248](08-Set与集合语义.md#f-c7498809c2327fba)；[blender::Set::add · L252](08-Set与集合语义.md#f-e3ac8d1c52c03c2b)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L293—L297
 
@@ -1628,7 +1628,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->add_new` → [blender::Set::add_new · L233](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-12f4dd65a3abaaac)；[blender::Set::add_new · L237](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-9c46c167cdd9bb73)。同名重载需按实参类型选择。
+- `this->add_new` → [blender::Set::add_new · L233](08-Set与集合语义.md#f-12f4dd65a3abaaac)；[blender::Set::add_new · L237](08-Set与集合语义.md#f-9c46c167cdd9bb73)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L304—L309
 
@@ -1707,7 +1707,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->contains_as` → [blender::Set::contains_as · L314](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-cfb34e01adf42d3a)。
+- `this->contains_as` → [blender::Set::contains_as · L314](08-Set与集合语义.md#f-cfb34e01adf42d3a)。
 
 <a id="f-cfb34e01adf42d3a"></a>
 
@@ -1756,8 +1756,8 @@ class Set {
 
 **继续追踪实现**
 
-- `this->contains__impl` → [blender::Set::contains__impl · L786](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-c5ed4ac8fe44e158)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L316。
+- `this->contains__impl` → [blender::Set::contains__impl · L786](08-Set与集合语义.md#f-c5ed4ac8fe44e158)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L316。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L318—L322
 
@@ -1827,7 +1827,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->lookup_key_as` → [blender::Set::lookup_key_as · L327](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-359a668340af93c8)。
+- `this->lookup_key_as` → [blender::Set::lookup_key_as · L327](08-Set与集合语义.md#f-359a668340af93c8)。
 
 <a id="f-359a668340af93c8"></a>
 
@@ -1870,8 +1870,8 @@ class Set {
 
 **继续追踪实现**
 
-- `this->lookup_key__impl` → [blender::Set::lookup_key__impl · L800](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4d6ee914c304e771)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L329。
+- `this->lookup_key__impl` → [blender::Set::lookup_key__impl · L800](08-Set与集合语义.md#f-4d6ee914c304e771)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L329。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L331—L335
 
@@ -1942,7 +1942,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->lookup_key_default_as` → [blender::Set::lookup_key_default_as · L340](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-a7d935a275a2a042)。
+- `this->lookup_key_default_as` → [blender::Set::lookup_key_default_as · L340](08-Set与集合语义.md#f-a7d935a275a2a042)。
 
 <a id="f-a7d935a275a2a042"></a>
 
@@ -1997,8 +1997,8 @@ class Set {
 
 **继续追踪实现**
 
-- `this->lookup_key_ptr__impl` → [blender::Set::lookup_key_ptr__impl · L813](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-8bc0730a5900e50c)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L343。
+- `this->lookup_key_ptr__impl` → [blender::Set::lookup_key_ptr__impl · L813](08-Set与集合语义.md#f-8bc0730a5900e50c)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L343。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L349—L353
 
@@ -2068,7 +2068,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->lookup_key_ptr_as` → [blender::Set::lookup_key_ptr_as · L358](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4547118d8b516515)。
+- `this->lookup_key_ptr_as` → [blender::Set::lookup_key_ptr_as · L358](08-Set与集合语义.md#f-4547118d8b516515)。
 
 <a id="f-4547118d8b516515"></a>
 
@@ -2111,8 +2111,8 @@ class Set {
 
 **继续追踪实现**
 
-- `this->lookup_key_ptr__impl` → [blender::Set::lookup_key_ptr__impl · L813](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-8bc0730a5900e50c)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L360。
+- `this->lookup_key_ptr__impl` → [blender::Set::lookup_key_ptr__impl · L813](08-Set与集合语义.md#f-8bc0730a5900e50c)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L360。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L362—L366
 
@@ -2182,7 +2182,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->lookup_key_or_add_as` → [blender::Set::lookup_key_or_add_as · L375](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-6eb644d4a23c98f3)。
+- `this->lookup_key_or_add_as` → [blender::Set::lookup_key_or_add_as · L375](08-Set与集合语义.md#f-6eb644d4a23c98f3)。
 
 <a id="f-b2bddb4323cfb56b"></a>
 
@@ -2226,7 +2226,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->lookup_key_or_add_as` → [blender::Set::lookup_key_or_add_as · L375](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-6eb644d4a23c98f3)。
+- `this->lookup_key_or_add_as` → [blender::Set::lookup_key_or_add_as · L375](08-Set与集合语义.md#f-6eb644d4a23c98f3)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-6eb644d4a23c98f3"></a>
@@ -2271,9 +2271,9 @@ class Set {
 
 **继续追踪实现**
 
-- `this->lookup_key_or_add__impl` → [blender::Set::lookup_key_or_add__impl · L916](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-77b743a659c803a6)。
+- `this->lookup_key_or_add__impl` → [blender::Set::lookup_key_or_add__impl · L916](08-Set与集合语义.md#f-77b743a659c803a6)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L377。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L377。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L379—L386
 
@@ -2353,7 +2353,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->lookup_key_or_add_cb_as` → [blender::Set::lookup_key_or_add_cb_as · L392](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-f57e06eca9772802)。
+- `this->lookup_key_or_add_cb_as` → [blender::Set::lookup_key_or_add_cb_as · L392](08-Set与集合语义.md#f-f57e06eca9772802)。
 - `std::forward<CreateValueF>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 <a id="f-f57e06eca9772802"></a>
@@ -2403,9 +2403,9 @@ class Set {
 
 **继续追踪实现**
 
-- `this->lookup_key_or_add_cb__impl` → [blender::Set::lookup_key_or_add_cb__impl · L936](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-05077930ab750268)。
+- `this->lookup_key_or_add_cb__impl` → [blender::Set::lookup_key_or_add_cb__impl · L936](08-Set与集合语义.md#f-05077930ab750268)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L396。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L396。
 - `std::forward<CreateValueF>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L398—L403
@@ -2485,7 +2485,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->remove_as` → [blender::Set::remove_as · L408](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-20dd5d8116cacb91)。
+- `this->remove_as` → [blender::Set::remove_as · L408](08-Set与集合语义.md#f-20dd5d8116cacb91)。
 
 <a id="f-20dd5d8116cacb91"></a>
 
@@ -2534,8 +2534,8 @@ class Set {
 
 **继续追踪实现**
 
-- `this->remove__impl` → [blender::Set::remove__impl · L886](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-eb2a1637047acb99)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L410。
+- `this->remove__impl` → [blender::Set::remove__impl · L886](08-Set与集合语义.md#f-eb2a1637047acb99)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L410。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L412—L415
 
@@ -2606,7 +2606,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->remove_contained_as` → [blender::Set::remove_contained_as · L420](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-eba96bdcf980f7fb)。
+- `this->remove_contained_as` → [blender::Set::remove_contained_as · L420](08-Set与集合语义.md#f-eba96bdcf980f7fb)。
 
 <a id="f-eba96bdcf980f7fb"></a>
 
@@ -2651,8 +2651,8 @@ class Set {
 
 **继续追踪实现**
 
-- `this->remove_contained__impl` → [blender::Set::remove_contained__impl · L901](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-7dfbc6e4ad863afb)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L422。
+- `this->remove_contained__impl` → [blender::Set::remove_contained__impl · L901](08-Set与集合语义.md#f-7dfbc6e4ad863afb)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L422。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L424—L447
 
@@ -2832,7 +2832,7 @@ class Set {
 
 **继续追踪实现**
 
-- `slots_[current_slot_].is_occupied` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L456。
+- `slots_[current_slot_].is_occupied` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L456。
 
 <!-- annotated:660cb42f9c9bb8 -->
 
@@ -2952,7 +2952,7 @@ class Set {
 
 **继续追踪实现**
 
-- `slots_[current_slot_].key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L472。
+- `slots_[current_slot_].key` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L472。
 
 <!-- annotated:f28a1024af3ddd -->
 
@@ -3008,7 +3008,7 @@ class Set {
 
 **继续追踪实现**
 
-- `slots_[current_slot_].key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L477。
+- `slots_[current_slot_].key` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L477。
 
 <!-- annotated:a1b0c81584f053 -->
 
@@ -3073,7 +3073,7 @@ class Set {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:d01a07168db40b -->
 
@@ -3266,11 +3266,11 @@ class Set {
 
 **继续追踪实现**
 
-- `slots_.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
-- `slots_[i].is_occupied` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L502。
-- `Iterator` → [blender::Set::Iterator::Iterator · L448](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-bae639d92797fd81)。
-- `slots_.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L503。
-- `this->end` → [blender::Set::end · L509](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-553fc42e3d469eaa)。
+- `slots_.size` → [blender::Set::size · L606](08-Set与集合语义.md#f-4f8f88fffeb44b15)。
+- `slots_[i].is_occupied` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L502。
+- `Iterator` → [blender::Set::Iterator::Iterator · L448](08-Set与集合语义.md#f-bae639d92797fd81)。
+- `slots_.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L503。
+- `this->end` → [blender::Set::end · L509](08-Set与集合语义.md#f-553fc42e3d469eaa)。
 
 <!-- annotated:2e0c76d3fe409b -->
 
@@ -3327,9 +3327,9 @@ class Set {
 
 **继续追踪实现**
 
-- `Iterator` → [blender::Set::Iterator::Iterator · L448](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-bae639d92797fd81)。
-- `slots_.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L511。
-- `slots_.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+- `Iterator` → [blender::Set::Iterator::Iterator · L448](08-Set与集合语义.md#f-bae639d92797fd81)。
+- `slots_.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L511。
+- `slots_.size` → [blender::Set::size · L606](08-Set与集合语义.md#f-4f8f88fffeb44b15)。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L513—L518
 
@@ -3411,10 +3411,10 @@ class Set {
 
 **继续追踪实现**
 
-- `it.current_slot` → [blender::Set::Iterator::current_slot · L493](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-beed03e57500adc6)。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `slot.is_occupied` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L523。
-- `slot.remove` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L524。
+- `it.current_slot` → [blender::Set::Iterator::current_slot · L493](08-Set与集合语义.md#f-beed03e57500adc6)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `slot.is_occupied` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L523。
+- `slot.remove` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L524。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L527—L533
 
@@ -3509,11 +3509,11 @@ class Set {
 
 **继续追踪实现**
 
-- `this->size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
-- `slot.is_occupied` → [blender::SimpleSetSlot::is_occupied · L107](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-5af1a021584cc3de)。
-- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
-- `predicate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L540。
-- `slot.remove` → [blender::SimpleSetSlot::remove · L157](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d5efb876e6730548)。
+- `this->size` → [blender::Set::size · L606](08-Set与集合语义.md#f-4f8f88fffeb44b15)。
+- `slot.is_occupied` → [blender::SimpleSetSlot::is_occupied · L107](10-浮点修复与基础库对比.md#f-5af1a021584cc3de)。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-浮点修复与基础库对比.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-浮点修复与基础库对比.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `predicate` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L540。
+- `slot.remove` → [blender::SimpleSetSlot::remove · L157](10-浮点修复与基础库对比.md#f-d5efb876e6730548)。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L548—L551
 
@@ -3579,7 +3579,7 @@ class Set {
 
 **继续追踪实现**
 
-- `stats.print` → [blender::HashTableStats::print · L16](%E4%BE%9D%E8%B5%96-hash_tables-5853e7.md#f-be761e16ade883cd)。
+- `stats.print` → [blender::HashTableStats::print · L16](../90-实现依赖专题/01-BLI基础库/intern/hash_tables.cc.md#f-be761e16ade883cd)。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L557—L561
 
@@ -3649,8 +3649,8 @@ class Set {
 
 **继续追踪实现**
 
-- `this->count_collisions__impl` → [blender::Set::count_collisions__impl · L958](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-00c5b7754faa08b8)。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L564。
+- `this->count_collisions__impl` → [blender::Set::count_collisions__impl · L958](08-Set与集合语义.md#f-00c5b7754faa08b8)。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L564。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L566—L569
 
@@ -3803,7 +3803,7 @@ class Set {
 
 **继续追踪实现**
 
-- `slot.~Slot` → [blender::animrig::Slot::~Slot · L994](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-action-a70714.md#f-d520ece4c5c4f41e)。
+- `slot.~Slot` → [blender::animrig::Slot::~Slot · L994](../90-实现依赖专题/08-其他Blender模块/animrig/intern/action.cc.md#f-d520ece4c5c4f41e)。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L593—L597
 
@@ -3872,8 +3872,8 @@ class Set {
 
 **继续追踪实现**
 
-- `this->realloc_and_reinsert` → [blender::Set::realloc_and_reinsert · L708](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-649abea6bedaaa95)。
-- `this->size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+- `this->realloc_and_reinsert` → [blender::Set::realloc_and_reinsert · L708](08-Set与集合语义.md#f-649abea6bedaaa95)。
+- `this->size` → [blender::Set::size · L606](08-Set与集合语义.md#f-4f8f88fffeb44b15)。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L602—L605
 
@@ -4078,7 +4078,7 @@ class Set {
 
 **继续追踪实现**
 
-- `slots_.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+- `slots_.size` → [blender::Set::size · L606](08-Set与集合语义.md#f-4f8f88fffeb44b15)。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L626—L629
 
@@ -4273,7 +4273,7 @@ class Set {
 
 **继续追踪实现**
 
-- `slots_.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+- `slots_.size` → [blender::Set::size · L606](08-Set与集合语义.md#f-4f8f88fffeb44b15)。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L651—L655
 
@@ -4350,7 +4350,7 @@ class Set {
 
 **继续追踪实现**
 
-- `this->realloc_and_reinsert` → [blender::Set::realloc_and_reinsert · L708](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-649abea6bedaaa95)。
+- `this->realloc_and_reinsert` → [blender::Set::realloc_and_reinsert · L708](08-Set与集合语义.md#f-649abea6bedaaa95)。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L662—L665
 
@@ -4443,10 +4443,10 @@ class Set {
 
 **继续追踪实现**
 
-- `a.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
-- `b.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
-- `Intersects` → [blender::Set::Intersects · L666](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-18d6f595c8e87bc5)。
-- `b.contains` → [blender::Set::contains · L310](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-af7099799494350e)。
+- `a.size` → [blender::Set::size · L606](08-Set与集合语义.md#f-4f8f88fffeb44b15)。
+- `b.size` → [blender::Set::size · L606](08-Set与集合语义.md#f-4f8f88fffeb44b15)。
+- `Intersects` → [blender::Set::Intersects · L666](08-Set与集合语义.md#f-18d6f595c8e87bc5)。
+- `b.contains` → [blender::Set::contains · L310](08-Set与集合语义.md#f-af7099799494350e)。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L680—L683
 
@@ -4515,7 +4515,7 @@ class Set {
 
 **继续追踪实现**
 
-- `Intersects` → [blender::Set::Intersects · L666](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-18d6f595c8e87bc5)。
+- `Intersects` → [blender::Set::Intersects · L666](08-Set与集合语义.md#f-18d6f595c8e87bc5)。
 
 <!-- annotated:5811037a0954cc -->
 
@@ -4595,9 +4595,9 @@ class Set {
 
 **继续追踪实现**
 
-- `a.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
-- `b.size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
-- `b.contains` → [blender::Set::contains · L310](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-af7099799494350e)。
+- `a.size` → [blender::Set::size · L606](08-Set与集合语义.md#f-4f8f88fffeb44b15)。
+- `b.size` → [blender::Set::size · L606](08-Set与集合语义.md#f-4f8f88fffeb44b15)。
+- `b.contains` → [blender::Set::contains · L310](08-Set与集合语义.md#f-af7099799494350e)。
 
 <!-- annotated:18ebe9ab0a339b -->
 
@@ -4834,15 +4834,15 @@ class Set {
 **继续追踪实现**
 
 - `std::max` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
-- `this->size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
-- `max_load_factor_.compute_total_and_usable_slots` → [blender::LoadFactor::compute_total_and_usable_slots · L85](03-%E6%A7%BD%E4%BD%8D%E7%8A%B6%E6%80%81%E4%B8%8E%E6%8E%A2%E6%B5%8B.md#f-23ebf500254e8be7)。
-- `SlotArray::inline_buffer_capacity` → [blender::Array::inline_buffer_capacity · L421](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-bbe69b0556f92519)。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `slots_.reinitialize` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L725。
-- `this->noexcept_reset` → [blender::Set::noexcept_reset · L779](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-8e129637c06ba7df)。
-- `slot.is_occupied` → [blender::SimpleSetSlot::is_occupied · L107](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-5af1a021584cc3de)。
-- `this->add_after_grow` → [blender::Set::add_after_grow · L761](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-70de256afc93e8c8)。
-- `slot.remove` → [blender::SimpleSetSlot::remove · L157](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d5efb876e6730548)。
+- `this->size` → [blender::Set::size · L606](08-Set与集合语义.md#f-4f8f88fffeb44b15)。
+- `max_load_factor_.compute_total_and_usable_slots` → [blender::LoadFactor::compute_total_and_usable_slots · L85](03-槽位状态与探测.md#f-23ebf500254e8be7)。
+- `SlotArray::inline_buffer_capacity` → [blender::Array::inline_buffer_capacity · L421](../01-基础容器与现代CPP/08-Array复制移动与销毁.md#f-bbe69b0556f92519)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `slots_.reinitialize` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L725。
+- `this->noexcept_reset` → [blender::Set::noexcept_reset · L779](08-Set与集合语义.md#f-8e129637c06ba7df)。
+- `slot.is_occupied` → [blender::SimpleSetSlot::is_occupied · L107](10-浮点修复与基础库对比.md#f-5af1a021584cc3de)。
+- `this->add_after_grow` → [blender::Set::add_after_grow · L761](08-Set与集合语义.md#f-70de256afc93e8c8)。
+- `slot.remove` → [blender::SimpleSetSlot::remove · L157](10-浮点修复与基础库对比.md#f-d5efb876e6730548)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:9850f924c65d37 -->
@@ -4920,13 +4920,13 @@ class Set {
 
 **继续追踪实现**
 
-- `old_slot.get_hash` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L763。
-- `Hash` → [SubEdge::Hash](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-subpatch-ee57c2.md#t-5fba122deac5)；[ImageCache::DeviceImageKey::Hash](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-image_cache-ab8b3b.md#t-6c0191c65525)。
-- `slot.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L767。
-- `slot.occupy` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L768。
+- `old_slot.get_hash` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L763。
+- `Hash` → [SubEdge::Hash](../90-实现依赖专题/07-Intern运行时与平台/cycles/subd/subpatch.h.md#t-5fba122deac5)；[ImageCache::DeviceImageKey::Hash](../90-实现依赖专题/07-Intern运行时与平台/cycles/scene/image_cache.h.md#t-6c0191c65525)。
+- `slot.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L767。
+- `slot.occupy` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L768。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `old_slot.key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L768。
-- `SLOT_PROBING_END` → [SLOT_PROBING_END · L225](%E4%BE%9D%E8%B5%96-BLI_probing_strategies-75cda3.md#m-04aac9863679)。宏定义由构建条件选择。
+- `old_slot.key` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L768。
+- `SLOT_PROBING_END` → [SLOT_PROBING_END · L225](../90-实现依赖专题/01-BLI基础库/BLI_probing_strategies.hh.md#m-04aac9863679)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L774—L778
 
@@ -4992,9 +4992,9 @@ class Set {
 
 **继续追踪实现**
 
-- `slots_.allocator` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L781。
-- `this->~Set` → [blender::Set::~Set · L189](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-6de785e3b9e53f8d)。
-- `NoExceptConstructor` → [blender::NoExceptConstructor](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-BLI_memory_utils-e249c3.md#t-4970c3d9f442)。
+- `slots_.allocator` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L781。
+- `this->~Set` → [blender::Set::~Set · L189](08-Set与集合语义.md#f-6de785e3b9e53f8d)。
+- `NoExceptConstructor` → [blender::NoExceptConstructor](../90-实现依赖专题/01-BLI基础库/BLI_memory_utils.hh.md#t-4970c3d9f442)。
 
 <!-- annotated:bbc25c6959f468 -->
 
@@ -5074,9 +5074,9 @@ class Set {
 
 **继续追踪实现**
 
-- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
-- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
-- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-浮点修复与基础库对比.md#f-d290f6f957aacbeb)。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-浮点修复与基础库对比.md#f-1077b14d7891c415)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](../90-实现依赖专题/01-BLI基础库/BLI_set.hh.md#m-6735b884cfc3)。宏定义由构建条件选择。
 
 <!-- annotated:fb211295bf9dae -->
 
@@ -5154,11 +5154,11 @@ class Set {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->contains_as` → [blender::Set::contains_as · L314](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-cfb34e01adf42d3a)。
-- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
-- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
-- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->contains_as` → [blender::Set::contains_as · L314](08-Set与集合语义.md#f-cfb34e01adf42d3a)。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-浮点修复与基础库对比.md#f-1077b14d7891c415)。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-浮点修复与基础库对比.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-浮点修复与基础库对比.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](../90-实现依赖专题/01-BLI基础库/BLI_set.hh.md#m-6735b884cfc3)。宏定义由构建条件选择。
 
 <!-- annotated:daefdfba10200e -->
 
@@ -5238,10 +5238,10 @@ class Set {
 
 **继续追踪实现**
 
-- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
-- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
-- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
-- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-浮点修复与基础库对比.md#f-1077b14d7891c415)。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-浮点修复与基础库对比.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-浮点修复与基础库对比.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-浮点修复与基础库对比.md#f-d290f6f957aacbeb)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](../90-实现依赖专题/01-BLI基础库/BLI_set.hh.md#m-6735b884cfc3)。宏定义由构建条件选择。
 
 <!-- annotated:9ef7cbdabc55ca -->
 
@@ -5326,16 +5326,16 @@ class Set {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->contains_as` → [blender::Set::contains_as · L314](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-cfb34e01adf42d3a)。
-- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-7b03b2102df62235)。
-- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
-- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-173bd7a5b6441f70)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->contains_as` → [blender::Set::contains_as · L314](08-Set与集合语义.md#f-cfb34e01adf42d3a)。
+- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set与集合语义.md#f-7b03b2102df62235)。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-浮点修复与基础库对比.md#f-d290f6f957aacbeb)。
+- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-浮点修复与基础库对比.md#f-173bd7a5b6441f70)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L836。
-- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
-- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L837。
-- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L836。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-浮点修复与基础库对比.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-浮点修复与基础库对比.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `is_equal_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L837。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](../90-实现依赖专题/01-BLI基础库/BLI_set.hh.md#m-6735b884cfc3)。宏定义由构建条件选择。
 
 <!-- annotated:e19495cda5402b -->
 
@@ -5426,16 +5426,16 @@ class Set {
 
 **继续追踪实现**
 
-- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-7b03b2102df62235)。
-- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
-- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-173bd7a5b6441f70)。
+- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set与集合语义.md#f-7b03b2102df62235)。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-浮点修复与基础库对比.md#f-d290f6f957aacbeb)。
+- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-浮点修复与基础库对比.md#f-173bd7a5b6441f70)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L852。
-- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
-- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L853。
-- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
-- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L852。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-浮点修复与基础库对比.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-浮点修复与基础库对比.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `is_equal_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L853。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-浮点修复与基础库对比.md#f-1077b14d7891c415)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](../90-实现依赖专题/01-BLI基础库/BLI_set.hh.md#m-6735b884cfc3)。宏定义由构建条件选择。
 
 <!-- annotated:99cfa185ee0a95 -->
 
@@ -5536,16 +5536,16 @@ class Set {
 
 **继续追踪实现**
 
-- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-7b03b2102df62235)。
-- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
-- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-173bd7a5b6441f70)。
+- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set与集合语义.md#f-7b03b2102df62235)。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-浮点修复与基础库对比.md#f-d290f6f957aacbeb)。
+- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-浮点修复与基础库对比.md#f-173bd7a5b6441f70)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L871。
-- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
-- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L872。
-- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
-- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L871。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-浮点修复与基础库对比.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-浮点修复与基础库对比.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `is_equal_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L872。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-浮点修复与基础库对比.md#f-1077b14d7891c415)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](../90-实现依赖专题/01-BLI基础库/BLI_set.hh.md#m-6735b884cfc3)。宏定义由构建条件选择。
 
 <!-- annotated:f85ab6392b2561 -->
 
@@ -5627,10 +5627,10 @@ class Set {
 
 **继续追踪实现**
 
-- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
-- `slot.remove` → [blender::SimpleSetSlot::remove · L157](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d5efb876e6730548)。
-- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
-- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-浮点修复与基础库对比.md#f-1077b14d7891c415)。
+- `slot.remove` → [blender::SimpleSetSlot::remove · L157](10-浮点修复与基础库对比.md#f-d5efb876e6730548)。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-浮点修复与基础库对比.md#f-d290f6f957aacbeb)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](../90-实现依赖专题/01-BLI基础库/BLI_set.hh.md#m-6735b884cfc3)。宏定义由构建条件选择。
 
 <!-- annotated:b02f44be4d3e05 -->
 
@@ -5708,11 +5708,11 @@ class Set {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->contains_as` → [blender::Set::contains_as · L314](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-cfb34e01adf42d3a)。
-- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
-- `slot.remove` → [blender::SimpleSetSlot::remove · L157](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d5efb876e6730548)。
-- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->contains_as` → [blender::Set::contains_as · L314](08-Set与集合语义.md#f-cfb34e01adf42d3a)。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-浮点修复与基础库对比.md#f-1077b14d7891c415)。
+- `slot.remove` → [blender::SimpleSetSlot::remove · L157](10-浮点修复与基础库对比.md#f-d5efb876e6730548)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](../90-实现依赖专题/01-BLI基础库/BLI_set.hh.md#m-6735b884cfc3)。宏定义由构建条件选择。
 
 <!-- annotated:2d484526cd23e0 -->
 
@@ -5804,16 +5804,16 @@ class Set {
 
 **继续追踪实现**
 
-- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-7b03b2102df62235)。
-- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
-- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
-- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
-- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-173bd7a5b6441f70)。
+- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set与集合语义.md#f-7b03b2102df62235)。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-浮点修复与基础库对比.md#f-1077b14d7891c415)。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-浮点修复与基础库对比.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-浮点修复与基础库对比.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-浮点修复与基础库对比.md#f-d290f6f957aacbeb)。
+- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-浮点修复与基础库对比.md#f-173bd7a5b6441f70)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L927。
-- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L928。
-- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L927。
+- `is_equal_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L928。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](../90-实现依赖专题/01-BLI基础库/BLI_set.hh.md#m-6735b884cfc3)。宏定义由构建条件选择。
 
 <!-- annotated:2d48b089e00b93 -->
 
@@ -5909,16 +5909,16 @@ class Set {
 
 **继续追踪实现**
 
-- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-7b03b2102df62235)。
-- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
-- `slot.key` → [blender::SimpleSetSlot::key · L91](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
-- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
-- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-173bd7a5b6441f70)。
-- `create_key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L948。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L949。
-- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L950。
-- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+- `this->ensure_can_add` → [blender::Set::ensure_can_add · L975](08-Set与集合语义.md#f-7b03b2102df62235)。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-浮点修复与基础库对比.md#f-1077b14d7891c415)。
+- `slot.key` → [blender::SimpleSetSlot::key · L91](10-浮点修复与基础库对比.md#f-1d88ff991f47d686)；[blender::SimpleSetSlot::key · L99](10-浮点修复与基础库对比.md#f-bf4e750ed64c398c)。同名重载需按实参类型选择。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-浮点修复与基础库对比.md#f-d290f6f957aacbeb)。
+- `slot.occupy` → [blender::SimpleSetSlot::occupy · L147](10-浮点修复与基础库对比.md#f-173bd7a5b6441f70)。
+- `create_key` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L948。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L949。
+- `is_equal_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L950。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](../90-实现依赖专题/01-BLI基础库/BLI_set.hh.md#m-6735b884cfc3)。宏定义由构建条件选择。
 
 <!-- annotated:4fdd502c32f76c -->
 
@@ -6003,9 +6003,9 @@ class Set {
 
 **继续追踪实现**
 
-- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-1077b14d7891c415)。
-- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-%E6%B5%AE%E7%82%B9%E4%BF%AE%E5%A4%8D%E4%B8%8E%E5%9F%BA%E7%A1%80%E5%BA%93%E5%AF%B9%E6%AF%94.md#f-d290f6f957aacbeb)。
-- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](%E4%BE%9D%E8%B5%96-BLI_set-c8d5b1.md#m-6735b884cfc3)。宏定义由构建条件选择。
+- `slot.contains` → [blender::SimpleSetSlot::contains · L134](10-浮点修复与基础库对比.md#f-1077b14d7891c415)。
+- `slot.is_empty` → [blender::SimpleSetSlot::is_empty · L115](10-浮点修复与基础库对比.md#f-d290f6f957aacbeb)。
+- `SET_SLOT_PROBING_END` → [SET_SLOT_PROBING_END · L160](../90-实现依赖专题/01-BLI基础库/BLI_set.hh.md#m-6735b884cfc3)。宏定义由构建条件选择。
 
 <!-- annotated:231081f994fc3b -->
 
@@ -6064,9 +6064,9 @@ class Set {
 
 **继续追踪实现**
 
-- `this->realloc_and_reinsert` → [blender::Set::realloc_and_reinsert · L708](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-649abea6bedaaa95)。
-- `this->size` → [blender::Set::size · L606](08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->realloc_and_reinsert` → [blender::Set::realloc_and_reinsert · L708](08-Set与集合语义.md#f-649abea6bedaaa95)。
+- `this->size` → [blender::Set::size · L606](08-Set与集合语义.md#f-4f8f88fffeb44b15)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_set.hh L982—L996
 
@@ -6219,4 +6219,4 @@ friend授予指定函数或类访问非公开成员的权限，并不意味着�
 
 对比std::unordered_map、Abseil flat_hash_map与node_hash_map时，优先比较地址稳定性、键值搬移要求和删除行为；不同实现的平均常数及负载策略需要测量。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

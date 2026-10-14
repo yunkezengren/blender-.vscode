@@ -1,6 +1,6 @@
 # 08-11 SetPosition完整调用链
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -223,22 +223,22 @@ static void node_declare(NodeDeclarationBuilder &b)
 
 **继续追踪实现**
 
-- `b.use_custom_socket_order` → [blender::nodes::NodeDeclarationBuilder::use_custom_socket_order · L135](../09-LazyFunction%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E6%9E%B6%E6%9E%84/%E4%BE%9D%E8%B5%96-node_declaration-250442.md#f-7a3e20373b6f44d0)。
-- `b.allow_any_socket_order` → [blender::nodes::NodeDeclarationBuilder::allow_any_socket_order · L140](../09-LazyFunction%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E6%9E%B6%E6%9E%84/%E4%BE%9D%E8%B5%96-node_declaration-250442.md#f-5440adf750141e49)。
-- `b.add_input<decl::Geometry>("Geometry"_ustr).description` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L22。
-- `b.add_input<decl::Geometry>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L22。
-- `b.add_output<decl::Geometry>("Geometry"_ustr).propagate_all_geometry().align_with_previous` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L23。
-- `b.add_output<decl::Geometry>("Geometry"_ustr).propagate_all_geometry` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L23。
-- `b.add_output<decl::Geometry>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L23。
-- `b.add_input<decl::Bool>("Selection"_ustr) .default_value(true) .hide_value() .evaluated_geometry_field` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L24。
-- `b.add_input<decl::Bool>("Selection"_ustr) .default_value(true) .hide_value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L24。
-- `b.add_input<decl::Bool>("Selection"_ustr) .default_value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L24。
-- `b.add_input<decl::Bool>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L24。
-- `b.add_input<decl::Vector>("Position"_ustr) .evaluated_geometry_field() .default_input_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L28。
-- `b.add_input<decl::Vector>("Position"_ustr) .evaluated_geometry_field` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L28。
-- `b.add_input<decl::Vector>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L28。
-- `b.add_input<decl::Vector>("Offset"_ustr).subtype(PROP_TRANSLATION).evaluated_geometry_field` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L31。
-- `b.add_input<decl::Vector>("Offset"_ustr).subtype` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L31。
+- `b.use_custom_socket_order` → [blender::nodes::NodeDeclarationBuilder::use_custom_socket_order · L135](../90-实现依赖专题/04-Nodes节点系统/intern/node_declaration.cc.md#f-7a3e20373b6f44d0)。
+- `b.allow_any_socket_order` → [blender::nodes::NodeDeclarationBuilder::allow_any_socket_order · L140](../90-实现依赖专题/04-Nodes节点系统/intern/node_declaration.cc.md#f-5440adf750141e49)。
+- `b.add_input<decl::Geometry>("Geometry"_ustr).description` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L22。
+- `b.add_input<decl::Geometry>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L22。
+- `b.add_output<decl::Geometry>("Geometry"_ustr).propagate_all_geometry().align_with_previous` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L23。
+- `b.add_output<decl::Geometry>("Geometry"_ustr).propagate_all_geometry` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L23。
+- `b.add_output<decl::Geometry>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L23。
+- `b.add_input<decl::Bool>("Selection"_ustr) .default_value(true) .hide_value() .evaluated_geometry_field` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L24。
+- `b.add_input<decl::Bool>("Selection"_ustr) .default_value(true) .hide_value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L24。
+- `b.add_input<decl::Bool>("Selection"_ustr) .default_value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L24。
+- `b.add_input<decl::Bool>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L24。
+- `b.add_input<decl::Vector>("Position"_ustr) .evaluated_geometry_field() .default_input_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L28。
+- `b.add_input<decl::Vector>("Position"_ustr) .evaluated_geometry_field` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L28。
+- `b.add_input<decl::Vector>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L28。
+- `b.add_input<decl::Vector>("Offset"_ustr).subtype(PROP_TRANSLATION).evaluated_geometry_field` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L31。
+- `b.add_input<decl::Vector>("Offset"_ustr).subtype` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L31。
 
 <!-- annotated:c382532ac164d2 -->
 
@@ -296,7 +296,7 @@ static const auto &get_add_fn()
 
 **继续追踪实现**
 
-- `fn::multi_function::registry::lookup` → [blender::fn::multi_function::registry::lookup · L46](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/%E4%BE%9D%E8%B5%96-multi_function_registry-020ea8.md#f-1a054f3e76280e66)。
+- `fn::multi_function::registry::lookup` → [blender::fn::multi_function::registry::lookup · L46](../90-实现依赖专题/03-FN函数与求值/intern/multi_function_registry.cc.md#f-1a054f3e76280e66)。
 
 <!-- annotated:e98ef8624aaa39 -->
 
@@ -354,7 +354,7 @@ static const auto &get_sub_fn()
 
 **继续追踪实现**
 
-- `fn::multi_function::registry::lookup` → [blender::fn::multi_function::registry::lookup · L46](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/%E4%BE%9D%E8%B5%96-multi_function_registry-020ea8.md#f-1a054f3e76280e66)。
+- `fn::multi_function::registry::lookup` → [blender::fn::multi_function::registry::lookup · L46](../90-实现依赖专题/03-FN函数与求值/intern/multi_function_registry.cc.md#f-1a054f3e76280e66)。
 
 <!-- annotated:fd1b2eb41279a5 -->
 
@@ -429,7 +429,7 @@ static void set_points_position(bke::MutableAttributeAccessor attributes,
 
 **继续追踪实现**
 
-- `bke::try_capture_field_on_geometry` → [blender::bke::try_capture_field_on_geometry · L527](10-%E5%87%A0%E4%BD%95%E4%B8%8A%E4%B8%8B%E6%96%87%E4%B8%8E%E5%B1%9E%E6%80%A7%E5%9F%9F.md#f-72eacdaeb9630253)；[blender::bke::try_capture_field_on_geometry · L543](10-%E5%87%A0%E4%BD%95%E4%B8%8A%E4%B8%8B%E6%96%87%E4%B8%8E%E5%B1%9E%E6%80%A7%E5%9F%9F.md#f-4232bd6552082375)；[blender::bke::try_capture_field_on_geometry · L557](10-%E5%87%A0%E4%BD%95%E4%B8%8A%E4%B8%8B%E6%96%87%E4%B8%8E%E5%B1%9E%E6%80%A7%E5%9F%9F.md#f-e9f28624aa26ddc4)。同名重载需按实参类型选择。
+- `bke::try_capture_field_on_geometry` → [blender::bke::try_capture_field_on_geometry · L527](10-几何上下文与属性域.md#f-72eacdaeb9630253)；[blender::bke::try_capture_field_on_geometry · L543](10-几何上下文与属性域.md#f-4232bd6552082375)；[blender::bke::try_capture_field_on_geometry · L557](10-几何上下文与属性域.md#f-e9f28624aa26ddc4)。同名重载需按实参类型选择。
 
 <!-- annotated:44a09a3176225b -->
 
@@ -536,18 +536,18 @@ static void set_curves_position(bke::CurvesGeometry &curves,
 
 **继续追踪实现**
 
-- `curves.attributes_for_write` → [blender::bke::CurvesGeometry::attributes_for_write · L1913](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-curves_geometry-ad7f9f.md#f-4930091b34fa9663)。
-- `attribute_names.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `fields.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `attributes.contains` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L71。
-- `fn::FieldOperation::from` → [blender::fn::FieldOperation::from · L252](06-FieldContext%E4%B8%8A%E4%B8%8B%E6%96%87.md#f-d78060e8f5e1929f)；[blender::fn::FieldOperation::from · L258](06-FieldContext%E4%B8%8A%E4%B8%8B%E6%96%87.md#f-60a41b323ee8ceb7)。同名重载需按实参类型选择。
-- `get_sub_fn` → [blender::nodes::node_geo_set_position_cc::get_sub_fn · L40](11-SetPosition%E5%AE%8C%E6%95%B4%E8%B0%83%E7%94%A8%E9%93%BE.md#f-e548a51b73a69a7b)。
-- `bke::AttributeFieldInput::get_field<float3, "position">` → [blender::bke::AttributeFieldInput::get_field · L353](10-%E5%87%A0%E4%BD%95%E4%B8%8A%E4%B8%8B%E6%96%87%E4%B8%8E%E5%B1%9E%E6%80%A7%E5%9F%9F.md#f-f06c472d9ae4678e)。
-- `Field<float3>` → [blender::fn::Field<T>::Field · L495](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-0b2f3f4cecd8c44a)；[blender::fn::Field<T>::Field · L603](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-6fbbe0144f689448)；[blender::fn::Field<T>::Field · L605](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-b9fadbb0d8465bfe)；[blender::fn::Field<T>::Field · L608](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-be75a0525262720c)。同名重载需按实参类型选择。
-- `get_add_fn` → [blender::nodes::node_geo_set_position_cc::get_add_fn · L34](11-SetPosition%E5%AE%8C%E6%95%B4%E8%B0%83%E7%94%A8%E9%93%BE.md#f-49d6264bf81ac0b7)。
-- `bke::AttributeFieldInput::from<float3>` → [blender::bke::AttributeFieldInput::from · L324](10-%E5%87%A0%E4%BD%95%E4%B8%8A%E4%B8%8B%E6%96%87%E4%B8%8E%E5%B1%9E%E6%80%A7%E5%9F%9F.md#f-f6704d8eed37d4e0)；[blender::bke::AttributeFieldInput::from · L331](10-%E5%87%A0%E4%BD%95%E4%B8%8A%E4%B8%8B%E6%96%87%E4%B8%8E%E5%B1%9E%E6%80%A7%E5%9F%9F.md#f-f4484f9c40661b54)。同名重载需按实参类型选择。
-- `bke::try_capture_fields_on_geometry` → [blender::bke::try_capture_fields_on_geometry · L998](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/09-%E5%B1%9E%E6%80%A7%E5%9F%9F%E4%B8%8E%E8%BD%AC%E6%8D%A2.md#f-53d2a58a397bf570)；[blender::bke::try_capture_fields_on_geometry · L1144](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/09-%E5%B1%9E%E6%80%A7%E5%9F%9F%E4%B8%8E%E8%BD%AC%E6%8D%A2.md#f-5d358ef05cd2c31e)；[blender::bke::try_capture_fields_on_geometry · L1193](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/09-%E5%B1%9E%E6%80%A7%E5%9F%9F%E4%B8%8E%E8%BD%AC%E6%8D%A2.md#f-acecccde14dde369)。同名重载需按实参类型选择。
-- `curves.calculate_bezier_auto_handles` → [blender::bke::CurvesGeometry::calculate_bezier_auto_handles · L1288](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-curves_geometry-ad7f9f.md#f-a8727708cb335e36)。
+- `curves.attributes_for_write` → [blender::bke::CurvesGeometry::attributes_for_write · L1913](../90-实现依赖专题/02-BKE几何与数据/intern/curves_geometry.cc.md#f-4930091b34fa9663)。
+- `attribute_names.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `fields.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `attributes.contains` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L71。
+- `fn::FieldOperation::from` → [blender::fn::FieldOperation::from · L252](06-FieldContext上下文.md#f-d78060e8f5e1929f)；[blender::fn::FieldOperation::from · L258](06-FieldContext上下文.md#f-60a41b323ee8ceb7)。同名重载需按实参类型选择。
+- `get_sub_fn` → [blender::nodes::node_geo_set_position_cc::get_sub_fn · L40](11-SetPosition完整调用链.md#f-e548a51b73a69a7b)。
+- `bke::AttributeFieldInput::get_field<float3, "position">` → [blender::bke::AttributeFieldInput::get_field · L353](10-几何上下文与属性域.md#f-f06c472d9ae4678e)。
+- `Field<float3>` → [blender::fn::Field<T>::Field · L495](05-FieldOperation运算节点.md#f-0b2f3f4cecd8c44a)；[blender::fn::Field<T>::Field · L603](05-FieldOperation运算节点.md#f-6fbbe0144f689448)；[blender::fn::Field<T>::Field · L605](05-FieldOperation运算节点.md#f-b9fadbb0d8465bfe)；[blender::fn::Field<T>::Field · L608](05-FieldOperation运算节点.md#f-be75a0525262720c)。同名重载需按实参类型选择。
+- `get_add_fn` → [blender::nodes::node_geo_set_position_cc::get_add_fn · L34](11-SetPosition完整调用链.md#f-49d6264bf81ac0b7)。
+- `bke::AttributeFieldInput::from<float3>` → [blender::bke::AttributeFieldInput::from · L324](10-几何上下文与属性域.md#f-f6704d8eed37d4e0)；[blender::bke::AttributeFieldInput::from · L331](10-几何上下文与属性域.md#f-f4484f9c40661b54)。同名重载需按实参类型选择。
+- `bke::try_capture_fields_on_geometry` → [blender::bke::try_capture_fields_on_geometry · L998](../05-几何存储与拓扑映射/09-属性域与转换.md#f-53d2a58a397bf570)；[blender::bke::try_capture_fields_on_geometry · L1144](../05-几何存储与拓扑映射/09-属性域与转换.md#f-5d358ef05cd2c31e)；[blender::bke::try_capture_fields_on_geometry · L1193](../05-几何存储与拓扑映射/09-属性域与转换.md#f-acecccde14dde369)。同名重载需按实参类型选择。
+- `curves.calculate_bezier_auto_handles` → [blender::bke::CurvesGeometry::calculate_bezier_auto_handles · L1288](../90-实现依赖专题/02-BKE几何与数据/intern/curves_geometry.cc.md#f-a8727708cb335e36)。
 
 <!-- annotated:26b559e7ce19a7 -->
 
@@ -633,16 +633,16 @@ static void set_position_in_grease_pencil(GreasePencil &grease_pencil,
 
 **继续追踪实现**
 
-- `grease_pencil.layers().index_range` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L92。
-- `grease_pencil.layers` → [blender::GreasePencil::layers · L3983](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-15d64ed11a2babc0)。
-- `grease_pencil.get_eval_drawing` → [blender::GreasePencil::get_eval_drawing · L3877](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-90fc4aad8697fbb6)；[blender::GreasePencil::get_eval_drawing · L3883](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-c0c3d7e7fffac861)。同名重载需按实参类型选择。
-- `grease_pencil.layer` → [blender::GreasePencil::layer · L1144](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_grease_pencil-42a7a1.md#f-7196ac6431650af5)；[blender::GreasePencil::layer · L1148](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_grease_pencil-42a7a1.md#f-82f7eddc62fb11fe)。同名重载需按实参类型选择。
-- `drawing->strokes().is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L94。
-- `drawing->strokes` → [blender::bke::greasepencil::Drawing::strokes · L1007](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-59e6522a8e8ac409)。
-- `set_curves_position` → [blender::nodes::node_geo_set_position_cc::set_curves_position · L59](11-SetPosition%E5%AE%8C%E6%95%B4%E8%B0%83%E7%94%A8%E9%93%BE.md#f-804816a7dfe0390a)。
-- `drawing->strokes_for_write` → [blender::bke::greasepencil::Drawing::strokes_for_write · L1012](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-0649333785d0aa95)。
-- `bke::GreasePencilLayerFieldContext` → [blender::bke::GreasePencilLayerFieldContext::GreasePencilLayerFieldContext · L110](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/09-%E5%B1%9E%E6%80%A7%E5%9F%9F%E4%B8%8E%E8%BD%AC%E6%8D%A2.md#f-bd0f57d7d905998c)。
-- `drawing->tag_positions_changed` → [blender::bke::greasepencil::Drawing::tag_positions_changed · L1095](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-cc348dc1ca18c109)；[blender::bke::greasepencil::Drawing::tag_positions_changed · L1229](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-grease_pencil-f750d6.md#f-36aaac52033b03bf)。同名重载需按实参类型选择。
+- `grease_pencil.layers().index_range` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L92。
+- `grease_pencil.layers` → [blender::GreasePencil::layers · L3983](../90-实现依赖专题/02-BKE几何与数据/intern/grease_pencil.cc.md#f-15d64ed11a2babc0)。
+- `grease_pencil.get_eval_drawing` → [blender::GreasePencil::get_eval_drawing · L3877](../90-实现依赖专题/02-BKE几何与数据/intern/grease_pencil.cc.md#f-90fc4aad8697fbb6)；[blender::GreasePencil::get_eval_drawing · L3883](../90-实现依赖专题/02-BKE几何与数据/intern/grease_pencil.cc.md#f-c0c3d7e7fffac861)。同名重载需按实参类型选择。
+- `grease_pencil.layer` → [blender::GreasePencil::layer · L1144](../90-实现依赖专题/02-BKE几何与数据/BKE_grease_pencil.hh.md#f-7196ac6431650af5)；[blender::GreasePencil::layer · L1148](../90-实现依赖专题/02-BKE几何与数据/BKE_grease_pencil.hh.md#f-82f7eddc62fb11fe)。同名重载需按实参类型选择。
+- `drawing->strokes().is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L94。
+- `drawing->strokes` → [blender::bke::greasepencil::Drawing::strokes · L1007](../90-实现依赖专题/02-BKE几何与数据/intern/grease_pencil.cc.md#f-59e6522a8e8ac409)。
+- `set_curves_position` → [blender::nodes::node_geo_set_position_cc::set_curves_position · L59](11-SetPosition完整调用链.md#f-804816a7dfe0390a)。
+- `drawing->strokes_for_write` → [blender::bke::greasepencil::Drawing::strokes_for_write · L1012](../90-实现依赖专题/02-BKE几何与数据/intern/grease_pencil.cc.md#f-0649333785d0aa95)。
+- `bke::GreasePencilLayerFieldContext` → [blender::bke::GreasePencilLayerFieldContext::GreasePencilLayerFieldContext · L110](../05-几何存储与拓扑映射/09-属性域与转换.md#f-bd0f57d7d905998c)。
+- `drawing->tag_positions_changed` → [blender::bke::greasepencil::Drawing::tag_positions_changed · L1095](../90-实现依赖专题/02-BKE几何与数据/intern/grease_pencil.cc.md#f-cc348dc1ca18c109)；[blender::bke::greasepencil::Drawing::tag_positions_changed · L1229](../90-实现依赖专题/02-BKE几何与数据/intern/grease_pencil.cc.md#f-36aaac52033b03bf)。同名重载需按实参类型选择。
 
 <!-- annotated:735053172146dc -->
 
@@ -746,16 +746,16 @@ static void set_instances_position(bke::Instances &instances,
 
 **继续追踪实现**
 
-- `instances.instances_num` → [blender::bke::Instances::instances_num · L408](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-instances-5b2776.md#f-0284f09f6f4a3b4f)。
-- `evaluator.set_selection` → [blender::fn::FieldEvaluator::set_selection · L68](07-FieldEvaluator%E6%8E%A5%E5%8F%A3%E4%B8%8E%E4%BD%BF%E7%94%A8.md#f-1d38e812a1e29e63)。
-- `evaluator.add_with_destination` → [blender::fn::FieldEvaluator::add_with_destination · L548](09-%E7%94%9F%E6%88%90Procedure%E4%B8%8E%E6%89%A7%E8%A1%8C.md#f-165e23b00ea43ee4)；[blender::fn::FieldEvaluator::add_with_destination · L556](09-%E7%94%9F%E6%88%90Procedure%E4%B8%8E%E6%89%A7%E8%A1%8C.md#f-79ade07d74d08d73)；[blender::fn::FieldEvaluator::add_with_destination · L80](07-FieldEvaluator%E6%8E%A5%E5%8F%A3%E4%B8%8E%E4%BD%BF%E7%94%A8.md#f-3edfceb249cb5cad)；[blender::fn::FieldEvaluator::add_with_destination · L99](07-FieldEvaluator%E6%8E%A5%E5%8F%A3%E4%B8%8E%E4%BD%BF%E7%94%A8.md#f-03289f589afbd469)。同名重载需按实参类型选择。
-- `result.as_mutable_span` → [blender::Array::as_mutable_span · L259](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-4e91de9f1337c144)。
-- `evaluator.evaluate` → [blender::fn::FieldEvaluator::evaluate · L590](09-%E7%94%9F%E6%88%90Procedure%E4%B8%8E%E6%89%A7%E8%A1%8C.md#f-d2c4933d17ec204c)。
-- `evaluator.get_evaluated_selection_as_mask` → [blender::fn::FieldEvaluator::get_evaluated_selection_as_mask · L635](09-%E7%94%9F%E6%88%90Procedure%E4%B8%8E%E6%89%A7%E8%A1%8C.md#f-fcf42f8a6ea87efa)。
-- `instances.transforms_for_write` → [blender::bke::Instances::transforms_for_write · L242](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-instances-5b2776.md#f-0350d6057ae379dc)。
-- `selection.foreach_index_optimized<int>` → [blender::index_mask::IndexMask::foreach_index_optimized · L937](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/12-%E9%87%8D%E6%9E%84%E5%8E%86%E5%8F%B2%E4%B8%8E%E5%9F%BA%E5%87%86%E7%BB%83%E4%B9%A0.md#f-a2c3e7876407eaaf)。
-- `transforms[i].location` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L125。
-- `exec_mode::grain_size` → [blender::exec_mode::grain_size · L79](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_execution_mode-1528fb.md#f-0b4fc2f9fa6e66e7)。
+- `instances.instances_num` → [blender::bke::Instances::instances_num · L408](../90-实现依赖专题/02-BKE几何与数据/intern/instances.cc.md#f-0284f09f6f4a3b4f)。
+- `evaluator.set_selection` → [blender::fn::FieldEvaluator::set_selection · L68](07-FieldEvaluator接口与使用.md#f-1d38e812a1e29e63)。
+- `evaluator.add_with_destination` → [blender::fn::FieldEvaluator::add_with_destination · L548](09-生成Procedure与执行.md#f-165e23b00ea43ee4)；[blender::fn::FieldEvaluator::add_with_destination · L556](09-生成Procedure与执行.md#f-79ade07d74d08d73)；[blender::fn::FieldEvaluator::add_with_destination · L80](07-FieldEvaluator接口与使用.md#f-3edfceb249cb5cad)；[blender::fn::FieldEvaluator::add_with_destination · L99](07-FieldEvaluator接口与使用.md#f-03289f589afbd469)。同名重载需按实参类型选择。
+- `result.as_mutable_span` → [blender::Array::as_mutable_span · L259](../01-基础容器与现代CPP/08-Array复制移动与销毁.md#f-4e91de9f1337c144)。
+- `evaluator.evaluate` → [blender::fn::FieldEvaluator::evaluate · L590](09-生成Procedure与执行.md#f-d2c4933d17ec204c)。
+- `evaluator.get_evaluated_selection_as_mask` → [blender::fn::FieldEvaluator::get_evaluated_selection_as_mask · L635](09-生成Procedure与执行.md#f-fcf42f8a6ea87efa)。
+- `instances.transforms_for_write` → [blender::bke::Instances::transforms_for_write · L242](../90-实现依赖专题/02-BKE几何与数据/intern/instances.cc.md#f-0350d6057ae379dc)。
+- `selection.foreach_index_optimized<int>` → [blender::index_mask::IndexMask::foreach_index_optimized · L937](../04-虚拟数组与索引选择/12-重构历史与基准练习.md#f-a2c3e7876407eaaf)。
+- `transforms[i].location` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L125。
+- `exec_mode::grain_size` → [blender::exec_mode::grain_size · L79](../90-实现依赖专题/01-BLI基础库/BLI_execution_mode.hh.md#f-0b4fc2f9fa6e66e7)。
 
 <!-- annotated:b1e2dfdbbcf7c6 -->
 
@@ -880,27 +880,27 @@ static void node_geo_exec(GeoNodeExecParams params)
 
 **继续追踪实现**
 
-- `params.extract_input<GeometrySet>` → [blender::nodes::GeoNodeExecParams::extract_input · L111](../09-LazyFunction%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E6%9E%B6%E6%9E%84/%E4%BE%9D%E8%B5%96-NOD_geometry_exec-680a5a.md#f-0ff98bdbba2e2ab6)。
-- `params.extract_input<Field<bool>>` → [blender::nodes::GeoNodeExecParams::extract_input · L111](../09-LazyFunction%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E6%9E%B6%E6%9E%84/%E4%BE%9D%E8%B5%96-NOD_geometry_exec-680a5a.md#f-0ff98bdbba2e2ab6)。
-- `fn::FieldOperation::from` → [blender::fn::FieldOperation::from · L252](06-FieldContext%E4%B8%8A%E4%B8%8B%E6%96%87.md#f-d78060e8f5e1929f)；[blender::fn::FieldOperation::from · L258](06-FieldContext%E4%B8%8A%E4%B8%8B%E6%96%87.md#f-60a41b323ee8ceb7)。同名重载需按实参类型选择。
-- `get_add_fn` → [blender::nodes::node_geo_set_position_cc::get_add_fn · L34](11-SetPosition%E5%AE%8C%E6%95%B4%E8%B0%83%E7%94%A8%E9%93%BE.md#f-49d6264bf81ac0b7)。
-- `params.extract_input<Field<float3>>` → [blender::nodes::GeoNodeExecParams::extract_input · L111](../09-LazyFunction%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E6%9E%B6%E6%9E%84/%E4%BE%9D%E8%B5%96-NOD_geometry_exec-680a5a.md#f-0ff98bdbba2e2ab6)。
-- `geometry.get_mesh_for_write` → [blender::bke::GeometrySet::get_mesh_for_write · L562](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-0988a6845ad4e207)。
-- `set_points_position` → [blender::nodes::node_geo_set_position_cc::set_points_position · L46](11-SetPosition%E5%AE%8C%E6%95%B4%E8%B0%83%E7%94%A8%E9%93%BE.md#f-a6eabddb96f18d5f)。
-- `mesh->attributes_for_write` → [Mesh::attributes_for_write · L1303](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ca7af2f1a15f0bc4)。
-- `bke::MeshFieldContext` → [blender::bke::MeshFieldContext::MeshFieldContext · L32](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/09-%E5%B1%9E%E6%80%A7%E5%9F%9F%E4%B8%8E%E8%BD%AC%E6%8D%A2.md#f-5660a4d8efb6eaea)。
-- `geometry.get_pointcloud_for_write` → [blender::bke::GeometrySet::get_pointcloud_for_write · L568](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-eae41fb2ed3be0d5)。
-- `pointcloud->attributes_for_write` → [blender::PointCloud::attributes_for_write · L312](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-pointcloud-49a366.md#f-308c3c12507fb7fb)。
-- `bke::PointCloudFieldContext` → [blender::bke::PointCloudFieldContext::PointCloudFieldContext · L82](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/09-%E5%B1%9E%E6%80%A7%E5%9F%9F%E4%B8%8E%E8%BD%AC%E6%8D%A2.md#f-a4bb7d7ea8d7b008)。
-- `geometry.get_curves_for_write` → [blender::bke::GeometrySet::get_curves_for_write · L580](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-95199063db32b8f7)。
-- `curves_id->geometry.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L150。
-- `set_curves_position` → [blender::nodes::node_geo_set_position_cc::set_curves_position · L59](11-SetPosition%E5%AE%8C%E6%95%B4%E8%B0%83%E7%94%A8%E9%93%BE.md#f-804816a7dfe0390a)。
-- `bke::CurvesFieldContext` → [blender::bke::CurvesFieldContext::CurvesFieldContext · L38](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/09-%E5%B1%9E%E6%80%A7%E5%9F%9F%E4%B8%8E%E8%BD%AC%E6%8D%A2.md#f-c3b22ec14276311d)；[blender::bke::CurvesFieldContext::CurvesFieldContext · L44](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/09-%E5%B1%9E%E6%80%A7%E5%9F%9F%E4%B8%8E%E8%BD%AC%E6%8D%A2.md#f-01111fea909d16de)。同名重载需按实参类型选择。
-- `geometry.get_grease_pencil_for_write` → [blender::bke::GeometrySet::get_grease_pencil_for_write · L622](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-bfc5e891a352651b)。
-- `set_position_in_grease_pencil` → [blender::nodes::node_geo_set_position_cc::set_position_in_grease_pencil · L87](11-SetPosition%E5%AE%8C%E6%95%B4%E8%B0%83%E7%94%A8%E9%93%BE.md#f-bb0313d4e9cd1fa8)。
-- `geometry.get_instances_for_write` → [blender::bke::GeometrySet::get_instances_for_write · L586](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/05-GeometrySet%E8%AF%BB%E5%86%99%E4%B8%8E%E5%A4%8D%E5%88%B6.md#f-e2fefbfed77f753f)。
-- `set_instances_position` → [blender::nodes::node_geo_set_position_cc::set_instances_position · L106](11-SetPosition%E5%AE%8C%E6%95%B4%E8%B0%83%E7%94%A8%E9%93%BE.md#f-b5e0b5109fe47e37)。
-- `params.set_output` → [blender::nodes::GeoNodeExecParams::set_output · L210](../09-LazyFunction%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E6%9E%B6%E6%9E%84/%E4%BE%9D%E8%B5%96-NOD_geometry_exec-680a5a.md#f-8e835b27ade93c45)。
+- `params.extract_input<GeometrySet>` → [blender::nodes::GeoNodeExecParams::extract_input · L111](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_exec.hh.md#f-0ff98bdbba2e2ab6)。
+- `params.extract_input<Field<bool>>` → [blender::nodes::GeoNodeExecParams::extract_input · L111](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_exec.hh.md#f-0ff98bdbba2e2ab6)。
+- `fn::FieldOperation::from` → [blender::fn::FieldOperation::from · L252](06-FieldContext上下文.md#f-d78060e8f5e1929f)；[blender::fn::FieldOperation::from · L258](06-FieldContext上下文.md#f-60a41b323ee8ceb7)。同名重载需按实参类型选择。
+- `get_add_fn` → [blender::nodes::node_geo_set_position_cc::get_add_fn · L34](11-SetPosition完整调用链.md#f-49d6264bf81ac0b7)。
+- `params.extract_input<Field<float3>>` → [blender::nodes::GeoNodeExecParams::extract_input · L111](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_exec.hh.md#f-0ff98bdbba2e2ab6)。
+- `geometry.get_mesh_for_write` → [blender::bke::GeometrySet::get_mesh_for_write · L562](../06-隐式共享与缓存系统/05-GeometrySet读写与复制.md#f-0988a6845ad4e207)。
+- `set_points_position` → [blender::nodes::node_geo_set_position_cc::set_points_position · L46](11-SetPosition完整调用链.md#f-a6eabddb96f18d5f)。
+- `mesh->attributes_for_write` → [Mesh::attributes_for_write · L1303](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-ca7af2f1a15f0bc4)。
+- `bke::MeshFieldContext` → [blender::bke::MeshFieldContext::MeshFieldContext · L32](../05-几何存储与拓扑映射/09-属性域与转换.md#f-5660a4d8efb6eaea)。
+- `geometry.get_pointcloud_for_write` → [blender::bke::GeometrySet::get_pointcloud_for_write · L568](../06-隐式共享与缓存系统/05-GeometrySet读写与复制.md#f-eae41fb2ed3be0d5)。
+- `pointcloud->attributes_for_write` → [blender::PointCloud::attributes_for_write · L312](../90-实现依赖专题/02-BKE几何与数据/intern/pointcloud.cc.md#f-308c3c12507fb7fb)。
+- `bke::PointCloudFieldContext` → [blender::bke::PointCloudFieldContext::PointCloudFieldContext · L82](../05-几何存储与拓扑映射/09-属性域与转换.md#f-a4bb7d7ea8d7b008)。
+- `geometry.get_curves_for_write` → [blender::bke::GeometrySet::get_curves_for_write · L580](../06-隐式共享与缓存系统/05-GeometrySet读写与复制.md#f-95199063db32b8f7)。
+- `curves_id->geometry.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L150。
+- `set_curves_position` → [blender::nodes::node_geo_set_position_cc::set_curves_position · L59](11-SetPosition完整调用链.md#f-804816a7dfe0390a)。
+- `bke::CurvesFieldContext` → [blender::bke::CurvesFieldContext::CurvesFieldContext · L38](../05-几何存储与拓扑映射/09-属性域与转换.md#f-c3b22ec14276311d)；[blender::bke::CurvesFieldContext::CurvesFieldContext · L44](../05-几何存储与拓扑映射/09-属性域与转换.md#f-01111fea909d16de)。同名重载需按实参类型选择。
+- `geometry.get_grease_pencil_for_write` → [blender::bke::GeometrySet::get_grease_pencil_for_write · L622](../06-隐式共享与缓存系统/05-GeometrySet读写与复制.md#f-bfc5e891a352651b)。
+- `set_position_in_grease_pencil` → [blender::nodes::node_geo_set_position_cc::set_position_in_grease_pencil · L87](11-SetPosition完整调用链.md#f-bb0313d4e9cd1fa8)。
+- `geometry.get_instances_for_write` → [blender::bke::GeometrySet::get_instances_for_write · L586](../06-隐式共享与缓存系统/05-GeometrySet读写与复制.md#f-e2fefbfed77f753f)。
+- `set_instances_position` → [blender::nodes::node_geo_set_position_cc::set_instances_position · L106](11-SetPosition完整调用链.md#f-b5e0b5109fe47e37)。
+- `params.set_output` → [blender::nodes::GeoNodeExecParams::set_output · L210](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_exec.hh.md#f-8e835b27ade93c45)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:c989fa67ac58b2 -->
@@ -980,8 +980,8 @@ static void node_register()
 
 **继续追踪实现**
 
-- `geo_node_type_base` → [blender::geo_node_type_base · L136](../09-LazyFunction%E4%B8%8E%E8%8A%82%E7%82%B9%E6%89%A7%E8%A1%8C%E6%9E%B6%E6%9E%84/%E4%BE%9D%E8%B5%96-node_geometry_util-852ce1.md#f-86a8b4a05afc429f)。
-- `bke::node_register_type` → [blender::bke::node_register_type · L2920](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node-89d753.md#f-990ea2d16bb4cef1)。
+- `geo_node_type_base` → [blender::geo_node_type_base · L136](../90-实现依赖专题/04-Nodes节点系统/geometry/node_geometry_util.cc.md#f-86a8b4a05afc429f)。
+- `bke::node_register_type` → [blender::bke::node_register_type · L2920](../90-实现依赖专题/02-BKE几何与数据/intern/node.cc.md#f-990ea2d16bb4cef1)。
 
 ### 类型布局、声明与编译条件 · node_geo_set_position.cc L179—L181
 
@@ -1044,4 +1044,4 @@ try定义异常传播的局部边界。失败路径需要销毁已经成功构�
 
 与表达式模板、AST和闭包比较：Field可在运行时组合并对不同上下文批量求值；不要把Field对象误当作固定几何的结果数组。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

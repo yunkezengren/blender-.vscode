@@ -1,6 +1,6 @@
 # 01-11 Vector插入删除与重排
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -156,7 +156,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->append_as` → [blender::Vector::append_as · L507](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-44d7aa103502cef2)。
+- `this->append_as` → [blender::Vector::append_as · L507](11-Vector插入删除与重排.md#f-44d7aa103502cef2)。
 
 <a id="f-591e0b15e6308532"></a>
 
@@ -202,7 +202,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->append_as` → [blender::Vector::append_as · L507](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-44d7aa103502cef2)。
+- `this->append_as` → [blender::Vector::append_as · L507](11-Vector插入删除与重排.md#f-44d7aa103502cef2)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L506—L506
@@ -267,8 +267,8 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->ensure_space_for_one` → [blender::Vector::ensure_space_for_one · L1114](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-eafa5315534c2edf)。
-- `this->append_unchecked_as` → [blender::Vector::append_unchecked_as · L557](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-f0d43149aa607529)。
+- `this->ensure_space_for_one` → [blender::Vector::ensure_space_for_one · L1114](10-Vector扩容与增长.md#f-eafa5315534c2edf)。
+- `this->append_unchecked_as` → [blender::Vector::append_unchecked_as · L557](11-Vector插入删除与重排.md#f-f0d43149aa607529)。
 - `std::forward<ForwardValue>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L512—L516
@@ -345,7 +345,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->append_and_get_index_as` → [blender::Vector::append_and_get_index_as · L525](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-c450f8d287116a44)。
+- `this->append_and_get_index_as` → [blender::Vector::append_and_get_index_as · L525](11-Vector插入删除与重排.md#f-c450f8d287116a44)。
 
 <a id="f-91413faf22574850"></a>
 
@@ -395,7 +395,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->append_and_get_index_as` → [blender::Vector::append_and_get_index_as · L525](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-c450f8d287116a44)。
+- `this->append_and_get_index_as` → [blender::Vector::append_and_get_index_as · L525](11-Vector插入删除与重排.md#f-c450f8d287116a44)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-c450f8d287116a44"></a>
@@ -441,8 +441,8 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `this->append_as` → [blender::Vector::append_as · L507](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-44d7aa103502cef2)。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
+- `this->append_as` → [blender::Vector::append_as · L507](11-Vector插入删除与重排.md#f-44d7aa103502cef2)。
 - `std::forward<ForwardValue>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L531—L536
@@ -517,8 +517,8 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->contains` → [blender::Vector::contains · L938](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-11ad8adb697ee04a)。
-- `this->append` → [blender::Vector::append · L498](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `this->contains` → [blender::Vector::contains · L938](12-Vector异常安全与边界.md#f-11ad8adb697ee04a)。
+- `this->append` → [blender::Vector::append · L498](11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L543—L548
 
@@ -592,7 +592,7 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->append_unchecked_as` → [blender::Vector::append_unchecked_as · L557](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-f0d43149aa607529)。
+- `this->append_unchecked_as` → [blender::Vector::append_unchecked_as · L557](11-Vector插入删除与重排.md#f-f0d43149aa607529)。
 
 <a id="f-415919ea0bfd674a"></a>
 
@@ -638,7 +638,7 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->append_unchecked_as` → [blender::Vector::append_unchecked_as · L557](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-f0d43149aa607529)。
+- `this->append_unchecked_as` → [blender::Vector::append_unchecked_as · L557](11-Vector插入删除与重排.md#f-f0d43149aa607529)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-f0d43149aa607529"></a>
@@ -681,9 +681,9 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::forward<ForwardT>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L564—L568
 
@@ -758,11 +758,11 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->reserve` → [blender::Vector::reserve · L405](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-020ca78eff5f9227)。
-- `this->increase_size_by_unchecked` → [blender::Vector::increase_size_by_unchecked · L583](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-b53f66d936e54628)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->reserve` → [blender::Vector::reserve · L405](10-Vector扩容与增长.md#f-4cf9c0f00e01102e)。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
+- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](01-对象生命周期与值类别.md#f-020ca78eff5f9227)。
+- `this->increase_size_by_unchecked` → [blender::Vector::increase_size_by_unchecked · L583](11-Vector插入删除与重排.md#f-b53f66d936e54628)。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L576—L582
 
@@ -840,8 +840,8 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L589—L594
 
@@ -916,9 +916,9 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->extend` → [blender::Vector::extend · L595](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-fe6fcb7d09beded9)；[blender::Vector::extend · L599](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-40095c219019e2f9)；[blender::Vector::extend · L613](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-4d2e556cd7412fe4)；[blender::Vector::extend · L650](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-ae44ad8b3f05b082)。同名重载需按实参类型选择。
-- `array.data` → [blender::Span::data · L219](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-10c5889198935800)。
-- `array.size` → [blender::Span::size · L256](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
+- `this->extend` → [blender::Vector::extend · L595](11-Vector插入删除与重排.md#f-fe6fcb7d09beded9)；[blender::Vector::extend · L599](11-Vector插入删除与重排.md#f-40095c219019e2f9)；[blender::Vector::extend · L613](11-Vector插入删除与重排.md#f-4d2e556cd7412fe4)；[blender::Vector::extend · L650](11-Vector插入删除与重排.md#f-ae44ad8b3f05b082)。同名重载需按实参类型选择。
+- `array.data` → [blender::Span::data · L219](05-Span只读连续视图.md#f-10c5889198935800)。
+- `array.size` → [blender::Span::size · L256](05-Span只读连续视图.md#f-5f80fa006089c998)。
 
 <a id="f-40095c219019e2f9"></a>
 
@@ -968,9 +968,9 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->reserve` → [blender::Vector::reserve · L405](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `this->extend_unchecked` → [blender::Vector::extend_unchecked · L637](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-2de7071f1c607c2b)；[blender::Vector::extend_unchecked · L641](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-426341a2f8c84626)。同名重载需按实参类型选择。
+- `this->reserve` → [blender::Vector::reserve · L405](10-Vector扩容与增长.md#f-4cf9c0f00e01102e)。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
+- `this->extend_unchecked` → [blender::Vector::extend_unchecked · L637](11-Vector插入删除与重排.md#f-2de7071f1c607c2b)；[blender::Vector::extend_unchecked · L641](11-Vector插入删除与重排.md#f-426341a2f8c84626)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L604—L612
 
@@ -1058,12 +1058,12 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->extend` → [blender::Vector::extend · L595](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-fe6fcb7d09beded9)；[blender::Vector::extend · L599](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-40095c219019e2f9)；[blender::Vector::extend · L613](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-4d2e556cd7412fe4)；[blender::Vector::extend · L650](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-ae44ad8b3f05b082)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->extend` → [blender::Vector::extend · L595](11-Vector插入删除与重排.md#f-fe6fcb7d09beded9)；[blender::Vector::extend · L599](11-Vector插入删除与重排.md#f-40095c219019e2f9)；[blender::Vector::extend · L613](11-Vector插入删除与重排.md#f-4d2e556cd7412fe4)；[blender::Vector::extend · L650](11-Vector插入删除与重排.md#f-ae44ad8b3f05b082)。同名重载需按实参类型选择。
 - `std::make_move_iterator` → [外部契约](https://eel.is/c++draft/move.iterators)：适配迭代器的解引用值类别，不单独转移资源。实际对象的构造函数决定是否以及如何移动。
-- `other.begin` → [blender::Vector::begin · L967](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-64fb75a6663b953c)；[blender::Vector::begin · L976](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-7c6486a8b8e8f13f)。同名重载需按实参类型选择。
-- `other.end` → [blender::Vector::end · L971](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-8a6033745be8f712)；[blender::Vector::end · L980](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-ebb3ada259887677)。同名重载需按实参类型选择。
-- `other.clear` → [blender::Vector::clear · L468](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-d051bebff5275a43)。
+- `other.begin` → [blender::Vector::begin · L967](12-Vector异常安全与边界.md#f-64fb75a6663b953c)；[blender::Vector::begin · L976](12-Vector异常安全与边界.md#f-7c6486a8b8e8f13f)。同名重载需按实参类型选择。
+- `other.end` → [blender::Vector::end · L971](12-Vector异常安全与边界.md#f-8a6033745be8f712)；[blender::Vector::end · L980](12-Vector异常安全与边界.md#f-ebb3ada259887677)。同名重载需按实参类型选择。
+- `other.clear` → [blender::Vector::clear · L468](10-Vector扩容与增长.md#f-d051bebff5275a43)。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L620—L625
 
@@ -1141,7 +1141,7 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->append_non_duplicates` → [blender::Vector::append_non_duplicates · L537](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-7741238254851c96)。
+- `this->append_non_duplicates` → [blender::Vector::append_non_duplicates · L537](11-Vector插入删除与重排.md#f-7741238254851c96)。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L632—L636
 
@@ -1214,9 +1214,9 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->extend_unchecked` → [blender::Vector::extend_unchecked · L637](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-2de7071f1c607c2b)；[blender::Vector::extend_unchecked · L641](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-426341a2f8c84626)。同名重载需按实参类型选择。
-- `array.data` → [blender::Span::data · L219](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-10c5889198935800)。
-- `array.size` → [blender::Span::size · L256](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
+- `this->extend_unchecked` → [blender::Vector::extend_unchecked · L637](11-Vector插入删除与重排.md#f-2de7071f1c607c2b)；[blender::Vector::extend_unchecked · L641](11-Vector插入删除与重排.md#f-426341a2f8c84626)。同名重载需按实参类型选择。
+- `array.data` → [blender::Span::data · L219](05-Span只读连续视图.md#f-10c5889198935800)。
+- `array.size` → [blender::Span::size · L256](05-Span只读连续视图.md#f-5f80fa006089c998)。
 
 <a id="f-426341a2f8c84626"></a>
 
@@ -1274,9 +1274,9 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `uninitialized_copy_n` → [blender::uninitialized_copy_n · L53](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-6cd63ebede164cd2)。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `uninitialized_copy_n` → [blender::uninitialized_copy_n · L53](01-对象生命周期与值类别.md#f-6cd63ebede164cd2)。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
 
 <!-- annotated:c3a701fefeb9bd -->
 
@@ -1340,8 +1340,8 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->insert` → [blender::Vector::insert · L660](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
-- `this->end` → [blender::Vector::end · L971](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-8a6033745be8f712)；[blender::Vector::end · L980](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-ebb3ada259887677)。同名重载需按实参类型选择。
+- `this->insert` → [blender::Vector::insert · L660](11-Vector插入删除与重排.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector插入删除与重排.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector插入删除与重排.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector插入删除与重排.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector插入删除与重排.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
+- `this->end` → [blender::Vector::end · L971](12-Vector异常安全与边界.md#f-8a6033745be8f712)；[blender::Vector::end · L980](12-Vector异常安全与边界.md#f-ebb3ada259887677)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L654—L659
 
@@ -1417,8 +1417,8 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->insert` → [blender::Vector::insert · L660](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
-- `Span<T>` → [blender::Span](%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
+- `this->insert` → [blender::Vector::insert · L660](11-Vector插入删除与重排.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector插入删除与重排.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector插入删除与重排.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector插入删除与重排.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector插入删除与重排.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
+- `Span<T>` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
 
 <a id="f-cc759c6bf2f684fd"></a>
 
@@ -1468,7 +1468,7 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->insert` → [blender::Vector::insert · L660](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
+- `this->insert` → [blender::Vector::insert · L660](11-Vector插入删除与重排.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector插入删除与重排.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector插入删除与重排.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector插入删除与重排.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector插入删除与重排.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
 - `std::make_move_iterator` → [外部契约](https://eel.is/c++draft/move.iterators)：适配迭代器的解引用值类别，不单独转移资源。实际对象的构造函数决定是否以及如何移动。
 
 <a id="f-aa84192ea68b9354"></a>
@@ -1516,9 +1516,9 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->insert` → [blender::Vector::insert · L660](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
-- `array.begin` → [blender::Span::begin · L224](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-415883b512284f46)。
-- `array.end` → [blender::Span::end · L228](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-a7d8b9e494c291a7)。
+- `this->insert` → [blender::Vector::insert · L660](11-Vector插入删除与重排.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector插入删除与重排.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector插入删除与重排.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector插入删除与重排.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector插入删除与重排.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
+- `array.begin` → [blender::Span::begin · L224](05-Span只读连续视图.md#f-415883b512284f46)。
+- `array.end` → [blender::Span::end · L228](05-Span只读连续视图.md#f-a7d8b9e494c291a7)。
 
 <a id="f-a0091ac806c762b7"></a>
 
@@ -1568,7 +1568,7 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->insert` → [blender::Vector::insert · L660](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
+- `this->insert` → [blender::Vector::insert · L660](11-Vector插入删除与重排.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector插入删除与重排.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector插入删除与重排.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector插入删除与重排.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector插入删除与重排.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
 
 <a id="f-1b9c3c520da8d7ea"></a>
 
@@ -1710,14 +1710,14 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 - `std::distance` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `this->reserve` → [blender::Vector::reserve · L405](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)。
+- `this->reserve` → [blender::Vector::reserve · L405](10-Vector扩容与增长.md#f-4cf9c0f00e01102e)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L697。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
-- `begin_[src_index].~T` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L702。
+- `destruct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L697。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
+- `begin_[src_index].~T` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L702。
 - `std::uninitialized_move_n` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 - `std::uninitialized_copy_n` → [外部契约](https://eel.is/c++draft/uninitialized.copy)：在目标原始存储复制构造n个对象；源若由move_iterator访问，构造重载可以采用移动。源与目标区间不得重叠。目标构造失败时清理已构造目标，不恢复已经移动的源值，也不释放外层分配的缓冲。
 
@@ -1792,7 +1792,7 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->insert` → [blender::Vector::insert · L660](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
+- `this->insert` → [blender::Vector::insert · L660](11-Vector插入删除与重排.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector插入删除与重排.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector插入删除与重排.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector插入删除与重排.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector插入删除与重排.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
 
 <a id="f-345922747528a638"></a>
 
@@ -1838,7 +1838,7 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->insert` → [blender::Vector::insert · L660](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
+- `this->insert` → [blender::Vector::insert · L660](11-Vector插入删除与重排.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector插入删除与重排.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector插入删除与重排.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector插入删除与重排.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector插入删除与重排.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-2db0a5bf574e2b8b"></a>
@@ -1885,7 +1885,7 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->insert` → [blender::Vector::insert · L660](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
+- `this->insert` → [blender::Vector::insert · L660](11-Vector插入删除与重排.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector插入删除与重排.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector插入删除与重排.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector插入删除与重排.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector插入删除与重排.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
 
 <a id="f-40f488096ace08d7"></a>
 
@@ -1932,7 +1932,7 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->insert` → [blender::Vector::insert · L660](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
+- `this->insert` → [blender::Vector::insert · L660](11-Vector插入删除与重排.md#f-dc44511e282a0e11)；[blender::Vector::insert · L664](11-Vector插入删除与重排.md#f-cc759c6bf2f684fd)；[blender::Vector::insert · L669](11-Vector插入删除与重排.md#f-aa84192ea68b9354)；[blender::Vector::insert · L673](11-Vector插入删除与重排.md#f-a0091ac806c762b7)；[blender::Vector::insert · L678](11-Vector插入删除与重排.md#f-1b9c3c520da8d7ea)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L744—L748
 
@@ -2013,8 +2013,8 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 
 <a id="f-66b262993c080d9d"></a>
 
@@ -2068,8 +2068,8 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L761—L765
 
@@ -2144,8 +2144,8 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 
 <a id="f-1d394fd9ab82bf04"></a>
 
@@ -2193,8 +2193,8 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L776—L779
 
@@ -2271,7 +2271,7 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L786—L791
 
@@ -2413,10 +2413,10 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->is_empty` → [blender::Vector::is_empty · L792](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-937bbd9cb80bdcc8)。
-- `end_->~T` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：T模板参数提供的操作协议。调用位置L805。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->is_empty` → [blender::Vector::is_empty · L792](11-Vector插入删除与重排.md#f-937bbd9cb80bdcc8)。
+- `end_->~T` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：T模板参数提供的操作协议。调用位置L805。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L808—L814
 
@@ -2503,11 +2503,11 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->is_empty` → [blender::Vector::is_empty · L792](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-937bbd9cb80bdcc8)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->is_empty` → [blender::Vector::is_empty · L792](11-Vector插入删除与重排.md#f-937bbd9cb80bdcc8)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `end_->~T` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：T模板参数提供的操作协议。调用位置L820。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+- `end_->~T` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：T模板参数提供的操作协议。调用位置L820。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L824—L828
 
@@ -2604,11 +2604,11 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `last_element->~T` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：T模板参数提供的操作协议。调用位置L839。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+- `last_element->~T` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：T模板参数提供的操作协议。调用位置L839。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L842—L846
 
@@ -2683,8 +2683,8 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->first_index_of` → [blender::Vector::first_index_of · L927](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-957f1fbe5a6868c8)。
-- `this->remove_and_reorder` → [blender::Vector::remove_and_reorder · L829](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-d33bba972e915909)。
+- `this->first_index_of` → [blender::Vector::first_index_of · L927](11-Vector插入删除与重排.md#f-957f1fbe5a6868c8)。
+- `this->remove_and_reorder` → [blender::Vector::remove_and_reorder · L829](11-Vector插入删除与重排.md#f-d33bba972e915909)。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L852—L859
 
@@ -2784,11 +2784,11 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `begin_[last_index].~T` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L868。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+- `begin_[last_index].~T` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L868。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L872—L878
 
@@ -2891,11 +2891,11 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L889。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+- `destruct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L889。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L893—L899
 
@@ -2983,11 +2983,11 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->end` → [blender::Vector::end · L971](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-8a6033745be8f712)；[blender::Vector::end · L980](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-ebb3ada259887677)。同名重载需按实参类型选择。
+- `this->end` → [blender::Vector::end · L971](12-Vector异常安全与边界.md#f-8a6033745be8f712)；[blender::Vector::end · L980](12-Vector异常安全与边界.md#f-ebb3ada259887677)。同名重载需按实参类型选择。
 - `std::remove_if` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `this->begin` → [blender::Vector::begin · L967](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-64fb75a6663b953c)；[blender::Vector::begin · L976](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-7c6486a8b8e8f13f)。同名重载需按实参类型选择。
-- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L904。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+- `this->begin` → [blender::Vector::begin · L967](12-Vector异常安全与边界.md#f-64fb75a6663b953c)；[blender::Vector::begin · L976](12-Vector异常安全与边界.md#f-7c6486a8b8e8f13f)。同名重载需按实参类型选择。
+- `destruct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L904。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L908—L912
 
@@ -3142,8 +3142,8 @@ unchecked把检查责任交给调用者，并没有让不足容量变成合法�
 
 **继续追踪实现**
 
-- `this->first_index_of_try` → [blender::Vector::first_index_of_try · L913](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-0ce44a0b2bae5853)。
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->first_index_of_try` → [blender::Vector::first_index_of_try · L913](11-Vector插入删除与重排.md#f-0ce44a0b2bae5853)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L933—L937
 
@@ -3258,4 +3258,4 @@ static_cast表达编译期允许的转换，不会自动验证运行时真实类
 
 对比std::vector、std::array、std::span与LLVM SmallVector、ArrayRef时，分别比较拥有关系、内嵌存储、大小是否属于类型和失效条件。不要根据同名方法推断完全相同契约。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

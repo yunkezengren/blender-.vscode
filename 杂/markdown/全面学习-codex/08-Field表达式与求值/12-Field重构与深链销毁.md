@@ -1,6 +1,6 @@
 # 08-12 Field重构与深链销毁
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -281,14 +281,14 @@ static FieldInputsPtr combine_field_inputs(const Span<GField> &fields)
 
 **继续追踪实现**
 
-- `field.field_inputs` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L272。
-- `(*smaller_candidate)->inputs.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L285。
-- `(*larger_candidate)->inputs.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L285。
+- `field.field_inputs` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L272。
+- `(*smaller_candidate)->inputs.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L285。
+- `(*larger_candidate)->inputs.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L285。
 - `std::swap` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `(*larger_candidate)->inputs.contains` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L290。
-- `MEM_new<FieldInputs>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
-- `new_field_inputs->inputs.add` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L315。
-- `FieldInputsPtr` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L318。
+- `(*larger_candidate)->inputs.contains` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L290。
+- `MEM_new<FieldInputs>` → [MEM_new · L351](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-115f9b6784f89912)。
+- `new_field_inputs->inputs.add` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L315。
+- `FieldInputsPtr` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L318。
 
 <!-- annotated:bad3a9132ea3e2 -->
 
@@ -369,8 +369,8 @@ GField::GField(const GField &other) : variant_(other.variant_)
 **继续追踪实现**
 
 - `std::visit` → [外部契约](https://eel.is/c++draft/variant.visit)：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
-- `MEM_new_uninitialized_aligned` → [MEM_new_uninitialized_aligned · L134](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9f3d21bd7da93c68)。
-- `v.type->copy_construct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L328。
+- `MEM_new_uninitialized_aligned` → [MEM_new_uninitialized_aligned · L134](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-9f3d21bd7da93c68)。
+- `v.type->copy_construct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L328。
 
 <!-- annotated:7069e465f634fe -->
 
@@ -433,8 +433,8 @@ GField::GField(GField &&other) noexcept : variant_(std::move(other.variant_))
 
 **继续追踪实现**
 
-- `this->cpp_type` → [blender::fn::GField::cpp_type · L518](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-284e6a7a85c0110e)。
-- `type.default_value` → [blender::CPPType::default_value · L743](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-95e76cbe74b383e8)。
+- `this->cpp_type` → [blender::fn::GField::cpp_type · L518](05-FieldOperation运算节点.md#f-284e6a7a85c0110e)。
+- `type.default_value` → [blender::CPPType::default_value · L743](../03-内存分配与运行时类型/09-CPPType复制移动重定位.md#f-95e76cbe74b383e8)。
 
 <!-- annotated:78d876a346a62c -->
 
@@ -504,7 +504,7 @@ GField &GField::operator=(const GField &other)
 
 **继续追踪实现**
 
-- `this->~GField` → [blender::fn::GField::~GField · L361](12-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E9%94%80%E6%AF%81.md#f-d51153b40c92ce28)。
+- `this->~GField` → [blender::fn::GField::~GField · L361](12-Field重构与深链销毁.md#f-d51153b40c92ce28)。
 
 <!-- annotated:55d5f3ff233ba1 -->
 
@@ -575,7 +575,7 @@ GField &GField::operator=(GField &&other) noexcept
 
 **继续追踪实现**
 
-- `this->~GField` → [blender::fn::GField::~GField · L361](12-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E9%94%80%E6%AF%81.md#f-d51153b40c92ce28)。
+- `this->~GField` → [blender::fn::GField::~GField · L361](12-Field重构与深链销毁.md#f-d51153b40c92ce28)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:30d51f4d1d7a49 -->
@@ -645,8 +645,8 @@ GField::~GField()
 **继续追踪实现**
 
 - `std::visit` → [外部契约](https://eel.is/c++draft/variant.visit)：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
-- `v.type->destruct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L366。
-- `MEM_delete_void` → [MEM_delete_void · L647](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-642896c7c62ff8b9)；[MEM_delete_void · L109](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9a07b26421f2bee6)。同名重载需按实参类型选择。
+- `v.type->destruct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L366。
+- `MEM_delete_void` → [MEM_delete_void · L647](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-642896c7c62ff8b9)；[MEM_delete_void · L109](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-9a07b26421f2bee6)。同名重载需按实参类型选择。
 
 <!-- annotated:71e63ae273b7a8 -->
 
@@ -834,8 +834,8 @@ const FieldInputsPtr &GFieldRef::field_inputs() const
 **继续追踪实现**
 
 - `std::visit` → [外部契约](https://eel.is/c++draft/variant.visit)：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
-- `v.node->field_inputs` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L404。
-- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-368120c7952b)。宏定义由构建条件选择。
+- `v.node->field_inputs` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L404。
+- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-368120c7952b)。宏定义由构建条件选择。
 
 <!-- annotated:abcca6b15c5b3c -->
 
@@ -968,12 +968,12 @@ bool operator==(const GFieldRef &a, const GFieldRef &b)
 
 - `std::visit` → [外部契约](https://eel.is/c++draft/variant.visit)：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
 - `std::get_if<GFieldRef::Value>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `b.variant` → [blender::fn::GFieldRef::variant · L678](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-0658bc405899b72d)。
-- `v_a.type->is_equal_or_false` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L433。
+- `b.variant` → [blender::fn::GFieldRef::variant · L678](05-FieldOperation运算节点.md#f-0658bc405899b72d)。
+- `v_a.type->is_equal_or_false` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L433。
 - `std::get_if<GFieldRef::Input>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 - `std::get_if<GFieldRef::MultiFn>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-368120c7952b)。宏定义由构建条件选择。
-- `a.variant` → [blender::fn::GFieldRef::variant · L678](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-0658bc405899b72d)。
+- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-368120c7952b)。宏定义由构建条件选择。
+- `a.variant` → [blender::fn::GFieldRef::variant · L678](05-FieldOperation运算节点.md#f-0658bc405899b72d)。
 
 <!-- annotated:264f9760da7ec3 -->
 
@@ -1064,9 +1064,9 @@ uint64_t GFieldRef::hash() const
 **继续追踪实现**
 
 - `std::visit` → [外部契约](https://eel.is/c++draft/variant.visit)：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
-- `v.type->hash_or_fallback` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L461。
-- `get_default_hash` → [blender::get_default_hash · L251](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/01-%E5%93%88%E5%B8%8C%E4%B8%8E%E7%9B%B8%E7%AD%89%E5%A5%91%E7%BA%A6.md#f-5f2c246aedf3dc0a)。
-- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-368120c7952b)。宏定义由构建条件选择。
+- `v.type->hash_or_fallback` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L461。
+- `get_default_hash` → [blender::get_default_hash · L251](../02-哈希表与关联数据结构/01-哈希与相等契约.md#f-5f2c246aedf3dc0a)。
+- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-368120c7952b)。宏定义由构建条件选择。
 
 <!-- annotated:e94b6834f12ed1 -->
 
@@ -1193,7 +1193,7 @@ FieldOperation::FieldOperation(const mf::MultiFunction &fn, Vector<GField> input
 
 **继续追踪实现**
 
-- `combine_field_inputs` → [blender::fn::combine_field_inputs · L266](12-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E9%94%80%E6%AF%81.md#f-e3c95636989d69b5)。
+- `combine_field_inputs` → [blender::fn::combine_field_inputs · L266](12-Field重构与深链销毁.md#f-e3c95636989d69b5)。
 
 <!-- annotated:2a8623f3b2d085 -->
 
@@ -1276,13 +1276,13 @@ const CPPType &FieldOperation::output_cpp_type(const int output_i) const
 
 **继续追踪实现**
 
-- `fn_->param_indices` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L491。
-- `fn_->param_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L492。
-- `param_type.is_output` → [blender::fn::multi_function::ParamType::is_output · L163](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-fd8eda039a304162)。
-- `param_type.data_type().single_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L495。
-- `param_type.data_type` → [blender::fn::multi_function::ParamType::data_type · L113](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-b29743877463338d)。
-- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
-- `CPPType::get<float>` → [blender::CPPType::get · L481](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
+- `fn_->param_indices` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L491。
+- `fn_->param_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L492。
+- `param_type.is_output` → [blender::fn::multi_function::ParamType::is_output · L163](../07-MultiFunction与批量执行/03-参数类型与角色.md#f-fd8eda039a304162)。
+- `param_type.data_type().single_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L495。
+- `param_type.data_type` → [blender::fn::multi_function::ParamType::data_type · L113](../07-MultiFunction与批量执行/03-参数类型与角色.md#f-b29743877463338d)。
+- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
+- `CPPType::get<float>` → [blender::CPPType::get · L481](../03-内存分配与运行时类型/08-CPPType构造与析构.md#f-0cc10a3783d6abdb)。
 
 <!-- annotated:e4121dc8d085c8 -->
 
@@ -1375,9 +1375,9 @@ const FieldInputsPtr &GField::field_inputs() const
 **继续追踪实现**
 
 - `std::visit` → [外部契约](https://eel.is/c++draft/variant.visit)：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
-- `v.node->field_inputs` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L510。
-- `v.field_ref->field_inputs` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L513。
-- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-368120c7952b)。宏定义由构建条件选择。
+- `v.node->field_inputs` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L510。
+- `v.field_ref->field_inputs` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L513。
+- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-368120c7952b)。宏定义由构建条件选择。
 
 <!-- annotated:578330311c9b51 -->
 
@@ -1447,7 +1447,7 @@ GVArray FieldContext::get_varray_for_input(const FieldInput &field_input,
 
 **继续追踪实现**
 
-- `field_input.get_varray_for_context` → [blender::fn::IndexFieldInput::get_varray_for_context · L542](12-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E9%94%80%E6%AF%81.md#f-13983c604ac02aa7)。
+- `field_input.get_varray_for_context` → [blender::fn::IndexFieldInput::get_varray_for_context · L542](12-Field重构与深链销毁.md#f-13983c604ac02aa7)。
 
 <!-- annotated:0795b9cb32f7f0 -->
 
@@ -1555,8 +1555,8 @@ GVArray IndexFieldInput::get_index_varray(const IndexMask &mask)
 
 **继续追踪实现**
 
-- `VArray<int>::from_func` → [blender::GVArray::from_func · L935](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-5284f38409debf59)；[blender::VArray::from_func · L777](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-960f6d3e81b7819d)。同名重载需按实参类型选择。
-- `mask.min_array_size` → [blender::index_mask::IndexMask::min_array_size · L782](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-f3a460d74b4fc7d6)。
+- `VArray<int>::from_func` → [blender::GVArray::from_func · L935](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-5284f38409debf59)；[blender::VArray::from_func · L777](../04-虚拟数组与索引选择/03-单值与Span表示.md#f-960f6d3e81b7819d)。同名重载需按实参类型选择。
+- `mask.min_array_size` → [blender::index_mask::IndexMask::min_array_size · L782](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-f3a460d74b4fc7d6)。
 
 <!-- annotated:d39dc99ec407ed -->
 
@@ -1624,7 +1624,7 @@ GVArray IndexFieldInput::get_varray_for_context(const fn::FieldContext & /*conte
 
 **继续追踪实现**
 
-- `get_index_varray` → [blender::fn::IndexFieldInput::get_index_varray · L536](12-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E9%94%80%E6%AF%81.md#f-ccbff6769d817bd8)。
+- `get_index_varray` → [blender::fn::IndexFieldInput::get_index_varray · L536](12-Field重构与深链销毁.md#f-ccbff6769d817bd8)。
 
 <!-- annotated:ad73aa4ab73386 -->
 
@@ -1685,7 +1685,7 @@ void IndexFieldInput::hash_unique(UniqueHashBytes &hash,
 
 **继续追踪实现**
 
-- `hash.add` → [blender::UniqueHashBytes::add · L40](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_unique_hash-5663a0.md#f-12ca7cac7556bc01)。
+- `hash.add` → [blender::UniqueHashBytes::add · L40](../90-实现依赖专题/01-BLI基础库/BLI_unique_hash.hh.md#f-12ca7cac7556bc01)。
 
 <!-- annotated:631b1a8f7879be -->
 
@@ -1746,8 +1746,8 @@ const Field<int> &IndexFieldInput::get_field()
 
 **继续追踪实现**
 
-- `Field<int>::from_input<IndexFieldInput>` → [blender::fn::Field<T>::Field · L495](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-0b2f3f4cecd8c44a)；[blender::fn::Field<T>::Field · L603](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-6fbbe0144f689448)；[blender::fn::Field<T>::Field · L605](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-b9fadbb0d8465bfe)；[blender::fn::Field<T>::Field · L608](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-be75a0525262720c)。同名重载需按实参类型选择。
-- `Field<int>::from_non_owning_ref` → [blender::fn::GField::from_non_owning_ref · L461](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-3418a2faa8f1c8c6)。
+- `Field<int>::from_input<IndexFieldInput>` → [blender::fn::Field<T>::Field · L495](05-FieldOperation运算节点.md#f-0b2f3f4cecd8c44a)；[blender::fn::Field<T>::Field · L603](05-FieldOperation运算节点.md#f-6fbbe0144f689448)；[blender::fn::Field<T>::Field · L605](05-FieldOperation运算节点.md#f-b9fadbb0d8465bfe)；[blender::fn::Field<T>::Field · L608](05-FieldOperation运算节点.md#f-be75a0525262720c)。同名重载需按实参类型选择。
+- `Field<int>::from_non_owning_ref` → [blender::fn::GField::from_non_owning_ref · L461](05-FieldOperation运算节点.md#f-3418a2faa8f1c8c6)。
 
 <!-- annotated:56acb34baa4d03 -->
 
@@ -1812,10 +1812,10 @@ Field<bool> invert_boolean_field(const Field<bool> &field)
 
 **继续追踪实现**
 
-- `fn::multi_function::registry::lookup` → [blender::fn::multi_function::registry::lookup · L46](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/%E4%BE%9D%E8%B5%96-multi_function_registry-020ea8.md#f-1a054f3e76280e66)。
-- `FieldOperation::from` → [blender::fn::FieldOperation::from · L252](06-FieldContext%E4%B8%8A%E4%B8%8B%E6%96%87.md#f-d78060e8f5e1929f)；[blender::fn::FieldOperation::from · L258](06-FieldContext%E4%B8%8A%E4%B8%8B%E6%96%87.md#f-60a41b323ee8ceb7)。同名重载需按实参类型选择。
-- `GField(not_op, 0).typed<bool>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L568。
-- `GField` → [blender::fn::GField::GField · L321](12-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E9%94%80%E6%AF%81.md#f-7865e4089df6225d)；[blender::fn::GField::GField · L335](12-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E9%94%80%E6%AF%81.md#f-438a60155477a30a)。同名重载需按实参类型选择。
+- `fn::multi_function::registry::lookup` → [blender::fn::multi_function::registry::lookup · L46](../90-实现依赖专题/03-FN函数与求值/intern/multi_function_registry.cc.md#f-1a054f3e76280e66)。
+- `FieldOperation::from` → [blender::fn::FieldOperation::from · L252](06-FieldContext上下文.md#f-d78060e8f5e1929f)；[blender::fn::FieldOperation::from · L258](06-FieldContext上下文.md#f-60a41b323ee8ceb7)。同名重载需按实参类型选择。
+- `GField(not_op, 0).typed<bool>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L568。
+- `GField` → [blender::fn::GField::GField · L321](12-Field重构与深链销毁.md#f-7865e4089df6225d)；[blender::fn::GField::GField · L335](12-Field重构与深链销毁.md#f-438a60155477a30a)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · field.cc L570—L571
 
@@ -1912,4 +1912,4 @@ shared_ptr让控制块跟踪共享寿命，不自动使被指向对象的读写�
 
 与表达式模板、AST和闭包比较：Field可在运行时组合并对不同上下文批量求值；不要把Field对象误当作固定几何的结果数组。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

@@ -1,6 +1,6 @@
 # 01-08 Array复制移动与销毁
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -163,7 +163,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `MutableSpan<U>` → [blender::MutableSpan::MutableSpan · L462](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
+- `MutableSpan<U>` → [blender::MutableSpan::MutableSpan · L462](06-MutableSpan可写视图.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](06-MutableSpan可写视图.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](06-MutableSpan可写视图.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](06-MutableSpan可写视图.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](06-MutableSpan可写视图.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
 
 <!-- annotated:3915d613fd01a4 -->
 
@@ -497,7 +497,7 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 
 **继续追踪实现**
 
-- `initialized_fill_n` → [blender::initialized_fill_n · L86](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-4af3bf5ccfdcee6c)。
+- `initialized_fill_n` → [blender::initialized_fill_n · L86](01-对象生命周期与值类别.md#f-4af3bf5ccfdcee6c)。
 
 ### 类型布局、声明与编译条件 · BLI_array.hh L287—L291
 
@@ -565,7 +565,7 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <a id="f-40adec4f230b5792"></a>
 
@@ -606,7 +606,7 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_array.hh L302—L306
 
@@ -680,7 +680,7 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <a id="f-5026b1478e15b195"></a>
 
@@ -727,7 +727,7 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_array.hh L319—L322
 
@@ -1114,7 +1114,7 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 **继续追踪实现**
 
 - `std::reverse_iterator<T *>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `this->end` → [blender::Array::end · L336](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-3b7a7433862ab426)；[blender::Array::end · L345](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-c97b06b19f45e8ec)。同名重载需按实参类型选择。
+- `this->end` → [blender::Array::end · L336](08-Array复制移动与销毁.md#f-3b7a7433862ab426)；[blender::Array::end · L345](08-Array复制移动与销毁.md#f-c97b06b19f45e8ec)。同名重载需按实参类型选择。
 
 <a id="f-66651c57a5258fd7"></a>
 
@@ -1155,7 +1155,7 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 **继续追踪实现**
 
 - `std::reverse_iterator<T *>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `this->begin` → [blender::Array::begin · L332](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-c8883b490929edac)；[blender::Array::begin · L341](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-62d7e9ae6a7826e8)。同名重载需按实参类型选择。
+- `this->begin` → [blender::Array::begin · L332](08-Array复制移动与销毁.md#f-c8883b490929edac)；[blender::Array::begin · L341](08-Array复制移动与销毁.md#f-62d7e9ae6a7826e8)。同名重载需按实参类型选择。
 
 <!-- annotated:df25e1854e2e15 -->
 
@@ -1213,7 +1213,7 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 **继续追踪实现**
 
 - `std::reverse_iterator<T *>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `this->end` → [blender::Array::end · L336](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-3b7a7433862ab426)；[blender::Array::end · L345](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-c97b06b19f45e8ec)。同名重载需按实参类型选择。
+- `this->end` → [blender::Array::end · L336](08-Array复制移动与销毁.md#f-3b7a7433862ab426)；[blender::Array::end · L345](08-Array复制移动与销毁.md#f-c97b06b19f45e8ec)。同名重载需按实参类型选择。
 
 <a id="f-32621a3b4d01a137"></a>
 
@@ -1254,7 +1254,7 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 **继续追踪实现**
 
 - `std::reverse_iterator<T *>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `this->begin` → [blender::Array::begin · L332](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-c8883b490929edac)；[blender::Array::begin · L341](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-62d7e9ae6a7826e8)。同名重载需按实参类型选择。
+- `this->begin` → [blender::Array::begin · L332](08-Array复制移动与销毁.md#f-c8883b490929edac)；[blender::Array::begin · L341](08-Array复制移动与销毁.md#f-62d7e9ae6a7826e8)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_array.hh L367—L370
 
@@ -1324,7 +1324,7 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
 
 <!-- annotated:1a0eb3c940ce68 -->
 
@@ -1381,8 +1381,8 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 
 **继续追踪实现**
 
-- `this->as_span().hash` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L378。
-- `this->as_span` → [blender::Array::as_span · L254](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-05fc77056a242032)。
+- `this->as_span().hash` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L378。
+- `this->as_span` → [blender::Array::as_span · L254](08-Array复制移动与销毁.md#f-05fc77056a242032)。
 
 <!-- annotated:e9f88118404dd5 -->
 
@@ -1442,7 +1442,7 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 
 **继续追踪实现**
 
-- `values.hash` → [blender::Span::hash · L410](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-cc1fde6844ea8d5b)。
+- `values.hash` → [blender::Span::hash · L410](05-Span只读连续视图.md#f-cc1fde6844ea8d5b)。
 
 <!-- annotated:d7087ec35eb66d -->
 
@@ -1504,8 +1504,8 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 
 **继续追踪实现**
 
-- `a.as_span` → [blender::Array::as_span · L254](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-05fc77056a242032)。
-- `b.as_span` → [blender::Array::as_span · L254](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-05fc77056a242032)。
+- `a.as_span` → [blender::Array::as_span · L254](08-Array复制移动与销毁.md#f-05fc77056a242032)。
+- `b.as_span` → [blender::Array::as_span · L254](08-Array复制移动与销毁.md#f-05fc77056a242032)。
 
 <!-- annotated:c676867ac16f03 -->
 
@@ -1923,11 +1923,11 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L435。
-- `default_construct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L439。
-- `this->get_buffer_for_size` → [blender::Array::get_buffer_for_size · L458](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-1b659c0da810061b)。
-- `this->deallocate_if_not_inline` → [blender::Array::deallocate_if_not_inline · L479](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-0357a7b58bbc84fa)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `destruct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L435。
+- `default_construct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L439。
+- `this->get_buffer_for_size` → [blender::Array::get_buffer_for_size · L458](08-Array复制移动与销毁.md#f-1b659c0da810061b)。
+- `this->deallocate_if_not_inline` → [blender::Array::deallocate_if_not_inline · L479](08-Array复制移动与销毁.md#f-0357a7b58bbc84fa)。
 
 ### 类型布局、声明与编译条件 · BLI_array.hh L456—L457
 
@@ -2011,7 +2011,7 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 **继续追踪实现**
 
 - `memset` → [外部契约](https://eel.is/c++draft/cstring.syn)：填充字节，不调用T构造函数，也不保证任意类型的全零表示是合法或期望值。
-- `this->allocate` → [blender::Array::allocate · L471](08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-e04fa41f1de70295)。
+- `this->allocate` → [blender::Array::allocate · L471](08-Array复制移动与销毁.md#f-e04fa41f1de70295)。
 
 <!-- annotated:d31e3c41b99777 -->
 
@@ -2080,8 +2080,8 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 
 **继续追踪实现**
 
-- `allocator_.allocate_zero` → [blender::GuardedAllocator::allocate_zero · L49](03-%E5%86%85%E5%AD%98%E5%B7%A5%E5%85%B7%E4%B8%8E%E5%88%86%E9%85%8D%E5%99%A8%E6%8E%A5%E5%8F%A3.md#f-ba4b11000deea5e5)。
-- `allocator_.allocate` → [blender::GuardedAllocator::allocate · L43](03-%E5%86%85%E5%AD%98%E5%B7%A5%E5%85%B7%E4%B8%8E%E5%88%86%E9%85%8D%E5%99%A8%E6%8E%A5%E5%8F%A3.md#f-a57239e6d3bd10d9)。
+- `allocator_.allocate_zero` → [blender::GuardedAllocator::allocate_zero · L49](03-内存工具与分配器接口.md#f-ba4b11000deea5e5)。
+- `allocator_.allocate` → [blender::GuardedAllocator::allocate · L43](03-内存工具与分配器接口.md#f-a57239e6d3bd10d9)。
 
 <!-- annotated:e3b72bfcabd610 -->
 
@@ -2142,7 +2142,7 @@ Array实例大小在运行时确定，不同长度通常仍属于相同模板类
 
 **继续追踪实现**
 
-- `allocator_.deallocate` → [blender::GuardedAllocator::deallocate · L60](03-%E5%86%85%E5%AD%98%E5%B7%A5%E5%85%B7%E4%B8%8E%E5%88%86%E9%85%8D%E5%99%A8%E6%8E%A5%E5%8F%A3.md#f-c1586978e7959acb)。
+- `allocator_.deallocate` → [blender::GuardedAllocator::deallocate · L60](03-内存工具与分配器接口.md#f-c1586978e7959acb)。
 
 ### 类型布局、声明与编译条件 · BLI_array.hh L485—L487
 
@@ -2259,4 +2259,4 @@ friend授予指定函数或类访问非公开成员的权限，并不意味着�
 
 对比std::vector、std::array、std::span与LLVM SmallVector、ArrayRef时，分别比较拥有关系、内嵌存储、大小是否属于类型和失效条件。不要根据同名方法推断完全相同契约。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

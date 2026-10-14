@@ -1,6 +1,6 @@
 # 02-09 MultiValueMap一键多值
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -250,7 +250,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `this->add_as` → [blender::MultiValueMap::add_as · L57](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-9aabcfd35c38bed5)。
+- `this->add_as` → [blender::MultiValueMap::add_as · L57](09-MultiValueMap一键多值.md#f-9aabcfd35c38bed5)。
 
 <a id="f-05dd4addb1fcb0b0"></a>
 
@@ -291,7 +291,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `this->add_as` → [blender::MultiValueMap::add_as · L57](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-9aabcfd35c38bed5)。
+- `this->add_as` → [blender::MultiValueMap::add_as · L57](09-MultiValueMap一键多值.md#f-9aabcfd35c38bed5)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-c897543def377b93"></a>
@@ -333,7 +333,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `this->add_as` → [blender::MultiValueMap::add_as · L57](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-9aabcfd35c38bed5)。
+- `this->add_as` → [blender::MultiValueMap::add_as · L57](09-MultiValueMap一键多值.md#f-9aabcfd35c38bed5)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-3cf2c275172b7900"></a>
@@ -375,7 +375,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `this->add_as` → [blender::MultiValueMap::add_as · L57](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-9aabcfd35c38bed5)。
+- `this->add_as` → [blender::MultiValueMap::add_as · L57](09-MultiValueMap一键多值.md#f-9aabcfd35c38bed5)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-9aabcfd35c38bed5"></a>
@@ -422,9 +422,9 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.lookup_or_add_default_as` → [blender::Map::lookup_or_add_default_as · L647](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-85914156c7417813)。
+- `map_.lookup_or_add_default_as` → [blender::Map::lookup_or_add_default_as · L647](05-Map插入与回调.md#f-85914156c7417813)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `vector.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `vector.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
 - `std::forward<ForwardValue>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 <!-- annotated:314a2d91157c09 -->
@@ -484,8 +484,8 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.lookup_or_add_default_as` → [blender::Map::lookup_or_add_default_as · L647](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-85914156c7417813)。
-- `vector.append_non_duplicates` → [blender::Vector::append_non_duplicates · L537](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-7741238254851c96)。
+- `map_.lookup_or_add_default_as` → [blender::Map::lookup_or_add_default_as · L647](05-Map插入与回调.md#f-85914156c7417813)。
+- `vector.append_non_duplicates` → [blender::Vector::append_non_duplicates · L537](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-7741238254851c96)。
 
 ### 类型布局、声明与编译条件 · BLI_multi_value_map.hh L69—L72
 
@@ -550,7 +550,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `this->add_multiple_as` → [blender::MultiValueMap::add_multiple_as · L81](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-18f5156166c5bec0)。
+- `this->add_multiple_as` → [blender::MultiValueMap::add_multiple_as · L81](09-MultiValueMap一键多值.md#f-18f5156166c5bec0)。
 
 <a id="f-74b742baac3b83e5"></a>
 
@@ -591,7 +591,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `this->add_multiple_as` → [blender::MultiValueMap::add_multiple_as · L81](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-18f5156166c5bec0)。
+- `this->add_multiple_as` → [blender::MultiValueMap::add_multiple_as · L81](09-MultiValueMap一键多值.md#f-18f5156166c5bec0)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-18f5156166c5bec0"></a>
@@ -636,9 +636,9 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.lookup_or_add_default_as` → [blender::Map::lookup_or_add_default_as · L647](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-85914156c7417813)。
+- `map_.lookup_or_add_default_as` → [blender::Map::lookup_or_add_default_as · L647](05-Map插入与回调.md#f-85914156c7417813)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `vector.extend` → [blender::Vector::extend · L595](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-fe6fcb7d09beded9)；[blender::Vector::extend · L599](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-40095c219019e2f9)；[blender::Vector::extend · L613](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-4d2e556cd7412fe4)；[blender::Vector::extend · L650](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-ae44ad8b3f05b082)。同名重载需按实参类型选择。
+- `vector.extend` → [blender::Vector::extend · L595](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-fe6fcb7d09beded9)；[blender::Vector::extend · L599](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-40095c219019e2f9)；[blender::Vector::extend · L613](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-4d2e556cd7412fe4)；[blender::Vector::extend · L650](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-ae44ad8b3f05b082)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_multi_value_map.hh L86—L89
 
@@ -706,7 +706,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `this->lookup_as` → [blender::MultiValueMap::lookup_as · L94](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-de8c6d22dc599f86)；[blender::MultiValueMap::lookup_as · L110](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-89df1a67deebfae3)。同名重载需按实参类型选择。
+- `this->lookup_as` → [blender::MultiValueMap::lookup_as · L94](09-MultiValueMap一键多值.md#f-de8c6d22dc599f86)；[blender::MultiValueMap::lookup_as · L110](09-MultiValueMap一键多值.md#f-89df1a67deebfae3)。同名重载需按实参类型选择。
 
 <a id="f-de8c6d22dc599f86"></a>
 
@@ -760,8 +760,8 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.lookup_ptr_as` → [blender::Map::lookup_ptr_as · L516](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-c82b929e8b2a18fb)；[blender::Map::lookup_ptr_as · L521](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-6350d153de2baf1d)。同名重载需按实参类型选择。
-- `vector->as_span` → [blender::Vector::as_span · L390](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-e2eed03cefcdd2ff)。
+- `map_.lookup_ptr_as` → [blender::Map::lookup_ptr_as · L516](04-Map查找与键访问.md#f-c82b929e8b2a18fb)；[blender::Map::lookup_ptr_as · L521](04-Map查找与键访问.md#f-6350d153de2baf1d)。同名重载需按实参类型选择。
+- `vector->as_span` → [blender::Vector::as_span · L390](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-e2eed03cefcdd2ff)。
 
 ### 类型布局、声明与编译条件 · BLI_multi_value_map.hh L102—L105
 
@@ -829,7 +829,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `this->lookup_as` → [blender::MultiValueMap::lookup_as · L94](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-de8c6d22dc599f86)；[blender::MultiValueMap::lookup_as · L110](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-89df1a67deebfae3)。同名重载需按实参类型选择。
+- `this->lookup_as` → [blender::MultiValueMap::lookup_as · L94](09-MultiValueMap一键多值.md#f-de8c6d22dc599f86)；[blender::MultiValueMap::lookup_as · L110](09-MultiValueMap一键多值.md#f-89df1a67deebfae3)。同名重载需按实参类型选择。
 
 <a id="f-89df1a67deebfae3"></a>
 
@@ -883,8 +883,8 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.lookup_ptr_as` → [blender::Map::lookup_ptr_as · L516](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-c82b929e8b2a18fb)；[blender::Map::lookup_ptr_as · L521](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-6350d153de2baf1d)。同名重载需按实参类型选择。
-- `vector->as_mutable_span` → [blender::Vector::as_mutable_span · L395](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-98b7994c0b2e3bae)。
+- `map_.lookup_ptr_as` → [blender::Map::lookup_ptr_as · L516](04-Map查找与键访问.md#f-c82b929e8b2a18fb)；[blender::Map::lookup_ptr_as · L521](04-Map查找与键访问.md#f-6350d153de2baf1d)。同名重载需按实参类型选择。
+- `vector->as_mutable_span` → [blender::Vector::as_mutable_span · L395](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-98b7994c0b2e3bae)。
 
 ### 类型布局、声明与编译条件 · BLI_multi_value_map.hh L118—L121
 
@@ -948,7 +948,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.size` → [blender::MultiValueMap::size · L122](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-a847efd2a0e4c5c5)。
+- `map_.size` → [blender::MultiValueMap::size · L122](09-MultiValueMap一键多值.md#f-a847efd2a0e4c5c5)。
 
 ### 类型布局、声明与编译条件 · BLI_multi_value_map.hh L126—L130
 
@@ -1014,7 +1014,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.is_empty` → [blender::MultiValueMap::is_empty · L131](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-5fd2aafc4b38e58d)。
+- `map_.is_empty` → [blender::MultiValueMap::is_empty · L131](09-MultiValueMap一键多值.md#f-5fd2aafc4b38e58d)。
 
 ### 类型布局、声明与编译条件 · BLI_multi_value_map.hh L135—L138
 
@@ -1078,7 +1078,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.items` → [blender::MultiValueMap::items · L139](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-f01c75c50f161aa6)；[blender::MultiValueMap::items · L147](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-9c4f2e06dc72246a)。同名重载需按实参类型选择。
+- `map_.items` → [blender::MultiValueMap::items · L139](09-MultiValueMap一键多值.md#f-f01c75c50f161aa6)；[blender::MultiValueMap::items · L147](09-MultiValueMap一键多值.md#f-9c4f2e06dc72246a)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_multi_value_map.hh L143—L146
 
@@ -1142,7 +1142,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.items` → [blender::MultiValueMap::items · L139](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-f01c75c50f161aa6)；[blender::MultiValueMap::items · L147](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-9c4f2e06dc72246a)。同名重载需按实参类型选择。
+- `map_.items` → [blender::MultiValueMap::items · L139](09-MultiValueMap一键多值.md#f-f01c75c50f161aa6)；[blender::MultiValueMap::items · L147](09-MultiValueMap一键多值.md#f-9c4f2e06dc72246a)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_multi_value_map.hh L151—L154
 
@@ -1206,7 +1206,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.keys` → [blender::MultiValueMap::keys · L155](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-18aa5e87c3129d25)。
+- `map_.keys` → [blender::MultiValueMap::keys · L155](09-MultiValueMap一键多值.md#f-18aa5e87c3129d25)。
 
 ### 类型布局、声明与编译条件 · BLI_multi_value_map.hh L159—L162
 
@@ -1270,7 +1270,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.values` → [blender::MultiValueMap::values · L163](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-ed5f936b478b47a3)；[blender::MultiValueMap::values · L171](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-6c5f689196887fad)。同名重载需按实参类型选择。
+- `map_.values` → [blender::MultiValueMap::values · L163](09-MultiValueMap一键多值.md#f-ed5f936b478b47a3)；[blender::MultiValueMap::values · L171](09-MultiValueMap一键多值.md#f-6c5f689196887fad)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_multi_value_map.hh L167—L170
 
@@ -1334,7 +1334,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.values` → [blender::MultiValueMap::values · L163](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-ed5f936b478b47a3)；[blender::MultiValueMap::values · L171](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-6c5f689196887fad)。同名重载需按实参类型选择。
+- `map_.values` → [blender::MultiValueMap::values · L163](09-MultiValueMap一键多值.md#f-ed5f936b478b47a3)；[blender::MultiValueMap::values · L171](09-MultiValueMap一键多值.md#f-6c5f689196887fad)。同名重载需按实参类型选择。
 
 <!-- annotated:8c1019159d5d75 -->
 
@@ -1386,7 +1386,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.clear` → [blender::MultiValueMap::clear · L176](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-2c6e6f1800f8abbb)。
+- `map_.clear` → [blender::MultiValueMap::clear · L176](09-MultiValueMap一键多值.md#f-2c6e6f1800f8abbb)。
 
 <!-- annotated:bb0c580b05de9a -->
 
@@ -1438,7 +1438,7 @@ template<typename Key, typename Value> class MultiValueMap {
 
 **继续追踪实现**
 
-- `map_.clear_and_shrink` → [blender::MultiValueMap::clear_and_shrink · L181](09-MultiValueMap%E4%B8%80%E9%94%AE%E5%A4%9A%E5%80%BC.md#f-43fba4e38b98f24b)。
+- `map_.clear_and_shrink` → [blender::MultiValueMap::clear_and_shrink · L181](09-MultiValueMap一键多值.md#f-43fba4e38b98f24b)。
 
 ### 类型布局、声明与编译条件 · BLI_multi_value_map.hh L185—L189
 
@@ -1529,4 +1529,4 @@ friend授予指定函数或类访问非公开成员的权限，并不意味着�
 
 对比std::unordered_map、Abseil flat_hash_map与node_hash_map时，优先比较地址稳定性、键值搬移要求和删除行为；不同实现的平均常数及负载策略需要测量。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

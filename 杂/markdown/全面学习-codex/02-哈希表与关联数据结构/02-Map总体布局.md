@@ -1,6 +1,6 @@
 # 02-02 Map总体布局
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -873,7 +873,7 @@ class Map {
 **继续追踪实现**
 
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `other.noexcept_reset` → [blender::Map::noexcept_reset · L1164](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-2bfb0182821f0fbc)。
+- `other.noexcept_reset` → [blender::Map::noexcept_reset · L1164](07-重建与摊还复杂度.md#f-2bfb0182821f0fbc)。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L226—L234
 
@@ -953,7 +953,7 @@ class Map {
 
 **继续追踪实现**
 
-- `this->add` → [blender::Map::add · L295](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-8d38101abf162f88)；[blender::Map::add · L299](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-1f59510cdfbd9f87)；[blender::Map::add · L303](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-645e0522347aa018)；[blender::Map::add · L307](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-03405db0730cedc0)。同名重载需按实参类型选择。
+- `this->add` → [blender::Map::add · L295](04-Map查找与键访问.md#f-8d38101abf162f88)；[blender::Map::add · L299](04-Map查找与键访问.md#f-1f59510cdfbd9f87)；[blender::Map::add · L303](04-Map查找与键访问.md#f-645e0522347aa018)；[blender::Map::add · L307](04-Map查找与键访问.md#f-03405db0730cedc0)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L241—L245
 
@@ -1080,7 +1080,7 @@ class Map {
 
 **继续追踪实现**
 
-- `copy_assign_container` → [blender::copy_assign_container · L284](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-546a45b4d8b5ab44)。
+- `copy_assign_container` → [blender::copy_assign_container · L284](../03-内存分配与运行时类型/01-对齐与未初始化存储.md#f-546a45b4d8b5ab44)。
 
 <!-- annotated:81812591de6ccf -->
 
@@ -1141,7 +1141,7 @@ class Map {
 
 **继续追踪实现**
 
-- `move_assign_container` → [blender::move_assign_container · L300](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-5144b56be86e6f42)。
+- `move_assign_container` → [blender::move_assign_container · L300](../03-内存分配与运行时类型/01-对齐与未初始化存储.md#f-5144b56be86e6f42)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L260—L264
@@ -1215,7 +1215,7 @@ class Map {
 
 **继续追踪实现**
 
-- `this->add_new_as` → [blender::Map::add_new_as · L281](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-f556b7e3fb7de063)。
+- `this->add_new_as` → [blender::Map::add_new_as · L281](04-Map查找与键访问.md#f-f556b7e3fb7de063)。
 
 <a id="f-d89cee0e3d2848a0"></a>
 
@@ -1262,7 +1262,7 @@ class Map {
 
 **继续追踪实现**
 
-- `this->add_new_as` → [blender::Map::add_new_as · L281](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-f556b7e3fb7de063)。
+- `this->add_new_as` → [blender::Map::add_new_as · L281](04-Map查找与键访问.md#f-f556b7e3fb7de063)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-c13142c32e703ebd"></a>
@@ -1310,7 +1310,7 @@ class Map {
 
 **继续追踪实现**
 
-- `this->add_new_as` → [blender::Map::add_new_as · L281](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-f556b7e3fb7de063)。
+- `this->add_new_as` → [blender::Map::add_new_as · L281](04-Map查找与键访问.md#f-f556b7e3fb7de063)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ## 语法与相关类型
@@ -1393,4 +1393,4 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
 
 对比std::unordered_map、Abseil flat_hash_map与node_hash_map时，优先比较地址稳定性、键值搬移要求和删除行为；不同实现的平均常数及负载策略需要测量。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

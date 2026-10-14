@@ -1,6 +1,6 @@
 # 07-07 Procedure指令与控制流
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -2789,8 +2789,8 @@ inline Span<ConstParameter> Procedure::params() const
 
 **继续追踪实现**
 
-- `params_.as_span().cast<ConstParameter>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L502。
-- `params_.as_span` → [blender::Vector::as_span · L390](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-e2eed03cefcdd2ff)。
+- `params_.as_span().cast<ConstParameter>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L502。
+- `params_.as_span` → [blender::Vector::as_span · L390](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-e2eed03cefcdd2ff)。
 
 <!-- annotated:f63dc84ba4a6a6 -->
 
@@ -3080,9 +3080,9 @@ inline const MultiFunction &Procedure::construct_function(Args &&...args)
 
 **继续追踪实现**
 
-- `allocator_.construct<T>` → [blender::LinearAllocator::construct · L135](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/02-LinearAllocator%E5%B8%83%E5%B1%80.md#f-437c16eedf07fa2a)。
+- `allocator_.construct<T>` → [blender::LinearAllocator::construct · L135](../03-内存分配与运行时类型/02-LinearAllocator布局.md#f-437c16eedf07fa2a)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `owned_functions_.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `owned_functions_.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · FN_multi_function_procedure.hh L533—L536
@@ -3259,12 +3259,12 @@ void InstructionCursor::set_next(Procedure &procedure, Instruction *new_instruct
 
 **继续追踪实现**
 
-- `procedure.set_entry` → [blender::fn::multi_function::Procedure::set_entry · L240](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-4c51b8f1bb3fa082)。
-- `static_cast<CallInstruction *>(instruction_)->set_next` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L29。
-- `branch_instruction.set_branch_true` → [blender::fn::multi_function::BranchInstruction::set_branch_true · L127](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-b66722975c9f59e7)。
-- `branch_instruction.set_branch_false` → [blender::fn::multi_function::BranchInstruction::set_branch_false · L138](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-df67650d43aa2a6c)。
-- `static_cast<DestructInstruction *>(instruction_)->set_next` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L43。
-- `static_cast<DummyInstruction *>(instruction_)->set_next` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L47。
+- `procedure.set_entry` → [blender::fn::multi_function::Procedure::set_entry · L240](07-Procedure指令与控制流.md#f-4c51b8f1bb3fa082)。
+- `static_cast<CallInstruction *>(instruction_)->set_next` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L29。
+- `branch_instruction.set_branch_true` → [blender::fn::multi_function::BranchInstruction::set_branch_true · L127](07-Procedure指令与控制流.md#f-b66722975c9f59e7)。
+- `branch_instruction.set_branch_false` → [blender::fn::multi_function::BranchInstruction::set_branch_false · L138](07-Procedure指令与控制流.md#f-df67650d43aa2a6c)。
+- `static_cast<DestructInstruction *>(instruction_)->set_next` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L43。
+- `static_cast<DummyInstruction *>(instruction_)->set_next` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L47。
 
 <!-- annotated:aa6ca147a0494b -->
 
@@ -3368,12 +3368,12 @@ Instruction *InstructionCursor::next(Procedure &procedure) const
 
 **继续追踪实现**
 
-- `procedure.entry` → [blender::fn::multi_function::Procedure::entry · L505](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-abdb843c4cc052b2)；[blender::fn::multi_function::Procedure::entry · L510](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-6b7fb1a71808de2e)。同名重载需按实参类型选择。
-- `static_cast<CallInstruction *>(instruction_)->next` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L61。
-- `branch_instruction.branch_true` → [blender::fn::multi_function::BranchInstruction::branch_true · L431](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-214bcef229090a6a)；[blender::fn::multi_function::BranchInstruction::branch_true · L436](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-ab726f068b20fae8)。同名重载需按实参类型选择。
-- `branch_instruction.branch_false` → [blender::fn::multi_function::BranchInstruction::branch_false · L441](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-5f559cc4a23b8ad8)；[blender::fn::multi_function::BranchInstruction::branch_false · L446](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-64488c0b7992ae49)。同名重载需按实参类型选择。
-- `static_cast<DestructInstruction *>(instruction_)->next` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L70。
-- `static_cast<DummyInstruction *>(instruction_)->next` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L72。
+- `procedure.entry` → [blender::fn::multi_function::Procedure::entry · L505](07-Procedure指令与控制流.md#f-abdb843c4cc052b2)；[blender::fn::multi_function::Procedure::entry · L510](07-Procedure指令与控制流.md#f-6b7fb1a71808de2e)。同名重载需按实参类型选择。
+- `static_cast<CallInstruction *>(instruction_)->next` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L61。
+- `branch_instruction.branch_true` → [blender::fn::multi_function::BranchInstruction::branch_true · L431](07-Procedure指令与控制流.md#f-214bcef229090a6a)；[blender::fn::multi_function::BranchInstruction::branch_true · L436](07-Procedure指令与控制流.md#f-ab726f068b20fae8)。同名重载需按实参类型选择。
+- `branch_instruction.branch_false` → [blender::fn::multi_function::BranchInstruction::branch_false · L441](07-Procedure指令与控制流.md#f-5f559cc4a23b8ad8)；[blender::fn::multi_function::BranchInstruction::branch_false · L446](07-Procedure指令与控制流.md#f-64488c0b7992ae49)。同名重载需按实参类型选择。
+- `static_cast<DestructInstruction *>(instruction_)->next` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L70。
+- `static_cast<DummyInstruction *>(instruction_)->next` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L72。
 
 <!-- annotated:2c934a90e86470 -->
 
@@ -3506,8 +3506,8 @@ void CallInstruction::set_next(Instruction *instruction)
 
 **继续追踪实现**
 
-- `next_->prev_.remove_first_occurrence_and_reorder` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L85。
-- `instruction->prev_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L88。
+- `next_->prev_.remove_first_occurrence_and_reorder` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L85。
+- `instruction->prev_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L88。
 
 <!-- annotated:292cb5069b3973 -->
 
@@ -3588,12 +3588,12 @@ void CallInstruction::set_param_variable(int param_index, Variable *variable)
 
 **继续追踪实现**
 
-- `params_[param_index]->users_.remove_first_occurrence_and_reorder` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L96。
-- `fn_->param_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L100。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `param_type.data_type` → [blender::fn::multi_function::ParamType::data_type · L113](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-b29743877463338d)。
-- `variable->data_type` → [blender::fn::multi_function::Variable::data_type · L348](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-80356391ae1c000e)。
-- `variable->users_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L103。
+- `params_[param_index]->users_.remove_first_occurrence_and_reorder` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L96。
+- `fn_->param_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L100。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `param_type.data_type` → [blender::fn::multi_function::ParamType::data_type · L113](03-参数类型与角色.md#f-b29743877463338d)。
+- `variable->data_type` → [blender::fn::multi_function::Variable::data_type · L348](07-Procedure指令与控制流.md#f-80356391ae1c000e)。
+- `variable->users_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L103。
 
 <!-- annotated:38279e623e18dd -->
 
@@ -3657,11 +3657,11 @@ void CallInstruction::set_params(Span<Variable *> variables)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `variables.size` → [blender::Span::size · L256](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `params_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L110。
-- `variables.index_range` → [blender::Span::index_range · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-caaa9b06e13e53e0)。
-- `this->set_param_variable` → [blender::fn::multi_function::CallInstruction::set_param_variable · L93](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-89bde933df565760)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `variables.size` → [blender::Span::size · L256](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `params_.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L110。
+- `variables.index_range` → [blender::Span::index_range · L405](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-caaa9b06e13e53e0)。
+- `this->set_param_variable` → [blender::fn::multi_function::CallInstruction::set_param_variable · L93](07-Procedure指令与控制流.md#f-89bde933df565760)。
 
 <!-- annotated:e363987905ea6b -->
 
@@ -3733,8 +3733,8 @@ void BranchInstruction::set_condition(Variable *variable)
 
 **继续追踪实现**
 
-- `condition_->users_.remove_first_occurrence_and_reorder` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L119。
-- `variable->users_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L122。
+- `condition_->users_.remove_first_occurrence_and_reorder` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L119。
+- `variable->users_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L122。
 
 <!-- annotated:154c5671b758ff -->
 
@@ -3806,8 +3806,8 @@ void BranchInstruction::set_branch_true(Instruction *instruction)
 
 **继续追踪实现**
 
-- `branch_true_->prev_.remove_first_occurrence_and_reorder` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L130。
-- `instruction->prev_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L133。
+- `branch_true_->prev_.remove_first_occurrence_and_reorder` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L130。
+- `instruction->prev_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L133。
 
 <!-- annotated:db7b2103628daa -->
 
@@ -3879,8 +3879,8 @@ void BranchInstruction::set_branch_false(Instruction *instruction)
 
 **继续追踪实现**
 
-- `branch_false_->prev_.remove_first_occurrence_and_reorder` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L141。
-- `instruction->prev_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L144。
+- `branch_false_->prev_.remove_first_occurrence_and_reorder` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L141。
+- `instruction->prev_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L144。
 
 <!-- annotated:ece0c4d1ee3dd0 -->
 
@@ -3952,8 +3952,8 @@ void DestructInstruction::set_variable(Variable *variable)
 
 **继续追踪实现**
 
-- `variable_->users_.remove_first_occurrence_and_reorder` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L152。
-- `variable->users_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L155。
+- `variable_->users_.remove_first_occurrence_and_reorder` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L152。
+- `variable->users_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L155。
 
 <!-- annotated:5729ff63ca50e5 -->
 
@@ -4025,8 +4025,8 @@ void DestructInstruction::set_next(Instruction *instruction)
 
 **继续追踪实现**
 
-- `next_->prev_.remove_first_occurrence_and_reorder` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L163。
-- `instruction->prev_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L166。
+- `next_->prev_.remove_first_occurrence_and_reorder` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L163。
+- `instruction->prev_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L166。
 
 <!-- annotated:6ddf061f851fd6 -->
 
@@ -4098,8 +4098,8 @@ void DummyInstruction::set_next(Instruction *instruction)
 
 **继续追踪实现**
 
-- `next_->prev_.remove_first_occurrence_and_reorder` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L174。
-- `instruction->prev_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L177。
+- `next_->prev_.remove_first_occurrence_and_reorder` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L174。
+- `instruction->prev_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L177。
 
 <!-- annotated:4300e303118d2b -->
 
@@ -4177,11 +4177,11 @@ Variable &Procedure::new_variable(DataType data_type, std::string name)
 
 **继续追踪实现**
 
-- `allocator_.construct<Variable>().release` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L184。
-- `allocator_.construct<Variable>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L184。
+- `allocator_.construct<Variable>().release` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L184。
+- `allocator_.construct<Variable>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L184。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `variables_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L187。
-- `variables_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L188。
+- `variables_.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L187。
+- `variables_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L188。
 
 <!-- annotated:07813c9368f6a6 -->
 
@@ -4259,12 +4259,12 @@ CallInstruction &Procedure::new_call_instruction(const MultiFunction &fn)
 
 **继续追踪实现**
 
-- `allocator_.construct<CallInstruction>().release` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L194。
-- `allocator_.construct<CallInstruction>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L194。
-- `allocator_.allocate_array<Variable *>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L197。
-- `fn.param_amount` → [blender::fn::multi_function::MultiFunction::param_amount · L62](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-dbc6d25e1e7ed8c8)。
-- `instruction.params_.fill` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L198。
-- `call_instructions_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L199。
+- `allocator_.construct<CallInstruction>().release` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L194。
+- `allocator_.construct<CallInstruction>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L194。
+- `allocator_.allocate_array<Variable *>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L197。
+- `fn.param_amount` → [blender::fn::multi_function::MultiFunction::param_amount · L62](01-批量计算模型.md#f-dbc6d25e1e7ed8c8)。
+- `instruction.params_.fill` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L198。
+- `call_instructions_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L199。
 
 <!-- annotated:b383417c7f8529 -->
 
@@ -4330,9 +4330,9 @@ BranchInstruction &Procedure::new_branch_instruction()
 
 **继续追踪实现**
 
-- `allocator_.construct<BranchInstruction>().release` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L205。
-- `allocator_.construct<BranchInstruction>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L205。
-- `branch_instructions_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L207。
+- `allocator_.construct<BranchInstruction>().release` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L205。
+- `allocator_.construct<BranchInstruction>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L205。
+- `branch_instructions_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L207。
 
 <!-- annotated:dfa82b15a9222b -->
 
@@ -4398,9 +4398,9 @@ DestructInstruction &Procedure::new_destruct_instruction()
 
 **继续追踪实现**
 
-- `allocator_.construct<DestructInstruction>().release` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L213。
-- `allocator_.construct<DestructInstruction>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L213。
-- `destruct_instructions_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L215。
+- `allocator_.construct<DestructInstruction>().release` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L213。
+- `allocator_.construct<DestructInstruction>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L213。
+- `destruct_instructions_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L215。
 
 <!-- annotated:ab0c067f01a6d1 -->
 
@@ -4466,9 +4466,9 @@ DummyInstruction &Procedure::new_dummy_instruction()
 
 **继续追踪实现**
 
-- `allocator_.construct<DummyInstruction>().release` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L221。
-- `allocator_.construct<DummyInstruction>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L221。
-- `dummy_instructions_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L223。
+- `allocator_.construct<DummyInstruction>().release` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L221。
+- `allocator_.construct<DummyInstruction>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L221。
+- `dummy_instructions_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L223。
 
 <!-- annotated:58d60a81a140fb -->
 
@@ -4534,9 +4534,9 @@ ReturnInstruction &Procedure::new_return_instruction()
 
 **继续追踪实现**
 
-- `allocator_.construct<ReturnInstruction>().release` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L229。
-- `allocator_.construct<ReturnInstruction>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L229。
-- `return_instructions_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L231。
+- `allocator_.construct<ReturnInstruction>().release` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L229。
+- `allocator_.construct<ReturnInstruction>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L229。
+- `return_instructions_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L231。
 
 <!-- annotated:48d11d29eaf776 -->
 
@@ -4593,7 +4593,7 @@ void Procedure::add_parameter(ParamType::InterfaceType interface_type, Variable 
 
 **继续追踪实现**
 
-- `params_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L237。
+- `params_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L237。
 
 <!-- annotated:d6453c68cd5527 -->
 
@@ -4661,9 +4661,9 @@ void Procedure::set_entry(Instruction &entry)
 
 **继续追踪实现**
 
-- `entry_->prev_.remove_first_occurrence_and_reorder` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L243。
-- `InstructionCursor::ForEntry` → [blender::fn::multi_function::InstructionCursor::ForEntry · L323](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-5054dabb07986d8d)。
-- `entry_->prev_.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L246。
+- `entry_->prev_.remove_first_occurrence_and_reorder` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L243。
+- `InstructionCursor::ForEntry` → [blender::fn::multi_function::InstructionCursor::ForEntry · L323](07-Procedure指令与控制流.md#f-5054dabb07986d8d)。
+- `entry_->prev_.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L246。
 
 <!-- annotated:d4ffc422cbb25b -->
 
@@ -4749,12 +4749,12 @@ Procedure::~Procedure()
 
 **继续追踪实现**
 
-- `instruction->~CallInstruction` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L252。
-- `instruction->~BranchInstruction` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L255。
-- `instruction->~DestructInstruction` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L258。
-- `instruction->~DummyInstruction` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L261。
-- `instruction->~ReturnInstruction` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L264。
-- `variable->~Variable` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L267。
+- `instruction->~CallInstruction` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L252。
+- `instruction->~BranchInstruction` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L255。
+- `instruction->~DestructInstruction` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L258。
+- `instruction->~DummyInstruction` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L261。
+- `instruction->~ReturnInstruction` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L264。
+- `variable->~Variable` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L267。
 
 <!-- annotated:c0a678c903145f -->
 
@@ -4847,11 +4847,11 @@ bool Procedure::validate() const
 
 **继续追踪实现**
 
-- `this->validate_all_instruction_pointers_set` → [blender::fn::multi_function::Procedure::validate_all_instruction_pointers_set · L301](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-7d128b09bad7dc23)。
-- `this->validate_all_params_provided` → [blender::fn::multi_function::Procedure::validate_all_params_provided · L329](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-c4487da69a3c3b75)。
-- `this->validate_same_variables_in_one_call` → [blender::fn::multi_function::Procedure::validate_same_variables_in_one_call · L358](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-d61a2dfd28e678b4)。
-- `this->validate_parameters` → [blender::fn::multi_function::Procedure::validate_parameters · L391](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-52e0c2266de6fa5c)。
-- `this->validate_initialization` → [blender::fn::multi_function::Procedure::validate_initialization · L403](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-9030b5f6e6b26ac6)。
+- `this->validate_all_instruction_pointers_set` → [blender::fn::multi_function::Procedure::validate_all_instruction_pointers_set · L301](07-Procedure指令与控制流.md#f-7d128b09bad7dc23)。
+- `this->validate_all_params_provided` → [blender::fn::multi_function::Procedure::validate_all_params_provided · L329](07-Procedure指令与控制流.md#f-c4487da69a3c3b75)。
+- `this->validate_same_variables_in_one_call` → [blender::fn::multi_function::Procedure::validate_same_variables_in_one_call · L358](07-Procedure指令与控制流.md#f-d61a2dfd28e678b4)。
+- `this->validate_parameters` → [blender::fn::multi_function::Procedure::validate_parameters · L391](07-Procedure指令与控制流.md#f-52e0c2266de6fa5c)。
+- `this->validate_initialization` → [blender::fn::multi_function::Procedure::validate_initialization · L403](07-Procedure指令与控制流.md#f-9030b5f6e6b26ac6)。
 
 <!-- annotated:cbd5ccf943ea68 -->
 
@@ -4907,8 +4907,8 @@ void Procedure::prepare_for_execution()
 
 **继续追踪实现**
 
-- `instruction->fn().prepare_for_execution` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L297。
-- `instruction->fn` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L297。
+- `instruction->fn().prepare_for_execution` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L297。
+- `instruction->fn` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L297。
 
 <!-- annotated:70437f9c42ea81 -->
 
@@ -5116,10 +5116,10 @@ bool Procedure::validate_all_params_provided() const
 
 **继续追踪实现**
 
-- `instruction->fn` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L332。
-- `fn.param_indices` → [blender::fn::multi_function::MultiFunction::param_indices · L67](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-e06e9cd4be7e3ea1)。
-- `fn.param_type` → [blender::fn::multi_function::MultiFunction::param_type · L72](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-b713a5aeabff53fa)。
-- `param_type.category` → [blender::fn::multi_function::ParamType::category · L123](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-3b4b7b7786763245)。
+- `instruction->fn` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L332。
+- `fn.param_indices` → [blender::fn::multi_function::MultiFunction::param_indices · L67](01-批量计算模型.md#f-e06e9cd4be7e3ea1)。
+- `fn.param_type` → [blender::fn::multi_function::MultiFunction::param_type · L72](01-批量计算模型.md#f-b713a5aeabff53fa)。
+- `param_type.category` → [blender::fn::multi_function::ParamType::category · L123](03-参数类型与角色.md#f-3b4b7b7786763245)。
 
 <!-- annotated:4df5c312664d99 -->
 
@@ -5232,11 +5232,11 @@ bool Procedure::validate_same_variables_in_one_call() const
 
 **继续追踪实现**
 
-- `fn.param_indices` → [blender::fn::multi_function::MultiFunction::param_indices · L67](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-e06e9cd4be7e3ea1)。
-- `fn.param_type` → [blender::fn::multi_function::MultiFunction::param_type · L72](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-b713a5aeabff53fa)。
-- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
-- `param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-a506dc82cef792f5)。
-- `other_param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-a506dc82cef792f5)。
+- `fn.param_indices` → [blender::fn::multi_function::MultiFunction::param_indices · L67](01-批量计算模型.md#f-e06e9cd4be7e3ea1)。
+- `fn.param_type` → [blender::fn::multi_function::MultiFunction::param_type · L72](01-批量计算模型.md#f-b713a5aeabff53fa)。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-参数类型与角色.md#f-a506dc82cef792f5)。
+- `other_param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-参数类型与角色.md#f-a506dc82cef792f5)。
 
 <!-- annotated:bfda8367b0ff10 -->
 
@@ -5308,7 +5308,7 @@ bool Procedure::validate_parameters() const
 
 **继续追踪实现**
 
-- `variables.add` → [blender::Set::add · L248](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-c7498809c2327fba)；[blender::Set::add · L252](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-e3ac8d1c52c03c2b)。同名重载需按实参类型选择。
+- `variables.add` → [blender::Set::add · L248](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-c7498809c2327fba)；[blender::Set::add · L252](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-e3ac8d1c52c03c2b)。同名重载需按实参类型选择。
 
 <!-- annotated:db79b62c02b418 -->
 
@@ -5501,13 +5501,13 @@ bool Procedure::validate_initialization() const
 
 **继续追踪实现**
 
-- `this->find_initialization_state_before_instruction` → [blender::fn::multi_function::Procedure::find_initialization_state_before_instruction · L475](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-8f36d6775fef87e4)。
-- `fn.param_indices` → [blender::fn::multi_function::MultiFunction::param_indices · L67](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-e06e9cd4be7e3ea1)。
-- `fn.param_type` → [blender::fn::multi_function::MultiFunction::param_type · L72](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-b713a5aeabff53fa)。
-- `param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-a506dc82cef792f5)。
-- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
-- `variables_that_should_be_initialized_on_return.add_new` → [blender::Set::add_new · L233](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-12f4dd65a3abaaac)；[blender::Set::add_new · L237](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-9c46c167cdd9bb73)。同名重载需按实参类型选择。
-- `variables_that_should_be_initialized_on_return.contains` → [blender::Set::contains · L310](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-af7099799494350e)。
+- `this->find_initialization_state_before_instruction` → [blender::fn::multi_function::Procedure::find_initialization_state_before_instruction · L475](07-Procedure指令与控制流.md#f-8f36d6775fef87e4)。
+- `fn.param_indices` → [blender::fn::multi_function::MultiFunction::param_indices · L67](01-批量计算模型.md#f-e06e9cd4be7e3ea1)。
+- `fn.param_type` → [blender::fn::multi_function::MultiFunction::param_type · L72](01-批量计算模型.md#f-b713a5aeabff53fa)。
+- `param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-参数类型与角色.md#f-a506dc82cef792f5)。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `variables_that_should_be_initialized_on_return.add_new` → [blender::Set::add_new · L233](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-12f4dd65a3abaaac)；[blender::Set::add_new · L237](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-9c46c167cdd9bb73)。同名重载需按实参类型选择。
+- `variables_that_should_be_initialized_on_return.contains` → [blender::Set::contains · L310](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-af7099799494350e)。
 
 <!-- annotated:e7e16ab74f0a29 -->
 
@@ -5748,16 +5748,16 @@ Procedure::InitState Procedure::find_initialization_state_before_instruction(
 
 **继续追踪实现**
 
-- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
-- `check_entry_instruction` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L499。
-- `cursor.instruction` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L505。
-- `instructions_to_check.push` → [blender::Stack::push · L215](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/13-Stack%E4%B8%8E%E6%A0%88%E6%8E%A5%E5%8F%A3.md#f-4e2f52822df4658e)；[blender::Stack::push · L219](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/13-Stack%E4%B8%8E%E6%A0%88%E6%8E%A5%E5%8F%A3.md#f-6eb0d6a78e38b4e8)。同名重载需按实参类型选择。
-- `instructions_to_check.is_empty` → [blender::Stack::is_empty · L310](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/13-Stack%E4%B8%8E%E6%A0%88%E6%8E%A5%E5%8F%A3.md#f-0dbc636232316093)。
-- `instructions_to_check.pop` → [blender::Stack::pop · L244](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/13-Stack%E4%B8%8E%E6%A0%88%E6%8E%A5%E5%8F%A3.md#f-6ef6c36a2a0aa986)。
-- `checked_instructions.add` → [blender::Set::add · L248](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-c7498809c2327fba)；[blender::Set::add · L252](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-e3ac8d1c52c03c2b)。同名重载需按实参类型选择。
-- `fn.param_indices` → [blender::fn::multi_function::MultiFunction::param_indices · L67](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-e06e9cd4be7e3ea1)。
-- `fn.param_type` → [blender::fn::multi_function::MultiFunction::param_type · L72](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-b713a5aeabff53fa)。
-- `param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-a506dc82cef792f5)。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `check_entry_instruction` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L499。
+- `cursor.instruction` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L505。
+- `instructions_to_check.push` → [blender::Stack::push · L215](../01-基础容器与现代CPP/13-Stack与栈接口.md#f-4e2f52822df4658e)；[blender::Stack::push · L219](../01-基础容器与现代CPP/13-Stack与栈接口.md#f-6eb0d6a78e38b4e8)。同名重载需按实参类型选择。
+- `instructions_to_check.is_empty` → [blender::Stack::is_empty · L310](../01-基础容器与现代CPP/13-Stack与栈接口.md#f-0dbc636232316093)。
+- `instructions_to_check.pop` → [blender::Stack::pop · L244](../01-基础容器与现代CPP/13-Stack与栈接口.md#f-6ef6c36a2a0aa986)。
+- `checked_instructions.add` → [blender::Set::add · L248](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-c7498809c2327fba)；[blender::Set::add · L252](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-e3ac8d1c52c03c2b)。同名重载需按实参类型选择。
+- `fn.param_indices` → [blender::fn::multi_function::MultiFunction::param_indices · L67](01-批量计算模型.md#f-e06e9cd4be7e3ea1)。
+- `fn.param_type` → [blender::fn::multi_function::MultiFunction::param_type · L72](01-批量计算模型.md#f-b713a5aeabff53fa)。
+- `param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-参数类型与角色.md#f-a506dc82cef792f5)。
 
 ### 类型布局、声明与编译条件 · multi_function_procedure.cc L565—L573
 
@@ -5894,9 +5894,9 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `this->create_nodes` → [blender::fn::multi_function::ProcedureDotExport::create_nodes · L583](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-fb61c3abc4a02384)。
-- `this->create_edges` → [blender::fn::multi_function::ProcedureDotExport::create_edges · L641](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-91f98f112e97e98f)。
-- `digraph_.to_dot_string` → [blender::dot_export::DirectedGraph::to_dot_string · L136](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-dot_export-b6a26f.md#f-e1fb2394550cdd6f)。
+- `this->create_nodes` → [blender::fn::multi_function::ProcedureDotExport::create_nodes · L583](07-Procedure指令与控制流.md#f-fb61c3abc4a02384)。
+- `this->create_edges` → [blender::fn::multi_function::ProcedureDotExport::create_edges · L641](07-Procedure指令与控制流.md#f-91f98f112e97e98f)。
+- `digraph_.to_dot_string` → [blender::dot_export::DirectedGraph::to_dot_string · L136](../90-实现依赖专题/01-BLI基础库/intern/dot_export.cc.md#f-e1fb2394550cdd6f)。
 
 <!-- annotated:46c4ba03852931 -->
 
@@ -6059,22 +6059,22 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `all_instructions.extend` → [blender::Vector::extend · L595](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-fe6fcb7d09beded9)；[blender::Vector::extend · L599](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-40095c219019e2f9)；[blender::Vector::extend · L613](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-4d2e556cd7412fe4)；[blender::Vector::extend · L650](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-ae44ad8b3f05b082)。同名重载需按实参类型选择。
-- `instructions.begin` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L587。
-- `instructions.end` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L587。
-- `add_instructions` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L589。
-- `handled_instructions.contains` → [blender::Set::contains · L310](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-af7099799494350e)。
-- `this->get_instructions_in_block` → [blender::fn::multi_function::ProcedureDotExport::get_instructions_in_block · L756](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-8caaf806865a68d3)。
-- `handled_instructions.add_new` → [blender::Set::add_new · L233](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-12f4dd65a3abaaac)；[blender::Set::add_new · L237](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-9c46c167cdd9bb73)。同名重载需按实参类型选择。
-- `current->type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L608。
-- `this->instruction_to_string` → [blender::fn::multi_function::ProcedureDotExport::instruction_to_string · L786](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-82374f1ccceebcb0)；[blender::fn::multi_function::ProcedureDotExport::instruction_to_string · L816](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-0bf125010add0b1d)；[blender::fn::multi_function::ProcedureDotExport::instruction_to_string · L822](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-b9346307e244054e)；[blender::fn::multi_function::ProcedureDotExport::instruction_to_string · L827](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-3c43ff60987f79dd)；[blender::fn::multi_function::ProcedureDotExport::instruction_to_string · L846](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-62a2a2c6ca2d9501)。同名重载需按实参类型选择。
-- `digraph_.new_node` → [blender::dot_export::Graph::new_node · L21](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-dot_export-b6a26f.md#f-c18eecae7679bda3)。
+- `all_instructions.extend` → [blender::Vector::extend · L595](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-fe6fcb7d09beded9)；[blender::Vector::extend · L599](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-40095c219019e2f9)；[blender::Vector::extend · L613](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-4d2e556cd7412fe4)；[blender::Vector::extend · L650](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-ae44ad8b3f05b082)。同名重载需按实参类型选择。
+- `instructions.begin` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L587。
+- `instructions.end` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L587。
+- `add_instructions` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L589。
+- `handled_instructions.contains` → [blender::Set::contains · L310](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-af7099799494350e)。
+- `this->get_instructions_in_block` → [blender::fn::multi_function::ProcedureDotExport::get_instructions_in_block · L756](07-Procedure指令与控制流.md#f-8caaf806865a68d3)。
+- `handled_instructions.add_new` → [blender::Set::add_new · L233](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-12f4dd65a3abaaac)；[blender::Set::add_new · L237](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-9c46c167cdd9bb73)。同名重载需按实参类型选择。
+- `current->type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L608。
+- `this->instruction_to_string` → [blender::fn::multi_function::ProcedureDotExport::instruction_to_string · L786](07-Procedure指令与控制流.md#f-82374f1ccceebcb0)；[blender::fn::multi_function::ProcedureDotExport::instruction_to_string · L816](07-Procedure指令与控制流.md#f-0bf125010add0b1d)；[blender::fn::multi_function::ProcedureDotExport::instruction_to_string · L822](07-Procedure指令与控制流.md#f-b9346307e244054e)；[blender::fn::multi_function::ProcedureDotExport::instruction_to_string · L827](07-Procedure指令与控制流.md#f-3c43ff60987f79dd)；[blender::fn::multi_function::ProcedureDotExport::instruction_to_string · L846](07-Procedure指令与控制流.md#f-62a2a2c6ca2d9501)。同名重载需按实参类型选择。
+- `digraph_.new_node` → [blender::dot_export::Graph::new_node · L21](../90-实现依赖专题/01-BLI基础库/intern/dot_export.cc.md#f-c18eecae7679bda3)。
 - `ss.str` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `dot_node.set_shape` → [blender::dot_export::Node::set_shape · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_dot_export-eb2f54.md#f-d0136e44b0967099)。
-- `dot_nodes_by_begin_.add_new` → [blender::Map::add_new · L265](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/02-Map%E6%80%BB%E4%BD%93%E5%B8%83%E5%B1%80.md#f-521ff0865e8229d0)；[blender::Map::add_new · L269](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/02-Map%E6%80%BB%E4%BD%93%E5%B8%83%E5%B1%80.md#f-d89cee0e3d2848a0)；[blender::Map::add_new · L273](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/02-Map%E6%80%BB%E4%BD%93%E5%B8%83%E5%B1%80.md#f-c13142c32e703ebd)；[blender::Map::add_new · L277](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-da1e537f229db040)。同名重载需按实参类型选择。
-- `block_instructions.first` → [blender::Vector::first · L766](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-2dacb3f08535697d)；[blender::Vector::first · L771](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-1d394fd9ab82bf04)。同名重载需按实参类型选择。
-- `dot_nodes_by_end_.add_new` → [blender::Map::add_new · L265](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/02-Map%E6%80%BB%E4%BD%93%E5%B8%83%E5%B1%80.md#f-521ff0865e8229d0)；[blender::Map::add_new · L269](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/02-Map%E6%80%BB%E4%BD%93%E5%B8%83%E5%B1%80.md#f-d89cee0e3d2848a0)；[blender::Map::add_new · L273](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/02-Map%E6%80%BB%E4%BD%93%E5%B8%83%E5%B1%80.md#f-c13142c32e703ebd)；[blender::Map::add_new · L277](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-da1e537f229db040)。同名重载需按实参类型选择。
-- `block_instructions.last` → [blender::Vector::last · L749](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-d32e1fd895e766b4)；[blender::Vector::last · L755](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-66b262993c080d9d)。同名重载需按实参类型选择。
+- `dot_node.set_shape` → [blender::dot_export::Node::set_shape · L135](../90-实现依赖专题/01-BLI基础库/BLI_dot_export.hh.md#f-d0136e44b0967099)。
+- `dot_nodes_by_begin_.add_new` → [blender::Map::add_new · L265](../02-哈希表与关联数据结构/02-Map总体布局.md#f-521ff0865e8229d0)；[blender::Map::add_new · L269](../02-哈希表与关联数据结构/02-Map总体布局.md#f-d89cee0e3d2848a0)；[blender::Map::add_new · L273](../02-哈希表与关联数据结构/02-Map总体布局.md#f-c13142c32e703ebd)；[blender::Map::add_new · L277](../02-哈希表与关联数据结构/04-Map查找与键访问.md#f-da1e537f229db040)。同名重载需按实参类型选择。
+- `block_instructions.first` → [blender::Vector::first · L766](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-2dacb3f08535697d)；[blender::Vector::first · L771](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-1d394fd9ab82bf04)。同名重载需按实参类型选择。
+- `dot_nodes_by_end_.add_new` → [blender::Map::add_new · L265](../02-哈希表与关联数据结构/02-Map总体布局.md#f-521ff0865e8229d0)；[blender::Map::add_new · L269](../02-哈希表与关联数据结构/02-Map总体布局.md#f-d89cee0e3d2848a0)；[blender::Map::add_new · L273](../02-哈希表与关联数据结构/02-Map总体布局.md#f-c13142c32e703ebd)；[blender::Map::add_new · L277](../02-哈希表与关联数据结构/04-Map查找与键访问.md#f-da1e537f229db040)。同名重载需按实参类型选择。
+- `block_instructions.last` → [blender::Vector::last · L749](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-d32e1fd895e766b4)；[blender::Vector::last · L755](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-66b262993c080d9d)。同名重载需按实参类型选择。
 
 <!-- annotated:d885d6fa545999 -->
 
@@ -6229,22 +6229,22 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `digraph_.new_node` → [blender::dot_export::Graph::new_node · L21](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-dot_export-b6a26f.md#f-c18eecae7679bda3)。
-- `to_node.set_shape` → [blender::dot_export::Node::set_shape · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_dot_export-eb2f54.md#f-d0136e44b0967099)。
-- `digraph_.new_edge` → [blender::dot_export::DirectedGraph::new_edge · L46](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-dot_export-b6a26f.md#f-b81e911705f8c06e)。
-- `dot_nodes_by_begin_.lookup` → [blender::Map::lookup · L545](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-f25ef95f1454656d)；[blender::Map::lookup · L549](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-742f9454fa7ea4b9)。同名重载需按实参类型选择。
-- `dot_nodes_by_end_.items` → [blender::Map::items · L902](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/06-%E5%88%A0%E9%99%A4%E5%A2%93%E7%A2%91%E4%B8%8E%E5%80%BC%E9%94%80%E6%AF%81.md#f-9ef4f6f70cba8f81)；[blender::Map::items · L913](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/06-%E5%88%A0%E9%99%A4%E5%A2%93%E7%A2%91%E4%B8%8E%E5%80%BC%E9%94%80%E6%AF%81.md#f-0a69f4e73db8973e)；[blender::Map::items · L926](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/06-%E5%88%A0%E9%99%A4%E5%A2%93%E7%A2%91%E4%B8%8E%E5%80%BC%E9%94%80%E6%AF%81.md#f-092add737130dcfb)；[blender::Map::items · L927](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/06-%E5%88%A0%E9%99%A4%E5%A2%93%E7%A2%91%E4%B8%8E%E5%80%BC%E9%94%80%E6%AF%81.md#f-4bfc999f60cdede4)。同名重载需按实参类型选择。
-- `from_instruction.type` → [blender::fn::multi_function::Instruction::type · L374](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-7627ff2a0b57ac1f)。
-- `static_cast<const CallInstruction &>(from_instruction).next` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L660。
-- `create_edge` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L661。
-- `static_cast<const DestructInstruction &>(from_instruction).next` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L666。
-- `static_cast<const DummyInstruction &>(from_instruction).next` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L672。
-- `branch_instruction.branch_true` → [blender::fn::multi_function::BranchInstruction::branch_true · L431](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-214bcef229090a6a)；[blender::fn::multi_function::BranchInstruction::branch_true · L436](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-ab726f068b20fae8)。同名重载需按实参类型选择。
-- `branch_instruction.branch_false` → [blender::fn::multi_function::BranchInstruction::branch_false · L441](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-5f559cc4a23b8ad8)；[blender::fn::multi_function::BranchInstruction::branch_false · L446](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-64488c0b7992ae49)。同名重载需按实参类型选择。
-- `create_edge(from_node, to_true_instruction).attributes.set` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L684。
-- `create_edge(from_node, to_false_instruction).attributes.set` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L685。
-- `this->create_entry_node` → [blender::fn::multi_function::ProcedureDotExport::create_entry_node · L852](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-f2a0dcbe949cd10d)。
-- `procedure_.entry` → [blender::fn::multi_function::Procedure::entry · L505](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-abdb843c4cc052b2)；[blender::fn::multi_function::Procedure::entry · L510](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-6b7fb1a71808de2e)。同名重载需按实参类型选择。
+- `digraph_.new_node` → [blender::dot_export::Graph::new_node · L21](../90-实现依赖专题/01-BLI基础库/intern/dot_export.cc.md#f-c18eecae7679bda3)。
+- `to_node.set_shape` → [blender::dot_export::Node::set_shape · L135](../90-实现依赖专题/01-BLI基础库/BLI_dot_export.hh.md#f-d0136e44b0967099)。
+- `digraph_.new_edge` → [blender::dot_export::DirectedGraph::new_edge · L46](../90-实现依赖专题/01-BLI基础库/intern/dot_export.cc.md#f-b81e911705f8c06e)。
+- `dot_nodes_by_begin_.lookup` → [blender::Map::lookup · L545](../02-哈希表与关联数据结构/04-Map查找与键访问.md#f-f25ef95f1454656d)；[blender::Map::lookup · L549](../02-哈希表与关联数据结构/04-Map查找与键访问.md#f-742f9454fa7ea4b9)。同名重载需按实参类型选择。
+- `dot_nodes_by_end_.items` → [blender::Map::items · L902](../02-哈希表与关联数据结构/06-删除墓碑与值销毁.md#f-9ef4f6f70cba8f81)；[blender::Map::items · L913](../02-哈希表与关联数据结构/06-删除墓碑与值销毁.md#f-0a69f4e73db8973e)；[blender::Map::items · L926](../02-哈希表与关联数据结构/06-删除墓碑与值销毁.md#f-092add737130dcfb)；[blender::Map::items · L927](../02-哈希表与关联数据结构/06-删除墓碑与值销毁.md#f-4bfc999f60cdede4)。同名重载需按实参类型选择。
+- `from_instruction.type` → [blender::fn::multi_function::Instruction::type · L374](07-Procedure指令与控制流.md#f-7627ff2a0b57ac1f)。
+- `static_cast<const CallInstruction &>(from_instruction).next` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L660。
+- `create_edge` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L661。
+- `static_cast<const DestructInstruction &>(from_instruction).next` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L666。
+- `static_cast<const DummyInstruction &>(from_instruction).next` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L672。
+- `branch_instruction.branch_true` → [blender::fn::multi_function::BranchInstruction::branch_true · L431](07-Procedure指令与控制流.md#f-214bcef229090a6a)；[blender::fn::multi_function::BranchInstruction::branch_true · L436](07-Procedure指令与控制流.md#f-ab726f068b20fae8)。同名重载需按实参类型选择。
+- `branch_instruction.branch_false` → [blender::fn::multi_function::BranchInstruction::branch_false · L441](07-Procedure指令与控制流.md#f-5f559cc4a23b8ad8)；[blender::fn::multi_function::BranchInstruction::branch_false · L446](07-Procedure指令与控制流.md#f-64488c0b7992ae49)。同名重载需按实参类型选择。
+- `create_edge(from_node, to_true_instruction).attributes.set` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L684。
+- `create_edge(from_node, to_false_instruction).attributes.set` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L685。
+- `this->create_entry_node` → [blender::fn::multi_function::ProcedureDotExport::create_entry_node · L852](07-Procedure指令与控制流.md#f-f2a0dcbe949cd10d)。
+- `procedure_.entry` → [blender::fn::multi_function::Procedure::entry · L505](07-Procedure指令与控制流.md#f-abdb843c4cc052b2)；[blender::fn::multi_function::Procedure::entry · L510](07-Procedure指令与控制流.md#f-6b7fb1a71808de2e)。同名重载需按实参类型选择。
 
 <!-- annotated:6b916da535a997 -->
 
@@ -6323,10 +6323,10 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `instruction.prev().size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L697。
-- `instruction.prev` → [blender::fn::multi_function::Instruction::prev · L379](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-7054e50273301b5a)。
-- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
-- `instruction.prev()[0].type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L700。
+- `instruction.prev().size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L697。
+- `instruction.prev` → [blender::fn::multi_function::Instruction::prev · L379](07-Procedure指令与控制流.md#f-7054e50273301b5a)。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `instruction.prev()[0].type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L700。
 
 <!-- annotated:bbca773a8d32ad -->
 
@@ -6406,9 +6406,9 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `this->has_to_be_block_begin` → [blender::fn::multi_function::ProcedureDotExport::has_to_be_block_begin · L695](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-0ceafc1bbca83c9e)。
-- `current->prev()[0].instruction` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L713。
-- `current->prev` → [blender::fn::multi_function::Instruction::prev · L379](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-7054e50273301b5a)。
+- `this->has_to_be_block_begin` → [blender::fn::multi_function::ProcedureDotExport::has_to_be_block_begin · L695](07-Procedure指令与控制流.md#f-0ceafc1bbca83c9e)。
+- `current->prev()[0].instruction` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L713。
+- `current->prev` → [blender::fn::multi_function::Instruction::prev · L379](07-Procedure指令与控制流.md#f-7054e50273301b5a)。
 
 <!-- annotated:52baef7f6561ab -->
 
@@ -6534,11 +6534,11 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `instruction.type` → [blender::fn::multi_function::Instruction::type · L374](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-7627ff2a0b57ac1f)。
-- `static_cast<const CallInstruction &>(instruction).next` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L728。
-- `static_cast<const DestructInstruction &>(instruction).next` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L732。
-- `static_cast<const DummyInstruction &>(instruction).next` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L736。
-- `this->has_to_be_block_begin` → [blender::fn::multi_function::ProcedureDotExport::has_to_be_block_begin · L695](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-0ceafc1bbca83c9e)。
+- `instruction.type` → [blender::fn::multi_function::Instruction::type · L374](07-Procedure指令与控制流.md#f-7627ff2a0b57ac1f)。
+- `static_cast<const CallInstruction &>(instruction).next` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L728。
+- `static_cast<const DestructInstruction &>(instruction).next` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L732。
+- `static_cast<const DummyInstruction &>(instruction).next` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L736。
+- `this->has_to_be_block_begin` → [blender::fn::multi_function::ProcedureDotExport::has_to_be_block_begin · L695](07-Procedure指令与控制流.md#f-0ceafc1bbca83c9e)。
 
 <!-- annotated:b65e7fad083ef9 -->
 
@@ -6617,9 +6617,9 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `this->get_first_instruction_in_block` → [blender::fn::multi_function::ProcedureDotExport::get_first_instruction_in_block · L709](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-755192609edeb165)。
-- `this->get_next_instruction_in_block` → [blender::fn::multi_function::ProcedureDotExport::get_next_instruction_in_block · L722](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-031c04dcdc4b6f0e)。
-- `instructions.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `this->get_first_instruction_in_block` → [blender::fn::multi_function::ProcedureDotExport::get_first_instruction_in_block · L709](07-Procedure指令与控制流.md#f-755192609edeb165)。
+- `this->get_next_instruction_in_block` → [blender::fn::multi_function::ProcedureDotExport::get_next_instruction_in_block · L722](07-Procedure指令与控制流.md#f-031c04dcdc4b6f0e)。
+- `instructions.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
 
 <!-- annotated:aaf68d4334f74f -->
 
@@ -6692,9 +6692,9 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `variable->index_in_procedure` → [blender::fn::multi_function::Variable::index_in_procedure · L363](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-1ce9a9270d7eaf91)。
-- `variable->name().is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L775。
-- `variable->name` → [blender::fn::multi_function::Variable::name · L358](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-0e3a00340d24dd3f)。
+- `variable->index_in_procedure` → [blender::fn::multi_function::Variable::index_in_procedure · L363](07-Procedure指令与控制流.md#f-1ce9a9270d7eaf91)。
+- `variable->name().is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L775。
+- `variable->name` → [blender::fn::multi_function::Variable::name · L358](07-Procedure指令与控制流.md#f-0e3a00340d24dd3f)。
 
 <!-- annotated:97ae6f857520f6 -->
 
@@ -6858,15 +6858,15 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `instruction.fn` → [blender::fn::multi_function::CallInstruction::fn · L390](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-572ebb7362882f77)。
-- `this->instruction_name_format` → [blender::fn::multi_function::ProcedureDotExport::instruction_name_format · L781](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-1aec7dca5f810b73)。
-- `fn.debug_name` → [blender::fn::multi_function::MultiFunction::debug_name · L177](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-20c77270a8ed3f75)。
-- `fn.param_indices` → [blender::fn::multi_function::MultiFunction::param_indices · L67](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-e06e9cd4be7e3ea1)。
-- `fn.param_type` → [blender::fn::multi_function::MultiFunction::param_type · L72](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-b713a5aeabff53fa)。
-- `instruction.params` → [blender::fn::multi_function::CallInstruction::params · L405](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-4a9ea187cb82c472)；[blender::fn::multi_function::CallInstruction::params · L410](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-a91b8ab686f96649)。同名重载需按实参类型选择。
-- `param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-a506dc82cef792f5)。
-- `variable_to_string` → [blender::fn::multi_function::ProcedureDotExport::variable_to_string · L768](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-247eba694d41e13b)。
-- `fn.param_amount` → [blender::fn::multi_function::MultiFunction::param_amount · L62](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-dbc6d25e1e7ed8c8)。
+- `instruction.fn` → [blender::fn::multi_function::CallInstruction::fn · L390](07-Procedure指令与控制流.md#f-572ebb7362882f77)。
+- `this->instruction_name_format` → [blender::fn::multi_function::ProcedureDotExport::instruction_name_format · L781](07-Procedure指令与控制流.md#f-1aec7dca5f810b73)。
+- `fn.debug_name` → [blender::fn::multi_function::MultiFunction::debug_name · L177](01-批量计算模型.md#f-20c77270a8ed3f75)。
+- `fn.param_indices` → [blender::fn::multi_function::MultiFunction::param_indices · L67](01-批量计算模型.md#f-e06e9cd4be7e3ea1)。
+- `fn.param_type` → [blender::fn::multi_function::MultiFunction::param_type · L72](01-批量计算模型.md#f-b713a5aeabff53fa)。
+- `instruction.params` → [blender::fn::multi_function::CallInstruction::params · L405](07-Procedure指令与控制流.md#f-4a9ea187cb82c472)；[blender::fn::multi_function::CallInstruction::params · L410](07-Procedure指令与控制流.md#f-a91b8ab686f96649)。同名重载需按实参类型选择。
+- `param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-参数类型与角色.md#f-a506dc82cef792f5)。
+- `variable_to_string` → [blender::fn::multi_function::ProcedureDotExport::variable_to_string · L768](07-Procedure指令与控制流.md#f-247eba694d41e13b)。
+- `fn.param_amount` → [blender::fn::multi_function::MultiFunction::param_amount · L62](01-批量计算模型.md#f-dbc6d25e1e7ed8c8)。
 
 <!-- annotated:11c3d1cead9a1c -->
 
@@ -6925,9 +6925,9 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `instruction_name_format` → [blender::fn::multi_function::ProcedureDotExport::instruction_name_format · L781](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-1aec7dca5f810b73)。
-- `variable_to_string` → [blender::fn::multi_function::ProcedureDotExport::variable_to_string · L768](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-247eba694d41e13b)。
-- `instruction.variable` → [blender::fn::multi_function::DestructInstruction::variable · L457](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-9a543d124703e5f7)；[blender::fn::multi_function::DestructInstruction::variable · L462](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-a4656c3cfa7704c1)。同名重载需按实参类型选择。
+- `instruction_name_format` → [blender::fn::multi_function::ProcedureDotExport::instruction_name_format · L781](07-Procedure指令与控制流.md#f-1aec7dca5f810b73)。
+- `variable_to_string` → [blender::fn::multi_function::ProcedureDotExport::variable_to_string · L768](07-Procedure指令与控制流.md#f-247eba694d41e13b)。
+- `instruction.variable` → [blender::fn::multi_function::DestructInstruction::variable · L457](07-Procedure指令与控制流.md#f-9a543d124703e5f7)；[blender::fn::multi_function::DestructInstruction::variable · L462](07-Procedure指令与控制流.md#f-a4656c3cfa7704c1)。同名重载需按实参类型选择。
 
 <!-- annotated:53c3c68951cb2d -->
 
@@ -6984,7 +6984,7 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `instruction_name_format` → [blender::fn::multi_function::ProcedureDotExport::instruction_name_format · L781](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-1aec7dca5f810b73)。
+- `instruction_name_format` → [blender::fn::multi_function::ProcedureDotExport::instruction_name_format · L781](07-Procedure指令与控制流.md#f-1aec7dca5f810b73)。
 
 <!-- annotated:cee4c8b2ceddff -->
 
@@ -7071,13 +7071,13 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `instruction_name_format` → [blender::fn::multi_function::ProcedureDotExport::instruction_name_format · L781](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-1aec7dca5f810b73)。
-- `procedure_.params` → [blender::fn::multi_function::Procedure::params · L499](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-0ba3927a219e6465)。
-- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
-- `outgoing_parameters.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `outgoing_parameters.index_range` → [blender::Vector::index_range · L1026](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-ac29cf36ef185ab9)。
-- `variable_to_string` → [blender::fn::multi_function::ProcedureDotExport::variable_to_string · L768](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-247eba694d41e13b)。
-- `outgoing_parameters.size` → [blender::Vector::size · L780](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `instruction_name_format` → [blender::fn::multi_function::ProcedureDotExport::instruction_name_format · L781](07-Procedure指令与控制流.md#f-1aec7dca5f810b73)。
+- `procedure_.params` → [blender::fn::multi_function::Procedure::params · L499](07-Procedure指令与控制流.md#f-0ba3927a219e6465)。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `outgoing_parameters.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `outgoing_parameters.index_range` → [blender::Vector::index_range · L1026](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-ac29cf36ef185ab9)。
+- `variable_to_string` → [blender::fn::multi_function::ProcedureDotExport::variable_to_string · L768](07-Procedure指令与控制流.md#f-247eba694d41e13b)。
+- `outgoing_parameters.size` → [blender::Vector::size · L780](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-714773731767349c)。
 
 <!-- annotated:44d25d910ab3a3 -->
 
@@ -7136,9 +7136,9 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `instruction_name_format` → [blender::fn::multi_function::ProcedureDotExport::instruction_name_format · L781](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-1aec7dca5f810b73)。
-- `variable_to_string` → [blender::fn::multi_function::ProcedureDotExport::variable_to_string · L768](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-247eba694d41e13b)。
-- `instruction.condition` → [blender::fn::multi_function::BranchInstruction::condition · L421](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-c95145698d6f8749)；[blender::fn::multi_function::BranchInstruction::condition · L426](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-3e3191e98a53bb9a)。同名重载需按实参类型选择。
+- `instruction_name_format` → [blender::fn::multi_function::ProcedureDotExport::instruction_name_format · L781](07-Procedure指令与控制流.md#f-1aec7dca5f810b73)。
+- `variable_to_string` → [blender::fn::multi_function::ProcedureDotExport::variable_to_string · L768](07-Procedure指令与控制流.md#f-247eba694d41e13b)。
+- `instruction.condition` → [blender::fn::multi_function::BranchInstruction::condition · L421](07-Procedure指令与控制流.md#f-c95145698d6f8749)；[blender::fn::multi_function::BranchInstruction::condition · L426](07-Procedure指令与控制流.md#f-3e3191e98a53bb9a)。同名重载需按实参类型选择。
 
 <!-- annotated:0185770db254e4 -->
 
@@ -7232,15 +7232,15 @@ class ProcedureDotExport {
 
 **继续追踪实现**
 
-- `procedure_.params` → [blender::fn::multi_function::Procedure::params · L499](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-0ba3927a219e6465)。
-- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
-- `incoming_parameters.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `incoming_parameters.index_range` → [blender::Vector::index_range · L1026](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-ac29cf36ef185ab9)。
-- `variable_to_string` → [blender::fn::multi_function::ProcedureDotExport::variable_to_string · L768](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-247eba694d41e13b)。
-- `incoming_parameters.size` → [blender::Vector::size · L780](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `digraph_.new_node` → [blender::dot_export::Graph::new_node · L21](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-dot_export-b6a26f.md#f-c18eecae7679bda3)。
+- `procedure_.params` → [blender::fn::multi_function::Procedure::params · L499](07-Procedure指令与控制流.md#f-0ba3927a219e6465)。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `incoming_parameters.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `incoming_parameters.index_range` → [blender::Vector::index_range · L1026](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-ac29cf36ef185ab9)。
+- `variable_to_string` → [blender::fn::multi_function::ProcedureDotExport::variable_to_string · L768](07-Procedure指令与控制流.md#f-247eba694d41e13b)。
+- `incoming_parameters.size` → [blender::Vector::size · L780](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-714773731767349c)。
+- `digraph_.new_node` → [blender::dot_export::Graph::new_node · L21](../90-实现依赖专题/01-BLI基础库/intern/dot_export.cc.md#f-c18eecae7679bda3)。
 - `ss.str` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `node.set_shape` → [blender::dot_export::Node::set_shape · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_dot_export-eb2f54.md#f-d0136e44b0967099)。
+- `node.set_shape` → [blender::dot_export::Node::set_shape · L135](../90-实现依赖专题/01-BLI基础库/BLI_dot_export.hh.md#f-d0136e44b0967099)。
 
 ### 类型布局、声明与编译条件 · multi_function_procedure.cc L874—L875
 
@@ -7302,7 +7302,7 @@ std::string Procedure::to_dot() const
 
 **继续追踪实现**
 
-- `dot_export.generate` → [blender::fn::multi_function::ProcedureDotExport::generate · L576](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-2f5bec5ca2b3ae71)。
+- `dot_export.generate` → [blender::fn::multi_function::ProcedureDotExport::generate · L576](07-Procedure指令与控制流.md#f-2f5bec5ca2b3ae71)。
 
 ### 类型布局、声明与编译条件 · multi_function_procedure.cc L881—L882
 
@@ -7417,4 +7417,4 @@ friend授予指定函数或类访问非公开成员的权限，并不意味着�
 
 与std::function逐次调用和简单字节码解释器比较：批量接口可把动态分派放到循环外，Procedure额外表达变量寿命和控制流。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

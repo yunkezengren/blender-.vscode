@@ -1,6 +1,6 @@
 # 03-08 CPPType构造与析构
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -142,7 +142,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `fn.template operator()<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Fn模板参数提供的操作协议。调用位置L441。
+- `fn.template operator()<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Fn模板参数提供的操作协议。调用位置L441。
 
 ### 类型布局、声明与编译条件 · BLI_cpp_type.hh L443—L470
 
@@ -388,8 +388,8 @@ template<typename T> inline const CPPType &CPPType::get()
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `detail::cpp_type_impl<DecayT>.ref` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L488。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `detail::cpp_type_impl<DecayT>.ref` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L488。
 
 <!-- annotated:14550d3d91e101 -->
 
@@ -445,7 +445,7 @@ template<typename T> inline const CPPType *CPPType::get_pre_register()
 
 **继续追踪实现**
 
-- `detail::cpp_type_impl<std::decay_t<T>>.ptr` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L494。
+- `detail::cpp_type_impl<std::decay_t<T>>.ptr` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L494。
 
 <!-- annotated:4378a944b0bae7 -->
 
@@ -789,7 +789,7 @@ inline bool CPPType::pointer_can_point_to_instance(const void *ptr) const
 
 **继续追踪实现**
 
-- `pointer_has_valid_alignment` → [blender::CPPType::pointer_has_valid_alignment · L517](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-e6c3071a36daaa2d)。
+- `pointer_has_valid_alignment` → [blender::CPPType::pointer_has_valid_alignment · L517](08-CPPType构造与析构.md#f-e6c3071a36daaa2d)。
 
 <!-- annotated:1a5d8744e8e712 -->
 
@@ -845,7 +845,7 @@ inline void CPPType::default_construct(void *ptr) const
 
 **继续追踪实现**
 
-- `default_construct_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L529。
+- `default_construct_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L529。
 
 <!-- annotated:2e59a035b6d2e1 -->
 
@@ -902,7 +902,7 @@ inline void CPPType::default_construct_n(void *ptr, int64_t n) const
 
 **继续追踪实现**
 
-- `default_construct_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L534。
+- `default_construct_n_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L534。
 
 <!-- annotated:e8c8ff37998fdf -->
 
@@ -959,7 +959,7 @@ inline void CPPType::default_construct_indices(void *ptr, const IndexMask &mask)
 
 **继续追踪实现**
 
-- `default_construct_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L539。
+- `default_construct_indices_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L539。
 
 ## 语法与相关类型
 
@@ -1005,4 +1005,4 @@ const约束当前访问路径可做的修改。const指针、指向const的指�
 
 与std::pmr::monotonic_buffer_resource比较批量存储回收，与std::any比较拥有型类型擦除；CPPType描述类型操作，本身不保存每个值。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

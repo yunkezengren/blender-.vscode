@@ -1,6 +1,6 @@
 # 12-07 Bounds与BVH对比
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -232,8 +232,8 @@ template<typename T> [[nodiscard]] inline Bounds<T> merge(const Bounds<T> &a, co
 
 **继续追踪实现**
 
-- `math::min` → [blender::math::min · L56](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-ee6ead51e4bb3364)；[blender::math::min · L65](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-f65ce48b3051cce3)；[blender::math::min · L81](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-9c602d29fab41795)；[blender::math::min · L43](%E4%BE%9D%E8%B5%96-BLI_math_base-0728eb.md#f-72ff0c229e6c09b0)。同名重载需按实参类型选择。
-- `math::max` → [blender::bounds::max · L268](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-407b28b5a068f9a0)。
+- `math::min` → [blender::math::min · L56](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-ee6ead51e4bb3364)；[blender::math::min · L65](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-f65ce48b3051cce3)；[blender::math::min · L81](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-9c602d29fab41795)；[blender::math::min · L43](../90-实现依赖专题/01-BLI基础库/BLI_math_base.hh.md#f-72ff0c229e6c09b0)。同名重载需按实参类型选择。
+- `math::max` → [blender::bounds::max · L268](07-Bounds与BVH对比.md#f-407b28b5a068f9a0)。
 
 <!-- annotated:a877a1c98d1dea -->
 
@@ -321,7 +321,7 @@ template<typename T>
 
 - `a.has_value` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 - `b.has_value` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `merge` → [blender::bounds::merge · L27](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
+- `merge` → [blender::bounds::merge · L27](07-Bounds与BVH对比.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds与BVH对比.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds与BVH对比.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
 
 <!-- annotated:f4ff01a3727e00 -->
 
@@ -386,7 +386,7 @@ template<typename T>
 
 **继续追踪实现**
 
-- `merge` → [blender::bounds::merge · L27](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
+- `merge` → [blender::bounds::merge · L27](07-Bounds与BVH对比.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds与BVH对比.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds与BVH对比.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
 - `std::optional<Bounds<T>>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 
 <!-- annotated:13fa5b7e64c2d6 -->
@@ -460,7 +460,7 @@ template<typename T>
 **继续追踪实现**
 
 - `a.has_value` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `merge` → [blender::bounds::merge · L27](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
+- `merge` → [blender::bounds::merge · L27](07-Bounds与BVH对比.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds与BVH对比.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds与BVH对比.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L64—L71
 
@@ -599,9 +599,9 @@ template<typename T> [[nodiscard]] inline Bounds<T> min_max_lanes(const Span<T> 
 
 **继续追踪实现**
 
-- `values.size` → [blender::Span::size · L256](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `math::min` → [blender::math::min · L56](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-ee6ead51e4bb3364)；[blender::math::min · L65](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-f65ce48b3051cce3)；[blender::math::min · L81](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-9c602d29fab41795)；[blender::math::min · L43](%E4%BE%9D%E8%B5%96-BLI_math_base-0728eb.md#f-72ff0c229e6c09b0)。同名重载需按实参类型选择。
-- `math::max` → [blender::bounds::max · L268](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-407b28b5a068f9a0)。
+- `values.size` → [blender::Span::size · L256](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `math::min` → [blender::math::min · L56](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-ee6ead51e4bb3364)；[blender::math::min · L65](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-f65ce48b3051cce3)；[blender::math::min · L81](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-9c602d29fab41795)；[blender::math::min · L43](../90-实现依赖专题/01-BLI基础库/BLI_math_base.hh.md#f-72ff0c229e6c09b0)。同名重载需按实参类型选择。
+- `math::max` → [blender::bounds::max · L268](07-Bounds与BVH对比.md#f-407b28b5a068f9a0)。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L102—L103
 
@@ -734,9 +734,9 @@ template<typename T, typename RadiusT>
 
 **继续追踪实现**
 
-- `values.size` → [blender::Span::size · L256](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `math::min` → [blender::math::min · L56](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-ee6ead51e4bb3364)；[blender::math::min · L65](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-f65ce48b3051cce3)；[blender::math::min · L81](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-9c602d29fab41795)；[blender::math::min · L43](%E4%BE%9D%E8%B5%96-BLI_math_base-0728eb.md#f-72ff0c229e6c09b0)。同名重载需按实参类型选择。
-- `math::max` → [blender::bounds::max · L268](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-407b28b5a068f9a0)。
+- `values.size` → [blender::Span::size · L256](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `math::min` → [blender::math::min · L56](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-ee6ead51e4bb3364)；[blender::math::min · L65](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-f65ce48b3051cce3)；[blender::math::min · L81](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-9c602d29fab41795)；[blender::math::min · L43](../90-实现依赖专题/01-BLI基础库/BLI_math_base.hh.md#f-72ff0c229e6c09b0)。同名重载需按实参类型选择。
+- `math::max` → [blender::bounds::max · L268](07-Bounds与BVH对比.md#f-407b28b5a068f9a0)。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L136—L141
 
@@ -838,14 +838,14 @@ template<typename T> [[nodiscard]] inline std::optional<Bounds<T>> min_max(const
 
 **继续追踪实现**
 
-- `values.is_empty` → [blender::Span::is_empty · L264](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8cc1d7ba8feb50e6)。
-- `PRF_scope_with_name` → [PRF_scope_with_name · L52](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-adc22c3a3f8c)；[PRF_scope_with_name · L91](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-3cbbaddb89c4)。宏定义由构建条件选择。
-- `values.first` → [blender::Span::first · L319](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-d8c9bcc3e9757248)。
-- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-9225ddb5efb97fcc)。
-- `values.index_range` → [blender::Span::index_range · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-caaa9b06e13e53e0)。
-- `merge` → [blender::bounds::merge · L27](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
-- `detail::min_max_lanes` → [blender::bounds::detail::min_max_lanes · L72](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-f7a622f039be3036)。
-- `values.slice` → [blender::Span::slice · L141](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
+- `values.is_empty` → [blender::Span::is_empty · L264](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-8cc1d7ba8feb50e6)。
+- `PRF_scope_with_name` → [PRF_scope_with_name · L52](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-adc22c3a3f8c)；[PRF_scope_with_name · L91](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-3cbbaddb89c4)。宏定义由构建条件选择。
+- `values.first` → [blender::Span::first · L319](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-d8c9bcc3e9757248)。
+- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph与并行任务系统/07-任务池与TBB接入.md#f-9225ddb5efb97fcc)。
+- `values.index_range` → [blender::Span::index_range · L405](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-caaa9b06e13e53e0)。
+- `merge` → [blender::bounds::merge · L27](07-Bounds与BVH对比.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds与BVH对比.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds与BVH对比.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
+- `detail::min_max_lanes` → [blender::bounds::detail::min_max_lanes · L72](07-Bounds与BVH对比.md#f-f7a622f039be3036)。
+- `values.slice` → [blender::Span::slice · L141](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
 
 <!-- annotated:df7463a9207280 -->
 
@@ -951,20 +951,20 @@ template<typename T>
 
 **继续追踪实现**
 
-- `values.is_empty` → [blender::Span::is_empty · L264](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8cc1d7ba8feb50e6)。
-- `mask.is_empty` → [blender::index_mask::IndexMask::is_empty · L748](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-190ac996386064f4)。
-- `mask.size` → [blender::index_mask::IndexMask::size · L743](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-0163b32abc9a0d9c)。
-- `values.size` → [blender::Span::size · L256](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `min_max` → [blender::bounds::min_max · L55](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-8ec8264a27aee526)；[blender::bounds::min_max · L142](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-54be182a0edebcb6)；[blender::bounds::min_max · L159](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-c05654b35c75b0ff)；[blender::bounds::min_max · L212](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-6c1add8352426e55)。同名重载需按实参类型选择。
-- `PRF_scope_with_name` → [PRF_scope_with_name · L52](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-adc22c3a3f8c)；[PRF_scope_with_name · L91](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-3cbbaddb89c4)。宏定义由构建条件选择。
-- `mask.first` → [blender::index_mask::IndexMask::first · L768](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-0fdcf75a0be7ad37)。
-- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-9225ddb5efb97fcc)。
-- `mask.index_range().drop_front` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L172。
-- `mask.index_range` → [blender::index_mask::IndexMask::index_range · L753](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-749c399cf5bc4035)。
-- `mask.slice(range).foreach_index_optimized<int64_t>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L177。
-- `mask.slice` → [blender::index_mask::IndexMask::slice · L845](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-8c3ef56b66c5f123)。
-- `math::min_max` → [blender::bounds::min_max · L55](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-8ec8264a27aee526)；[blender::bounds::min_max · L142](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-54be182a0edebcb6)；[blender::bounds::min_max · L159](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-c05654b35c75b0ff)；[blender::bounds::min_max · L212](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-6c1add8352426e55)。同名重载需按实参类型选择。
-- `merge` → [blender::bounds::merge · L27](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
+- `values.is_empty` → [blender::Span::is_empty · L264](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-8cc1d7ba8feb50e6)。
+- `mask.is_empty` → [blender::index_mask::IndexMask::is_empty · L748](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-190ac996386064f4)。
+- `mask.size` → [blender::index_mask::IndexMask::size · L743](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-0163b32abc9a0d9c)。
+- `values.size` → [blender::Span::size · L256](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `min_max` → [blender::bounds::min_max · L55](07-Bounds与BVH对比.md#f-8ec8264a27aee526)；[blender::bounds::min_max · L142](07-Bounds与BVH对比.md#f-54be182a0edebcb6)；[blender::bounds::min_max · L159](07-Bounds与BVH对比.md#f-c05654b35c75b0ff)；[blender::bounds::min_max · L212](07-Bounds与BVH对比.md#f-6c1add8352426e55)。同名重载需按实参类型选择。
+- `PRF_scope_with_name` → [PRF_scope_with_name · L52](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-adc22c3a3f8c)；[PRF_scope_with_name · L91](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-3cbbaddb89c4)。宏定义由构建条件选择。
+- `mask.first` → [blender::index_mask::IndexMask::first · L768](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-0fdcf75a0be7ad37)。
+- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph与并行任务系统/07-任务池与TBB接入.md#f-9225ddb5efb97fcc)。
+- `mask.index_range().drop_front` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L172。
+- `mask.index_range` → [blender::index_mask::IndexMask::index_range · L753](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-749c399cf5bc4035)。
+- `mask.slice(range).foreach_index_optimized<int64_t>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L177。
+- `mask.slice` → [blender::index_mask::IndexMask::slice · L845](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-8c3ef56b66c5f123)。
+- `math::min_max` → [blender::bounds::min_max · L55](07-Bounds与BVH对比.md#f-8ec8264a27aee526)；[blender::bounds::min_max · L142](07-Bounds与BVH对比.md#f-54be182a0edebcb6)；[blender::bounds::min_max · L159](07-Bounds与BVH对比.md#f-c05654b35c75b0ff)；[blender::bounds::min_max · L212](07-Bounds与BVH对比.md#f-6c1add8352426e55)。同名重载需按实参类型选择。
+- `merge` → [blender::bounds::merge · L27](07-Bounds与BVH对比.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds与BVH对比.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds与BVH对比.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L183—L187
 
@@ -1074,18 +1074,18 @@ template<typename T, typename RadiusT>
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `values.size` → [blender::Span::size · L256](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `radii.size` → [blender::Span::size · L256](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `values.is_empty` → [blender::Span::is_empty · L264](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8cc1d7ba8feb50e6)。
-- `PRF_scope_with_name` → [PRF_scope_with_name · L52](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-adc22c3a3f8c)；[PRF_scope_with_name · L91](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-3cbbaddb89c4)。宏定义由构建条件选择。
-- `values.first` → [blender::Span::first · L319](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-d8c9bcc3e9757248)。
-- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-9225ddb5efb97fcc)。
-- `values.index_range` → [blender::Span::index_range · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-caaa9b06e13e53e0)。
-- `merge` → [blender::bounds::merge · L27](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
-- `detail::min_max_lanes_with_radii` → [blender::bounds::detail::min_max_lanes_with_radii · L104](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-0167286f0d1fe01d)。
-- `values.slice` → [blender::Span::slice · L141](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
-- `radii.slice` → [blender::Span::slice · L141](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `values.size` → [blender::Span::size · L256](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `radii.size` → [blender::Span::size · L256](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `values.is_empty` → [blender::Span::is_empty · L264](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-8cc1d7ba8feb50e6)。
+- `PRF_scope_with_name` → [PRF_scope_with_name · L52](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-adc22c3a3f8c)；[PRF_scope_with_name · L91](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-3cbbaddb89c4)。宏定义由构建条件选择。
+- `values.first` → [blender::Span::first · L319](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-d8c9bcc3e9757248)。
+- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph与并行任务系统/07-任务池与TBB接入.md#f-9225ddb5efb97fcc)。
+- `values.index_range` → [blender::Span::index_range · L405](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-caaa9b06e13e53e0)。
+- `merge` → [blender::bounds::merge · L27](07-Bounds与BVH对比.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds与BVH对比.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds与BVH对比.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
+- `detail::min_max_lanes_with_radii` → [blender::bounds::detail::min_max_lanes_with_radii · L104](07-Bounds与BVH对比.md#f-0167286f0d1fe01d)。
+- `values.slice` → [blender::Span::slice · L141](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
+- `radii.slice` → [blender::Span::slice · L141](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L208—L211
 
@@ -1206,17 +1206,17 @@ template<typename T> [[nodiscard]] inline std::optional<Bounds<T>> min_max(const
 
 **继续追踪实现**
 
-- `varray.is_empty` → [blender::Bounds<T>::is_empty · L533](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-55ac376b3d0a0944)。
-- `PRF_scope_with_name` → [PRF_scope_with_name · L52](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-adc22c3a3f8c)；[PRF_scope_with_name · L91](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-3cbbaddb89c4)。宏定义由构建条件选择。
-- `varray.common_info` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L218。
-- `Bounds<T>` → [blender::Bounds](%E4%BE%9D%E8%B5%96-BLI_bounds_types-fbc701.md#t-034e001bc6d9)；[blender::Bounds](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-usd_writer_abstract-2d4373.md#t-c611d2724544)；[blender::Bounds](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-3124dc634817)；[blender::draw::overlay::Bounds](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-overlay_bounds-5e4545.md#t-1e10f8dc8848)。
-- `varray.first` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L220。
-- `varray.size` → [blender::Bounds<T>::size · L543](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-fcce88c0824fcd97)。
-- `min_max<T>` → [blender::bounds::min_max · L55](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-8ec8264a27aee526)；[blender::bounds::min_max · L142](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-54be182a0edebcb6)；[blender::bounds::min_max · L159](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-c05654b35c75b0ff)；[blender::bounds::min_max · L212](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-6c1add8352426e55)。同名重载需按实参类型选择。
-- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-9225ddb5efb97fcc)。
-- `varray.index_range` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L229。
-- `math::min_max` → [blender::bounds::min_max · L55](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-8ec8264a27aee526)；[blender::bounds::min_max · L142](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-54be182a0edebcb6)；[blender::bounds::min_max · L159](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-c05654b35c75b0ff)；[blender::bounds::min_max · L212](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-6c1add8352426e55)。同名重载需按实参类型选择。
-- `merge` → [blender::bounds::merge · L27](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
+- `varray.is_empty` → [blender::Bounds<T>::is_empty · L533](07-Bounds与BVH对比.md#f-55ac376b3d0a0944)。
+- `PRF_scope_with_name` → [PRF_scope_with_name · L52](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-adc22c3a3f8c)；[PRF_scope_with_name · L91](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-3cbbaddb89c4)。宏定义由构建条件选择。
+- `varray.common_info` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L218。
+- `Bounds<T>` → [blender::Bounds](../90-实现依赖专题/01-BLI基础库/BLI_bounds_types.hh.md#t-034e001bc6d9)；[blender::Bounds](../90-实现依赖专题/08-其他Blender模块/io/usd/intern/usd_writer_abstract.hh.md#t-c611d2724544)；[blender::Bounds](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-3124dc634817)；[blender::draw::overlay::Bounds](../90-实现依赖专题/08-其他Blender模块/draw/engines/overlay/overlay_bounds.hh.md#t-1e10f8dc8848)。
+- `varray.first` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L220。
+- `varray.size` → [blender::Bounds<T>::size · L543](07-Bounds与BVH对比.md#f-fcce88c0824fcd97)。
+- `min_max<T>` → [blender::bounds::min_max · L55](07-Bounds与BVH对比.md#f-8ec8264a27aee526)；[blender::bounds::min_max · L142](07-Bounds与BVH对比.md#f-54be182a0edebcb6)；[blender::bounds::min_max · L159](07-Bounds与BVH对比.md#f-c05654b35c75b0ff)；[blender::bounds::min_max · L212](07-Bounds与BVH对比.md#f-6c1add8352426e55)。同名重载需按实参类型选择。
+- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph与并行任务系统/07-任务池与TBB接入.md#f-9225ddb5efb97fcc)。
+- `varray.index_range` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L229。
+- `math::min_max` → [blender::bounds::min_max · L55](07-Bounds与BVH对比.md#f-8ec8264a27aee526)；[blender::bounds::min_max · L142](07-Bounds与BVH对比.md#f-54be182a0edebcb6)；[blender::bounds::min_max · L159](07-Bounds与BVH对比.md#f-c05654b35c75b0ff)；[blender::bounds::min_max · L212](07-Bounds与BVH对比.md#f-6c1add8352426e55)。同名重载需按实参类型选择。
+- `merge` → [blender::bounds::merge · L27](07-Bounds与BVH对比.md#f-26dade32771df176)；[blender::bounds::merge · L32](07-Bounds与BVH对比.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](07-Bounds与BVH对比.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L241—L245
 
@@ -1298,9 +1298,9 @@ template<typename T>
 
 **继续追踪实现**
 
-- `math::max` → [blender::bounds::max · L268](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-407b28b5a068f9a0)。
-- `math::min` → [blender::math::min · L56](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-ee6ead51e4bb3364)；[blender::math::min · L65](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-f65ce48b3051cce3)；[blender::math::min · L81](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-9c602d29fab41795)；[blender::math::min · L43](%E4%BE%9D%E8%B5%96-BLI_math_base-0728eb.md#f-72ff0c229e6c09b0)。同名重载需按实参类型选择。
-- `result.is_empty` → [blender::Bounds<T>::is_empty · L533](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-55ac376b3d0a0944)。
+- `math::max` → [blender::bounds::max · L268](07-Bounds与BVH对比.md#f-407b28b5a068f9a0)。
+- `math::min` → [blender::math::min · L56](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-ee6ead51e4bb3364)；[blender::math::min · L65](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-f65ce48b3051cce3)；[blender::math::min · L81](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-9c602d29fab41795)；[blender::math::min · L43](../90-实现依赖专题/01-BLI基础库/BLI_math_base.hh.md#f-72ff0c229e6c09b0)。同名重载需按实参类型选择。
+- `result.is_empty` → [blender::Bounds<T>::is_empty · L533](07-Bounds与BVH对比.md#f-55ac376b3d0a0944)。
 
 <a id="f-73e90541b00d94e4"></a>
 
@@ -1357,7 +1357,7 @@ template<typename T>
 
 - `a.has_value` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 - `b.has_value` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `intersect` → [blender::bounds::intersect · L246](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-1efe408cab52f476)；[blender::bounds::intersect · L255](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-73e90541b00d94e4)。同名重载需按实参类型选择。
+- `intersect` → [blender::bounds::intersect · L246](07-Bounds与BVH对比.md#f-1efe408cab52f476)；[blender::bounds::intersect · L255](07-Bounds与BVH对比.md#f-73e90541b00d94e4)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L264—L267
 
@@ -1470,13 +1470,13 @@ template<typename T> inline std::optional<T> max(const VArray<T> &values)
 
 **继续追踪实现**
 
-- `values.is_empty` → [blender::Bounds<T>::is_empty · L533](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-55ac376b3d0a0944)。
-- `PRF_scope_with_name` → [PRF_scope_with_name · L52](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-adc22c3a3f8c)；[PRF_scope_with_name · L91](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-3cbbaddb89c4)。宏定义由构建条件选择。
-- `values.get_if_single` → [blender::VArrayCommon::get_if_single · L649](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-779c11c4fd8e6ac3)。
-- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-9225ddb5efb97fcc)。
-- `values_span.index_range` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L279。
+- `values.is_empty` → [blender::Bounds<T>::is_empty · L533](07-Bounds与BVH对比.md#f-55ac376b3d0a0944)。
+- `PRF_scope_with_name` → [PRF_scope_with_name · L52](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-adc22c3a3f8c)；[PRF_scope_with_name · L91](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-3cbbaddb89c4)。宏定义由构建条件选择。
+- `values.get_if_single` → [blender::VArrayCommon::get_if_single · L649](../04-虚拟数组与索引选择/03-单值与Span表示.md#f-779c11c4fd8e6ac3)。
+- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph与并行任务系统/07-任务池与TBB接入.md#f-9225ddb5efb97fcc)。
+- `values_span.index_range` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L279。
 - `std::numeric_limits<T>::min` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
-- `values_span.slice` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L283。
+- `values_span.slice` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L283。
 - `std::max` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L290—L309
@@ -1804,11 +1804,11 @@ inline Bounds<VecBase<T, 3>> transform_bounds(const MatBase<T, D, D> &matrix,
 
 **继续追踪实现**
 
-- `corners` → [blender::bounds::corners · L310](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-d5da474e85cd48cd)；[blender::bounds::corners · L342](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-fbf7c69b24980238)。同名重载需按实参类型选择。
-- `math::transform_point` → [blender::math::transform_point · L318](%E4%BE%9D%E8%B5%96-BLI_math_quaternion-cf105d.md#f-e52a2e8c12e32657)；[blender::math::transform_point · L491](%E4%BE%9D%E8%B5%96-BLI_math_quaternion-cf105d.md#f-6c9f8362c60efe6c)；[blender::math::transform_point · L445](%E4%BE%9D%E8%B5%96-BLI_math_basis_types-fc7090.md#f-a151fd44ae743502)。同名重载需按实参类型选择。
-- `math::min` → [blender::math::min · L56](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-ee6ead51e4bb3364)；[blender::math::min · L65](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-f65ce48b3051cce3)；[blender::math::min · L81](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-9c602d29fab41795)；[blender::math::min · L43](%E4%BE%9D%E8%B5%96-BLI_math_base-0728eb.md#f-72ff0c229e6c09b0)。同名重载需按实参类型选择。
-- `Span` → [blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
-- `math::max` → [blender::bounds::max · L268](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-407b28b5a068f9a0)。
+- `corners` → [blender::bounds::corners · L310](07-Bounds与BVH对比.md#f-d5da474e85cd48cd)；[blender::bounds::corners · L342](07-Bounds与BVH对比.md#f-fbf7c69b24980238)。同名重载需按实参类型选择。
+- `math::transform_point` → [blender::math::transform_point · L318](../90-实现依赖专题/01-BLI基础库/BLI_math_quaternion.hh.md#f-e52a2e8c12e32657)；[blender::math::transform_point · L491](../90-实现依赖专题/01-BLI基础库/BLI_math_quaternion.hh.md#f-6c9f8362c60efe6c)；[blender::math::transform_point · L445](../90-实现依赖专题/01-BLI基础库/BLI_math_basis_types.hh.md#f-a151fd44ae743502)。同名重载需按实参类型选择。
+- `math::min` → [blender::math::min · L56](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-ee6ead51e4bb3364)；[blender::math::min · L65](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-f65ce48b3051cce3)；[blender::math::min · L81](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-9c602d29fab41795)；[blender::math::min · L43](../90-实现依赖专题/01-BLI基础库/BLI_math_base.hh.md#f-72ff0c229e6c09b0)。同名重载需按实参类型选择。
+- `Span` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
+- `math::max` → [blender::bounds::max · L268](07-Bounds与BVH对比.md#f-407b28b5a068f9a0)。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L373—L378
 
@@ -1897,11 +1897,11 @@ inline Bounds<VecBase<T, 2>> transform_bounds(const MatBase<T, D, D> &matrix,
 
 **继续追踪实现**
 
-- `corners` → [blender::bounds::corners · L310](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-d5da474e85cd48cd)；[blender::bounds::corners · L342](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-fbf7c69b24980238)。同名重载需按实参类型选择。
-- `math::transform_point` → [blender::math::transform_point · L318](%E4%BE%9D%E8%B5%96-BLI_math_quaternion-cf105d.md#f-e52a2e8c12e32657)；[blender::math::transform_point · L491](%E4%BE%9D%E8%B5%96-BLI_math_quaternion-cf105d.md#f-6c9f8362c60efe6c)；[blender::math::transform_point · L445](%E4%BE%9D%E8%B5%96-BLI_math_basis_types-fc7090.md#f-a151fd44ae743502)。同名重载需按实参类型选择。
-- `math::min` → [blender::math::min · L56](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-ee6ead51e4bb3364)；[blender::math::min · L65](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-f65ce48b3051cce3)；[blender::math::min · L81](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-9c602d29fab41795)；[blender::math::min · L43](%E4%BE%9D%E8%B5%96-BLI_math_base-0728eb.md#f-72ff0c229e6c09b0)。同名重载需按实参类型选择。
-- `Span` → [blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
-- `math::max` → [blender::bounds::max · L268](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-407b28b5a068f9a0)。
+- `corners` → [blender::bounds::corners · L310](07-Bounds与BVH对比.md#f-d5da474e85cd48cd)；[blender::bounds::corners · L342](07-Bounds与BVH对比.md#f-fbf7c69b24980238)。同名重载需按实参类型选择。
+- `math::transform_point` → [blender::math::transform_point · L318](../90-实现依赖专题/01-BLI基础库/BLI_math_quaternion.hh.md#f-e52a2e8c12e32657)；[blender::math::transform_point · L491](../90-实现依赖专题/01-BLI基础库/BLI_math_quaternion.hh.md#f-6c9f8362c60efe6c)；[blender::math::transform_point · L445](../90-实现依赖专题/01-BLI基础库/BLI_math_basis_types.hh.md#f-a151fd44ae743502)。同名重载需按实参类型选择。
+- `math::min` → [blender::math::min · L56](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-ee6ead51e4bb3364)；[blender::math::min · L65](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-f65ce48b3051cce3)；[blender::math::min · L81](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-9c602d29fab41795)；[blender::math::min · L43](../90-实现依赖专题/01-BLI基础库/BLI_math_base.hh.md#f-72ff0c229e6c09b0)。同名重载需按实参类型选择。
+- `Span` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
+- `math::max` → [blender::bounds::max · L268](07-Bounds与BVH对比.md#f-407b28b5a068f9a0)。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L389—L391
 
@@ -2203,7 +2203,7 @@ template<typename T> [[nodiscard]] inline bool any_less_than(const T &a, const T
 
 **继续追踪实现**
 
-- `any_less_than_v` → [blender::bounds::detail::any_less_than_v · L392](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-21ffb204579f81f6)。
+- `any_less_than_v` → [blender::bounds::detail::any_less_than_v · L392](07-Bounds与BVH对比.md#f-21ffb204579f81f6)。
 
 <!-- annotated:3a274df6354ac4 -->
 
@@ -2275,7 +2275,7 @@ template<typename T> [[nodiscard]] inline bool any_greater_than(const T &a, cons
 
 **继续追踪实现**
 
-- `any_greater_than_v` → [blender::bounds::detail::any_greater_than_v · L403](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-3322e6e8e179e497)。
+- `any_greater_than_v` → [blender::bounds::detail::any_greater_than_v · L403](07-Bounds与BVH对比.md#f-3322e6e8e179e497)。
 
 <!-- annotated:745ed9ab52417e -->
 
@@ -2347,7 +2347,7 @@ template<typename T> [[nodiscard]] inline bool any_less_or_equal_than(const T &a
 
 **继续追踪实现**
 
-- `any_less_or_equal_than_v` → [blender::bounds::detail::any_less_or_equal_than_v · L414](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-da1f0a52ba630529)。
+- `any_less_or_equal_than_v` → [blender::bounds::detail::any_less_or_equal_than_v · L414](07-Bounds与BVH对比.md#f-da1f0a52ba630529)。
 
 <!-- annotated:33b65b88ea55f2 -->
 
@@ -2412,7 +2412,7 @@ template<typename T> [[nodiscard]] inline Bounds<T> segment_bounds(const T &star
 
 **继续追踪实现**
 
-- `math::min_max` → [blender::bounds::min_max · L55](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-8ec8264a27aee526)；[blender::bounds::min_max · L142](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-54be182a0edebcb6)；[blender::bounds::min_max · L159](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-c05654b35c75b0ff)；[blender::bounds::min_max · L212](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-6c1add8352426e55)。同名重载需按实参类型选择。
+- `math::min_max` → [blender::bounds::min_max · L55](07-Bounds与BVH对比.md#f-8ec8264a27aee526)；[blender::bounds::min_max · L142](07-Bounds与BVH对比.md#f-54be182a0edebcb6)；[blender::bounds::min_max · L159](07-Bounds与BVH对比.md#f-c05654b35c75b0ff)；[blender::bounds::min_max · L212](07-Bounds与BVH对比.md#f-6c1add8352426e55)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L462—L463
 
@@ -2483,8 +2483,8 @@ template<typename T>
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `T` → [DiagSplit::T · L96](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-split-5f5804.md#f-d5d0885c790cc4e4)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `T` → [DiagSplit::T · L96](../90-实现依赖专题/07-Intern运行时与平台/cycles/subd/split.cpp.md#f-d5d0885c790cc4e4)。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L470—L470
 
@@ -2553,8 +2553,8 @@ template<typename T>
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `T` → [DiagSplit::T · L96](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-split-5f5804.md#f-d5d0885c790cc4e4)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `T` → [DiagSplit::T · L96](../90-实现依赖专题/07-Intern运行时与平台/cycles/subd/split.cpp.md#f-d5d0885c790cc4e4)。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L477—L478
 
@@ -2720,9 +2720,9 @@ template<typename T, int Size>
 
 **继续追踪实现**
 
-- `T` → [DiagSplit::T · L96](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-split-5f5804.md#f-d5d0885c790cc4e4)。
-- `rational_greater_than` → [blender::bounds::detail::rational_greater_than · L464](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-8f4994e453ba23d3)。
-- `rational_less_than` → [blender::bounds::detail::rational_less_than · L471](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-a7959b024cd5b6ed)。
+- `T` → [DiagSplit::T · L96](../90-实现依赖专题/07-Intern运行时与平台/cycles/subd/split.cpp.md#f-d5d0885c790cc4e4)。
+- `rational_greater_than` → [blender::bounds::detail::rational_greater_than · L464](07-Bounds与BVH对比.md#f-8f4994e453ba23d3)。
+- `rational_less_than` → [blender::bounds::detail::rational_less_than · L471](07-Bounds与BVH对比.md#f-a7959b024cd5b6ed)。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L529—L532
 
@@ -2786,7 +2786,7 @@ template<typename T> inline bool Bounds<T>::is_empty() const
 
 **继续追踪实现**
 
-- `bounds::detail::any_less_or_equal_than` → [blender::bounds::detail::any_less_or_equal_than · L446](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-afba6d8785c070eb)。
+- `bounds::detail::any_less_or_equal_than` → [blender::bounds::detail::any_less_or_equal_than · L446](07-Bounds与BVH对比.md#f-afba6d8785c070eb)。
 
 <!-- annotated:6f4558a4db29ab -->
 
@@ -2842,7 +2842,7 @@ template<typename T> inline T Bounds<T>::center() const
 
 **继续追踪实现**
 
-- `math::midpoint` → [blender::math::midpoint · L647](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-383eeed0051cc8bd)；[blender::math::midpoint · L288](%E4%BE%9D%E8%B5%96-BLI_math_base-0728eb.md#f-1a01baa0be6c0b84)。同名重载需按实参类型选择。
+- `math::midpoint` → [blender::math::midpoint · L647](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-383eeed0051cc8bd)；[blender::math::midpoint · L288](../90-实现依赖专题/01-BLI基础库/BLI_math_base.hh.md#f-1a01baa0be6c0b84)。同名重载需按实参类型选择。
 
 <!-- annotated:b46ac9e24b3572 -->
 
@@ -2898,7 +2898,7 @@ template<typename T> inline T Bounds<T>::size() const
 
 **继续追踪实现**
 
-- `math::abs` → [blender::math::abs · L38](%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-e755530125bc2198)；[blender::math::abs · L201](%E4%BE%9D%E8%B5%96-BLI_math_basis_types-fc7090.md#f-a137ffce39989ffc)；[blender::math::abs · L33](%E4%BE%9D%E8%B5%96-BLI_math_base-0728eb.md#f-a2c9c981f4e8420c)。同名重载需按实参类型选择。
+- `math::abs` → [blender::math::abs · L38](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-e755530125bc2198)；[blender::math::abs · L201](../90-实现依赖专题/01-BLI基础库/BLI_math_basis_types.hh.md#f-a137ffce39989ffc)；[blender::math::abs · L33](../90-实现依赖专题/01-BLI基础库/BLI_math_base.hh.md#f-a2c9c981f4e8420c)。同名重载需按实参类型选择。
 
 <!-- annotated:271f37fa18f7e6 -->
 
@@ -3028,9 +3028,9 @@ template<typename T> inline void Bounds<T>::scale_from_center(const T &scale)
 
 **继续追踪实现**
 
-- `this->center` → [blender::Bounds<T>::center · L538](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-7b998bf9d20cb6a5)。
-- `this->size` → [blender::Bounds<T>::size · L543](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-fcce88c0824fcd97)。
-- `T` → [DiagSplit::T · L96](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-split-5f5804.md#f-d5d0885c790cc4e4)。
+- `this->center` → [blender::Bounds<T>::center · L538](07-Bounds与BVH对比.md#f-7b998bf9d20cb6a5)。
+- `this->size` → [blender::Bounds<T>::size · L543](07-Bounds与BVH对比.md#f-fcce88c0824fcd97)。
+- `T` → [DiagSplit::T · L96](../90-实现依赖专题/07-Intern运行时与平台/cycles/subd/split.cpp.md#f-d5d0885c790cc4e4)。
 
 <!-- annotated:a548e760d79a7a -->
 
@@ -3093,8 +3093,8 @@ template<typename T> inline void Bounds<T>::resize(const T &new_size)
 
 **继续追踪实现**
 
-- `this->center` → [blender::Bounds<T>::center · L538](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-7b998bf9d20cb6a5)。
-- `T` → [DiagSplit::T · L96](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-split-5f5804.md#f-d5d0885c790cc4e4)。
+- `this->center` → [blender::Bounds<T>::center · L538](07-Bounds与BVH对比.md#f-7b998bf9d20cb6a5)。
+- `T` → [DiagSplit::T · L96](../90-实现依赖专题/07-Intern运行时与平台/cycles/subd/split.cpp.md#f-d5d0885c790cc4e4)。
 
 <!-- annotated:547626867a6ef5 -->
 
@@ -3152,8 +3152,8 @@ template<typename T> inline void Bounds<T>::recenter(const T &new_center)
 
 **继续追踪实现**
 
-- `this->center` → [blender::Bounds<T>::center · L538](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-7b998bf9d20cb6a5)。
-- `this->translate` → [blender::Bounds<T>::translate · L548](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-63c2470ae9655a5f)。
+- `this->center` → [blender::Bounds<T>::center · L538](07-Bounds与BVH对比.md#f-7b998bf9d20cb6a5)。
+- `this->translate` → [blender::Bounds<T>::translate · L548](07-Bounds与BVH对比.md#f-63c2470ae9655a5f)。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L573—L574
 
@@ -3295,8 +3295,8 @@ template<typename T> inline bool Bounds<T>::contains(const T &point) const
 
 **继续追踪实现**
 
-- `bounds::detail::any_less_than` → [blender::bounds::detail::any_less_than · L426](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-1f388b5b899602b6)。
-- `bounds::detail::any_greater_than` → [blender::bounds::detail::any_greater_than · L436](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-00aee5e8c7a08fad)。
+- `bounds::detail::any_less_than` → [blender::bounds::detail::any_less_than · L426](07-Bounds与BVH对比.md#f-1f388b5b899602b6)。
+- `bounds::detail::any_greater_than` → [blender::bounds::detail::any_greater_than · L436](07-Bounds与BVH对比.md#f-00aee5e8c7a08fad)。
 
 <!-- annotated:ec80af9904ac19 -->
 
@@ -3363,7 +3363,7 @@ template<typename T> inline bool Bounds<T>::intersects(const Bounds<T> &other) c
 
 **继续追踪实现**
 
-- `bounds::intersect` → [blender::bounds::intersect · L246](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-1efe408cab52f476)；[blender::bounds::intersect · L255](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-73e90541b00d94e4)。同名重载需按实参类型选择。
+- `bounds::intersect` → [blender::bounds::intersect · L246](07-Bounds与BVH对比.md#f-1efe408cab52f476)；[blender::bounds::intersect · L255](07-Bounds与BVH对比.md#f-73e90541b00d94e4)。同名重载需按实参类型选择。
 
 <!-- annotated:87a6a805c12666 -->
 
@@ -3446,10 +3446,10 @@ template<typename T> inline bool Bounds<T>::intersects_segment(const T &start, c
 
 **继续追踪实现**
 
-- `this->contains` → [blender::Bounds<T>::contains · L582](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-0a53b6dc67ee8070)。
-- `this->intersects` → [blender::Bounds<T>::intersects · L593](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-c0fa2673c5af4574)。
-- `bounds::detail::segment_bounds` → [blender::bounds::detail::segment_bounds · L456](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-309ef4d06a3dad92)。
-- `bounds::detail::segment_enter_exit_bounds` → [blender::bounds::detail::segment_enter_exit_bounds · L479](07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-e759e832804dc57a)。
+- `this->contains` → [blender::Bounds<T>::contains · L582](07-Bounds与BVH对比.md#f-0a53b6dc67ee8070)。
+- `this->intersects` → [blender::Bounds<T>::intersects · L593](07-Bounds与BVH对比.md#f-c0fa2673c5af4574)。
+- `bounds::detail::segment_bounds` → [blender::bounds::detail::segment_bounds · L456](07-Bounds与BVH对比.md#f-309ef4d06a3dad92)。
+- `bounds::detail::segment_enter_exit_bounds` → [blender::bounds::detail::segment_enter_exit_bounds · L479](07-Bounds与BVH对比.md#f-e759e832804dc57a)。
 
 ### 类型布局、声明与编译条件 · BLI_bounds.hh L615—L616
 
@@ -3841,4 +3841,4 @@ optional把不存在与存在的T区分开，T的构造和析构跟随engaged状
 
 与nanoflann比较查询模型与来源，与BVH比较划分对象和原语，与暴力搜索比较构建成本是否值得；Blender实现有独立修改和借用契约。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

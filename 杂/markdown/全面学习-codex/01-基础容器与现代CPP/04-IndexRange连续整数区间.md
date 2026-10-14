@@ -1,6 +1,6 @@
 # 01-04 IndexRange连续整数区间
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -347,7 +347,7 @@ class IndexRange {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:e502acb8980eff -->
 
@@ -406,7 +406,7 @@ class IndexRange {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:2f03e74cbf767a -->
 
@@ -467,7 +467,7 @@ class IndexRange {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 <!-- annotated:698dcd8d7cb628 -->
 
@@ -528,7 +528,7 @@ class IndexRange {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 <!-- annotated:73430192e86e67 -->
 
@@ -589,7 +589,7 @@ class IndexRange {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 <!-- annotated:b74dcfc1f7b37a -->
 
@@ -650,7 +650,7 @@ class IndexRange {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 <!-- annotated:bc156823ccd5c1 -->
 
@@ -710,7 +710,7 @@ class IndexRange {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L97—L107
 
@@ -960,7 +960,7 @@ class IndexRange {
 
 **继续追踪实现**
 
-- `Iterator` → [blender::IndexRange::Iterator::Iterator · L108](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-27f6725fdde0e062)。
+- `Iterator` → [blender::IndexRange::Iterator::Iterator · L108](04-IndexRange连续整数区间.md#f-27f6725fdde0e062)。
 
 <!-- annotated:bad899c9fc291f -->
 
@@ -1016,7 +1016,7 @@ class IndexRange {
 
 **继续追踪实现**
 
-- `Iterator` → [blender::IndexRange::Iterator::Iterator · L108](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-27f6725fdde0e062)。
+- `Iterator` → [blender::IndexRange::Iterator::Iterator · L108](04-IndexRange连续整数区间.md#f-27f6725fdde0e062)。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L130—L133
 
@@ -1095,8 +1095,8 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::IndexRange::size · L156](04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L140—L143
 
@@ -1335,7 +1335,7 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L165—L168
 
@@ -1473,7 +1473,7 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `IndexRange::from_begin_end` → [blender::IndexRange::from_begin_end · L78](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-a523839fb9650253)。
+- `IndexRange::from_begin_end` → [blender::IndexRange::from_begin_end · L78](04-IndexRange连续整数区间.md#f-a523839fb9650253)。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L181—L184
 
@@ -1543,8 +1543,8 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L190—L193
 
@@ -1614,8 +1614,8 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L199—L203
 
@@ -1690,8 +1690,8 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::IndexRange::size · L156](04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L209—L213
 
@@ -1774,8 +1774,8 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::IndexRange::size · L156](04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L221—L225
 
@@ -1843,7 +1843,7 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L231—L234
 
@@ -2139,7 +2139,7 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `range.is_empty` → [blender::IndexRange::is_empty · L169](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-9501e070be01ff71)。
+- `range.is_empty` → [blender::IndexRange::is_empty · L169](04-IndexRange连续整数区间.md#f-9501e070be01ff71)。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L272—L275
 
@@ -2222,8 +2222,8 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 <a id="f-eb80885fefc31b6f"></a>
 
@@ -2273,9 +2273,9 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `this->slice` → [blender::IndexRange::slice · L276](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-6249bf624e38d609)；[blender::IndexRange::slice · L284](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-eb80885fefc31b6f)。同名重载需按实参类型选择。
-- `range.start` → [blender::IndexRange::start · L243](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
-- `range.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `this->slice` → [blender::IndexRange::slice · L276](04-IndexRange连续整数区间.md#f-6249bf624e38d609)；[blender::IndexRange::slice · L284](04-IndexRange连续整数区间.md#f-eb80885fefc31b6f)。同名重载需按实参类型选择。
+- `range.start` → [blender::IndexRange::start · L243](04-IndexRange连续整数区间.md#f-99d2195bd9cfd1f0)。
+- `range.size` → [blender::IndexRange::size · L156](04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L288—L293
 
@@ -2357,7 +2357,7 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 - `std::min` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
 - `std::max` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L301—L305
 
@@ -2432,9 +2432,9 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::max<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L312—L316
 
@@ -2509,9 +2509,9 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::max<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L323—L327
 
@@ -2586,9 +2586,9 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::min<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L334—L338
 
@@ -2663,9 +2663,9 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::min<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L345—L349
 
@@ -2735,7 +2735,7 @@ offset[i+1]减offset[i]得到组长度，允许空组；编号和组内元素索
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange::IndexRange · L60](04-IndexRange连续整数区间.md#f-137c81a537a5d604)；[blender::IndexRange::IndexRange · L62](04-IndexRange连续整数区间.md#f-e7f519dcc417d983)；[blender::IndexRange::IndexRange · L67](04-IndexRange连续整数区间.md#f-2d5ea7e20125ee16)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_index_range.hh L354—L373
 
@@ -2864,4 +2864,4 @@ friend授予指定函数或类访问非公开成员的权限，并不意味着�
 
 对比std::vector、std::array、std::span与LLVM SmallVector、ArrayRef时，分别比较拥有关系、内嵌存储、大小是否属于类型和失效条件。不要根据同名方法推断完全相同契约。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

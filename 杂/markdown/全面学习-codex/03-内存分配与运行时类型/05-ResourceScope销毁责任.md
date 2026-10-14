@@ -1,6 +1,6 @@
 # 03-05 ResourceScope销毁责任
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -617,7 +617,7 @@ template<typename T> inline T *ResourceScope::add(std::unique_ptr<T> resource)
 **继续追踪实现**
 
 - `resource.release` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `this->add` → [blender::ResourceScope::add · L158](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-ea50aaeb75a3ae88)；[blender::ResourceScope::add · L171](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-69a0755cd9372e60)；[blender::ResourceScope::add · L181](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-af785bf57d715c47)；[blender::ResourceScope::add · L199](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-bd09b45cee23317d)。同名重载需按实参类型选择。
+- `this->add` → [blender::ResourceScope::add · L158](05-ResourceScope销毁责任.md#f-ea50aaeb75a3ae88)；[blender::ResourceScope::add · L171](05-ResourceScope销毁责任.md#f-69a0755cd9372e60)；[blender::ResourceScope::add · L181](05-ResourceScope销毁责任.md#f-af785bf57d715c47)；[blender::ResourceScope::add · L199](05-ResourceScope销毁责任.md#f-bd09b45cee23317d)。同名重载需按实参类型选择。
 
 <!-- annotated:3a1c1087800aa6 -->
 
@@ -690,7 +690,7 @@ template<typename T> inline T *ResourceScope::add(std::shared_ptr<T> resource)
 **继续追踪实现**
 
 - `resource.get` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `this->add_destruct_call` → [blender::ResourceScope::add_destruct_call · L212](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-086b76d60c137c86)。
+- `this->add_destruct_call` → [blender::ResourceScope::add_destruct_call · L212](05-ResourceScope销毁责任.md#f-086b76d60c137c86)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 - `resource.reset` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 
@@ -779,9 +779,9 @@ template<typename T> inline T *ResourceScope::add(destruct_ptr<T> resource)
 
 **继续追踪实现**
 
-- `resource.release` → [blender::GLCompilerWorker::release · L1820](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-gl_shader-766737.md#f-45abfb9d0fc827f9)。
-- `this->add` → [blender::ResourceScope::add · L158](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-ea50aaeb75a3ae88)；[blender::ResourceScope::add · L171](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-69a0755cd9372e60)；[blender::ResourceScope::add · L181](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-af785bf57d715c47)；[blender::ResourceScope::add · L199](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-bd09b45cee23317d)。同名重载需按实参类型选择。
-- `typed_data->~T` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：T模板参数提供的操作协议。调用位置L194。
+- `resource.release` → [blender::GLCompilerWorker::release · L1820](../90-实现依赖专题/08-其他Blender模块/gpu/opengl/gl_shader.cc.md#f-45abfb9d0fc827f9)。
+- `this->add` → [blender::ResourceScope::add · L158](05-ResourceScope销毁责任.md#f-ea50aaeb75a3ae88)；[blender::ResourceScope::add · L171](05-ResourceScope销毁责任.md#f-69a0755cd9372e60)；[blender::ResourceScope::add · L181](05-ResourceScope销毁责任.md#f-af785bf57d715c47)；[blender::ResourceScope::add · L199](05-ResourceScope销毁责任.md#f-bd09b45cee23317d)。同名重载需按实参类型选择。
+- `typed_data->~T` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：T模板参数提供的操作协议。调用位置L194。
 
 <!-- annotated:b79f28a210df6f -->
 
@@ -850,7 +850,7 @@ inline void ResourceScope::add(void *userdata, void (*free)(void *))
 
 **继续追踪实现**
 
-- `resources_.append` → [blender::UV_ClipboardBuffer::append · L151](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-uvedit_clipboard-50a9f1.md#f-de8d3eb273c2b6e2)；[blender::GVectorArray::append · L28](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-generic_vector_array-7f86fb.md#f-0cb0cf008e99799f)；[blender::GLSharedOrphanLists::OrphanList::append · L213](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-gl_context-43fe84.md#f-38a327ca2ce8ae16)。同名重载需按实参类型选择。
+- `resources_.append` → [blender::UV_ClipboardBuffer::append · L151](../90-实现依赖专题/08-其他Blender模块/editors/uvedit/uvedit_clipboard.cc.md#f-de8d3eb273c2b6e2)；[blender::GVectorArray::append · L28](../90-实现依赖专题/01-BLI基础库/intern/generic_vector_array.cc.md#f-0cb0cf008e99799f)；[blender::GLSharedOrphanLists::OrphanList::append · L213](../90-实现依赖专题/08-其他Blender模块/gpu/opengl/gl_context.cc.md#f-38a327ca2ce8ae16)。同名重载需按实参类型选择。
 
 <!-- annotated:0d2cbcb8a14587 -->
 
@@ -911,7 +911,7 @@ template<typename T> inline T &ResourceScope::add_value(T &&value)
 
 **继续追踪实现**
 
-- `this->construct<T>` → [blender::ResourceScope::construct · L219](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-5b24624bb64539d5)。
+- `this->construct<T>` → [blender::ResourceScope::construct · L219](05-ResourceScope销毁责任.md#f-5b24624bb64539d5)。
 - `std::forward<T>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 <!-- annotated:0dab7193679622 -->
@@ -973,9 +973,9 @@ template<typename Func> inline void ResourceScope::add_destruct_call(Func func)
 
 **继续追踪实现**
 
-- `allocator_.allocate` → [blender::LinearAllocator::allocate · L66](02-LinearAllocator%E5%B8%83%E5%B1%80.md#f-26209c6a21e04bc0)；[blender::LinearAllocator::allocate · L99](02-LinearAllocator%E5%B8%83%E5%B1%80.md#f-b34ac68f2e3d66f1)；[blender::LinearAllocator::allocate · L105](02-LinearAllocator%E5%B8%83%E5%B1%80.md#f-96480f78749ba1c7)。同名重载需按实参类型选择。
+- `allocator_.allocate` → [blender::LinearAllocator::allocate · L66](02-LinearAllocator布局.md#f-26209c6a21e04bc0)；[blender::LinearAllocator::allocate · L99](02-LinearAllocator布局.md#f-b34ac68f2e3d66f1)；[blender::LinearAllocator::allocate · L105](02-LinearAllocator布局.md#f-96480f78749ba1c7)。同名重载需按实参类型选择。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `this->add` → [blender::ResourceScope::add · L158](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-ea50aaeb75a3ae88)；[blender::ResourceScope::add · L171](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-69a0755cd9372e60)；[blender::ResourceScope::add · L181](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-af785bf57d715c47)；[blender::ResourceScope::add · L199](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-bd09b45cee23317d)。同名重载需按实参类型选择。
+- `this->add` → [blender::ResourceScope::add · L158](05-ResourceScope销毁责任.md#f-ea50aaeb75a3ae88)；[blender::ResourceScope::add · L171](05-ResourceScope销毁责任.md#f-69a0755cd9372e60)；[blender::ResourceScope::add · L181](05-ResourceScope销毁责任.md#f-af785bf57d715c47)；[blender::ResourceScope::add · L199](05-ResourceScope销毁责任.md#f-bd09b45cee23317d)。同名重载需按实参类型选择。
 
 <!-- annotated:50dabf46fa398f -->
 
@@ -1039,9 +1039,9 @@ template<typename T, typename... Args> inline T &ResourceScope::construct(Args &
 
 **继续追踪实现**
 
-- `allocator_.construct<T>` → [blender::LinearAllocator::construct · L135](02-LinearAllocator%E5%B8%83%E5%B1%80.md#f-437c16eedf07fa2a)。
+- `allocator_.construct<T>` → [blender::LinearAllocator::construct · L135](02-LinearAllocator布局.md#f-437c16eedf07fa2a)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `this->add` → [blender::ResourceScope::add · L158](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-ea50aaeb75a3ae88)；[blender::ResourceScope::add · L171](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-69a0755cd9372e60)；[blender::ResourceScope::add · L181](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-af785bf57d715c47)；[blender::ResourceScope::add · L199](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-bd09b45cee23317d)。同名重载需按实参类型选择。
+- `this->add` → [blender::ResourceScope::add · L158](05-ResourceScope销毁责任.md#f-ea50aaeb75a3ae88)；[blender::ResourceScope::add · L171](05-ResourceScope销毁责任.md#f-69a0755cd9372e60)；[blender::ResourceScope::add · L181](05-ResourceScope销毁责任.md#f-af785bf57d715c47)；[blender::ResourceScope::add · L199](05-ResourceScope销毁责任.md#f-bd09b45cee23317d)。同名重载需按实参类型选择。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:ae568f1a034354 -->
@@ -1110,9 +1110,9 @@ inline void *ResourceScope::allocate_owned(const CPPType &type)
 
 **继续追踪实现**
 
-- `allocator_.allocate` → [blender::LinearAllocator::allocate · L66](02-LinearAllocator%E5%B8%83%E5%B1%80.md#f-26209c6a21e04bc0)；[blender::LinearAllocator::allocate · L99](02-LinearAllocator%E5%B8%83%E5%B1%80.md#f-b34ac68f2e3d66f1)；[blender::LinearAllocator::allocate · L105](02-LinearAllocator%E5%B8%83%E5%B1%80.md#f-96480f78749ba1c7)。同名重载需按实参类型选择。
-- `this->add_destruct_call` → [blender::ResourceScope::add_destruct_call · L212](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-086b76d60c137c86)。
-- `type.destruct` → [blender::CPPType::destruct · L557](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-85f4f006e822b3c7)。
+- `allocator_.allocate` → [blender::LinearAllocator::allocate · L66](02-LinearAllocator布局.md#f-26209c6a21e04bc0)；[blender::LinearAllocator::allocate · L99](02-LinearAllocator布局.md#f-b34ac68f2e3d66f1)；[blender::LinearAllocator::allocate · L105](02-LinearAllocator布局.md#f-96480f78749ba1c7)。同名重载需按实参类型选择。
+- `this->add_destruct_call` → [blender::ResourceScope::add_destruct_call · L212](05-ResourceScope销毁责任.md#f-086b76d60c137c86)。
+- `type.destruct` → [blender::CPPType::destruct · L557](09-CPPType复制移动重定位.md#f-85f4f006e822b3c7)。
 
 <!-- annotated:390c052e6583e3 -->
 
@@ -1470,11 +1470,11 @@ LinearAllocator<> &ResourceScope::create_own_allocator_in_buffer(ResourceDataLis
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `allocator->provide_buffer` → [blender::LinearAllocator::provide_buffer · L217](03-LinearAllocator%E5%88%86%E9%85%8D%E4%B8%8E%E6%89%A9%E5%B1%95.md#f-7fb26e552e8c2077)；[blender::LinearAllocator::provide_buffer · L224](03-LinearAllocator%E5%88%86%E9%85%8D%E4%B8%8E%E6%89%A9%E5%B1%95.md#f-f477894fce14f489)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `allocator->provide_buffer` → [blender::LinearAllocator::provide_buffer · L217](03-LinearAllocator分配与扩展.md#f-7fb26e552e8c2077)；[blender::LinearAllocator::provide_buffer · L224](03-LinearAllocator分配与扩展.md#f-f477894fce14f489)。同名重载需按实参类型选择。
 - `std::destroy_at` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `MEM_delete_void` → [MEM_delete_void · L647](%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-642896c7c62ff8b9)；[MEM_delete_void · L109](%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9a07b26421f2bee6)。同名重载需按实参类型选择。
-- `r_resources.append` → [blender::GVectorArray::append · L28](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-generic_vector_array-7f86fb.md#f-0cb0cf008e99799f)。
+- `MEM_delete_void` → [MEM_delete_void · L647](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-642896c7c62ff8b9)；[MEM_delete_void · L109](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-9a07b26421f2bee6)。同名重载需按实参类型选择。
+- `r_resources.append` → [blender::GVectorArray::append · L28](../90-实现依赖专题/01-BLI基础库/intern/generic_vector_array.cc.md#f-0cb0cf008e99799f)。
 
 <!-- annotated:be2d5e94fc1e4a -->
 
@@ -1550,8 +1550,8 @@ LinearAllocator<> &ResourceScope::create_own_allocator(ResourceDataList &r_resou
 
 **继续追踪实现**
 
-- `MEM_new_uninitialized_aligned` → [MEM_new_uninitialized_aligned · L134](%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9f3d21bd7da93c68)。
-- `ResourceScope::create_own_allocator_in_buffer` → [blender::ResourceScope::create_own_allocator_in_buffer · L27](05-ResourceScope%E9%94%80%E6%AF%81%E8%B4%A3%E4%BB%BB.md#f-15edb8e8e229b95a)。
+- `MEM_new_uninitialized_aligned` → [MEM_new_uninitialized_aligned · L134](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-9f3d21bd7da93c68)。
+- `ResourceScope::create_own_allocator_in_buffer` → [blender::ResourceScope::create_own_allocator_in_buffer · L27](05-ResourceScope销毁责任.md#f-15edb8e8e229b95a)。
 
 <!-- annotated:6083f70ee7e168 -->
 
@@ -1755,4 +1755,4 @@ shared_ptr让控制块跟踪共享寿命，不自动使被指向对象的读写�
 
 与std::pmr::monotonic_buffer_resource比较批量存储回收，与std::any比较拥有型类型擦除；CPPType描述类型操作，本身不保存每个值。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

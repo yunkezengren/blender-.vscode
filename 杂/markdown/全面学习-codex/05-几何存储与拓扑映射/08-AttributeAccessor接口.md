@@ -1,6 +1,6 @@
 # 05-08 AttributeAccessor接口
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -1299,7 +1299,7 @@ template<typename T> struct AttributeWriter {
 
 **继续追踪实现**
 
-- `this->tag_modified_fn` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L236。
+- `this->tag_modified_fn` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L236。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L239—L259
 
@@ -1512,7 +1512,7 @@ template<typename T> struct SpanAttributeWriter {
 
 **继续追踪实现**
 
-- `span.varray` → [blender::MutableVArraySpan::varray · L1095](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/04-%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%B0%8F%E5%AF%B9%E8%B1%A1%E4%BC%98%E5%8C%96.md#f-e31b73c039045082)。
+- `span.varray` → [blender::MutableVArraySpan::varray · L1095](../04-虚拟数组与索引选择/04-所有权与小对象优化.md#f-e31b73c039045082)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L273—L278
 
@@ -1586,9 +1586,9 @@ template<typename T> struct SpanAttributeWriter {
 
 **继续追踪实现**
 
-- `this->span.varray` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L281。
-- `this->span.save` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L282。
-- `this->tag_modified_fn` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L285。
+- `this->span.varray` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L281。
+- `this->span.save` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L282。
+- `this->tag_modified_fn` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L285。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L288—L297
 
@@ -1897,7 +1897,7 @@ struct GAttributeReader {
 
 **继续追踪实现**
 
-- `varray.typed<T>` → [blender::GVArray::typed · L913](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-c17d1cd75ef41a17)。
+- `varray.typed<T>` → [blender::GVArray::typed · L913](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-c17d1cd75ef41a17)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L322—L331
 
@@ -2037,7 +2037,7 @@ struct GAttributeWriter {
 
 **继续追踪实现**
 
-- `this->tag_modified_fn` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L340。
+- `this->tag_modified_fn` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L340。
 
 <!-- annotated:3d4fce6f3b1349 -->
 
@@ -2093,7 +2093,7 @@ struct GAttributeWriter {
 
 **继续追踪实现**
 
-- `varray.typed<T>` → [blender::GVMutableArray::typed · L974](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-414a70d820eeffdc)。
+- `varray.typed<T>` → [blender::GVMutableArray::typed · L974](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-414a70d820eeffdc)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L348—L357
 
@@ -2284,7 +2284,7 @@ struct GSpanAttributeWriter {
 
 **继续追踪实现**
 
-- `span.varray` → [blender::GMutableVArraySpan::varray · L467](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-d6ed1d26620cf41c)。
+- `span.varray` → [blender::GMutableVArraySpan::varray · L467](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-d6ed1d26620cf41c)。
 
 <!-- annotated:26b92a6afe6f48 -->
 
@@ -2346,9 +2346,9 @@ struct GSpanAttributeWriter {
 
 **继续追踪实现**
 
-- `this->span.varray` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L374。
-- `this->span.save` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L375。
-- `this->tag_modified_fn` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L378。
+- `this->span.varray` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L374。
+- `this->span.save` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L375。
+- `this->tag_modified_fn` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L378。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L381—L404
 
@@ -2650,7 +2650,7 @@ class AttributeIter {
 
 **继续追踪实现**
 
-- `get_fn_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L427。
+- `get_fn_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L427。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L429—L432
 
@@ -2718,7 +2718,7 @@ class AttributeIter {
 
 **继续追踪实现**
 
-- `this->get` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
+- `this->get` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor接口.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor接口.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor接口.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor接口.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
 
 <!-- annotated:e530ec741d1031 -->
 
@@ -2778,7 +2778,7 @@ class AttributeIter {
 
 **继续追踪实现**
 
-- `this->get` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
+- `this->get` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor接口.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor接口.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor接口.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor接口.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
 
 <!-- annotated:6b432b265e3a67 -->
 
@@ -2844,10 +2844,10 @@ class AttributeIter {
 
 **继续追踪实现**
 
-- `CPPType::get<T>` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
-- `cpp_type_to_attribute_type` → [blender::bke::cpp_type_to_attribute_type · L80](%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-6ce44c9d2f385cb5)。
-- `this->get(domain, data_type).typed<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L448。
-- `this->get` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
+- `CPPType::get<T>` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor接口.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor接口.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor接口.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor接口.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
+- `cpp_type_to_attribute_type` → [blender::bke::cpp_type_to_attribute_type · L80](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-6ce44c9d2f385cb5)。
+- `this->get(domain, data_type).typed<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L448。
+- `this->get` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor接口.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor接口.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor接口.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor接口.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L450—L511
 
@@ -3132,8 +3132,8 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `this->lookup_meta_data(name).has_value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L527。
-- `this->lookup_meta_data` → [blender::bke::AttributeAccessor::lookup_meta_data · L533](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-8e846cee4b51f075)。
+- `this->lookup_meta_data(name).has_value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L527。
+- `this->lookup_meta_data` → [blender::bke::AttributeAccessor::lookup_meta_data · L533](08-AttributeAccessor接口.md#f-8e846cee4b51f075)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L529—L532
 
@@ -3201,7 +3201,7 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `fn_->lookup_meta_data` → [blender::bke::AttributeAccessor::lookup_meta_data · L533](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-8e846cee4b51f075)。
+- `fn_->lookup_meta_data` → [blender::bke::AttributeAccessor::lookup_meta_data · L533](08-AttributeAccessor接口.md#f-8e846cee4b51f075)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L537—L540
 
@@ -3269,7 +3269,7 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `fn_->domain_supported` → [blender::bke::AttributeAccessor::domain_supported · L541](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-a8e8d81497065bbd)。
+- `fn_->domain_supported` → [blender::bke::AttributeAccessor::domain_supported · L541](08-AttributeAccessor接口.md#f-a8e8d81497065bbd)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L545—L548
 
@@ -3337,7 +3337,7 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `fn_->domain_size` → [blender::bke::AttributeAccessor::domain_size · L549](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-ef6a71571070a259)。
+- `fn_->domain_size` → [blender::bke::AttributeAccessor::domain_size · L549](08-AttributeAccessor接口.md#f-ef6a71571070a259)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L553—L557
 
@@ -3407,8 +3407,8 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `fn_->builtin_domain_and_type(owner_, name).has_value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L560。
-- `fn_->builtin_domain_and_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L560。
+- `fn_->builtin_domain_and_type(owner_, name).has_value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L560。
+- `fn_->builtin_domain_and_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L560。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L562—L565
 
@@ -3476,7 +3476,7 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `fn_->builtin_domain_and_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L568。
+- `fn_->builtin_domain_and_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L568。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L570—L574
 
@@ -3548,9 +3548,9 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->is_builtin` → [blender::bke::AttributeAccessor::is_builtin · L558](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-a2dbcba450acd997)。
-- `fn_->get_builtin_default` → [blender::bke::AttributeAccessor::get_builtin_default · L575](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-b332b7ba40482768)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->is_builtin` → [blender::bke::AttributeAccessor::is_builtin · L558](08-AttributeAccessor接口.md#f-a2dbcba450acd997)。
+- `fn_->get_builtin_default` → [blender::bke::AttributeAccessor::get_builtin_default · L575](08-AttributeAccessor接口.md#f-b332b7ba40482768)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L580—L584
 
@@ -3620,7 +3620,7 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `fn_->lookup` → [blender::bke::AttributeAccessor::lookup · L585](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-432b90c796a80893)；[blender::bke::AttributeAccessor::lookup · L602](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-a60c1a45b85155d9)；[blender::bke::AttributeAccessor::lookup · L611](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-16ca459803fc30a6)；[blender::bke::AttributeAccessor::lookup · L620](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-403fd8a9d1a16c6d)。同名重载需按实参类型选择。
+- `fn_->lookup` → [blender::bke::AttributeAccessor::lookup · L585](08-AttributeAccessor接口.md#f-432b90c796a80893)；[blender::bke::AttributeAccessor::lookup · L602](08-AttributeAccessor接口.md#f-a60c1a45b85155d9)；[blender::bke::AttributeAccessor::lookup · L611](08-AttributeAccessor接口.md#f-16ca459803fc30a6)；[blender::bke::AttributeAccessor::lookup · L620](08-AttributeAccessor接口.md#f-403fd8a9d1a16c6d)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L589—L601
 
@@ -3707,7 +3707,7 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `this->lookup` → [blender::bke::AttributeAccessor::lookup · L585](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-432b90c796a80893)；[blender::bke::AttributeAccessor::lookup · L602](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-a60c1a45b85155d9)；[blender::bke::AttributeAccessor::lookup · L611](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-16ca459803fc30a6)；[blender::bke::AttributeAccessor::lookup · L620](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-403fd8a9d1a16c6d)。同名重载需按实参类型选择。
+- `this->lookup` → [blender::bke::AttributeAccessor::lookup · L585](08-AttributeAccessor接口.md#f-432b90c796a80893)；[blender::bke::AttributeAccessor::lookup · L602](08-AttributeAccessor接口.md#f-a60c1a45b85155d9)；[blender::bke::AttributeAccessor::lookup · L611](08-AttributeAccessor接口.md#f-16ca459803fc30a6)；[blender::bke::AttributeAccessor::lookup · L620](08-AttributeAccessor接口.md#f-403fd8a9d1a16c6d)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L606—L610
 
@@ -3778,7 +3778,7 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `this->lookup` → [blender::bke::AttributeAccessor::lookup · L585](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-432b90c796a80893)；[blender::bke::AttributeAccessor::lookup · L602](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-a60c1a45b85155d9)；[blender::bke::AttributeAccessor::lookup · L611](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-16ca459803fc30a6)；[blender::bke::AttributeAccessor::lookup · L620](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-403fd8a9d1a16c6d)。同名重载需按实参类型选择。
+- `this->lookup` → [blender::bke::AttributeAccessor::lookup · L585](08-AttributeAccessor接口.md#f-432b90c796a80893)；[blender::bke::AttributeAccessor::lookup · L602](08-AttributeAccessor接口.md#f-a60c1a45b85155d9)；[blender::bke::AttributeAccessor::lookup · L611](08-AttributeAccessor接口.md#f-16ca459803fc30a6)；[blender::bke::AttributeAccessor::lookup · L620](08-AttributeAccessor接口.md#f-403fd8a9d1a16c6d)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L615—L619
 
@@ -3857,10 +3857,10 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `CPPType::get<T>` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
-- `cpp_type_to_attribute_type` → [blender::bke::cpp_type_to_attribute_type · L80](%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-6ce44c9d2f385cb5)。
-- `this->lookup(name, domain, data_type).typed<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L626。
-- `this->lookup` → [blender::bke::AttributeAccessor::lookup · L585](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-432b90c796a80893)；[blender::bke::AttributeAccessor::lookup · L602](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-a60c1a45b85155d9)；[blender::bke::AttributeAccessor::lookup · L611](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-16ca459803fc30a6)；[blender::bke::AttributeAccessor::lookup · L620](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-403fd8a9d1a16c6d)。同名重载需按实参类型选择。
+- `CPPType::get<T>` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor接口.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor接口.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor接口.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor接口.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
+- `cpp_type_to_attribute_type` → [blender::bke::cpp_type_to_attribute_type · L80](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-6ce44c9d2f385cb5)。
+- `this->lookup(name, domain, data_type).typed<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L626。
+- `this->lookup` → [blender::bke::AttributeAccessor::lookup · L585](08-AttributeAccessor接口.md#f-432b90c796a80893)；[blender::bke::AttributeAccessor::lookup · L602](08-AttributeAccessor接口.md#f-a60c1a45b85155d9)；[blender::bke::AttributeAccessor::lookup · L611](08-AttributeAccessor接口.md#f-16ca459803fc30a6)；[blender::bke::AttributeAccessor::lookup · L620](08-AttributeAccessor接口.md#f-403fd8a9d1a16c6d)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L628—L642
 
@@ -3965,9 +3965,9 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `this->lookup<T>` → [blender::bke::AttributeAccessor::lookup · L585](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-432b90c796a80893)；[blender::bke::AttributeAccessor::lookup · L602](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-a60c1a45b85155d9)；[blender::bke::AttributeAccessor::lookup · L611](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-16ca459803fc30a6)；[blender::bke::AttributeAccessor::lookup · L620](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-403fd8a9d1a16c6d)。同名重载需按实参类型选择。
-- `VArray<T>::from_single` → [blender::GVArray::from_single · L880](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-1c85e09520e47c5a)；[blender::VArray::from_single · L759](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-ea0b7b864c7f4785)。同名重载需按实参类型选择。
-- `this->domain_size` → [blender::bke::AttributeAccessor::domain_size · L549](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-ef6a71571070a259)。
+- `this->lookup<T>` → [blender::bke::AttributeAccessor::lookup · L585](08-AttributeAccessor接口.md#f-432b90c796a80893)；[blender::bke::AttributeAccessor::lookup · L602](08-AttributeAccessor接口.md#f-a60c1a45b85155d9)；[blender::bke::AttributeAccessor::lookup · L611](08-AttributeAccessor接口.md#f-16ca459803fc30a6)；[blender::bke::AttributeAccessor::lookup · L620](08-AttributeAccessor接口.md#f-403fd8a9d1a16c6d)。同名重载需按实参类型选择。
+- `VArray<T>::from_single` → [blender::GVArray::from_single · L880](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-1c85e09520e47c5a)；[blender::VArray::from_single · L759](../04-虚拟数组与索引选择/03-单值与Span表示.md#f-ea0b7b864c7f4785)。同名重载需按实参类型选择。
+- `this->domain_size` → [blender::bke::AttributeAccessor::domain_size · L549](08-AttributeAccessor接口.md#f-ef6a71571070a259)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L653—L656
 
@@ -4035,7 +4035,7 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `fn_->lookup_validator` → [blender::bke::AttributeAccessor::lookup_validator · L657](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-157191d13b91c8be)。
+- `fn_->lookup_validator` → [blender::bke::AttributeAccessor::lookup_validator · L657](08-AttributeAccessor接口.md#f-157191d13b91c8be)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L661—L664
 
@@ -4109,7 +4109,7 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `fn_->adapt_domain` → [blender::bke::AttributeAccessor::adapt_domain · L665](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-305741960874253d)；[blender::bke::AttributeAccessor::adapt_domain · L675](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-4a5f3c263af68b9c)。同名重载需按实参类型选择。
+- `fn_->adapt_domain` → [blender::bke::AttributeAccessor::adapt_domain · L665](08-AttributeAccessor接口.md#f-305741960874253d)；[blender::bke::AttributeAccessor::adapt_domain · L675](08-AttributeAccessor接口.md#f-4a5f3c263af68b9c)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L671—L674
 
@@ -4185,9 +4185,9 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `this->adapt_domain(GVArray(varray), from_domain, to_domain).typed<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L680。
-- `this->adapt_domain` → [blender::bke::AttributeAccessor::adapt_domain · L665](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-305741960874253d)；[blender::bke::AttributeAccessor::adapt_domain · L675](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-4a5f3c263af68b9c)。同名重载需按实参类型选择。
-- `GVArray` → [blender::GVArray::GVArray · L163](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-64f7cbf5d9f0e955)；[blender::GVArray::GVArray · L800](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-92ab30090a1a4c9d)；[blender::GVArray::GVArray · L808](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-ffdfb9685892d387)；[blender::GVArray::GVArray · L848](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-9750722bb98b7336)；[blender::GVArray::GVArray · L852](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-570ef42684f1d635)；[blender::GVArray::GVArray · L874](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-ae91aa8c66a4a0d1)；[blender::GVArray::GVArray · L876](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3397bbb4ba5e7ea4)；[blender::GVArray::GVArray · L626](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-fac576444532110b)。同名重载需按实参类型选择。
+- `this->adapt_domain(GVArray(varray), from_domain, to_domain).typed<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L680。
+- `this->adapt_domain` → [blender::bke::AttributeAccessor::adapt_domain · L665](08-AttributeAccessor接口.md#f-305741960874253d)；[blender::bke::AttributeAccessor::adapt_domain · L675](08-AttributeAccessor接口.md#f-4a5f3c263af68b9c)。同名重载需按实参类型选择。
+- `GVArray` → [blender::GVArray::GVArray · L163](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-64f7cbf5d9f0e955)；[blender::GVArray::GVArray · L800](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-92ab30090a1a4c9d)；[blender::GVArray::GVArray · L808](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-ffdfb9685892d387)；[blender::GVArray::GVArray · L848](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-9750722bb98b7336)；[blender::GVArray::GVArray · L852](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-570ef42684f1d635)；[blender::GVArray::GVArray · L874](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-ae91aa8c66a4a0d1)；[blender::GVArray::GVArray · L876](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-3397bbb4ba5e7ea4)；[blender::GVArray::GVArray · L626](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-fac576444532110b)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L682—L686
 
@@ -4258,7 +4258,7 @@ class AttributeAccessor {
 
 **继续追踪实现**
 
-- `fn_->foreach_attribute` → [blender::bke::AttributeAccessor::foreach_attribute · L687](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-44723ac57e0d1fa4)。
+- `fn_->foreach_attribute` → [blender::bke::AttributeAccessor::foreach_attribute · L687](08-AttributeAccessor接口.md#f-44723ac57e0d1fa4)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L693—L708
 
@@ -4456,10 +4456,10 @@ class MutableAttributeAccessor : public AttributeAccessor {
 
 **继续追踪实现**
 
-- `this->lookup_for_write` → [blender::bke::MutableAttributeAccessor::lookup_for_write · L729](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-c0a1a0bb3df935f1)。
-- `attribute.varray.type().is<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L735。
-- `attribute.varray.type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L735。
-- `attribute.typed<T>` → [blender::bke::GAttributeWriter::typed · L344](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-f53acc019d6da8d7)。
+- `this->lookup_for_write` → [blender::bke::MutableAttributeAccessor::lookup_for_write · L729](08-AttributeAccessor接口.md#f-c0a1a0bb3df935f1)。
+- `attribute.varray.type().is<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L735。
+- `attribute.varray.type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L735。
+- `attribute.typed<T>` → [blender::bke::GAttributeWriter::typed · L344](08-AttributeAccessor接口.md#f-f53acc019d6da8d7)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L740—L743
 
@@ -4537,7 +4537,7 @@ class MutableAttributeAccessor : public AttributeAccessor {
 
 **继续追踪实现**
 
-- `this->lookup_for_write<T>` → [blender::bke::MutableAttributeAccessor::lookup_for_write · L729](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-c0a1a0bb3df935f1)。
+- `this->lookup_for_write<T>` → [blender::bke::MutableAttributeAccessor::lookup_for_write · L729](08-AttributeAccessor接口.md#f-c0a1a0bb3df935f1)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L752—L768
@@ -4660,10 +4660,10 @@ class MutableAttributeAccessor : public AttributeAccessor {
 
 **继续追踪实现**
 
-- `this->domain_supported` → [blender::bke::AttributeAccessor::domain_supported · L541](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-a8e8d81497065bbd)。
-- `this->contains` → [blender::bke::AttributeAccessor::contains · L525](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-b0f1620f38a5372d)。
-- `name.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L780。
-- `fn_->add` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L783。
+- `this->domain_supported` → [blender::bke::AttributeAccessor::domain_supported · L541](08-AttributeAccessor接口.md#f-a8e8d81497065bbd)。
+- `this->contains` → [blender::bke::AttributeAccessor::contains · L525](08-AttributeAccessor接口.md#f-b0f1620f38a5372d)。
+- `name.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L780。
+- `fn_->add` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L783。
 
 <a id="f-42998ceb23ada8cc"></a>
 
@@ -4714,9 +4714,9 @@ class MutableAttributeAccessor : public AttributeAccessor {
 
 **继续追踪实现**
 
-- `CPPType::get<T>` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
-- `cpp_type_to_attribute_type` → [blender::bke::cpp_type_to_attribute_type · L80](%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-6ce44c9d2f385cb5)。
-- `this->add` → [blender::bke::MutableAttributeAccessor::add · L769](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-5fa7f06d7e22891a)；[blender::bke::MutableAttributeAccessor::add · L785](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-42998ceb23ada8cc)。同名重载需按实参类型选择。
+- `CPPType::get<T>` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor接口.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor接口.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor接口.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor接口.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
+- `cpp_type_to_attribute_type` → [blender::bke::cpp_type_to_attribute_type · L80](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-6ce44c9d2f385cb5)。
+- `this->add` → [blender::bke::MutableAttributeAccessor::add · L769](08-AttributeAccessor接口.md#f-5fa7f06d7e22891a)；[blender::bke::MutableAttributeAccessor::add · L785](08-AttributeAccessor接口.md#f-42998ceb23ada8cc)。同名重载需按实参类型选择。
 
 <!-- annotated:7f4fdb608af4ae -->
 
@@ -4817,13 +4817,13 @@ class MutableAttributeAccessor : public AttributeAccessor {
 
 **继续追踪实现**
 
-- `name.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L798。
-- `this->domain_supported` → [blender::bke::AttributeAccessor::domain_supported · L541](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-a8e8d81497065bbd)。
-- `this->lookup_meta_data` → [blender::bke::AttributeAccessor::lookup_meta_data · L533](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-8e846cee4b51f075)。
+- `name.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L798。
+- `this->domain_supported` → [blender::bke::AttributeAccessor::domain_supported · L541](08-AttributeAccessor接口.md#f-a8e8d81497065bbd)。
+- `this->lookup_meta_data` → [blender::bke::AttributeAccessor::lookup_meta_data · L533](08-AttributeAccessor接口.md#f-8e846cee4b51f075)。
 - `old_meta.has_value` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `this->assign_data` → [blender::bke::MutableAttributeAccessor::assign_data · L816](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-a3b636639737383c)。
-- `this->remove` → [blender::bke::MutableAttributeAccessor::remove · L1007](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-70cc562b046f24be)。
-- `this->add` → [blender::bke::MutableAttributeAccessor::add · L769](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-5fa7f06d7e22891a)；[blender::bke::MutableAttributeAccessor::add · L785](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-42998ceb23ada8cc)。同名重载需按实参类型选择。
+- `this->assign_data` → [blender::bke::MutableAttributeAccessor::assign_data · L816](08-AttributeAccessor接口.md#f-a3b636639737383c)。
+- `this->remove` → [blender::bke::MutableAttributeAccessor::remove · L1007](08-AttributeAccessor接口.md#f-70cc562b046f24be)。
+- `this->add` → [blender::bke::MutableAttributeAccessor::add · L769](08-AttributeAccessor接口.md#f-5fa7f06d7e22891a)；[blender::bke::MutableAttributeAccessor::add · L785](08-AttributeAccessor接口.md#f-42998ceb23ada8cc)。同名重载需按实参类型选择。
 
 <!-- annotated:a013e0f0d4c65f -->
 
@@ -4886,9 +4886,9 @@ class MutableAttributeAccessor : public AttributeAccessor {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->contains` → [blender::bke::AttributeAccessor::contains · L525](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-b0f1620f38a5372d)。
-- `fn_->assign_data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L819。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->contains` → [blender::bke::AttributeAccessor::contains · L525](08-AttributeAccessor接口.md#f-b0f1620f38a5372d)。
+- `fn_->assign_data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L819。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L821—L846
 
@@ -5014,10 +5014,10 @@ class MutableAttributeAccessor : public AttributeAccessor {
 
 **继续追踪实现**
 
-- `CPPType::get<T>` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
-- `cpp_type_to_attribute_type` → [blender::bke::cpp_type_to_attribute_type · L80](%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-6ce44c9d2f385cb5)。
-- `this->lookup_or_add_for_write(name, domain, data_type, initializer).typed<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L855。
-- `this->lookup_or_add_for_write` → [blender::bke::MutableAttributeAccessor::lookup_or_add_for_write · L847](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-ef75b392eb6cc78b)。
+- `CPPType::get<T>` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor接口.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor接口.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor接口.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor接口.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
+- `cpp_type_to_attribute_type` → [blender::bke::cpp_type_to_attribute_type · L80](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-6ce44c9d2f385cb5)。
+- `this->lookup_or_add_for_write(name, domain, data_type, initializer).typed<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L855。
+- `this->lookup_or_add_for_write` → [blender::bke::MutableAttributeAccessor::lookup_or_add_for_write · L847](08-AttributeAccessor接口.md#f-ef75b392eb6cc78b)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L857—L860
 
@@ -5105,7 +5105,7 @@ class MutableAttributeAccessor : public AttributeAccessor {
 
 **继续追踪实现**
 
-- `this->lookup_or_add_for_write<T>` → [blender::bke::MutableAttributeAccessor::lookup_or_add_for_write · L847](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-ef75b392eb6cc78b)。
+- `this->lookup_or_add_for_write<T>` → [blender::bke::MutableAttributeAccessor::lookup_or_add_for_write · L847](08-AttributeAccessor接口.md#f-ef75b392eb6cc78b)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L873—L890
@@ -5221,8 +5221,8 @@ class MutableAttributeAccessor : public AttributeAccessor {
 
 **继续追踪实现**
 
-- `this->lookup_or_add_for_write<T>` → [blender::bke::MutableAttributeAccessor::lookup_or_add_for_write · L847](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-ef75b392eb6cc78b)。
-- `AttributeInitConstruct` → [blender::bke::AttributeInitConstruct::AttributeInitConstruct · L90](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-864cb8bb6c1e50b4)。
+- `this->lookup_or_add_for_write<T>` → [blender::bke::MutableAttributeAccessor::lookup_or_add_for_write · L847](08-AttributeAccessor接口.md#f-ef75b392eb6cc78b)。
+- `AttributeInitConstruct` → [blender::bke::AttributeInitConstruct::AttributeInitConstruct · L90](08-AttributeAccessor接口.md#f-864cb8bb6c1e50b4)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L903—L943
@@ -5379,10 +5379,10 @@ class MutableAttributeAccessor : public AttributeAccessor {
 
 **继续追踪实现**
 
-- `CPPType::get<T>` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
-- `cpp_type_to_attribute_type` → [blender::bke::cpp_type_to_attribute_type · L80](%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-6ce44c9d2f385cb5)。
-- `this->convert_or_add_for_write(name, domain, data_type, initializer).typed<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L952。
-- `this->convert_or_add_for_write` → [blender::bke::MutableAttributeAccessor::convert_or_add_for_write · L944](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-e42b4b3dca28557b)。
+- `CPPType::get<T>` → [blender::bke::AttributeIter::get · L425](08-AttributeAccessor接口.md#f-96c11326ce251969)；[blender::bke::AttributeIter::get · L433](08-AttributeAccessor接口.md#f-cf743236e80abe49)；[blender::bke::AttributeIter::get · L438](08-AttributeAccessor接口.md#f-9aafba5d0c4d4d23)；[blender::bke::AttributeIter::get · L443](08-AttributeAccessor接口.md#f-bee09d0823c91cdb)。同名重载需按实参类型选择。
+- `cpp_type_to_attribute_type` → [blender::bke::cpp_type_to_attribute_type · L80](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-6ce44c9d2f385cb5)。
+- `this->convert_or_add_for_write(name, domain, data_type, initializer).typed<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L952。
+- `this->convert_or_add_for_write` → [blender::bke::MutableAttributeAccessor::convert_or_add_for_write · L944](08-AttributeAccessor接口.md#f-e42b4b3dca28557b)。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L954—L958
 
@@ -5467,8 +5467,8 @@ class MutableAttributeAccessor : public AttributeAccessor {
 
 **继续追踪实现**
 
-- `this->convert_or_add_for_write<T>` → [blender::bke::MutableAttributeAccessor::convert_or_add_for_write · L944](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-e42b4b3dca28557b)。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->convert_or_add_for_write<T>` → [blender::bke::MutableAttributeAccessor::convert_or_add_for_write · L944](08-AttributeAccessor接口.md#f-e42b4b3dca28557b)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L969—L988
@@ -5588,8 +5588,8 @@ class MutableAttributeAccessor : public AttributeAccessor {
 
 **继续追踪实现**
 
-- `this->convert_or_add_for_write<T>` → [blender::bke::MutableAttributeAccessor::convert_or_add_for_write · L944](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-e42b4b3dca28557b)。
-- `AttributeInitConstruct` → [blender::bke::AttributeInitConstruct::AttributeInitConstruct · L90](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-864cb8bb6c1e50b4)。
+- `this->convert_or_add_for_write<T>` → [blender::bke::MutableAttributeAccessor::convert_or_add_for_write · L944](08-AttributeAccessor接口.md#f-e42b4b3dca28557b)。
+- `AttributeInitConstruct` → [blender::bke::AttributeInitConstruct::AttributeInitConstruct · L90](08-AttributeAccessor接口.md#f-864cb8bb6c1e50b4)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L1001—L1006
@@ -5662,7 +5662,7 @@ class MutableAttributeAccessor : public AttributeAccessor {
 
 **继续追踪实现**
 
-- `fn_->remove` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1009。
+- `fn_->remove` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1009。
 
 ### 类型布局、声明与编译条件 · BKE_attribute.hh L1011—L1113
 
@@ -6000,4 +6000,4 @@ std::function保存可调用目标并提供统一调用接口，复制能力与�
 
 把偏移数组与vector<vector<int>>、CSR邻接表示作比较：前者集中存储，后者方便独立增长；是否稳定修改比容器名字更影响选型。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

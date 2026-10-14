@@ -1,6 +1,6 @@
 # 09-11 Switch与MenuSwitch
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -384,43 +384,43 @@ static void node_declare(nodes::NodeDeclarationBuilder &b)
 
 **继续追踪实现**
 
-- `b.use_custom_socket_order` → [blender::nodes::NodeDeclarationBuilder::use_custom_socket_order · L135](%E4%BE%9D%E8%B5%96-node_declaration-250442.md#f-7a3e20373b6f44d0)。
-- `b.allow_any_socket_order` → [blender::nodes::NodeDeclarationBuilder::allow_any_socket_order · L140](%E4%BE%9D%E8%B5%96-node_declaration-250442.md#f-5440adf750141e49)。
-- `b.tree_or_null` → [blender::nodes::NodeDeclarationBuilder::tree_or_null · L681](%E4%BE%9D%E8%B5%96-NOD_node_declaration-9b193f.md#f-f41371835832ba92)。
-- `b.node_or_null` → [blender::nodes::NodeDeclarationBuilder::node_or_null · L675](%E4%BE%9D%E8%B5%96-NOD_node_declaration-9b193f.md#f-1dfd970e8f6b7b32)。
-- `node_storage` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L55。
-- `compositor::Result::is_single_value_only_type` → [blender::compositor::Result::is_single_value_only_type · L51](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-result-844e73.md#f-e15a58f6d1b11e77)。
-- `compositor::socket_data_type_to_result_type` → [blender::compositor::socket_data_type_to_result_type · L39](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utilities-1ec26a.md#f-9bc4ab546a3e2be9)。
-- `b.add_output(data_type, "Output"_ustr) .propagate_all() .inferred_structure_type() .structure_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L70。
-- `b.add_output(data_type, "Output"_ustr) .propagate_all() .inferred_structure_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L70。
-- `b.add_output(data_type, "Output"_ustr) .propagate_all` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L70。
-- `b.add_output` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L70。
-- `b.add_default_layout` → [blender::nodes::DeclarationListBuilder::add_default_layout · L458](%E4%BE%9D%E8%B5%96-node_declaration-250442.md#f-6245704e5ac02c69)。
-- `b.add_input<decl::Menu>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L77。
-- `menu.default_value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L78。
-- `MenuValue` → [blender::nodes::MenuValue::MenuValue · L23](%E4%BE%9D%E8%B5%96-NOD_menu_value-6ddf35.md#f-5b614ab1fafc8ef9)；[blender::nodes::MenuValue::MenuValue · L24](%E4%BE%9D%E8%B5%96-NOD_menu_value-6ddf35.md#f-20fc7efc74f2e570)；[blender::nodes::MenuValue::MenuValue · L26](%E4%BE%9D%E8%B5%96-NOD_menu_value-6ddf35.md#f-5a26f9bc3af837d0)。同名重载需按实参类型选择。
-- `storage.enum_definition.items().is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L78。
-- `storage.enum_definition.items` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L78。
-- `storage.enum_definition.items().first` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L80。
-- `menu.structure_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L81。
-- `menu.optional_label` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L82。
-- `b.add_input(data_type, name, identifier) .socket_name_ptr( &ntree->id, *MenuSwitchItemsAccessor::item_srna, &enum_item, "name") .compositor_realization_mode(CompositorInputRealizationMode::None) .description` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L87。
-- `b.add_input(data_type, name, identifier) .socket_name_ptr( &ntree->id, *MenuSwitchItemsAccessor::item_srna, &enum_item, "name") .compositor_realization_mode` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L87。
-- `b.add_input(data_type, name, identifier) .socket_name_ptr` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L87。
-- `b.add_input` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L87。
-- `input.optional_label` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L93。
-- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
-- `input.structure_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L103。
-- `b.add_output<decl::Bool>(name, identifier) .align_with_previous() .description("True if this item is chosen by the menu input") .inferred_structure_type({menu.index()}) .propagate_references` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L104。
-- `b.add_output<decl::Bool>(name, identifier) .align_with_previous() .description("True if this item is chosen by the menu input") .inferred_structure_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L104。
-- `b.add_output<decl::Bool>(name, identifier) .align_with_previous() .description` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L104。
-- `b.add_output<decl::Bool>(name, identifier) .align_with_previous` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L104。
-- `b.add_output<decl::Bool>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L104。
-- `menu.index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L107。
-- `b.add_input<decl::Extend>(""_ustr, "__extend__"_ustr) .structure_type(StructureType::Dynamic) .custom_draw` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L111。
-- `b.add_input<decl::Extend>(""_ustr, "__extend__"_ustr) .structure_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L111。
-- `b.add_input<decl::Extend>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L111。
-- `socket_items::ui::draw_extend_socket_fn<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::ui::draw_extend_socket_fn · L128](%E4%BE%9D%E8%B5%96-NOD_socket_items_ui-2ab39c.md#f-78b09f9b74014bee)。
+- `b.use_custom_socket_order` → [blender::nodes::NodeDeclarationBuilder::use_custom_socket_order · L135](../90-实现依赖专题/04-Nodes节点系统/intern/node_declaration.cc.md#f-7a3e20373b6f44d0)。
+- `b.allow_any_socket_order` → [blender::nodes::NodeDeclarationBuilder::allow_any_socket_order · L140](../90-实现依赖专题/04-Nodes节点系统/intern/node_declaration.cc.md#f-5440adf750141e49)。
+- `b.tree_or_null` → [blender::nodes::NodeDeclarationBuilder::tree_or_null · L681](../90-实现依赖专题/04-Nodes节点系统/NOD_node_declaration.hh.md#f-f41371835832ba92)。
+- `b.node_or_null` → [blender::nodes::NodeDeclarationBuilder::node_or_null · L675](../90-实现依赖专题/04-Nodes节点系统/NOD_node_declaration.hh.md#f-1dfd970e8f6b7b32)。
+- `node_storage` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L55。
+- `compositor::Result::is_single_value_only_type` → [blender::compositor::Result::is_single_value_only_type · L51](../90-实现依赖专题/08-其他Blender模块/compositor/intern/result.cc.md#f-e15a58f6d1b11e77)。
+- `compositor::socket_data_type_to_result_type` → [blender::compositor::socket_data_type_to_result_type · L39](../90-实现依赖专题/08-其他Blender模块/compositor/intern/utilities.cc.md#f-9bc4ab546a3e2be9)。
+- `b.add_output(data_type, "Output"_ustr) .propagate_all() .inferred_structure_type() .structure_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L70。
+- `b.add_output(data_type, "Output"_ustr) .propagate_all() .inferred_structure_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L70。
+- `b.add_output(data_type, "Output"_ustr) .propagate_all` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L70。
+- `b.add_output` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L70。
+- `b.add_default_layout` → [blender::nodes::DeclarationListBuilder::add_default_layout · L458](../90-实现依赖专题/04-Nodes节点系统/intern/node_declaration.cc.md#f-6245704e5ac02c69)。
+- `b.add_input<decl::Menu>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L77。
+- `menu.default_value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L78。
+- `MenuValue` → [blender::nodes::MenuValue::MenuValue · L23](../90-实现依赖专题/04-Nodes节点系统/NOD_menu_value.hh.md#f-5b614ab1fafc8ef9)；[blender::nodes::MenuValue::MenuValue · L24](../90-实现依赖专题/04-Nodes节点系统/NOD_menu_value.hh.md#f-20fc7efc74f2e570)；[blender::nodes::MenuValue::MenuValue · L26](../90-实现依赖专题/04-Nodes节点系统/NOD_menu_value.hh.md#f-5a26f9bc3af837d0)。同名重载需按实参类型选择。
+- `storage.enum_definition.items().is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L78。
+- `storage.enum_definition.items` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L78。
+- `storage.enum_definition.items().first` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L80。
+- `menu.structure_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L81。
+- `menu.optional_label` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L82。
+- `b.add_input(data_type, name, identifier) .socket_name_ptr( &ntree->id, *MenuSwitchItemsAccessor::item_srna, &enum_item, "name") .compositor_realization_mode(CompositorInputRealizationMode::None) .description` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L87。
+- `b.add_input(data_type, name, identifier) .socket_name_ptr( &ntree->id, *MenuSwitchItemsAccessor::item_srna, &enum_item, "name") .compositor_realization_mode` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L87。
+- `b.add_input(data_type, name, identifier) .socket_name_ptr` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L87。
+- `b.add_input` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L87。
+- `input.optional_label` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L93。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `input.structure_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L103。
+- `b.add_output<decl::Bool>(name, identifier) .align_with_previous() .description("True if this item is chosen by the menu input") .inferred_structure_type({menu.index()}) .propagate_references` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L104。
+- `b.add_output<decl::Bool>(name, identifier) .align_with_previous() .description("True if this item is chosen by the menu input") .inferred_structure_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L104。
+- `b.add_output<decl::Bool>(name, identifier) .align_with_previous() .description` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L104。
+- `b.add_output<decl::Bool>(name, identifier) .align_with_previous` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L104。
+- `b.add_output<decl::Bool>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L104。
+- `menu.index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L107。
+- `b.add_input<decl::Extend>(""_ustr, "__extend__"_ustr) .structure_type(StructureType::Dynamic) .custom_draw` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L111。
+- `b.add_input<decl::Extend>(""_ustr, "__extend__"_ustr) .structure_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L111。
+- `b.add_input<decl::Extend>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L111。
+- `socket_items::ui::draw_extend_socket_fn<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::ui::draw_extend_socket_fn · L128](../90-实现依赖专题/04-Nodes节点系统/NOD_socket_items_ui.hh.md#f-78b09f9b74014bee)。
 
 <!-- annotated:f177b9ec139561 -->
 
@@ -478,7 +478,7 @@ static void node_layout(ui::Layout &layout, bContext * /*C*/, PointerRNA *ptr)
 
 **继续追踪实现**
 
-- `layout.prop` → [blender::ui::Layout::prop · L1980](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-interface_layout-7cc3aa.md#f-fe037a66d23c597c)；[blender::ui::Layout::prop · L2447](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-interface_layout-7cc3aa.md#f-2d185b7c1e4b86bd)。同名重载需按实参类型选择。
+- `layout.prop` → [blender::ui::Layout::prop · L1980](../90-实现依赖专题/08-其他Blender模块/editors/interface/interface_layout.cc.md#f-fe037a66d23c597c)；[blender::ui::Layout::prop · L2447](../90-实现依赖专题/08-其他Blender模块/editors/interface/interface_layout.cc.md#f-2d185b7c1e4b86bd)。同名重载需按实参类型选择。
 
 <!-- annotated:818b2a133b8db0 -->
 
@@ -559,8 +559,8 @@ static void node_init(bNodeTree *tree, bNode *node)
 
 **继续追踪实现**
 
-- `MEM_new<NodeMenuSwitch>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
-- `socket_items::add_item_with_name<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::add_item_with_name · L250](%E4%BE%9D%E8%B5%96-NOD_socket_items-d21cfb.md#f-cceb0353ca12d966)。
+- `MEM_new<NodeMenuSwitch>` → [MEM_new · L351](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-115f9b6784f89912)。
+- `socket_items::add_item_with_name<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::add_item_with_name · L250](../90-实现依赖专题/04-Nodes节点系统/NOD_socket_items.hh.md#f-cceb0353ca12d966)。
 
 <!-- annotated:fc74322116db6e -->
 
@@ -618,8 +618,8 @@ static void node_free_storage(bNode *node)
 
 **继续追踪实现**
 
-- `socket_items::destruct_array<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::destruct_array · L92](%E4%BE%9D%E8%B5%96-NOD_socket_items-d21cfb.md#f-61cc3426af55b8af)。
-- `MEM_delete` → [MEM_delete · L400](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-9049ffdd1682887c)。
+- `socket_items::destruct_array<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::destruct_array · L92](../90-实现依赖专题/04-Nodes节点系统/NOD_socket_items.hh.md#f-61cc3426af55b8af)。
+- `MEM_delete` → [MEM_delete · L400](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-9049ffdd1682887c)。
 
 <!-- annotated:535050ed068e6b -->
 
@@ -689,10 +689,10 @@ static void node_copy_storage(bNodeTree * /*dst_tree*/, bNode *dst_node, const b
 
 **继续追踪实现**
 
-- `node_storage` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L142。
-- `MEM_new<NodeMenuSwitch>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
-- `dna::shallow_copy` → [blender::dna::shallow_copy · L146](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_defs-ed47fd.md#f-84b6eda95a1c994c)。
-- `socket_items::copy_array<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::copy_array · L119](%E4%BE%9D%E8%B5%96-NOD_socket_items-d21cfb.md#f-1f49897843aa192c)。
+- `node_storage` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L142。
+- `MEM_new<NodeMenuSwitch>` → [MEM_new · L351](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-115f9b6784f89912)。
+- `dna::shallow_copy` → [blender::dna::shallow_copy · L146](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_defs.h.md#f-84b6eda95a1c994c)。
+- `socket_items::copy_array<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::copy_array · L119](../90-实现依赖专题/04-Nodes节点系统/NOD_socket_items.hh.md#f-1f49897843aa192c)。
 
 <!-- annotated:42fd3df3245934 -->
 
@@ -782,13 +782,13 @@ static void node_gather_link_searches(GatherLinkSearchOpParams &params)
 
 **继续追踪实现**
 
-- `params.other_socket` → [blender::nodes::GatherLinkSearchOpParams::other_socket · L45](%E4%BE%9D%E8%B5%96-socket_search_link-d6b6cb.md#f-7cba06c73785c130)。
-- `params.in_out` → [blender::nodes::GatherLinkSearchOpParams::in_out · L65](%E4%BE%9D%E8%B5%96-socket_search_link-d6b6cb.md#f-ce52d3e93d6549ea)。
-- `params.add_item` → [blender::nodes::GatherLinkSearchOpParams::add_item · L27](%E4%BE%9D%E8%B5%96-socket_search_link-d6b6cb.md#f-2ac8ec254ff2c58f)。
-- `IFACE_` → [IFACE_ · L49](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BLT_translation-c89e58.md#m-378ed115fdc8)。宏定义由构建条件选择。
-- `params.add_node` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L155。
-- `params.update_and_connect_available_socket` → [blender::nodes::LinkSearchOpParams::update_and_connect_available_socket · L127](%E4%BE%9D%E8%B5%96-socket_search_link-d6b6cb.md#f-433b9de74cae0a4a)。
-- `node_storage` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L164。
+- `params.other_socket` → [blender::nodes::GatherLinkSearchOpParams::other_socket · L45](../90-实现依赖专题/04-Nodes节点系统/intern/socket_search_link.cc.md#f-7cba06c73785c130)。
+- `params.in_out` → [blender::nodes::GatherLinkSearchOpParams::in_out · L65](../90-实现依赖专题/04-Nodes节点系统/intern/socket_search_link.cc.md#f-ce52d3e93d6549ea)。
+- `params.add_item` → [blender::nodes::GatherLinkSearchOpParams::add_item · L27](../90-实现依赖专题/04-Nodes节点系统/intern/socket_search_link.cc.md#f-2ac8ec254ff2c58f)。
+- `IFACE_` → [IFACE_ · L49](../90-实现依赖专题/08-其他Blender模块/blentranslation/BLT_translation.hh.md#m-378ed115fdc8)。宏定义由构建条件选择。
+- `params.add_node` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L155。
+- `params.update_and_connect_available_socket` → [blender::nodes::LinkSearchOpParams::update_and_connect_available_socket · L127](../90-实现依赖专题/04-Nodes节点系统/intern/socket_search_link.cc.md#f-433b9de74cae0a4a)。
+- `node_storage` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L164。
 
 ### 类型布局、声明与编译条件 · node_geo_menu_switch.cc L170—L180
 
@@ -889,11 +889,11 @@ class MenuSwitchFn : public mf::MultiFunction {
 
 **继续追踪实现**
 
-- `builder.single_input<MenuValue>` → [blender::fn::multi_function::SignatureBuilder::single_input · L102](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/02-%E5%87%BD%E6%95%B0%E7%AD%BE%E5%90%8D.md#f-8c435d9e973ba71d)；[blender::fn::multi_function::SignatureBuilder::single_input · L107](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/02-%E5%87%BD%E6%95%B0%E7%AD%BE%E5%90%8D.md#f-9df9b61334a7062a)。同名重载需按实参类型选择。
-- `enum_def.items` → [blender::NodeEnumDefinition::items · L23](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
-- `builder.single_input` → [blender::fn::multi_function::SignatureBuilder::single_input · L102](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/02-%E5%87%BD%E6%95%B0%E7%AD%BE%E5%90%8D.md#f-8c435d9e973ba71d)；[blender::fn::multi_function::SignatureBuilder::single_input · L107](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/02-%E5%87%BD%E6%95%B0%E7%AD%BE%E5%90%8D.md#f-9df9b61334a7062a)。同名重载需按实参类型选择。
-- `builder.single_output` → [blender::fn::multi_function::SignatureBuilder::single_output · L127](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/02-%E5%87%BD%E6%95%B0%E7%AD%BE%E5%90%8D.md#f-12fe60c15a0df7eb)；[blender::fn::multi_function::SignatureBuilder::single_output · L133](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/02-%E5%87%BD%E6%95%B0%E7%AD%BE%E5%90%8D.md#f-578452e5167aab0d)。同名重载需按实参类型选择。
-- `this->set_signature` → [blender::fn::multi_function::MultiFunction::set_signature · L133](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-3b440d337b220123)。
+- `builder.single_input<MenuValue>` → [blender::fn::multi_function::SignatureBuilder::single_input · L102](../07-MultiFunction与批量执行/02-函数签名.md#f-8c435d9e973ba71d)；[blender::fn::multi_function::SignatureBuilder::single_input · L107](../07-MultiFunction与批量执行/02-函数签名.md#f-9df9b61334a7062a)。同名重载需按实参类型选择。
+- `enum_def.items` → [blender::NodeEnumDefinition::items · L23](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
+- `builder.single_input` → [blender::fn::multi_function::SignatureBuilder::single_input · L102](../07-MultiFunction与批量执行/02-函数签名.md#f-8c435d9e973ba71d)；[blender::fn::multi_function::SignatureBuilder::single_input · L107](../07-MultiFunction与批量执行/02-函数签名.md#f-9df9b61334a7062a)。同名重载需按实参类型选择。
+- `builder.single_output` → [blender::fn::multi_function::SignatureBuilder::single_output · L127](../07-MultiFunction与批量执行/02-函数签名.md#f-12fe60c15a0df7eb)；[blender::fn::multi_function::SignatureBuilder::single_output · L133](../07-MultiFunction与批量执行/02-函数签名.md#f-578452e5167aab0d)。同名重载需按实参类型选择。
+- `this->set_signature` → [blender::fn::multi_function::MultiFunction::set_signature · L133](../07-MultiFunction与批量执行/01-批量计算模型.md#f-3b440d337b220123)。
 
 <!-- annotated:81754eb2fa1003 -->
 
@@ -1052,21 +1052,21 @@ class MenuSwitchFn : public mf::MultiFunction {
 
 **继续追踪实现**
 
-- `params.readonly_single_input<MenuValue>` → [blender::fn::multi_function::Params::readonly_single_input · L333](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/04-%E5%8F%82%E6%95%B0%E8%AE%BF%E9%97%AE%E4%B8%8E%E8%BE%93%E5%87%BA%E6%9E%84%E9%80%A0.md#f-bf8962325f032689)；[blender::fn::multi_function::Params::readonly_single_input · L340](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/04-%E5%8F%82%E6%95%B0%E8%AE%BF%E9%97%AE%E4%B8%8E%E8%BE%93%E5%87%BA%E6%9E%84%E9%80%A0.md#f-fb1c312ddfea5e55)。同名重载需按实参类型选择。
-- `params.uninitialized_single_output_if_required` → [blender::fn::multi_function::Params::uninitialized_single_output_if_required · L368](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/04-%E5%8F%82%E6%95%B0%E8%AE%BF%E9%97%AE%E4%B8%8E%E8%BE%93%E5%87%BA%E6%9E%84%E9%80%A0.md#f-cf61774be6d07a93)；[blender::fn::multi_function::Params::uninitialized_single_output_if_required · L375](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/04-%E5%8F%82%E6%95%B0%E8%AE%BF%E9%97%AE%E4%B8%8E%E8%BE%93%E5%87%BA%E6%9E%84%E9%80%A0.md#f-72bff53c80d8ed47)。同名重载需按实参类型选择。
-- `enum_def_.items().index_range` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L205。
-- `enum_def_.items` → [blender::NodeEnumDefinition::items · L23](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
-- `values.get_if_single` → [blender::VArrayCommon::get_if_single · L649](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-779c11c4fd8e6ac3)。
-- `find_item_index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L215。
-- `value_output.is_empty` → [blender::GMutableSpan::is_empty · L193](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-6fac8d7ba01608fb)。
-- `params.readonly_single_input` → [blender::fn::multi_function::Params::readonly_single_input · L333](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/04-%E5%8F%82%E6%95%B0%E8%AE%BF%E9%97%AE%E4%B8%8E%E8%BE%93%E5%87%BA%E6%9E%84%E9%80%A0.md#f-bf8962325f032689)；[blender::fn::multi_function::Params::readonly_single_input · L340](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/04-%E5%8F%82%E6%95%B0%E8%AE%BF%E9%97%AE%E4%B8%8E%E8%BE%93%E5%87%BA%E6%9E%84%E9%80%A0.md#f-fb1c312ddfea5e55)。同名重载需按实参类型选择。
-- `inputs.materialize_to_uninitialized` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L219。
-- `value_output.data` → [blender::GMutableSpan::data · L208](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-f951536a0bdbb159)。
-- `type_.fill_construct_indices` → [blender::CPPType::fill_construct_indices · L693](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-76c7dd833335e68b)。
-- `type_.default_value` → [blender::CPPType::default_value · L743](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-95e76cbe74b383e8)。
-- `IndexMask::from_groups<int64_t>` → [blender::index_mask::IndexMask::from_groups · L1105](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/12-%E9%87%8D%E6%9E%84%E5%8E%86%E5%8F%B2%E4%B8%8E%E5%9F%BA%E5%87%86%E7%BB%83%E4%B9%A0.md#f-df7af197626c37f1)。
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `mask_for_index.is_empty` → [blender::index_mask::IndexMask::is_empty · L748](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-190ac996386064f4)。
+- `params.readonly_single_input<MenuValue>` → [blender::fn::multi_function::Params::readonly_single_input · L333](../07-MultiFunction与批量执行/04-参数访问与输出构造.md#f-bf8962325f032689)；[blender::fn::multi_function::Params::readonly_single_input · L340](../07-MultiFunction与批量执行/04-参数访问与输出构造.md#f-fb1c312ddfea5e55)。同名重载需按实参类型选择。
+- `params.uninitialized_single_output_if_required` → [blender::fn::multi_function::Params::uninitialized_single_output_if_required · L368](../07-MultiFunction与批量执行/04-参数访问与输出构造.md#f-cf61774be6d07a93)；[blender::fn::multi_function::Params::uninitialized_single_output_if_required · L375](../07-MultiFunction与批量执行/04-参数访问与输出构造.md#f-72bff53c80d8ed47)。同名重载需按实参类型选择。
+- `enum_def_.items().index_range` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L205。
+- `enum_def_.items` → [blender::NodeEnumDefinition::items · L23](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
+- `values.get_if_single` → [blender::VArrayCommon::get_if_single · L649](../04-虚拟数组与索引选择/03-单值与Span表示.md#f-779c11c4fd8e6ac3)。
+- `find_item_index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L215。
+- `value_output.is_empty` → [blender::GMutableSpan::is_empty · L193](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-6fac8d7ba01608fb)。
+- `params.readonly_single_input` → [blender::fn::multi_function::Params::readonly_single_input · L333](../07-MultiFunction与批量执行/04-参数访问与输出构造.md#f-bf8962325f032689)；[blender::fn::multi_function::Params::readonly_single_input · L340](../07-MultiFunction与批量执行/04-参数访问与输出构造.md#f-fb1c312ddfea5e55)。同名重载需按实参类型选择。
+- `inputs.materialize_to_uninitialized` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L219。
+- `value_output.data` → [blender::GMutableSpan::data · L208](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-f951536a0bdbb159)。
+- `type_.fill_construct_indices` → [blender::CPPType::fill_construct_indices · L693](../03-内存分配与运行时类型/09-CPPType复制移动重定位.md#f-76c7dd833335e68b)。
+- `type_.default_value` → [blender::CPPType::default_value · L743](../03-内存分配与运行时类型/09-CPPType复制移动重定位.md#f-95e76cbe74b383e8)。
+- `IndexMask::from_groups<int64_t>` → [blender::index_mask::IndexMask::from_groups · L1105](../04-虚拟数组与索引选择/12-重构历史与基准练习.md#f-df7af197626c37f1)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `mask_for_index.is_empty` → [blender::index_mask::IndexMask::is_empty · L748](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-190ac996386064f4)。
 
 <!-- annotated:83769615e8c5aa -->
 
@@ -1128,7 +1128,7 @@ class MenuSwitchFn : public mf::MultiFunction {
 
 **继续追踪实现**
 
-- `hash.add` → [blender::UniqueHashBytes::add · L40](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_unique_hash-5663a0.md#f-12ca7cac7556bc01)。
+- `hash.add` → [blender::UniqueHashBytes::add · L40](../90-实现依赖专题/01-BLI基础库/BLI_unique_hash.hh.md#f-12ca7cac7556bc01)。
 
 ### 类型布局、声明与编译条件 · node_geo_menu_switch.cc L253—L260
 
@@ -1219,11 +1219,11 @@ class MenuSwitchBoolsFn : public mf::MultiFunction {
 
 **继续追踪实现**
 
-- `builder.single_input<MenuValue>` → [blender::fn::multi_function::SignatureBuilder::single_input · L102](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/02-%E5%87%BD%E6%95%B0%E7%AD%BE%E5%90%8D.md#f-8c435d9e973ba71d)；[blender::fn::multi_function::SignatureBuilder::single_input · L107](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/02-%E5%87%BD%E6%95%B0%E7%AD%BE%E5%90%8D.md#f-9df9b61334a7062a)。同名重载需按实参类型选择。
-- `enum_def.items` → [blender::NodeEnumDefinition::items · L23](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
-- `builder.single_output` → [blender::fn::multi_function::SignatureBuilder::single_output · L127](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/02-%E5%87%BD%E6%95%B0%E7%AD%BE%E5%90%8D.md#f-12fe60c15a0df7eb)；[blender::fn::multi_function::SignatureBuilder::single_output · L133](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/02-%E5%87%BD%E6%95%B0%E7%AD%BE%E5%90%8D.md#f-578452e5167aab0d)。同名重载需按实参类型选择。
-- `CPPType::get<bool>` → [blender::CPPType::get · L481](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
-- `this->set_signature` → [blender::fn::multi_function::MultiFunction::set_signature · L133](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-3b440d337b220123)。
+- `builder.single_input<MenuValue>` → [blender::fn::multi_function::SignatureBuilder::single_input · L102](../07-MultiFunction与批量执行/02-函数签名.md#f-8c435d9e973ba71d)；[blender::fn::multi_function::SignatureBuilder::single_input · L107](../07-MultiFunction与批量执行/02-函数签名.md#f-9df9b61334a7062a)。同名重载需按实参类型选择。
+- `enum_def.items` → [blender::NodeEnumDefinition::items · L23](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
+- `builder.single_output` → [blender::fn::multi_function::SignatureBuilder::single_output · L127](../07-MultiFunction与批量执行/02-函数签名.md#f-12fe60c15a0df7eb)；[blender::fn::multi_function::SignatureBuilder::single_output · L133](../07-MultiFunction与批量执行/02-函数签名.md#f-578452e5167aab0d)。同名重载需按实参类型选择。
+- `CPPType::get<bool>` → [blender::CPPType::get · L481](../03-内存分配与运行时类型/08-CPPType构造与析构.md#f-0cc10a3783d6abdb)。
+- `this->set_signature` → [blender::fn::multi_function::MultiFunction::set_signature · L133](../07-MultiFunction与批量执行/01-批量计算模型.md#f-3b440d337b220123)。
 
 <!-- annotated:6c7b201e36504d -->
 
@@ -1341,15 +1341,15 @@ class MenuSwitchBoolsFn : public mf::MultiFunction {
 
 **继续追踪实现**
 
-- `params.readonly_single_input<MenuValue>` → [blender::fn::multi_function::Params::readonly_single_input · L333](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/04-%E5%8F%82%E6%95%B0%E8%AE%BF%E9%97%AE%E4%B8%8E%E8%BE%93%E5%87%BA%E6%9E%84%E9%80%A0.md#f-bf8962325f032689)；[blender::fn::multi_function::Params::readonly_single_input · L340](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/04-%E5%8F%82%E6%95%B0%E8%AE%BF%E9%97%AE%E4%B8%8E%E8%BE%93%E5%87%BA%E6%9E%84%E9%80%A0.md#f-fb1c312ddfea5e55)。同名重载需按实参类型选择。
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `params.uninitialized_single_output_if_required<bool>` → [blender::fn::multi_function::Params::uninitialized_single_output_if_required · L368](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/04-%E5%8F%82%E6%95%B0%E8%AE%BF%E9%97%AE%E4%B8%8E%E8%BE%93%E5%87%BA%E6%9E%84%E9%80%A0.md#f-cf61774be6d07a93)；[blender::fn::multi_function::Params::uninitialized_single_output_if_required · L375](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/04-%E5%8F%82%E6%95%B0%E8%AE%BF%E9%97%AE%E4%B8%8E%E8%BE%93%E5%87%BA%E6%9E%84%E9%80%A0.md#f-72bff53c80d8ed47)。同名重载需按实参类型选择。
-- `item_spans[item_i].is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L280。
-- `used_output_items.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `values.get_if_single` → [blender::VArrayCommon::get_if_single · L649](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-779c11c4fd8e6ac3)。
-- `enum_def_.items` → [blender::NodeEnumDefinition::items · L23](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
-- `index_mask::masked_fill` → [blender::index_mask::masked_fill · L1261](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/12-%E9%87%8D%E6%9E%84%E5%8E%86%E5%8F%B2%E4%B8%8E%E5%9F%BA%E5%87%86%E7%BB%83%E4%B9%A0.md#f-00f1f611c7000f05)。
-- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
+- `params.readonly_single_input<MenuValue>` → [blender::fn::multi_function::Params::readonly_single_input · L333](../07-MultiFunction与批量执行/04-参数访问与输出构造.md#f-bf8962325f032689)；[blender::fn::multi_function::Params::readonly_single_input · L340](../07-MultiFunction与批量执行/04-参数访问与输出构造.md#f-fb1c312ddfea5e55)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `params.uninitialized_single_output_if_required<bool>` → [blender::fn::multi_function::Params::uninitialized_single_output_if_required · L368](../07-MultiFunction与批量执行/04-参数访问与输出构造.md#f-cf61774be6d07a93)；[blender::fn::multi_function::Params::uninitialized_single_output_if_required · L375](../07-MultiFunction与批量执行/04-参数访问与输出构造.md#f-72bff53c80d8ed47)。同名重载需按实参类型选择。
+- `item_spans[item_i].is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L280。
+- `used_output_items.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `values.get_if_single` → [blender::VArrayCommon::get_if_single · L649](../04-虚拟数组与索引选择/03-单值与Span表示.md#f-779c11c4fd8e6ac3)。
+- `enum_def_.items` → [blender::NodeEnumDefinition::items · L23](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
+- `index_mask::masked_fill` → [blender::index_mask::masked_fill · L1261](../04-虚拟数组与索引选择/12-重构历史与基准练习.md#f-00f1f611c7000f05)。
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-cd6cd317e2e2812c)。
 
 <!-- annotated:a67b10e4d45ce8 -->
 
@@ -1409,7 +1409,7 @@ class MenuSwitchBoolsFn : public mf::MultiFunction {
 
 **继续追踪实现**
 
-- `hash.add` → [blender::UniqueHashBytes::add · L40](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_unique_hash-5663a0.md#f-12ca7cac7556bc01)。
+- `hash.add` → [blender::UniqueHashBytes::add · L40](../90-实现依赖专题/01-BLI基础库/BLI_unique_hash.hh.md#f-12ca7cac7556bc01)。
 
 ### 类型布局、声明与编译条件 · node_geo_menu_switch.cc L310—L319
 
@@ -1541,21 +1541,21 @@ class LazyFunctionForMenuSwitchNode : public LazyFunction {
 
 **继续追踪实现**
 
-- `node_storage` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L324。
-- `socket_type_supports_fields` → [blender::nodes::socket_type_supports_fields · L663](%E4%BE%9D%E8%B5%96-node_socket-0ca7fe.md#f-2d675fda05d0eec2)。
-- `bke::node_socket_type_find_static` → [blender::bke::node_socket_type_find_static · L2975](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node-89d753.md#f-8082ced6587b7cd9)。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `node.input_socket(0).index_in_tree` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L333。
-- `node.input_socket` → [blender::bNode::input_socket · L818](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-00274c021929d3dc)；[blender::bNode::input_socket · L830](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-e9c8cccac4999eb8)。同名重载需按实参类型选择。
-- `inputs_.append_and_get_index_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L333。
-- `CPPType::get<SocketValueVariant>` → [blender::CPPType::get · L481](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
-- `enum_def_.items().index_range` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L335。
-- `enum_def_.items` → [blender::NodeEnumDefinition::items · L23](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
-- `node.input_socket(i + 1).index_in_tree` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L337。
-- `CPPType::get<bke::SocketValueVariant>` → [blender::CPPType::get · L481](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
-- `node.output_socket(0).index_in_tree` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L341。
-- `node.output_socket` → [blender::bNode::output_socket · L824](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-9e46f3a437215eb5)；[blender::bNode::output_socket · L836](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-39021ff32ee7c409)。同名重载需按实参类型选择。
-- `outputs_.append_and_get_index_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L341。
+- `node_storage` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L324。
+- `socket_type_supports_fields` → [blender::nodes::socket_type_supports_fields · L663](../90-实现依赖专题/04-Nodes节点系统/intern/node_socket.cc.md#f-2d675fda05d0eec2)。
+- `bke::node_socket_type_find_static` → [blender::bke::node_socket_type_find_static · L2975](../90-实现依赖专题/02-BKE几何与数据/intern/node.cc.md#f-8082ced6587b7cd9)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `node.input_socket(0).index_in_tree` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L333。
+- `node.input_socket` → [blender::bNode::input_socket · L818](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-00274c021929d3dc)；[blender::bNode::input_socket · L830](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-e9c8cccac4999eb8)。同名重载需按实参类型选择。
+- `inputs_.append_and_get_index_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L333。
+- `CPPType::get<SocketValueVariant>` → [blender::CPPType::get · L481](../03-内存分配与运行时类型/08-CPPType构造与析构.md#f-0cc10a3783d6abdb)。
+- `enum_def_.items().index_range` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L335。
+- `enum_def_.items` → [blender::NodeEnumDefinition::items · L23](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
+- `node.input_socket(i + 1).index_in_tree` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L337。
+- `CPPType::get<bke::SocketValueVariant>` → [blender::CPPType::get · L481](../03-内存分配与运行时类型/08-CPPType构造与析构.md#f-0cc10a3783d6abdb)。
+- `node.output_socket(0).index_in_tree` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L341。
+- `node.output_socket` → [blender::bNode::output_socket · L824](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-9e46f3a437215eb5)；[blender::bNode::output_socket · L836](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-39021ff32ee7c409)。同名重载需按实参类型选择。
+- `outputs_.append_and_get_index_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L341。
 
 <!-- annotated:4d2b6451c33be1 -->
 
@@ -1624,12 +1624,12 @@ class LazyFunctionForMenuSwitchNode : public LazyFunction {
 
 **继续追踪实现**
 
-- `params.get_input<SocketValueVariant>` → [blender::fn::lazy_function::Params::get_input · L421](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-167a9263f8e9f932)。
-- `condition_variant.is_context_dependent_field` → [SocketValueVariant::is_context_dependent_field · L534](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_socket_value-841c72.md#f-55e5e1818d077c80)。
-- `this->execute_field` → [blender::nodes::node_geo_menu_switch_cc::LazyFunctionForMenuSwitchNode::execute_field · L385](11-Switch%E4%B8%8EMenuSwitch.md#f-92924dbb194417a0)。
-- `condition_variant.ensure_type<Field<MenuValue>>` → [blender::bke::SocketValueVariant::ensure_type · L271](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-36be485d1fc40c00)；[blender::bke::SocketValueVariant::ensure_type · L279](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-417f182997393297)。同名重载需按实参类型选择。
-- `this->execute_single` → [blender::nodes::node_geo_menu_switch_cc::LazyFunctionForMenuSwitchNode::execute_single · L356](11-Switch%E4%B8%8EMenuSwitch.md#f-b4d90dfbcd0281be)。
-- `condition_variant.ensure_type<MenuValue>` → [blender::bke::SocketValueVariant::ensure_type · L271](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-36be485d1fc40c00)；[blender::bke::SocketValueVariant::ensure_type · L279](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-417f182997393297)。同名重载需按实参类型选择。
+- `params.get_input<SocketValueVariant>` → [blender::fn::lazy_function::Params::get_input · L421](02-LazyFunction接口.md#f-167a9263f8e9f932)。
+- `condition_variant.is_context_dependent_field` → [SocketValueVariant::is_context_dependent_field · L534](../90-实现依赖专题/02-BKE几何与数据/intern/node_socket_value.cc.md#f-55e5e1818d077c80)。
+- `this->execute_field` → [blender::nodes::node_geo_menu_switch_cc::LazyFunctionForMenuSwitchNode::execute_field · L385](11-Switch与MenuSwitch.md#f-92924dbb194417a0)。
+- `condition_variant.ensure_type<Field<MenuValue>>` → [blender::bke::SocketValueVariant::ensure_type · L271](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-36be485d1fc40c00)；[blender::bke::SocketValueVariant::ensure_type · L279](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-417f182997393297)。同名重载需按实参类型选择。
+- `this->execute_single` → [blender::nodes::node_geo_menu_switch_cc::LazyFunctionForMenuSwitchNode::execute_single · L356](11-Switch与MenuSwitch.md#f-b4d90dfbcd0281be)。
+- `condition_variant.ensure_type<MenuValue>` → [blender::bke::SocketValueVariant::ensure_type · L271](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-36be485d1fc40c00)；[blender::bke::SocketValueVariant::ensure_type · L279](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-417f182997393297)。同名重载需按实参类型选择。
 
 <!-- annotated:983e11f44aee4a -->
 
@@ -1739,13 +1739,13 @@ class LazyFunctionForMenuSwitchNode : public LazyFunction {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `params.try_get_input_data_ptr_or_request<SocketValueVariant>` → [blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L372](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-89de2295f5baa94f)；[blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L434](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-97ba143c63061e47)。同名重载需按实参类型选择。
-- `params.set_output` → [blender::fn::lazy_function::Params::set_output · L440](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-993589d688de575d)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `params.try_get_input_data_ptr_or_request<SocketValueVariant>` → [blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L372](02-LazyFunction接口.md#f-89de2295f5baa94f)；[blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L434](02-LazyFunction接口.md#f-97ba143c63061e47)。同名重载需按实参类型选择。
+- `params.set_output` → [blender::fn::lazy_function::Params::set_output · L440](02-LazyFunction接口.md#f-993589d688de575d)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `params.set_input_unused` → [blender::fn::lazy_function::Params::set_input_unused · L405](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-0a0db77ebf68f7c8)。
-- `set_default_value_for_output_socket` → [blender::nodes::set_default_value_for_output_socket · L395](09-%E5%87%A0%E4%BD%95%E8%8A%82%E7%82%B9%E5%9B%BE%E6%9E%84%E5%BB%BA%E5%99%A8.md#f-11b53ecad0665b10)。
-- `node_.output_socket` → [blender::bNode::output_socket · L824](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-9e46f3a437215eb5)；[blender::bNode::output_socket · L836](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-39021ff32ee7c409)。同名重载需按实参类型选择。
+- `params.set_input_unused` → [blender::fn::lazy_function::Params::set_input_unused · L405](02-LazyFunction接口.md#f-0a0db77ebf68f7c8)。
+- `set_default_value_for_output_socket` → [blender::nodes::set_default_value_for_output_socket · L395](09-几何节点图构建器.md#f-11b53ecad0665b10)。
+- `node_.output_socket` → [blender::bNode::output_socket · L824](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-9e46f3a437215eb5)；[blender::bNode::output_socket · L836](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-39021ff32ee7c409)。同名重载需按实参类型选择。
 
 <!-- annotated:dc8eba8061c4bf -->
 
@@ -1858,19 +1858,19 @@ class LazyFunctionForMenuSwitchNode : public LazyFunction {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `params.try_get_input_data_ptr_or_request<SocketValueVariant>` → [blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L372](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-89de2295f5baa94f)；[blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L434](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-97ba143c63061e47)。同名重载需按实参类型选择。
-- `input_values.as_span().contains` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L394。
-- `input_values.as_span` → [blender::Array::as_span · L254](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-05fc77056a242032)。
-- `item_fields.reserve` → [blender::Vector::reserve · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)。
-- `item_fields.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `params.try_get_input_data_ptr_or_request<SocketValueVariant>` → [blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L372](02-LazyFunction接口.md#f-89de2295f5baa94f)；[blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L434](02-LazyFunction接口.md#f-97ba143c63061e47)。同名重载需按实参类型选择。
+- `input_values.as_span().contains` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L394。
+- `input_values.as_span` → [blender::Array::as_span · L254](../01-基础容器与现代CPP/08-Array复制移动与销毁.md#f-05fc77056a242032)。
+- `item_fields.reserve` → [blender::Vector::reserve · L405](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-4cf9c0f00e01102e)。
+- `item_fields.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `input_values[i]->extract<GField>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L403。
+- `input_values[i]->extract<GField>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L403。
 - `std::make_unique<MenuSwitchFn>` → [外部契约](https://eel.is/c++draft/unique.ptr.create)：创建独占拥有的对象，拥有关系可移动，get返回的借用指针不自动延长寿命。
-- `FieldOperation::from` → [blender::fn::FieldOperation::from · L252](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/06-FieldContext%E4%B8%8A%E4%B8%8B%E6%96%87.md#f-d78060e8f5e1929f)；[blender::fn::FieldOperation::from · L258](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/06-FieldContext%E4%B8%8A%E4%B8%8B%E6%96%87.md#f-60a41b323ee8ceb7)。同名重载需按实参类型选择。
-- `params.set_output` → [blender::fn::lazy_function::Params::set_output · L440](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-993589d688de575d)。
-- `SocketValueVariant::from` → [blender::bke::SocketValueVariant::from · L220](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-fa3c16e83ef6de45)。
-- `GField` → [blender::fn::GField::GField · L321](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/12-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E9%94%80%E6%AF%81.md#f-7865e4089df6225d)；[blender::fn::GField::GField · L335](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/12-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E9%94%80%E6%AF%81.md#f-438a60155477a30a)；[blender::fn::GField::GField · L121](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/02-GField%E5%AD%98%E5%82%A8%E8%A1%A8%E7%A4%BA.md#f-05b8cf641fd81420)；[blender::fn::GField::GField · L450](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-211db26b169f2f41)；[blender::fn::GField::GField · L454](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-7fdb26f58de14966)；[blender::fn::GField::GField · L455](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-0f8304d195c6e071)；[blender::fn::GField::GField · L456](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-49cf4fb08737a047)。同名重载需按实参类型选择。
+- `FieldOperation::from` → [blender::fn::FieldOperation::from · L252](../08-Field表达式与求值/06-FieldContext上下文.md#f-d78060e8f5e1929f)；[blender::fn::FieldOperation::from · L258](../08-Field表达式与求值/06-FieldContext上下文.md#f-60a41b323ee8ceb7)。同名重载需按实参类型选择。
+- `params.set_output` → [blender::fn::lazy_function::Params::set_output · L440](02-LazyFunction接口.md#f-993589d688de575d)。
+- `SocketValueVariant::from` → [blender::bke::SocketValueVariant::from · L220](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-fa3c16e83ef6de45)。
+- `GField` → [blender::fn::GField::GField · L321](../08-Field表达式与求值/12-Field重构与深链销毁.md#f-7865e4089df6225d)；[blender::fn::GField::GField · L335](../08-Field表达式与求值/12-Field重构与深链销毁.md#f-438a60155477a30a)；[blender::fn::GField::GField · L121](../08-Field表达式与求值/02-GField存储表示.md#f-05b8cf641fd81420)；[blender::fn::GField::GField · L450](../08-Field表达式与求值/05-FieldOperation运算节点.md#f-211db26b169f2f41)；[blender::fn::GField::GField · L454](../08-Field表达式与求值/05-FieldOperation运算节点.md#f-7fdb26f58de14966)；[blender::fn::GField::GField · L455](../08-Field表达式与求值/05-FieldOperation运算节点.md#f-0f8304d195c6e071)；[blender::fn::GField::GField · L456](../08-Field表达式与求值/05-FieldOperation运算节点.md#f-49cf4fb08737a047)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · node_geo_menu_switch.cc L412—L420
 
@@ -1984,17 +1984,17 @@ class LazyFunctionMenuSwitchBooleanOutputs : public LazyFunction {
 
 **继续追踪实现**
 
-- `node_storage` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L426。
-- `socket_type_supports_fields` → [blender::nodes::socket_type_supports_fields · L663](%E4%BE%9D%E8%B5%96-node_socket-0ca7fe.md#f-2d675fda05d0eec2)。
-- `node.input_socket(0).index_in_tree` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L430。
-- `node.input_socket` → [blender::bNode::input_socket · L818](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-00274c021929d3dc)；[blender::bNode::input_socket · L830](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-e9c8cccac4999eb8)。同名重载需按实参类型选择。
-- `inputs_.append_and_get_index_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L430。
-- `CPPType::get<SocketValueVariant>` → [blender::CPPType::get · L481](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
-- `enum_def_.items().index_range` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L432。
-- `enum_def_.items` → [blender::NodeEnumDefinition::items · L23](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
-- `node.output_socket(i + 1).index_in_tree` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L434。
-- `node.output_socket` → [blender::bNode::output_socket · L824](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-9e46f3a437215eb5)；[blender::bNode::output_socket · L836](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-39021ff32ee7c409)。同名重载需按实参类型选择。
-- `outputs_.append_and_get_index_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L435。
+- `node_storage` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L426。
+- `socket_type_supports_fields` → [blender::nodes::socket_type_supports_fields · L663](../90-实现依赖专题/04-Nodes节点系统/intern/node_socket.cc.md#f-2d675fda05d0eec2)。
+- `node.input_socket(0).index_in_tree` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L430。
+- `node.input_socket` → [blender::bNode::input_socket · L818](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-00274c021929d3dc)；[blender::bNode::input_socket · L830](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-e9c8cccac4999eb8)。同名重载需按实参类型选择。
+- `inputs_.append_and_get_index_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L430。
+- `CPPType::get<SocketValueVariant>` → [blender::CPPType::get · L481](../03-内存分配与运行时类型/08-CPPType构造与析构.md#f-0cc10a3783d6abdb)。
+- `enum_def_.items().index_range` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L432。
+- `enum_def_.items` → [blender::NodeEnumDefinition::items · L23](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
+- `node.output_socket(i + 1).index_in_tree` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L434。
+- `node.output_socket` → [blender::bNode::output_socket · L824](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-9e46f3a437215eb5)；[blender::bNode::output_socket · L836](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-39021ff32ee7c409)。同名重载需按实参类型选择。
+- `outputs_.append_and_get_index_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L435。
 
 <!-- annotated:f17122742612d0 -->
 
@@ -2105,15 +2105,15 @@ class LazyFunctionMenuSwitchBooleanOutputs : public LazyFunction {
 
 **继续追踪实现**
 
-- `params.get_input<SocketValueVariant>` → [blender::fn::lazy_function::Params::get_input · L421](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-167a9263f8e9f932)。
-- `condition_variant.is_single` → [SocketValueVariant::is_single · L501](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_socket_value-841c72.md#f-305458280511ae60)。
-- `this->execute_single` → [blender::nodes::node_geo_menu_switch_cc::LazyFunctionMenuSwitchBooleanOutputs::execute_single · L469](11-Switch%E4%B8%8EMenuSwitch.md#f-cf633ed0e9816635)。
-- `condition_variant.ensure_type<MenuValue>` → [blender::bke::SocketValueVariant::ensure_type · L271](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-36be485d1fc40c00)；[blender::bke::SocketValueVariant::ensure_type · L279](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-417f182997393297)。同名重载需按实参类型选择。
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `params.get_output_usage` → [blender::fn::lazy_function::Params::get_output_usage · L399](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-bd2d3063532e6360)。
-- `params.get_output_data_ptr` → [blender::fn::lazy_function::Params::get_output_data_ptr · L379](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-e994bf059ecf6ba3)。
-- `execute_multi_function_on_value_variant` → [blender::nodes::execute_multi_function_on_value_variant · L59](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_values-932df9.md#f-4dbb5da04e0ebedc)；[blender::nodes::execute_multi_function_on_value_variant · L71](%E4%BE%9D%E8%B5%96-NOD_geometry_nodes_values-932df9.md#f-d306258bd44dcdbf)；[blender::nodes::execute_multi_function_on_value_variant · L500](09-%E5%87%A0%E4%BD%95%E8%8A%82%E7%82%B9%E5%9B%BE%E6%9E%84%E5%BB%BA%E5%99%A8.md#f-b3bbb9da34c5cb4c)。同名重载需按实参类型选择。
-- `params.output_set` → [blender::fn::lazy_function::Params::output_set · L386](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-ccb221ae62d438f5)。
+- `params.get_input<SocketValueVariant>` → [blender::fn::lazy_function::Params::get_input · L421](02-LazyFunction接口.md#f-167a9263f8e9f932)。
+- `condition_variant.is_single` → [SocketValueVariant::is_single · L501](../90-实现依赖专题/02-BKE几何与数据/intern/node_socket_value.cc.md#f-305458280511ae60)。
+- `this->execute_single` → [blender::nodes::node_geo_menu_switch_cc::LazyFunctionMenuSwitchBooleanOutputs::execute_single · L469](11-Switch与MenuSwitch.md#f-cf633ed0e9816635)。
+- `condition_variant.ensure_type<MenuValue>` → [blender::bke::SocketValueVariant::ensure_type · L271](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-36be485d1fc40c00)；[blender::bke::SocketValueVariant::ensure_type · L279](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-417f182997393297)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `params.get_output_usage` → [blender::fn::lazy_function::Params::get_output_usage · L399](02-LazyFunction接口.md#f-bd2d3063532e6360)。
+- `params.get_output_data_ptr` → [blender::fn::lazy_function::Params::get_output_data_ptr · L379](02-LazyFunction接口.md#f-e994bf059ecf6ba3)。
+- `execute_multi_function_on_value_variant` → [blender::nodes::execute_multi_function_on_value_variant · L59](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_values.hh.md#f-4dbb5da04e0ebedc)；[blender::nodes::execute_multi_function_on_value_variant · L71](../90-实现依赖专题/04-Nodes节点系统/NOD_geometry_nodes_values.hh.md#f-d306258bd44dcdbf)；[blender::nodes::execute_multi_function_on_value_variant · L500](09-几何节点图构建器.md#f-b3bbb9da34c5cb4c)。同名重载需按实参类型选择。
+- `params.output_set` → [blender::fn::lazy_function::Params::output_set · L386](02-LazyFunction接口.md#f-ccb221ae62d438f5)。
 
 <!-- annotated:9aa928c748fad7 -->
 
@@ -2178,9 +2178,9 @@ class LazyFunctionMenuSwitchBooleanOutputs : public LazyFunction {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `params.set_output` → [blender::fn::lazy_function::Params::set_output · L440](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-993589d688de575d)。
-- `SocketValueVariant` → [blender::bke::SocketValueVariant::SocketValueVariant · L100](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-a12d4437125f15ca)；[blender::bke::SocketValueVariant::SocketValueVariant · L205](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-ec020790ea374ce3)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `params.set_output` → [blender::fn::lazy_function::Params::set_output · L440](02-LazyFunction接口.md#f-993589d688de575d)。
+- `SocketValueVariant` → [blender::bke::SocketValueVariant::SocketValueVariant · L100](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-a12d4437125f15ca)；[blender::bke::SocketValueVariant::SocketValueVariant · L205](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-ec020790ea374ce3)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · node_geo_menu_switch.cc L477—L487
 
@@ -2280,12 +2280,12 @@ class LazyFunctionForMenuSwitchSocketUsage : public lf::LazyFunction {
 
 **继续追踪实现**
 
-- `inputs_.append_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L492。
-- `CPPType::get<SocketValueVariant>` → [blender::CPPType::get · L481](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `enum_def_.items` → [blender::NodeEnumDefinition::items · L23](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
-- `outputs_.append_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L495。
-- `CPPType::get<bool>` → [blender::CPPType::get · L481](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
+- `inputs_.append_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L492。
+- `CPPType::get<SocketValueVariant>` → [blender::CPPType::get · L481](../03-内存分配与运行时类型/08-CPPType构造与析构.md#f-0cc10a3783d6abdb)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `enum_def_.items` → [blender::NodeEnumDefinition::items · L23](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
+- `outputs_.append_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L495。
+- `CPPType::get<bool>` → [blender::CPPType::get · L481](../03-内存分配与运行时类型/08-CPPType构造与析构.md#f-0cc10a3783d6abdb)。
 
 <!-- annotated:15a8ce51e6f988 -->
 
@@ -2366,12 +2366,12 @@ class LazyFunctionForMenuSwitchSocketUsage : public lf::LazyFunction {
 
 **继续追踪实现**
 
-- `params.get_input<SocketValueVariant>` → [blender::fn::lazy_function::Params::get_input · L421](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-167a9263f8e9f932)。
-- `condition_variant.is_context_dependent_field` → [SocketValueVariant::is_context_dependent_field · L534](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_socket_value-841c72.md#f-55e5e1818d077c80)。
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `params.set_output` → [blender::fn::lazy_function::Params::set_output · L440](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-993589d688de575d)。
-- `condition_variant.copy_as<MenuValue>` → [blender::bke::SocketValueVariant::copy_as · L287](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-81cc327789815ca1)。
-- `enum_def_.items` → [blender::NodeEnumDefinition::items · L23](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
+- `params.get_input<SocketValueVariant>` → [blender::fn::lazy_function::Params::get_input · L421](02-LazyFunction接口.md#f-167a9263f8e9f932)。
+- `condition_variant.is_context_dependent_field` → [SocketValueVariant::is_context_dependent_field · L534](../90-实现依赖专题/02-BKE几何与数据/intern/node_socket_value.cc.md#f-55e5e1818d077c80)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `params.set_output` → [blender::fn::lazy_function::Params::set_output · L440](02-LazyFunction接口.md#f-993589d688de575d)。
+- `condition_variant.copy_as<MenuValue>` → [blender::bke::SocketValueVariant::copy_as · L287](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-81cc327789815ca1)。
+- `enum_def_.items` → [blender::NodeEnumDefinition::items · L23](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · node_geo_menu_switch.cc L515—L522
 
@@ -2497,19 +2497,19 @@ class MenuSwitchOperation : public NodeOperation {
 
 **继续追踪实现**
 
-- `this->get_result` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L525。
-- `this->get_input("Menu").get_single_value<MenuValue>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L526。
-- `this->get_input` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L526。
-- `node_storage` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L527。
-- `node` → [node · L142](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-gpu_shader_cxx_attribute-d75f56.md#m-357756b70038)。宏定义由构建条件选择。
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `enum_definition.items` → [blender::NodeEnumDefinition::items · L23](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_enum_definition-d2a941.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
-- `MenuSwitchItemsAccessor::socket_identifier_for_item` → [blender::nodes::MenuSwitchItemsAccessor::socket_identifier_for_item · L74](%E4%BE%9D%E8%B5%96-NOD_geo_menu_switch-046336.md#f-d1b39d5572b04bed)。
-- `item_output.should_compute` → [blender::compositor::Result::should_compute · L1124](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-result-844e73.md#f-1690003fef53b2cd)。
-- `item_output.allocate_single_value` → [blender::compositor::Result::allocate_single_value · L583](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-result-844e73.md#f-42be79644f54e7fe)。
-- `item_output.set_single_value` → [blender::compositor::Result::set_single_value · L546](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-COM_result-462d01.md#f-cb89c0019c20c94b)。
-- `value_output.share_data` → [blender::compositor::Result::share_data · L996](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-result-844e73.md#f-1c63e714b21bfd6a)；[blender::compositor::Result::share_data · L1037](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-result-844e73.md#f-fcd42dcd0168de75)；[blender::compositor::Result::share_data · L1048](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-result-844e73.md#f-a82a883f8ad364a7)。同名重载需按实参类型选择。
-- `value_output.allocate_invalid` → [blender::compositor::Result::allocate_invalid · L666](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-result-844e73.md#f-94ade3b88f036b92)。
+- `this->get_result` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L525。
+- `this->get_input("Menu").get_single_value<MenuValue>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L526。
+- `this->get_input` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L526。
+- `node_storage` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L527。
+- `node` → [node · L142](../90-实现依赖专题/08-其他Blender模块/gpu/shaders/compat/gpu_shader_cxx_attribute.hh.md#m-357756b70038)。宏定义由构建条件选择。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `enum_definition.items` → [blender::NodeEnumDefinition::items · L23](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-2c1fb3cb9aa66c3d)；[blender::NodeEnumDefinition::items · L28](../90-实现依赖专题/02-BKE几何与数据/intern/node_enum_definition.cc.md#f-33276360012e9f2e)。同名重载需按实参类型选择。
+- `MenuSwitchItemsAccessor::socket_identifier_for_item` → [blender::nodes::MenuSwitchItemsAccessor::socket_identifier_for_item · L74](../90-实现依赖专题/04-Nodes节点系统/geometry/include/NOD_geo_menu_switch.hh.md#f-d1b39d5572b04bed)。
+- `item_output.should_compute` → [blender::compositor::Result::should_compute · L1124](../90-实现依赖专题/08-其他Blender模块/compositor/intern/result.cc.md#f-1690003fef53b2cd)。
+- `item_output.allocate_single_value` → [blender::compositor::Result::allocate_single_value · L583](../90-实现依赖专题/08-其他Blender模块/compositor/intern/result.cc.md#f-42be79644f54e7fe)。
+- `item_output.set_single_value` → [blender::compositor::Result::set_single_value · L546](../90-实现依赖专题/08-其他Blender模块/compositor/COM_result.hh.md#f-cb89c0019c20c94b)。
+- `value_output.share_data` → [blender::compositor::Result::share_data · L996](../90-实现依赖专题/08-其他Blender模块/compositor/intern/result.cc.md#f-1c63e714b21bfd6a)；[blender::compositor::Result::share_data · L1037](../90-实现依赖专题/08-其他Blender模块/compositor/intern/result.cc.md#f-fcd42dcd0168de75)；[blender::compositor::Result::share_data · L1048](../90-实现依赖专题/08-其他Blender模块/compositor/intern/result.cc.md#f-a82a883f8ad364a7)。同名重载需按实参类型选择。
+- `value_output.allocate_invalid` → [blender::compositor::Result::allocate_invalid · L666](../90-实现依赖专题/08-其他Blender模块/compositor/intern/result.cc.md#f-94ade3b88f036b92)。
 
 ### 类型布局、声明与编译条件 · node_geo_menu_switch.cc L553—L554
 
@@ -2660,14 +2660,14 @@ static void node_layout_ex(ui::Layout &layout, bContext *C, PointerRNA *ptr)
 
 **继续追踪实现**
 
-- `layout.prop` → [blender::ui::Layout::prop · L1980](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-interface_layout-7cc3aa.md#f-fe037a66d23c597c)；[blender::ui::Layout::prop · L2447](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-interface_layout-7cc3aa.md#f-2d185b7c1e4b86bd)。同名重载需按实参类型选择。
-- `layout.panel` → [blender::ui::Layout::panel · L5214](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-interface_layout-7cc3aa.md#f-3d289dbb292aa3fa)；[blender::ui::Layout::panel · L5226](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-interface_layout-7cc3aa.md#f-38f1c6beda0aba73)。同名重载需按实参类型选择。
-- `IFACE_` → [IFACE_ · L49](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BLT_translation-c89e58.md#m-378ed115fdc8)。宏定义由构建条件选择。
-- `socket_items::ui::draw_items_list_with_operators<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::ui::draw_items_list_with_operators · L57](%E4%BE%9D%E8%B5%96-NOD_socket_items_ui-2ab39c.md#f-db5b39b48f392cc8)。
-- `socket_items::ui::draw_active_item_props<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::ui::draw_active_item_props · L106](%E4%BE%9D%E8%B5%96-NOD_socket_items_ui-2ab39c.md#f-1882f1aae96d5c1f)。
-- `panel->use_property_split_set` → [blender::ui::Layout::use_property_split_set · L5421](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-interface_layout-7cc3aa.md#f-df3bdb242a6426c4)。
-- `panel->use_property_decorate_set` → [blender::ui::Layout::use_property_decorate_set · L5431](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-interface_layout-7cc3aa.md#f-b7f062a27a7daed0)。
-- `panel->prop` → [blender::ui::Layout::prop · L1980](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-interface_layout-7cc3aa.md#f-fe037a66d23c597c)；[blender::ui::Layout::prop · L2447](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-interface_layout-7cc3aa.md#f-2d185b7c1e4b86bd)。同名重载需按实参类型选择。
+- `layout.prop` → [blender::ui::Layout::prop · L1980](../90-实现依赖专题/08-其他Blender模块/editors/interface/interface_layout.cc.md#f-fe037a66d23c597c)；[blender::ui::Layout::prop · L2447](../90-实现依赖专题/08-其他Blender模块/editors/interface/interface_layout.cc.md#f-2d185b7c1e4b86bd)。同名重载需按实参类型选择。
+- `layout.panel` → [blender::ui::Layout::panel · L5214](../90-实现依赖专题/08-其他Blender模块/editors/interface/interface_layout.cc.md#f-3d289dbb292aa3fa)；[blender::ui::Layout::panel · L5226](../90-实现依赖专题/08-其他Blender模块/editors/interface/interface_layout.cc.md#f-38f1c6beda0aba73)。同名重载需按实参类型选择。
+- `IFACE_` → [IFACE_ · L49](../90-实现依赖专题/08-其他Blender模块/blentranslation/BLT_translation.hh.md#m-378ed115fdc8)。宏定义由构建条件选择。
+- `socket_items::ui::draw_items_list_with_operators<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::ui::draw_items_list_with_operators · L57](../90-实现依赖专题/04-Nodes节点系统/NOD_socket_items_ui.hh.md#f-db5b39b48f392cc8)。
+- `socket_items::ui::draw_active_item_props<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::ui::draw_active_item_props · L106](../90-实现依赖专题/04-Nodes节点系统/NOD_socket_items_ui.hh.md#f-1882f1aae96d5c1f)。
+- `panel->use_property_split_set` → [blender::ui::Layout::use_property_split_set · L5421](../90-实现依赖专题/08-其他Blender模块/editors/interface/interface_layout.cc.md#f-df3bdb242a6426c4)。
+- `panel->use_property_decorate_set` → [blender::ui::Layout::use_property_decorate_set · L5431](../90-实现依赖专题/08-其他Blender模块/editors/interface/interface_layout.cc.md#f-b7f062a27a7daed0)。
+- `panel->prop` → [blender::ui::Layout::prop · L1980](../90-实现依赖专题/08-其他Blender模块/editors/interface/interface_layout.cc.md#f-fe037a66d23c597c)；[blender::ui::Layout::prop · L2447](../90-实现依赖专题/08-其他Blender模块/editors/interface/interface_layout.cc.md#f-2d185b7c1e4b86bd)。同名重载需按实参类型选择。
 
 <!-- annotated:f3efa079a30828 -->
 
@@ -2719,7 +2719,7 @@ static void node_operators()
 
 **继续追踪实现**
 
-- `socket_items::ops::make_common_operators<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::ops::make_common_operators · L449](%E4%BE%9D%E8%B5%96-NOD_socket_items_ops-3d37d6.md#f-6159519f24e7554b)。
+- `socket_items::ops::make_common_operators<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::ops::make_common_operators · L449](../90-实现依赖专题/04-Nodes节点系统/NOD_socket_items_ops.hh.md#f-6159519f24e7554b)。
 
 <!-- annotated:2fbd8136312dc5 -->
 
@@ -2781,7 +2781,7 @@ static bool node_insert_link(bke::NodeInsertLinkParams &params)
 
 **继续追踪实现**
 
-- `socket_items::try_add_item_via_any_extend_socket<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::try_add_item_via_any_extend_socket · L388](%E4%BE%9D%E8%B5%96-NOD_socket_items-d21cfb.md#f-6e4eb2393bb06b5b)。
+- `socket_items::try_add_item_via_any_extend_socket<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::try_add_item_via_any_extend_socket · L388](../90-实现依赖专题/04-Nodes节点系统/NOD_socket_items.hh.md#f-6e4eb2393bb06b5b)。
 
 <!-- annotated:0d731dc7f5b26e -->
 
@@ -2839,7 +2839,7 @@ static void node_blend_write(const bNodeTree & /*ntree*/, const bNode &node, Ble
 
 **继续追踪实现**
 
-- `socket_items::blend_write<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::blend_write · L17](%E4%BE%9D%E8%B5%96-NOD_socket_items_blend-d6e617.md#f-ae17c9413f15c969)。
+- `socket_items::blend_write<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::blend_write · L17](../90-实现依赖专题/04-Nodes节点系统/NOD_socket_items_blend.hh.md#f-ae17c9413f15c969)。
 
 <!-- annotated:9ec30e526ebb61 -->
 
@@ -2897,7 +2897,7 @@ static void node_blend_read(bNodeTree & /*ntree*/, bNode &node, BlendDataReader 
 
 **继续追踪实现**
 
-- `socket_items::blend_read_data<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::blend_read_data · L28](%E4%BE%9D%E8%B5%96-NOD_socket_items_blend-d6e617.md#f-2eff33b148bb4cd4)。
+- `socket_items::blend_read_data<MenuSwitchItemsAccessor>` → [blender::nodes::socket_items::blend_read_data · L28](../90-实现依赖专题/04-Nodes节点系统/NOD_socket_items_blend.hh.md#f-2eff33b148bb4cd4)。
 
 <!-- annotated:da7f0e3a165345 -->
 
@@ -2980,8 +2980,8 @@ static const bNodeSocket *node_internally_linked_input(const bNodeTree & /*tree*
 
 **继续追踪实现**
 
-- `node_storage` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L604。
-- `node.input_socket` → [blender::bNode::input_socket · L818](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-00274c021929d3dc)；[blender::bNode::input_socket · L830](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-e9c8cccac4999eb8)。同名重载需按实参类型选择。
+- `node_storage` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L604。
+- `node.input_socket` → [blender::bNode::input_socket · L818](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-00274c021929d3dc)；[blender::bNode::input_socket · L830](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-e9c8cccac4999eb8)。同名重载需按实参类型选择。
 
 <!-- annotated:ec2230bd24aeb3 -->
 
@@ -3065,9 +3065,9 @@ static const EnumPropertyItem *data_type_items_callback(bContext * /*C*/,
 
 **继续追踪实现**
 
-- `enum_items_filter` → [blender::nodes::enum_items_filter · L13](%E4%BE%9D%E8%B5%96-node_rna_define-7c9678.md#f-a364b9e5c0cb6ff4)。
-- `bke::node_socket_type_find_static` → [blender::bke::node_socket_type_find_static · L2975](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node-89d753.md#f-8082ced6587b7cd9)。
-- `ntree_type->valid_socket_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L626。
+- `enum_items_filter` → [blender::nodes::enum_items_filter · L13](../90-实现依赖专题/04-Nodes节点系统/intern/node_rna_define.cc.md#f-a364b9e5c0cb6ff4)。
+- `bke::node_socket_type_find_static` → [blender::bke::node_socket_type_find_static · L2975](../90-实现依赖专题/02-BKE几何与数据/intern/node.cc.md#f-8082ced6587b7cd9)。
+- `ntree_type->valid_socket_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L626。
 
 <!-- annotated:8e4610b9dd47cf -->
 
@@ -3137,8 +3137,8 @@ static void node_rna(StructRNA *srna)
 
 **继续追踪实现**
 
-- `RNA_def_node_enum` → [blender::nodes::RNA_def_node_enum · L29](%E4%BE%9D%E8%B5%96-node_rna_define-7c9678.md#f-d3c04fc562565860)。
-- `NOD_storage_enum_accessors` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L637。
+- `RNA_def_node_enum` → [blender::nodes::RNA_def_node_enum · L29](../90-实现依赖专题/04-Nodes节点系统/intern/node_rna_define.cc.md#f-d3c04fc562565860)。
+- `NOD_storage_enum_accessors` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L637。
 
 <!-- annotated:b86483671ecdc8 -->
 
@@ -3253,10 +3253,10 @@ static void register_node()
 
 **继续追踪实现**
 
-- `common_node_type_base` → [blender::common_node_type_base · L88](%E4%BE%9D%E8%B5%96-node_shader_util-6b7d04.md#f-c9702359b888361c)。
-- `bke::node_type_storage` → [blender::bke::node_type_storage · L6166](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node-89d753.md#f-92185de642727866)。
-- `bke::node_register_type` → [blender::bke::node_register_type · L2920](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node-89d753.md#f-990ea2d16bb4cef1)。
-- `node_rna` → [blender::nodes::node_geo_menu_switch_cc::node_rna · L630](11-Switch%E4%B8%8EMenuSwitch.md#f-ca58b1e3a0a3b5b3)。
+- `common_node_type_base` → [blender::common_node_type_base · L88](../90-实现依赖专题/04-Nodes节点系统/shader/node_shader_util.cc.md#f-c9702359b888361c)。
+- `bke::node_type_storage` → [blender::bke::node_type_storage · L6166](../90-实现依赖专题/02-BKE几何与数据/intern/node.cc.md#f-92185de642727866)。
+- `bke::node_register_type` → [blender::bke::node_register_type · L2920](../90-实现依赖专题/02-BKE几何与数据/intern/node.cc.md#f-990ea2d16bb4cef1)。
+- `node_rna` → [blender::nodes::node_geo_menu_switch_cc::node_rna · L630](11-Switch与MenuSwitch.md#f-ca58b1e3a0a3b5b3)。
 
 ### 类型布局、声明与编译条件 · node_geo_menu_switch.cc L668—L673
 
@@ -3336,7 +3336,7 @@ std::unique_ptr<LazyFunction> get_menu_switch_node_lazy_function(
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::make_unique<LazyFunctionForMenuSwitchNode>` → [外部契约](https://eel.is/c++draft/unique.ptr.create)：创建独占拥有的对象，拥有关系可移动，get返回的借用指针不自动延长寿命。
 
 <!-- annotated:8d98d22de9c5fb -->
@@ -3405,7 +3405,7 @@ std::unique_ptr<LazyFunction> get_menu_switch_node_boolean_outputs_lazy_function
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::make_unique<LazyFunctionMenuSwitchBooleanOutputs>` → [外部契约](https://eel.is/c++draft/unique.ptr.create)：创建独占拥有的对象，拥有关系可移动，get返回的借用指针不自动延长寿命。
 
 <!-- annotated:679e1ea345b8fe -->
@@ -3471,7 +3471,7 @@ std::unique_ptr<LazyFunction> get_menu_switch_node_socket_usage_lazy_function(co
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::make_unique<LazyFunctionForMenuSwitchSocketUsage>` → [外部契约](https://eel.is/c++draft/unique.ptr.create)：创建独占拥有的对象，拥有关系可移动，get返回的借用指针不自动延长寿命。
 
 ### 类型布局、声明与编译条件 · node_geo_menu_switch.cc L696—L698
@@ -3537,7 +3537,7 @@ void MenuSwitchItemsAccessor::blend_write_item(BlendWriter *writer, const ItemT 
 
 **继续追踪实现**
 
-- `writer->write_string` → [blender::BlendWriter::write_string · L2357](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-writefile-3eb36f.md#f-3fd83db72afbdcbe)。
+- `writer->write_string` → [blender::BlendWriter::write_string · L2357](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/writefile.cc.md#f-3fd83db72afbdcbe)。
 
 <!-- annotated:a7605ff36d8e3e -->
 
@@ -3596,7 +3596,7 @@ void MenuSwitchItemsAccessor::blend_read_data_item(BlendDataReader *reader, Item
 
 **继续追踪实现**
 
-- `BLO_read_string` → [BLO_read_string · L6348](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-readfile-05cc37.md#f-b9cb42e390941235)；[BLO_read_string · L6370](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-readfile-05cc37.md#f-1bb75b8661d718d2)；[BLO_read_string · L6375](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-readfile-05cc37.md#f-5714da923b3ad83d)。同名重载需按实参类型选择。
+- `BLO_read_string` → [BLO_read_string · L6348](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/readfile.cc.md#f-b9cb42e390941235)；[BLO_read_string · L6370](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/readfile.cc.md#f-1bb75b8661d718d2)；[BLO_read_string · L6375](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/readfile.cc.md#f-5714da923b3ad83d)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · node_geo_menu_switch.cc L710—L712
 
@@ -3816,25 +3816,25 @@ static void node_declare(NodeDeclarationBuilder &b)
 
 **继续追踪实现**
 
-- `b.add_input<decl::Bool>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L32。
-- `b.tree_or_null` → [blender::nodes::NodeDeclarationBuilder::tree_or_null · L681](%E4%BE%9D%E8%B5%96-NOD_node_declaration-9b193f.md#f-f41371835832ba92)。
-- `b.node_or_null` → [blender::nodes::NodeDeclarationBuilder::node_or_null · L675](%E4%BE%9D%E8%B5%96-NOD_node_declaration-9b193f.md#f-1dfd970e8f6b7b32)。
-- `node_storage` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L38。
-- `b.add_input` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L41。
-- `b.add_output(socket_type, "Output"_ustr).propagate_all` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L43。
-- `b.add_output` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L43。
-- `compositor::Result::is_single_value_only_type` → [blender::compositor::Result::is_single_value_only_type · L51](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-result-844e73.md#f-e15a58f6d1b11e77)。
-- `compositor::socket_data_type_to_result_type` → [blender::compositor::socket_data_type_to_result_type · L39](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utilities-1ec26a.md#f-9bc4ab546a3e2be9)。
-- `false_decl.compositor_realization_mode` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L56。
-- `true_decl.compositor_realization_mode` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L57。
-- `socket_type_supports_fields` → [blender::nodes::socket_type_supports_fields · L663](%E4%BE%9D%E8%B5%96-node_socket-0ca7fe.md#f-2d675fda05d0eec2)。
-- `output_decl.inferred_structure_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L61。
-- `false_decl.index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L64。
-- `true_decl.index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L64。
-- `switch_decl.structure_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L68。
-- `false_decl.structure_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L69。
-- `true_decl.structure_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L70。
-- `output_decl.structure_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L71。
+- `b.add_input<decl::Bool>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L32。
+- `b.tree_or_null` → [blender::nodes::NodeDeclarationBuilder::tree_or_null · L681](../90-实现依赖专题/04-Nodes节点系统/NOD_node_declaration.hh.md#f-f41371835832ba92)。
+- `b.node_or_null` → [blender::nodes::NodeDeclarationBuilder::node_or_null · L675](../90-实现依赖专题/04-Nodes节点系统/NOD_node_declaration.hh.md#f-1dfd970e8f6b7b32)。
+- `node_storage` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L38。
+- `b.add_input` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L41。
+- `b.add_output(socket_type, "Output"_ustr).propagate_all` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L43。
+- `b.add_output` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L43。
+- `compositor::Result::is_single_value_only_type` → [blender::compositor::Result::is_single_value_only_type · L51](../90-实现依赖专题/08-其他Blender模块/compositor/intern/result.cc.md#f-e15a58f6d1b11e77)。
+- `compositor::socket_data_type_to_result_type` → [blender::compositor::socket_data_type_to_result_type · L39](../90-实现依赖专题/08-其他Blender模块/compositor/intern/utilities.cc.md#f-9bc4ab546a3e2be9)。
+- `false_decl.compositor_realization_mode` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L56。
+- `true_decl.compositor_realization_mode` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L57。
+- `socket_type_supports_fields` → [blender::nodes::socket_type_supports_fields · L663](../90-实现依赖专题/04-Nodes节点系统/intern/node_socket.cc.md#f-2d675fda05d0eec2)。
+- `output_decl.inferred_structure_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L61。
+- `false_decl.index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L64。
+- `true_decl.index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L64。
+- `switch_decl.structure_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L68。
+- `false_decl.structure_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L69。
+- `true_decl.structure_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L70。
+- `output_decl.structure_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L71。
 
 <!-- annotated:3a2bacf96e64d5 -->
 
@@ -3892,7 +3892,7 @@ static void node_layout(ui::Layout &layout, bContext * /*C*/, PointerRNA *ptr)
 
 **继续追踪实现**
 
-- `layout.prop` → [blender::ui::Layout::prop · L1980](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-interface_layout-7cc3aa.md#f-fe037a66d23c597c)；[blender::ui::Layout::prop · L2447](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-interface_layout-7cc3aa.md#f-2d185b7c1e4b86bd)。同名重载需按实参类型选择。
+- `layout.prop` → [blender::ui::Layout::prop · L1980](../90-实现依赖专题/08-其他Blender模块/editors/interface/interface_layout.cc.md#f-fe037a66d23c597c)；[blender::ui::Layout::prop · L2447](../90-实现依赖专题/08-其他Blender模块/editors/interface/interface_layout.cc.md#f-2d185b7c1e4b86bd)。同名重载需按实参类型选择。
 
 <!-- annotated:9111e0d60e55a3 -->
 
@@ -3958,7 +3958,7 @@ static void node_init(bNodeTree *tree, bNode *node)
 
 **继续追踪实现**
 
-- `MEM_new<NodeSwitch>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
+- `MEM_new<NodeSwitch>` → [MEM_new · L351](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-115f9b6784f89912)。
 
 <!-- annotated:812d4ba37151d3 -->
 
@@ -4082,13 +4082,13 @@ static void node_gather_link_searches(GatherLinkSearchOpParams &params)
 
 **继续追踪实现**
 
-- `params.in_out` → [blender::nodes::GatherLinkSearchOpParams::in_out · L65](%E4%BE%9D%E8%B5%96-socket_search_link-d6b6cb.md#f-ce52d3e93d6549ea)。
-- `params.add_item` → [blender::nodes::GatherLinkSearchOpParams::add_item · L27](%E4%BE%9D%E8%B5%96-socket_search_link-d6b6cb.md#f-2ac8ec254ff2c58f)。
-- `IFACE_` → [IFACE_ · L49](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BLT_translation-c89e58.md#m-378ed115fdc8)。宏定义由构建条件选择。
-- `params.add_node` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L90。
-- `node_storage` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L91。
-- `params.update_and_connect_available_socket` → [blender::nodes::LinkSearchOpParams::update_and_connect_available_socket · L127](%E4%BE%9D%E8%B5%96-socket_search_link-d6b6cb.md#f-433b9de74cae0a4a)。
-- `params.other_socket` → [blender::nodes::GatherLinkSearchOpParams::other_socket · L45](%E4%BE%9D%E8%B5%96-socket_search_link-d6b6cb.md#f-7cba06c73785c130)。
+- `params.in_out` → [blender::nodes::GatherLinkSearchOpParams::in_out · L65](../90-实现依赖专题/04-Nodes节点系统/intern/socket_search_link.cc.md#f-ce52d3e93d6549ea)。
+- `params.add_item` → [blender::nodes::GatherLinkSearchOpParams::add_item · L27](../90-实现依赖专题/04-Nodes节点系统/intern/socket_search_link.cc.md#f-2ac8ec254ff2c58f)。
+- `IFACE_` → [IFACE_ · L49](../90-实现依赖专题/08-其他Blender模块/blentranslation/BLT_translation.hh.md#m-378ed115fdc8)。宏定义由构建条件选择。
+- `params.add_node` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L90。
+- `node_storage` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L91。
+- `params.update_and_connect_available_socket` → [blender::nodes::LinkSearchOpParams::update_and_connect_available_socket · L127](../90-实现依赖专题/04-Nodes节点系统/intern/socket_search_link.cc.md#f-433b9de74cae0a4a)。
+- `params.other_socket` → [blender::nodes::GatherLinkSearchOpParams::other_socket · L45](../90-实现依赖专题/04-Nodes节点系统/intern/socket_search_link.cc.md#f-7cba06c73785c130)。
 
 ### 类型布局、声明与编译条件 · node_geo_switch.cc L124—L131
 
@@ -4213,13 +4213,13 @@ class LazyFunctionForSwitchNode : public LazyFunction {
 
 **继续追踪实现**
 
-- `node_storage` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L134。
-- `socket_type_supports_fields` → [blender::nodes::socket_type_supports_fields · L663](%E4%BE%9D%E8%B5%96-node_socket-0ca7fe.md#f-2d675fda05d0eec2)。
-- `node.output_sockets` → [blender::bNode::output_sockets · L760](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-40ec6d6aed2ab6fb)；[blender::bNode::output_sockets · L772](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-ddbd8f42409bdcd1)。同名重载需按实参类型选择。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `CPPType::get<SocketValueVariant>` → [blender::CPPType::get · L481](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
-- `inputs_.append_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L150。
-- `outputs_.append_as` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L153。
+- `node_storage` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L134。
+- `socket_type_supports_fields` → [blender::nodes::socket_type_supports_fields · L663](../90-实现依赖专题/04-Nodes节点系统/intern/node_socket.cc.md#f-2d675fda05d0eec2)。
+- `node.output_sockets` → [blender::bNode::output_sockets · L760](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-40ec6d6aed2ab6fb)；[blender::bNode::output_sockets · L772](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-ddbd8f42409bdcd1)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `CPPType::get<SocketValueVariant>` → [blender::CPPType::get · L481](../03-内存分配与运行时类型/08-CPPType构造与析构.md#f-0cc10a3783d6abdb)。
+- `inputs_.append_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L150。
+- `outputs_.append_as` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L153。
 
 <!-- annotated:1bb245f4d0ff38 -->
 
@@ -4314,15 +4314,15 @@ class LazyFunctionForSwitchNode : public LazyFunction {
 
 **继续追踪实现**
 
-- `params.get_input<SocketValueVariant>` → [blender::fn::lazy_function::Params::get_input · L421](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-167a9263f8e9f932)。
-- `condition_variant.is_context_dependent_field` → [SocketValueVariant::is_context_dependent_field · L534](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node_socket_value-841c72.md#f-55e5e1818d077c80)。
-- `this->execute_single` → [blender::nodes::node_geo_switch_cc::LazyFunctionForSwitchNode::execute_single · L183](11-Switch%E4%B8%8EMenuSwitch.md#f-4249afe28ce8f493)。
-- `condition_variant.ensure_type<bool>` → [blender::bke::SocketValueVariant::ensure_type · L271](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-36be485d1fc40c00)；[blender::bke::SocketValueVariant::ensure_type · L279](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-417f182997393297)。同名重载需按实参类型选择。
-- `this->execute_field` → [blender::nodes::node_geo_switch_cc::LazyFunctionForSwitchNode::execute_field · L201](11-Switch%E4%B8%8EMenuSwitch.md#f-fc1025899a06c010)。
-- `condition_variant.ensure_type<Field<bool>>` → [blender::bke::SocketValueVariant::ensure_type · L271](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-36be485d1fc40c00)；[blender::bke::SocketValueVariant::ensure_type · L279](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-417f182997393297)。同名重载需按实参类型选择。
-- `local_user_data.try_get_tree_logger` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L171。
-- `tree_logger->node_warnings.append` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L172。
-- `N_` → [N_ · L65](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-versioning_userdef-fdee9b.md#m-7c11c8200907)；[N_ · L44](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BLT_translation-c89e58.md#m-e686781e2b24)。宏定义由构建条件选择。
+- `params.get_input<SocketValueVariant>` → [blender::fn::lazy_function::Params::get_input · L421](02-LazyFunction接口.md#f-167a9263f8e9f932)。
+- `condition_variant.is_context_dependent_field` → [SocketValueVariant::is_context_dependent_field · L534](../90-实现依赖专题/02-BKE几何与数据/intern/node_socket_value.cc.md#f-55e5e1818d077c80)。
+- `this->execute_single` → [blender::nodes::node_geo_switch_cc::LazyFunctionForSwitchNode::execute_single · L183](11-Switch与MenuSwitch.md#f-4249afe28ce8f493)。
+- `condition_variant.ensure_type<bool>` → [blender::bke::SocketValueVariant::ensure_type · L271](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-36be485d1fc40c00)；[blender::bke::SocketValueVariant::ensure_type · L279](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-417f182997393297)。同名重载需按实参类型选择。
+- `this->execute_field` → [blender::nodes::node_geo_switch_cc::LazyFunctionForSwitchNode::execute_field · L201](11-Switch与MenuSwitch.md#f-fc1025899a06c010)。
+- `condition_variant.ensure_type<Field<bool>>` → [blender::bke::SocketValueVariant::ensure_type · L271](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-36be485d1fc40c00)；[blender::bke::SocketValueVariant::ensure_type · L279](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-417f182997393297)。同名重载需按实参类型选择。
+- `local_user_data.try_get_tree_logger` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L171。
+- `tree_logger->node_warnings.append` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L172。
+- `N_` → [N_ · L65](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/versioning_userdef.cc.md#m-7c11c8200907)；[N_ · L44](../90-实现依赖专题/08-其他Blender模块/blentranslation/BLT_translation.hh.md#m-e686781e2b24)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · node_geo_switch.cc L179—L182
 
@@ -4413,11 +4413,11 @@ class LazyFunctionForSwitchNode : public LazyFunction {
 
 **继续追踪实现**
 
-- `params.set_input_unused` → [blender::fn::lazy_function::Params::set_input_unused · L405](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-0a0db77ebf68f7c8)。
-- `params.try_get_input_data_ptr_or_request` → [blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L372](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-89de2295f5baa94f)；[blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L434](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-97ba143c63061e47)。同名重载需按实参类型选择。
-- `params.get_output_data_ptr` → [blender::fn::lazy_function::Params::get_output_data_ptr · L379](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-e994bf059ecf6ba3)。
-- `type.move_construct` → [blender::CPPType::move_construct · L633](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-12275cc6e59e9740)。
-- `params.output_set` → [blender::fn::lazy_function::Params::output_set · L386](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-ccb221ae62d438f5)。
+- `params.set_input_unused` → [blender::fn::lazy_function::Params::set_input_unused · L405](02-LazyFunction接口.md#f-0a0db77ebf68f7c8)。
+- `params.try_get_input_data_ptr_or_request` → [blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L372](02-LazyFunction接口.md#f-89de2295f5baa94f)；[blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L434](02-LazyFunction接口.md#f-97ba143c63061e47)。同名重载需按实参类型选择。
+- `params.get_output_data_ptr` → [blender::fn::lazy_function::Params::get_output_data_ptr · L379](02-LazyFunction接口.md#f-e994bf059ecf6ba3)。
+- `type.move_construct` → [blender::CPPType::move_construct · L633](../03-内存分配与运行时类型/09-CPPType复制移动重定位.md#f-12275cc6e59e9740)。
+- `params.output_set` → [blender::fn::lazy_function::Params::output_set · L386](02-LazyFunction接口.md#f-ccb221ae62d438f5)。
 
 <!-- annotated:6bbf6173b8e4f1 -->
 
@@ -4518,16 +4518,16 @@ class LazyFunctionForSwitchNode : public LazyFunction {
 
 **继续追踪实现**
 
-- `params.try_get_input_data_ptr_or_request<SocketValueVariant>` → [blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L372](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-89de2295f5baa94f)；[blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L434](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-97ba143c63061e47)。同名重载需按实参类型选择。
-- `ELEM` → [ELEM · L88](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
-- `this->get_switch_multi_function` → [blender::nodes::node_geo_switch_cc::LazyFunctionForSwitchNode::get_switch_multi_function · L227](11-Switch%E4%B8%8EMenuSwitch.md#f-1216f025ff2b702e)。
+- `params.try_get_input_data_ptr_or_request<SocketValueVariant>` → [blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L372](02-LazyFunction接口.md#f-89de2295f5baa94f)；[blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L434](02-LazyFunction接口.md#f-97ba143c63061e47)。同名重载需按实参类型选择。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `this->get_switch_multi_function` → [blender::nodes::node_geo_switch_cc::LazyFunctionForSwitchNode::get_switch_multi_function · L227](11-Switch与MenuSwitch.md#f-1216f025ff2b702e)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `false_value_variant->ensure_type<GField>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L215。
-- `true_value_variant->ensure_type<GField>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L216。
-- `FieldOperation::from` → [blender::fn::FieldOperation::from · L252](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/06-FieldContext%E4%B8%8A%E4%B8%8B%E6%96%87.md#f-d78060e8f5e1929f)；[blender::fn::FieldOperation::from · L258](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/06-FieldContext%E4%B8%8A%E4%B8%8B%E6%96%87.md#f-60a41b323ee8ceb7)。同名重载需按实参类型选择。
-- `params.get_output_data_ptr` → [blender::fn::lazy_function::Params::get_output_data_ptr · L379](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-e994bf059ecf6ba3)。
-- `SocketValueVariant::from` → [blender::bke::SocketValueVariant::from · L220](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_socket_value-24f0e5.md#f-fa3c16e83ef6de45)。
-- `params.output_set` → [blender::fn::lazy_function::Params::output_set · L386](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-ccb221ae62d438f5)。
+- `false_value_variant->ensure_type<GField>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L215。
+- `true_value_variant->ensure_type<GField>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L216。
+- `FieldOperation::from` → [blender::fn::FieldOperation::from · L252](../08-Field表达式与求值/06-FieldContext上下文.md#f-d78060e8f5e1929f)；[blender::fn::FieldOperation::from · L258](../08-Field表达式与求值/06-FieldContext上下文.md#f-60a41b323ee8ceb7)。同名重载需按实参类型选择。
+- `params.get_output_data_ptr` → [blender::fn::lazy_function::Params::get_output_data_ptr · L379](02-LazyFunction接口.md#f-e994bf059ecf6ba3)。
+- `SocketValueVariant::from` → [blender::bke::SocketValueVariant::from · L220](../90-实现依赖专题/02-BKE几何与数据/BKE_node_socket_value.hh.md#f-fa3c16e83ef6de45)。
+- `params.output_set` → [blender::fn::lazy_function::Params::output_set · L386](02-LazyFunction接口.md#f-ccb221ae62d438f5)。
 
 <!-- annotated:525f483a61457a -->
 
@@ -4622,9 +4622,9 @@ class LazyFunctionForSwitchNode : public LazyFunction {
 
 **继续追踪实现**
 
-- `base_type_->to_static_type<float, int, bool, float3, ColorGeometry4f, std::string, math::Quaternion, float4x4, MenuValue>` → [blender::CPPType::to_static_type · L768](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-c63e6d79f19ab075)。
-- `mf::build::SI3_SO<bool, T, T, T>` → [blender::fn::multi_function::build::SI3_SO · L579](../07-MultiFunction%E4%B8%8E%E6%89%B9%E9%87%8F%E6%89%A7%E8%A1%8C/06-%E5%87%BD%E6%95%B0%E6%9E%84%E5%BB%BA%E5%99%A8.md#f-ce61391f45fe0e8c)。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `base_type_->to_static_type<float, int, bool, float3, ColorGeometry4f, std::string, math::Quaternion, float4x4, MenuValue>` → [blender::CPPType::to_static_type · L768](../03-内存分配与运行时类型/09-CPPType复制移动重定位.md#f-c63e6d79f19ab075)。
+- `mf::build::SI3_SO<bool, T, T, T>` → [blender::fn::multi_function::build::SI3_SO · L579](../07-MultiFunction与批量执行/06-函数构建器.md#f-ce61391f45fe0e8c)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · node_geo_switch.cc L248—L255
 
@@ -4698,10 +4698,10 @@ class SwitchOperation : public NodeOperation {
 
 **继续追踪实现**
 
-- `this->get_input` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L258。
-- `this->get_condition` → [blender::nodes::node_geo_switch_cc::SwitchOperation::get_condition · L263](11-Switch%E4%B8%8EMenuSwitch.md#f-9a093ecbc5cfa465)。
-- `this->get_result` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L259。
-- `output.share_data` → [blender::compositor::Result::share_data · L996](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-result-844e73.md#f-1c63e714b21bfd6a)；[blender::compositor::Result::share_data · L1037](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-result-844e73.md#f-fcd42dcd0168de75)；[blender::compositor::Result::share_data · L1048](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-result-844e73.md#f-a82a883f8ad364a7)。同名重载需按实参类型选择。
+- `this->get_input` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L258。
+- `this->get_condition` → [blender::nodes::node_geo_switch_cc::SwitchOperation::get_condition · L263](11-Switch与MenuSwitch.md#f-9a093ecbc5cfa465)。
+- `this->get_result` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L259。
+- `output.share_data` → [blender::compositor::Result::share_data · L996](../90-实现依赖专题/08-其他Blender模块/compositor/intern/result.cc.md#f-1c63e714b21bfd6a)；[blender::compositor::Result::share_data · L1037](../90-实现依赖专题/08-其他Blender模块/compositor/intern/result.cc.md#f-fcd42dcd0168de75)；[blender::compositor::Result::share_data · L1048](../90-实现依赖专题/08-其他Blender模块/compositor/intern/result.cc.md#f-a82a883f8ad364a7)。同名重载需按实参类型选择。
 
 <!-- annotated:4b1e9ef3d83a93 -->
 
@@ -4757,8 +4757,8 @@ class SwitchOperation : public NodeOperation {
 
 **继续追踪实现**
 
-- `this->get_input("Switch").get_single_value_default<bool>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L265。
-- `this->get_input` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L265。
+- `this->get_input("Switch").get_single_value_default<bool>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L265。
+- `this->get_input` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L265。
 
 ### 类型布局、声明与编译条件 · node_geo_switch.cc L267—L268
 
@@ -4891,7 +4891,7 @@ static const bNodeSocket *node_internally_linked_input(const bNodeTree & /*tree*
 
 **继续追踪实现**
 
-- `node.input_socket` → [blender::bNode::input_socket · L818](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-00274c021929d3dc)；[blender::bNode::input_socket · L830](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_node_runtime-ee561b.md#f-e9c8cccac4999eb8)。同名重载需按实参类型选择。
+- `node.input_socket` → [blender::bNode::input_socket · L818](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-00274c021929d3dc)；[blender::bNode::input_socket · L830](../90-实现依赖专题/02-BKE几何与数据/BKE_node_runtime.hh.md#f-e9c8cccac4999eb8)。同名重载需按实参类型选择。
 
 <!-- annotated:14e1f66aca390f -->
 
@@ -4984,12 +4984,12 @@ static void node_rna(StructRNA *srna)
 
 **继续追踪实现**
 
-- `RNA_def_node_enum` → [blender::nodes::RNA_def_node_enum · L29](%E4%BE%9D%E8%B5%96-node_rna_define-7c9678.md#f-d3c04fc562565860)。
-- `NOD_storage_enum_accessors` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L289。
-- `id_cast<const bNodeTree *>` → [blender::id_cast · L1417](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_ID-3eb091.md#f-6c8ac6412850ac5a)。
-- `enum_items_filter` → [blender::nodes::enum_items_filter · L13](%E4%BE%9D%E8%B5%96-node_rna_define-7c9678.md#f-a364b9e5c0cb6ff4)。
-- `bke::node_tree_type_supports_socket_type_static` → [blender::bke::node_tree_type_supports_socket_type_static · L6295](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node-89d753.md#f-f2bd64dc6bed02ca)。
-- `eNodeSocketDatatype` → [eNodeSocketDatatype](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-compositor-a4aa61.md#t-09b65f729b18)；[blender::eNodeSocketDatatype](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-fdea02f95b31)。
+- `RNA_def_node_enum` → [blender::nodes::RNA_def_node_enum · L29](../90-实现依赖专题/04-Nodes节点系统/intern/node_rna_define.cc.md#f-d3c04fc562565860)。
+- `NOD_storage_enum_accessors` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L289。
+- `id_cast<const bNodeTree *>` → [blender::id_cast · L1417](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_ID.h.md#f-6c8ac6412850ac5a)。
+- `enum_items_filter` → [blender::nodes::enum_items_filter · L13](../90-实现依赖专题/04-Nodes节点系统/intern/node_rna_define.cc.md#f-a364b9e5c0cb6ff4)。
+- `bke::node_tree_type_supports_socket_type_static` → [blender::bke::node_tree_type_supports_socket_type_static · L6295](../90-实现依赖专题/02-BKE几何与数据/intern/node.cc.md#f-f2bd64dc6bed02ca)。
+- `eNodeSocketDatatype` → [eNodeSocketDatatype](../90-实现依赖专题/08-其他Blender模块/sequencer/intern/compositor.hh.md#t-09b65f729b18)；[blender::eNodeSocketDatatype](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-fdea02f95b31)。
 
 <!-- annotated:04d5954a69326f -->
 
@@ -5093,10 +5093,10 @@ static void register_node()
 
 **继续追踪实现**
 
-- `common_node_type_base` → [blender::common_node_type_base · L88](%E4%BE%9D%E8%B5%96-node_shader_util-6b7d04.md#f-c9702359b888361c)。
-- `bke::node_type_storage` → [blender::bke::node_type_storage · L6166](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node-89d753.md#f-92185de642727866)。
-- `bke::node_register_type` → [blender::bke::node_register_type · L2920](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-node-89d753.md#f-990ea2d16bb4cef1)。
-- `node_rna` → [blender::nodes::node_geo_switch_cc::node_rna · L282](11-Switch%E4%B8%8EMenuSwitch.md#f-b59f79a3e43e9291)。
+- `common_node_type_base` → [blender::common_node_type_base · L88](../90-实现依赖专题/04-Nodes节点系统/shader/node_shader_util.cc.md#f-c9702359b888361c)。
+- `bke::node_type_storage` → [blender::bke::node_type_storage · L6166](../90-实现依赖专题/02-BKE几何与数据/intern/node.cc.md#f-92185de642727866)。
+- `bke::node_register_type` → [blender::bke::node_register_type · L2920](../90-实现依赖专题/02-BKE几何与数据/intern/node.cc.md#f-990ea2d16bb4cef1)。
+- `node_rna` → [blender::nodes::node_geo_switch_cc::node_rna · L282](11-Switch与MenuSwitch.md#f-b59f79a3e43e9291)。
 
 ### 类型布局、声明与编译条件 · node_geo_switch.cc L326—L331
 
@@ -5173,7 +5173,7 @@ std::unique_ptr<LazyFunction> get_switch_node_lazy_function(const bNode &node)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::make_unique<LazyFunctionForSwitchNode>` → [外部契约](https://eel.is/c++draft/unique.ptr.create)：创建独占拥有的对象，拥有关系可移动，get返回的借用指针不自动延长寿命。
 
 ### 类型布局、声明与编译条件 · node_geo_switch.cc L338—L340
@@ -5297,4 +5297,4 @@ unique_ptr通过移动转移拥有关系，默认删除策略必须与资源来�
 
 与拓扑一次求值、future和数据流调度比较：惰性函数允许执行过程中继续请求输入，同一个计算单元可分多次推进。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

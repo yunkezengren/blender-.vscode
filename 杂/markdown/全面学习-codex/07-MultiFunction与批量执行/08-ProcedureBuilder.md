@@ -1,6 +1,6 @@
 # 07-08 ProcedureBuilder
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -797,8 +797,8 @@ inline void ProcedureBuilder::set_cursor(Span<ProcedureBuilder *> builders)
 
 **继续追踪实现**
 
-- `cursors_.clear` → [blender::Vector::clear · L468](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-d051bebff5275a43)。
-- `cursors_.extend` → [blender::Vector::extend · L595](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-fe6fcb7d09beded9)；[blender::Vector::extend · L599](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-40095c219019e2f9)；[blender::Vector::extend · L613](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-4d2e556cd7412fe4)；[blender::Vector::extend · L650](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-ae44ad8b3f05b082)。同名重载需按实参类型选择。
+- `cursors_.clear` → [blender::Vector::clear · L468](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-d051bebff5275a43)。
+- `cursors_.extend` → [blender::Vector::extend · L595](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-fe6fcb7d09beded9)；[blender::Vector::extend · L599](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-40095c219019e2f9)；[blender::Vector::extend · L613](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-4d2e556cd7412fe4)；[blender::Vector::extend · L650](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-ae44ad8b3f05b082)。同名重载需按实参类型选择。
 
 <!-- annotated:1627c0620ee225 -->
 
@@ -876,10 +876,10 @@ inline std::array<Variable *, OutputN> ProcedureBuilder::add_call(
 **继续追踪实现**
 
 - `this->add_call` → [blender::fn::multi_function::ProcedureBuilder::add_call · L136](08-ProcedureBuilder.md#f-d05603fe7febe6f5)。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `output_variables.size` → [blender::Vector::size · L780](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `initialized_copy_n` → [blender::initialized_copy_n · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-7e8b9229298df6c5)。
-- `output_variables.data` → [blender::Vector::data · L954](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-6e441591404715bc)；[blender::Vector::data · L962](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-4bc78d4954c1021a)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `output_variables.size` → [blender::Vector::size · L780](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-714773731767349c)。
+- `initialized_copy_n` → [blender::initialized_copy_n · L48](../01-基础容器与现代CPP/01-对象生命周期与值类别.md#f-7e8b9229298df6c5)。
+- `output_variables.data` → [blender::Vector::data · L954](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-6e441591404715bc)；[blender::Vector::data · L962](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-4bc78d4954c1021a)。同名重载需按实参类型选择。
 - `output_array.data` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 
 <!-- annotated:4621bfdf425e20 -->
@@ -939,7 +939,7 @@ inline void ProcedureBuilder::add_parameter(ParamType::InterfaceType interface_t
 
 **继续追踪实现**
 
-- `procedure_->add_parameter` → [blender::fn::multi_function::Procedure::add_parameter · L235](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-45d1ce9e49f129ba)。
+- `procedure_->add_parameter` → [blender::fn::multi_function::Procedure::add_parameter · L235](07-Procedure指令与控制流.md#f-45d1ce9e49f129ba)。
 
 <!-- annotated:657eece5ddb241 -->
 
@@ -1005,11 +1005,11 @@ inline Variable &ProcedureBuilder::add_parameter(ParamType param_type, std::stri
 
 **继续追踪实现**
 
-- `procedure_->new_variable` → [blender::fn::multi_function::Procedure::new_variable · L182](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-97792d1ab76460f6)。
-- `param_type.data_type` → [blender::fn::multi_function::ParamType::data_type · L113](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-b29743877463338d)。
+- `procedure_->new_variable` → [blender::fn::multi_function::Procedure::new_variable · L182](07-Procedure指令与控制流.md#f-97792d1ab76460f6)。
+- `param_type.data_type` → [blender::fn::multi_function::ParamType::data_type · L113](03-参数类型与角色.md#f-b29743877463338d)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 - `this->add_parameter` → [blender::fn::multi_function::ProcedureBuilder::add_parameter · L148](08-ProcedureBuilder.md#f-b1c9a8ed216921da)；[blender::fn::multi_function::ProcedureBuilder::add_parameter · L154](08-ProcedureBuilder.md#f-1873f8729c16d818)。同名重载需按实参类型选择。
-- `param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-a506dc82cef792f5)。
+- `param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-参数类型与角色.md#f-a506dc82cef792f5)。
 
 <!-- annotated:1562489baf090d -->
 
@@ -1072,7 +1072,7 @@ inline Variable &ProcedureBuilder::add_input_parameter(DataType data_type, std::
 **继续追踪实现**
 
 - `this->add_parameter` → [blender::fn::multi_function::ProcedureBuilder::add_parameter · L148](08-ProcedureBuilder.md#f-b1c9a8ed216921da)；[blender::fn::multi_function::ProcedureBuilder::add_parameter · L154](08-ProcedureBuilder.md#f-1873f8729c16d818)。同名重载需按实参类型选择。
-- `ParamType` → [blender::fn::multi_function::ParamType::ParamType · L78](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-0e2fe2ba44d205ba)。
+- `ParamType` → [blender::fn::multi_function::ParamType::ParamType · L78](03-参数类型与角色.md#f-0e2fe2ba44d205ba)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:3314288f3a937d -->
@@ -1137,8 +1137,8 @@ inline Variable &ProcedureBuilder::add_single_input_parameter(std::string name)
 **继续追踪实现**
 
 - `this->add_parameter` → [blender::fn::multi_function::ProcedureBuilder::add_parameter · L148](08-ProcedureBuilder.md#f-b1c9a8ed216921da)；[blender::fn::multi_function::ProcedureBuilder::add_parameter · L154](08-ProcedureBuilder.md#f-1873f8729c16d818)。同名重载需按实参类型选择。
-- `ParamType::ForSingleInput` → [blender::fn::multi_function::ParamType::ForSingleInput · L83](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-86d08054eca0c13f)。
-- `CPPType::get<T>` → [blender::CPPType::get · L481](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
+- `ParamType::ForSingleInput` → [blender::fn::multi_function::ParamType::ForSingleInput · L83](03-参数类型与角色.md#f-86d08054eca0c13f)。
+- `CPPType::get<T>` → [blender::CPPType::get · L481](../03-内存分配与运行时类型/08-CPPType构造与析构.md#f-0cc10a3783d6abdb)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:71f53ca2f21c4a -->
@@ -1203,8 +1203,8 @@ inline Variable &ProcedureBuilder::add_single_mutable_parameter(std::string name
 **继续追踪实现**
 
 - `this->add_parameter` → [blender::fn::multi_function::ProcedureBuilder::add_parameter · L148](08-ProcedureBuilder.md#f-b1c9a8ed216921da)；[blender::fn::multi_function::ProcedureBuilder::add_parameter · L154](08-ProcedureBuilder.md#f-1873f8729c16d818)。同名重载需按实参类型选择。
-- `ParamType::ForMutableSingle` → [blender::fn::multi_function::ParamType::ForMutableSingle · L103](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-93ebc0161bf4482c)。
-- `CPPType::get<T>` → [blender::CPPType::get · L481](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
+- `ParamType::ForMutableSingle` → [blender::fn::multi_function::ParamType::ForMutableSingle · L103](03-参数类型与角色.md#f-93ebc0161bf4482c)。
+- `CPPType::get<T>` → [blender::CPPType::get · L481](../03-内存分配与运行时类型/08-CPPType构造与析构.md#f-0cc10a3783d6abdb)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:311f30532bbd94 -->
@@ -1321,7 +1321,7 @@ inline void ProcedureBuilder::link_to_cursors(Instruction *instruction)
 
 **继续追踪实现**
 
-- `cursor.set_next` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L186。
+- `cursor.set_next` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L186。
 
 ### 类型布局、声明与编译条件 · FN_multi_function_procedure_builder.hh L189—L190
 
@@ -1432,8 +1432,8 @@ void ProcedureBuilder::add_destruct(Variable &variable)
 
 **继续追踪实现**
 
-- `procedure_->new_destruct_instruction` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L15。
-- `instruction.set_variable` → [blender::fn::multi_function::DestructInstruction::set_variable · L149](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-17147ce4e430fa02)。
+- `procedure_->new_destruct_instruction` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L15。
+- `instruction.set_variable` → [blender::fn::multi_function::DestructInstruction::set_variable · L149](07-Procedure指令与控制流.md#f-17147ce4e430fa02)。
 - `this->link_to_cursors` → [blender::fn::multi_function::ProcedureBuilder::link_to_cursors · L183](08-ProcedureBuilder.md#f-f99c51d41dc9aa4a)。
 
 <!-- annotated:29a94db486204a -->
@@ -1560,7 +1560,7 @@ ReturnInstruction &ProcedureBuilder::add_return()
 
 **继续追踪实现**
 
-- `procedure_->new_return_instruction` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L30。
+- `procedure_->new_return_instruction` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L30。
 - `this->link_to_cursors` → [blender::fn::multi_function::ProcedureBuilder::link_to_cursors · L183](08-ProcedureBuilder.md#f-f99c51d41dc9aa4a)。
 
 <!-- annotated:eb3bb45f7ed050 -->
@@ -1631,7 +1631,7 @@ CallInstruction &ProcedureBuilder::add_call_with_no_variables(const MultiFunctio
 
 **继续追踪实现**
 
-- `procedure_->new_call_instruction` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L38。
+- `procedure_->new_call_instruction` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L38。
 - `this->link_to_cursors` → [blender::fn::multi_function::ProcedureBuilder::link_to_cursors · L183](08-ProcedureBuilder.md#f-f99c51d41dc9aa4a)。
 
 <!-- annotated:1ed36485d3994e -->
@@ -1700,7 +1700,7 @@ CallInstruction &ProcedureBuilder::add_call_with_all_variables(const MultiFuncti
 **继续追踪实现**
 
 - `this->add_call_with_no_variables` → [blender::fn::multi_function::ProcedureBuilder::add_call_with_no_variables · L36](08-ProcedureBuilder.md#f-90e421f5f2bbc8d1)。
-- `instruction.set_params` → [blender::fn::multi_function::CallInstruction::set_params · L108](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-919a8b42ee8a34c8)。
+- `instruction.set_params` → [blender::fn::multi_function::CallInstruction::set_params · L108](07-Procedure指令与控制流.md#f-919a8b42ee8a34c8)。
 
 <!-- annotated:43db3367ffbe17 -->
 
@@ -1818,18 +1818,18 @@ Vector<Variable *> ProcedureBuilder::add_call(const MultiFunction &fn,
 **继续追踪实现**
 
 - `this->add_call_with_no_variables` → [blender::fn::multi_function::ProcedureBuilder::add_call_with_no_variables · L36](08-ProcedureBuilder.md#f-90e421f5f2bbc8d1)。
-- `fn.param_indices` → [blender::fn::multi_function::MultiFunction::param_indices · L67](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-e06e9cd4be7e3ea1)。
-- `fn.param_type` → [blender::fn::multi_function::MultiFunction::param_type · L72](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-b713a5aeabff53fa)。
-- `param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-a506dc82cef792f5)。
-- `input_and_mutable_variables.first` → [blender::Span::first · L319](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-d8c9bcc3e9757248)。
-- `instruction.set_param_variable` → [blender::fn::multi_function::CallInstruction::set_param_variable · L93](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-89bde933df565760)。
-- `input_and_mutable_variables.drop_front` → [blender::Span::drop_front · L175](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-932897accbde3413)。
-- `procedure_->new_variable` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L68。
-- `param_type.data_type` → [blender::fn::multi_function::ParamType::data_type · L113](03-%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A7%92%E8%89%B2.md#f-b29743877463338d)。
-- `fn.param_name` → [blender::fn::multi_function::MultiFunction::param_name · L77](01-%E6%89%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B.md#f-c803cd8bd675fedc)。
-- `output_variables.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `input_and_mutable_variables.is_empty` → [blender::Span::is_empty · L264](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8cc1d7ba8feb50e6)。
+- `fn.param_indices` → [blender::fn::multi_function::MultiFunction::param_indices · L67](01-批量计算模型.md#f-e06e9cd4be7e3ea1)。
+- `fn.param_type` → [blender::fn::multi_function::MultiFunction::param_type · L72](01-批量计算模型.md#f-b713a5aeabff53fa)。
+- `param_type.interface_type` → [blender::fn::multi_function::ParamType::interface_type · L118](03-参数类型与角色.md#f-a506dc82cef792f5)。
+- `input_and_mutable_variables.first` → [blender::Span::first · L319](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-d8c9bcc3e9757248)。
+- `instruction.set_param_variable` → [blender::fn::multi_function::CallInstruction::set_param_variable · L93](07-Procedure指令与控制流.md#f-89bde933df565760)。
+- `input_and_mutable_variables.drop_front` → [blender::Span::drop_front · L175](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-932897accbde3413)。
+- `procedure_->new_variable` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L68。
+- `param_type.data_type` → [blender::fn::multi_function::ParamType::data_type · L113](03-参数类型与角色.md#f-b29743877463338d)。
+- `fn.param_name` → [blender::fn::multi_function::MultiFunction::param_name · L77](01-批量计算模型.md#f-c803cd8bd675fedc)。
+- `output_variables.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `input_and_mutable_variables.is_empty` → [blender::Span::is_empty · L264](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-8cc1d7ba8feb50e6)。
 
 <!-- annotated:765f60733f1919 -->
 
@@ -1907,12 +1907,12 @@ ProcedureBuilder::Branch ProcedureBuilder::add_branch(Variable &condition)
 
 **继续追踪实现**
 
-- `procedure_->new_branch_instruction` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L83。
-- `instruction.set_condition` → [blender::fn::multi_function::BranchInstruction::set_condition · L116](07-Procedure%E6%8C%87%E4%BB%A4%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%B5%81.md#f-7ce39dd7f04480f4)。
+- `procedure_->new_branch_instruction` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L83。
+- `instruction.set_condition` → [blender::fn::multi_function::BranchInstruction::set_condition · L116](07-Procedure指令与控制流.md#f-7ce39dd7f04480f4)。
 - `this->link_to_cursors` → [blender::fn::multi_function::ProcedureBuilder::link_to_cursors · L183](08-ProcedureBuilder.md#f-f99c51d41dc9aa4a)。
-- `cursors_.clear` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L87。
-- `branch.branch_true.set_cursor` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L90。
-- `branch.branch_false.set_cursor` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L91。
+- `cursors_.clear` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L87。
+- `branch.branch_true.set_cursor` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L90。
+- `branch.branch_false.set_cursor` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L91。
 
 <!-- annotated:f8391de25e51b2 -->
 
@@ -1992,7 +1992,7 @@ ProcedureBuilder::Loop ProcedureBuilder::add_loop()
 
 **继续追踪实现**
 
-- `procedure_->new_dummy_instruction` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L97。
+- `procedure_->new_dummy_instruction` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L97。
 - `this->link_to_cursors` → [blender::fn::multi_function::ProcedureBuilder::link_to_cursors · L183](08-ProcedureBuilder.md#f-f99c51d41dc9aa4a)。
 
 <!-- annotated:bf8169d0b2b8d3 -->
@@ -2054,7 +2054,7 @@ void ProcedureBuilder::add_loop_continue(Loop &loop)
 **继续追踪实现**
 
 - `this->link_to_cursors` → [blender::fn::multi_function::ProcedureBuilder::link_to_cursors · L183](08-ProcedureBuilder.md#f-f99c51d41dc9aa4a)。
-- `cursors_.clear` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L113。
+- `cursors_.clear` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L113。
 
 <!-- annotated:2ae46e1fdeddef -->
 
@@ -2115,7 +2115,7 @@ void ProcedureBuilder::add_loop_break(Loop &loop)
 **继续追踪实现**
 
 - `this->link_to_cursors` → [blender::fn::multi_function::ProcedureBuilder::link_to_cursors · L183](08-ProcedureBuilder.md#f-f99c51d41dc9aa4a)。
-- `cursors_.clear` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L120。
+- `cursors_.clear` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L120。
 
 ### 类型布局、声明与编译条件 · multi_function_procedure_builder.cc L122—L123
 
@@ -2188,4 +2188,4 @@ try定义异常传播的局部边界。失败路径需要销毁已经成功构�
 
 与std::function逐次调用和简单字节码解释器比较：批量接口可把动态分派放到循环外，Procedure额外表达变量寿命和控制流。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

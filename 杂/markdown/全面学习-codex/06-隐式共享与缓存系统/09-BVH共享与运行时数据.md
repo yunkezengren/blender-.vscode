@@ -1,6 +1,6 @@
 # 06-09 BVH共享与运行时数据
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -469,8 +469,8 @@ float bvhtree_ray_tri_intersection(const BVHTreeRay *ray,
 
 **继续追踪实现**
 
-- `isect_ray_tri_watertight_v3` → [blender::isect_ray_tri_watertight_v3 · L1972](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-f28795b387bf6ee2)。
-- `isect_ray_tri_epsilon_v3` → [blender::isect_ray_tri_epsilon_v3 · L1896](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-de884353b76a663e)。
+- `isect_ray_tri_watertight_v3` → [blender::isect_ray_tri_watertight_v3 · L1972](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-f28795b387bf6ee2)。
+- `isect_ray_tri_epsilon_v3` → [blender::isect_ray_tri_epsilon_v3 · L1896](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-de884353b76a663e)。
 
 <!-- annotated:47c7d39f002ee6 -->
 
@@ -566,8 +566,8 @@ float bvhtree_sphereray_tri_intersection(const BVHTreeRay *ray,
 
 **继续追踪实现**
 
-- `madd_v3_v3v3fl` → [blender::madd_v3_v3v3fl · L514](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-862faf7c108f3bb8)。
-- `isect_sweeping_sphere_tri_v3` → [blender::isect_sweeping_sphere_tri_v3 · L2804](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-fcae166000e275b1)。
+- `madd_v3_v3v3fl` → [blender::madd_v3_v3v3fl · L514](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-862faf7c108f3bb8)。
+- `isect_sweeping_sphere_tri_v3` → [blender::isect_sweeping_sphere_tri_v3 · L2804](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-fcae166000e275b1)。
 
 ### 类型布局、声明与编译条件 · bvhutils.cc L70—L80
 
@@ -719,10 +719,10 @@ static void mesh_faces_nearest_point(void *userdata,
 
 **继续追踪实现**
 
-- `closest_on_tri_to_point_v3` → [blender::closest_on_tri_to_point_v3 · L1045](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-1cbb0122e4eceb5a)；[blender::closest_on_tri_to_point_v3 · L1174](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-6f3923afbf23e1a4)。同名重载需按实参类型选择。
-- `len_squared_v3v3` → [blender::len_squared_v3v3 · L794](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-ae487ac3ef64aa87)。
-- `copy_v3_v3` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L104。
-- `normal_tri_v3` → [blender::normal_tri_v3 · L45](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-f574cdfe156b33d2)。
+- `closest_on_tri_to_point_v3` → [blender::closest_on_tri_to_point_v3 · L1045](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-1cbb0122e4eceb5a)；[blender::closest_on_tri_to_point_v3 · L1174](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-6f3923afbf23e1a4)。同名重载需按实参类型选择。
+- `len_squared_v3v3` → [blender::len_squared_v3v3 · L794](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-ae487ac3ef64aa87)。
+- `copy_v3_v3` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L104。
+- `normal_tri_v3` → [blender::normal_tri_v3 · L45](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-f574cdfe156b33d2)。
 
 ### 类型布局、声明与编译条件 · bvhutils.cc L114—L114
 
@@ -829,11 +829,11 @@ static void mesh_corner_tris_nearest_point(void *userdata,
 
 **继续追踪实现**
 
-- `closest_on_tri_to_point_v3` → [blender::closest_on_tri_to_point_v3 · L1045](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-1cbb0122e4eceb5a)；[blender::closest_on_tri_to_point_v3 · L1174](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-6f3923afbf23e1a4)。同名重载需按实参类型选择。
-- `UNPACK3` → [UNPACK3 · L23](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-f882324eb80a)；[UNPACK3 · L235](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-bbbbdcf09d3b)；[UNPACK3 · L14](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-gpu_shader_utildefines.bsl-e9f199.md#m-b4e3357a0310)。宏定义由构建条件选择。
-- `len_squared_v3v3` → [blender::len_squared_v3v3 · L794](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-ae487ac3ef64aa87)。
-- `copy_v3_v3` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L135。
-- `normal_tri_v3` → [blender::normal_tri_v3 · L45](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-f574cdfe156b33d2)。
+- `closest_on_tri_to_point_v3` → [blender::closest_on_tri_to_point_v3 · L1045](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-1cbb0122e4eceb5a)；[blender::closest_on_tri_to_point_v3 · L1174](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-6f3923afbf23e1a4)。同名重载需按实参类型选择。
+- `UNPACK3` → [UNPACK3 · L23](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-f882324eb80a)；[UNPACK3 · L235](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-bbbbdcf09d3b)；[UNPACK3 · L14](../90-实现依赖专题/08-其他Blender模块/gpu/shaders/common/gpu_shader_utildefines.bsl.hh.md#m-b4e3357a0310)。宏定义由构建条件选择。
+- `len_squared_v3v3` → [blender::len_squared_v3v3 · L794](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-ae487ac3ef64aa87)。
+- `copy_v3_v3` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L135。
+- `normal_tri_v3` → [blender::normal_tri_v3 · L45](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-f574cdfe156b33d2)。
 
 ### 类型布局、声明与编译条件 · bvhutils.cc L139—L145
 
@@ -986,10 +986,10 @@ static void mesh_faces_spherecast(void *userdata,
 
 **继续追踪实现**
 
-- `bvhtree_ray_tri_intersection` → [blender::bke::bvhtree_ray_tri_intersection · L30](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-762c1cf73cdcb17d)。
-- `bvhtree_sphereray_tri_intersection` → [blender::bke::bvhtree_sphereray_tri_intersection · L51](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-f78e5e398cf48fde)。
-- `madd_v3_v3v3fl` → [blender::madd_v3_v3v3fl · L514](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-862faf7c108f3bb8)。
-- `normal_tri_v3` → [blender::normal_tri_v3 · L45](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-f574cdfe156b33d2)。
+- `bvhtree_ray_tri_intersection` → [blender::bke::bvhtree_ray_tri_intersection · L30](09-BVH共享与运行时数据.md#f-762c1cf73cdcb17d)。
+- `bvhtree_sphereray_tri_intersection` → [blender::bke::bvhtree_sphereray_tri_intersection · L51](09-BVH共享与运行时数据.md#f-f78e5e398cf48fde)。
+- `madd_v3_v3v3fl` → [blender::madd_v3_v3v3fl · L514](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-862faf7c108f3bb8)。
+- `normal_tri_v3` → [blender::normal_tri_v3 · L45](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-f574cdfe156b33d2)。
 
 ### 类型布局、声明与编译条件 · bvhutils.cc L183—L183
 
@@ -1109,11 +1109,11 @@ static void mesh_corner_tris_spherecast(void *userdata,
 
 **继续追踪实现**
 
-- `bvhtree_ray_tri_intersection` → [blender::bke::bvhtree_ray_tri_intersection · L30](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-762c1cf73cdcb17d)。
-- `UNPACK3` → [UNPACK3 · L23](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-f882324eb80a)；[UNPACK3 · L235](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-bbbbdcf09d3b)；[UNPACK3 · L14](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-gpu_shader_utildefines.bsl-e9f199.md#m-b4e3357a0310)。宏定义由构建条件选择。
-- `bvhtree_sphereray_tri_intersection` → [blender::bke::bvhtree_sphereray_tri_intersection · L51](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-f78e5e398cf48fde)。
-- `madd_v3_v3v3fl` → [blender::madd_v3_v3v3fl · L514](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-862faf7c108f3bb8)。
-- `normal_tri_v3` → [blender::normal_tri_v3 · L45](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-f574cdfe156b33d2)。
+- `bvhtree_ray_tri_intersection` → [blender::bke::bvhtree_ray_tri_intersection · L30](09-BVH共享与运行时数据.md#f-762c1cf73cdcb17d)。
+- `UNPACK3` → [UNPACK3 · L23](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-f882324eb80a)；[UNPACK3 · L235](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-bbbbdcf09d3b)；[UNPACK3 · L14](../90-实现依赖专题/08-其他Blender模块/gpu/shaders/common/gpu_shader_utildefines.bsl.hh.md#m-b4e3357a0310)。宏定义由构建条件选择。
+- `bvhtree_sphereray_tri_intersection` → [blender::bke::bvhtree_sphereray_tri_intersection · L51](09-BVH共享与运行时数据.md#f-f78e5e398cf48fde)。
+- `madd_v3_v3v3fl` → [blender::madd_v3_v3v3fl · L514](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-862faf7c108f3bb8)。
+- `normal_tri_v3` → [blender::normal_tri_v3 · L45](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-f574cdfe156b33d2)。
 
 ### 类型布局、声明与编译条件 · bvhutils.cc L214—L220
 
@@ -1236,11 +1236,11 @@ static void mesh_edges_nearest_point(void *userdata,
 
 **继续追踪实现**
 
-- `closest_to_line_segment_v3` → [blender::closest_to_line_segment_v3 · L403](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-7753906a2490987b)。
-- `len_squared_v3v3` → [blender::len_squared_v3v3 · L794](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-ae487ac3ef64aa87)。
-- `copy_v3_v3` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L241。
-- `sub_v3_v3v3` → [blender::sub_v3_v3v3 · L360](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-23781c252db8b30c)。
-- `normalize_v3` → [blender::normalize_v3 · L933](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-5f3257e657ef732c)。
+- `closest_to_line_segment_v3` → [blender::closest_to_line_segment_v3 · L403](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-7753906a2490987b)。
+- `len_squared_v3v3` → [blender::len_squared_v3v3 · L794](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-ae487ac3ef64aa87)。
+- `copy_v3_v3` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L241。
+- `sub_v3_v3v3` → [blender::sub_v3_v3v3 · L360](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-23781c252db8b30c)。
+- `normalize_v3` → [blender::normalize_v3 · L933](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-5f3257e657ef732c)。
 
 ### 类型布局、声明与编译条件 · bvhutils.cc L246—L247
 
@@ -1345,11 +1345,11 @@ static void mesh_verts_spherecast_do(int index,
 
 **继续追踪实现**
 
-- `add_v3_v3v3` → [blender::add_v3_v3v3 · L300](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-7343b459d0d3db69)。
-- `closest_to_line_segment_v3` → [blender::closest_to_line_segment_v3 · L403](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-7753906a2490987b)。
-- `dot_v3v3v3` → [blender::dot_v3v3v3 · L653](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-bff0d798a3a3acf5)。
-- `len_v3v3` → [blender::len_v3v3 · L826](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-c873370566848169)。
-- `copy_v3_v3` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L266。
+- `add_v3_v3v3` → [blender::add_v3_v3v3 · L300](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-7343b459d0d3db69)。
+- `closest_to_line_segment_v3` → [blender::closest_to_line_segment_v3 · L403](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-7753906a2490987b)。
+- `dot_v3v3v3` → [blender::dot_v3v3v3 · L653](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-bff0d798a3a3acf5)。
+- `len_v3v3` → [blender::len_v3v3 · L826](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-c873370566848169)。
+- `copy_v3_v3` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L266。
 
 ### 类型布局、声明与编译条件 · bvhutils.cc L270—L276
 
@@ -1434,7 +1434,7 @@ static void mesh_verts_spherecast(void *userdata,
 
 **继续追踪实现**
 
-- `mesh_verts_spherecast_do` → [blender::bke::mesh_verts_spherecast_do · L248](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-0cd74fd9cb6614c4)。
+- `mesh_verts_spherecast_do` → [blender::bke::mesh_verts_spherecast_do · L248](09-BVH共享与运行时数据.md#f-0cd74fd9cb6614c4)。
 
 ### 类型布局、声明与编译条件 · bvhutils.cc L287—L293
 
@@ -1599,16 +1599,16 @@ static void mesh_edges_spherecast(void *userdata,
 
 **继续追踪实现**
 
-- `square_f` → [blender::square_f · L302](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_base_inline-546b00.md#f-30f1dde493a37e0d)。
-- `equals_v3v3` → [blender::equals_v3v3 · L1006](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-f49aac9436333b4a)。
-- `mesh_verts_spherecast_do` → [blender::bke::mesh_verts_spherecast_do · L248](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-0cd74fd9cb6614c4)。
-- `add_v3_v3v3` → [blender::add_v3_v3v3 · L300](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-7343b459d0d3db69)。
-- `isect_line_line_v3` → [blender::isect_line_line_v3 · L3113](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-527fc62f3440b4a6)。
-- `dot_v3v3v3` → [blender::dot_v3v3v3 · L653](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-bff0d798a3a3acf5)。
-- `len_v3v3` → [blender::len_v3v3 · L826](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-c873370566848169)。
-- `line_point_factor_v3` → [blender::line_point_factor_v3 · L3425](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_geom-8d91a3.md#f-8007e153e8d379bc)。
-- `copy_v3_v3` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L325。
-- `len_squared_v3v3` → [blender::len_squared_v3v3 · L794](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-ae487ac3ef64aa87)。
+- `square_f` → [blender::square_f · L302](../90-实现依赖专题/01-BLI基础库/intern/math_base_inline.cc.md#f-30f1dde493a37e0d)。
+- `equals_v3v3` → [blender::equals_v3v3 · L1006](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-f49aac9436333b4a)。
+- `mesh_verts_spherecast_do` → [blender::bke::mesh_verts_spherecast_do · L248](09-BVH共享与运行时数据.md#f-0cd74fd9cb6614c4)。
+- `add_v3_v3v3` → [blender::add_v3_v3v3 · L300](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-7343b459d0d3db69)。
+- `isect_line_line_v3` → [blender::isect_line_line_v3 · L3113](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-527fc62f3440b4a6)。
+- `dot_v3v3v3` → [blender::dot_v3v3v3 · L653](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-bff0d798a3a3acf5)。
+- `len_v3v3` → [blender::len_v3v3 · L826](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-c873370566848169)。
+- `line_point_factor_v3` → [blender::line_point_factor_v3 · L3425](../90-实现依赖专题/01-BLI基础库/intern/math_geom.cc.md#f-8007e153e8d379bc)。
+- `copy_v3_v3` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L325。
+- `len_squared_v3v3` → [blender::len_squared_v3v3 · L794](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-ae487ac3ef64aa87)。
 
 ### 类型布局、声明与编译条件 · bvhutils.cc L340—L350
 
@@ -1784,7 +1784,7 @@ static BVHTreeFromMesh create_verts_tree_data(std::unique_ptr<BVHTree, BVHTreeDe
 
 **继续追踪实现**
 
-- `create_verts_tree_data` → [blender::bke::create_verts_tree_data · L351](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-b4d0af3d2a7b2414)；[blender::bke::create_verts_tree_data · L363](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-7aa5d5356a55d14e)。同名重载需按实参类型选择。
+- `create_verts_tree_data` → [blender::bke::create_verts_tree_data · L351](09-BVH共享与运行时数据.md#f-b4d0af3d2a7b2414)；[blender::bke::create_verts_tree_data · L363](09-BVH共享与运行时数据.md#f-7aa5d5356a55d14e)。同名重载需按实参类型选择。
 - `tree.get` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
@@ -1947,7 +1947,7 @@ static BVHTreeFromMesh create_edges_tree_data(std::unique_ptr<BVHTree, BVHTreeDe
 
 **继续追踪实现**
 
-- `create_edges_tree_data` → [blender::bke::create_edges_tree_data · L371](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-804ab4bfc33be4c7)；[blender::bke::create_edges_tree_data · L384](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-bd42261919784f35)。同名重载需按实参类型选择。
+- `create_edges_tree_data` → [blender::bke::create_edges_tree_data · L371](09-BVH共享与运行时数据.md#f-804ab4bfc33be4c7)；[blender::bke::create_edges_tree_data · L384](09-BVH共享与运行时数据.md#f-bd42261919784f35)。同名重载需按实参类型选择。
 - `tree.get` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
@@ -2205,7 +2205,7 @@ static BVHTreeFromMesh create_tris_tree_data(std::unique_ptr<BVHTree, BVHTreeDel
 
 **继续追踪实现**
 
-- `create_tris_tree_data` → [blender::bke::create_tris_tree_data · L406](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-f3b39fadd8ae0065)；[blender::bke::create_tris_tree_data · L421](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-a80bec9bc6639089)。同名重载需按实参类型选择。
+- `create_tris_tree_data` → [blender::bke::create_tris_tree_data · L406](09-BVH共享与运行时数据.md#f-f3b39fadd8ae0065)；[blender::bke::create_tris_tree_data · L421](09-BVH共享与运行时数据.md#f-a80bec9bc6639089)。同名重载需按实参类型选择。
 - `tree.get` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
@@ -2275,7 +2275,7 @@ static std::unique_ptr<BVHTree, BVHTreeDeleter> bvhtree_new_common(int elems_num
 **继续追踪实现**
 
 - `std::unique_ptr<BVHTree, BVHTreeDeleter>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `BLI_bvhtree_new` → [blender::BLI_bvhtree_new · L864](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_kdopbvh-9f4bb8.md#f-4ec9d64950b835b8)。
+- `BLI_bvhtree_new` → [blender::BLI_bvhtree_new · L864](../90-实现依赖专题/01-BLI基础库/intern/BLI_kdopbvh.cc.md#f-4ec9d64950b835b8)。
 
 <!-- annotated:c53151b79a854d -->
 
@@ -2353,12 +2353,12 @@ static std::unique_ptr<BVHTree, BVHTreeDeleter> create_tree_from_verts(
 
 **继续追踪实现**
 
-- `bvhtree_new_common` → [blender::bke::bvhtree_new_common · L431](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-1a50284e994a407c)。
-- `verts_mask.size` → [blender::index_mask::IndexMask::size · L743](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-0163b32abc9a0d9c)。
-- `verts_mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
-- `BLI_bvhtree_insert` → [blender::BLI_bvhtree_insert · L988](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_kdopbvh-9f4bb8.md#f-00e2c6f8e338e6a0)。
+- `bvhtree_new_common` → [blender::bke::bvhtree_new_common · L431](09-BVH共享与运行时数据.md#f-1a50284e994a407c)。
+- `verts_mask.size` → [blender::index_mask::IndexMask::size · L743](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-0163b32abc9a0d9c)。
+- `verts_mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-cd6cd317e2e2812c)。
+- `BLI_bvhtree_insert` → [blender::BLI_bvhtree_insert · L988](../90-实现依赖专题/01-BLI基础库/intern/BLI_kdopbvh.cc.md#f-00e2c6f8e338e6a0)。
 - `tree.get` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `BLI_bvhtree_balance` → [blender::BLI_bvhtree_balance · L946](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_kdopbvh-9f4bb8.md#f-623c82143d96130e)。
+- `BLI_bvhtree_balance` → [blender::BLI_bvhtree_balance · L946](../90-实现依赖专题/01-BLI基础库/intern/BLI_kdopbvh.cc.md#f-623c82143d96130e)。
 
 <!-- annotated:a3986a47de86ca -->
 
@@ -2423,8 +2423,8 @@ BVHTreeFromMesh bvhtree_from_mesh_verts_ex(const Span<float3> vert_positions,
 
 **继续追踪实现**
 
-- `create_verts_tree_data` → [blender::bke::create_verts_tree_data · L351](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-b4d0af3d2a7b2414)；[blender::bke::create_verts_tree_data · L363](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-7aa5d5356a55d14e)。同名重载需按实参类型选择。
-- `create_tree_from_verts` → [blender::bke::create_tree_from_verts · L439](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-470cf58b27f17fce)。
+- `create_verts_tree_data` → [blender::bke::create_verts_tree_data · L351](09-BVH共享与运行时数据.md#f-b4d0af3d2a7b2414)；[blender::bke::create_verts_tree_data · L363](09-BVH共享与运行时数据.md#f-7aa5d5356a55d14e)。同名重载需按实参类型选择。
+- `create_tree_from_verts` → [blender::bke::create_tree_from_verts · L439](09-BVH共享与运行时数据.md#f-470cf58b27f17fce)。
 
 <!-- annotated:53e3017f659fb2 -->
 
@@ -2513,13 +2513,13 @@ static std::unique_ptr<BVHTree, BVHTreeDeleter> create_tree_from_edges(
 
 **继续追踪实现**
 
-- `bvhtree_new_common` → [blender::bke::bvhtree_new_common · L431](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-1a50284e994a407c)。
-- `edges_mask.size` → [blender::index_mask::IndexMask::size · L743](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-0163b32abc9a0d9c)。
-- `edges_mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
-- `copy_v3_v3` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L469。
-- `BLI_bvhtree_insert` → [blender::BLI_bvhtree_insert · L988](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_kdopbvh-9f4bb8.md#f-00e2c6f8e338e6a0)。
+- `bvhtree_new_common` → [blender::bke::bvhtree_new_common · L431](09-BVH共享与运行时数据.md#f-1a50284e994a407c)。
+- `edges_mask.size` → [blender::index_mask::IndexMask::size · L743](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-0163b32abc9a0d9c)。
+- `edges_mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-cd6cd317e2e2812c)。
+- `copy_v3_v3` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L469。
+- `BLI_bvhtree_insert` → [blender::BLI_bvhtree_insert · L988](../90-实现依赖专题/01-BLI基础库/intern/BLI_kdopbvh.cc.md#f-00e2c6f8e338e6a0)。
 - `tree.get` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `BLI_bvhtree_balance` → [blender::BLI_bvhtree_balance · L946](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_kdopbvh-9f4bb8.md#f-623c82143d96130e)。
+- `BLI_bvhtree_balance` → [blender::BLI_bvhtree_balance · L946](../90-实现依赖专题/01-BLI基础库/intern/BLI_kdopbvh.cc.md#f-623c82143d96130e)。
 
 <!-- annotated:28529c2c48e38c -->
 
@@ -2587,8 +2587,8 @@ BVHTreeFromMesh bvhtree_from_mesh_edges_ex(const Span<float3> vert_positions,
 
 **继续追踪实现**
 
-- `create_edges_tree_data` → [blender::bke::create_edges_tree_data · L371](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-804ab4bfc33be4c7)；[blender::bke::create_edges_tree_data · L384](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-bd42261919784f35)。同名重载需按实参类型选择。
-- `create_tree_from_edges` → [blender::bke::create_tree_from_edges · L459](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-71b91847a4f82f1e)。
+- `create_edges_tree_data` → [blender::bke::create_edges_tree_data · L371](09-BVH共享与运行时数据.md#f-804ab4bfc33be4c7)；[blender::bke::create_edges_tree_data · L384](09-BVH共享与运行时数据.md#f-bd42261919784f35)。同名重载需按实参类型选择。
+- `create_tree_from_edges` → [blender::bke::create_tree_from_edges · L459](09-BVH共享与运行时数据.md#f-71b91847a4f82f1e)。
 
 <!-- annotated:f07e11c0399d2a -->
 
@@ -2684,13 +2684,13 @@ static std::unique_ptr<BVHTree, BVHTreeDeleter> create_tree_from_legacy_faces(
 
 **继续追踪实现**
 
-- `bvhtree_new_common` → [blender::bke::bvhtree_new_common · L431](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-1a50284e994a407c)。
-- `faces.size` → [blender::Span::size · L256](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `faces.index_range` → [blender::Span::index_range · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-caaa9b06e13e53e0)。
-- `copy_v3_v3` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L494。
-- `BLI_bvhtree_insert` → [blender::BLI_bvhtree_insert · L988](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_kdopbvh-9f4bb8.md#f-00e2c6f8e338e6a0)。
+- `bvhtree_new_common` → [blender::bke::bvhtree_new_common · L431](09-BVH共享与运行时数据.md#f-1a50284e994a407c)。
+- `faces.size` → [blender::Span::size · L256](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `faces.index_range` → [blender::Span::index_range · L405](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-caaa9b06e13e53e0)。
+- `copy_v3_v3` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L494。
+- `BLI_bvhtree_insert` → [blender::BLI_bvhtree_insert · L988](../90-实现依赖专题/01-BLI基础库/intern/BLI_kdopbvh.cc.md#f-00e2c6f8e338e6a0)。
 - `tree.get` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `BLI_bvhtree_balance` → [blender::BLI_bvhtree_balance · L946](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_kdopbvh-9f4bb8.md#f-623c82143d96130e)。
+- `BLI_bvhtree_balance` → [blender::BLI_bvhtree_balance · L946](../90-实现依赖专题/01-BLI基础库/intern/BLI_kdopbvh.cc.md#f-623c82143d96130e)。
 
 <!-- annotated:45ded4b39337e4 -->
 
@@ -2783,13 +2783,13 @@ static std::unique_ptr<BVHTree, BVHTreeDeleter> create_tree_from_tris(const Span
 
 **继续追踪实现**
 
-- `bvhtree_new_common` → [blender::bke::bvhtree_new_common · L431](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-1a50284e994a407c)。
-- `corner_tris.size` → [blender::Span::size · L256](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `corner_tris.index_range` → [blender::Span::index_range · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-caaa9b06e13e53e0)。
-- `copy_v3_v3` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L516。
-- `BLI_bvhtree_insert` → [blender::BLI_bvhtree_insert · L988](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_kdopbvh-9f4bb8.md#f-00e2c6f8e338e6a0)。
+- `bvhtree_new_common` → [blender::bke::bvhtree_new_common · L431](09-BVH共享与运行时数据.md#f-1a50284e994a407c)。
+- `corner_tris.size` → [blender::Span::size · L256](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `corner_tris.index_range` → [blender::Span::index_range · L405](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-caaa9b06e13e53e0)。
+- `copy_v3_v3` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L516。
+- `BLI_bvhtree_insert` → [blender::BLI_bvhtree_insert · L988](../90-实现依赖专题/01-BLI基础库/intern/BLI_kdopbvh.cc.md#f-00e2c6f8e338e6a0)。
 - `tree.get` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `BLI_bvhtree_balance` → [blender::BLI_bvhtree_balance · L946](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_kdopbvh-9f4bb8.md#f-623c82143d96130e)。
+- `BLI_bvhtree_balance` → [blender::BLI_bvhtree_balance · L946](../90-实现依赖专题/01-BLI基础库/intern/BLI_kdopbvh.cc.md#f-623c82143d96130e)。
 
 <!-- annotated:05814a74f19372 -->
 
@@ -2921,19 +2921,19 @@ static std::unique_ptr<BVHTree, BVHTreeDeleter> create_tree_from_tris(
 
 **继续追踪实现**
 
-- `faces_mask.size` → [blender::index_mask::IndexMask::size · L743](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-0163b32abc9a0d9c)。
-- `faces.size` → [blender::offset_indices::OffsetIndices::size · L67](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/02-OffsetIndices%E5%AE%8C%E6%95%B4%E6%8E%A5%E5%8F%A3.md#f-e238abc62ed42abd)。
-- `create_tree_from_tris` → [blender::bke::create_tree_from_tris · L506](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-8f13a8e45c55ea2f)；[blender::bke::create_tree_from_tris · L525](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-1936a97467f36e38)。同名重载需按实参类型选择。
-- `faces_mask.foreach_index_optimized<int>` → [blender::index_mask::IndexMask::foreach_index_optimized · L937](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/12-%E9%87%8D%E6%9E%84%E5%8E%86%E5%8F%B2%E4%B8%8E%E5%9F%BA%E5%87%86%E7%BB%83%E4%B9%A0.md#f-a2c3e7876407eaaf)。
-- `mesh::face_triangles_num` → [blender::bke::mesh::face_triangles_num · L350](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/01-Mesh%E9%A1%B6%E7%82%B9%E8%BE%B9%E9%9D%A2%E8%A7%92%E7%82%B9.md#f-720b4d927730b800)。
-- `faces[i].size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L540。
-- `bvhtree_new_common` → [blender::bke::bvhtree_new_common · L431](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-1a50284e994a407c)。
-- `faces_mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
-- `mesh::face_triangles_range` → [blender::bke::mesh::face_triangles_range · L359](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/01-Mesh%E9%A1%B6%E7%82%B9%E8%BE%B9%E9%9D%A2%E8%A7%92%E7%82%B9.md#f-029966d2ab83c686)。
-- `copy_v3_v3` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L550。
-- `BLI_bvhtree_insert` → [blender::BLI_bvhtree_insert · L988](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_kdopbvh-9f4bb8.md#f-00e2c6f8e338e6a0)。
+- `faces_mask.size` → [blender::index_mask::IndexMask::size · L743](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-0163b32abc9a0d9c)。
+- `faces.size` → [blender::offset_indices::OffsetIndices::size · L67](../05-几何存储与拓扑映射/02-OffsetIndices完整接口.md#f-e238abc62ed42abd)。
+- `create_tree_from_tris` → [blender::bke::create_tree_from_tris · L506](09-BVH共享与运行时数据.md#f-8f13a8e45c55ea2f)；[blender::bke::create_tree_from_tris · L525](09-BVH共享与运行时数据.md#f-1936a97467f36e38)。同名重载需按实参类型选择。
+- `faces_mask.foreach_index_optimized<int>` → [blender::index_mask::IndexMask::foreach_index_optimized · L937](../04-虚拟数组与索引选择/12-重构历史与基准练习.md#f-a2c3e7876407eaaf)。
+- `mesh::face_triangles_num` → [blender::bke::mesh::face_triangles_num · L350](../05-几何存储与拓扑映射/01-Mesh顶点边面角点.md#f-720b4d927730b800)。
+- `faces[i].size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L540。
+- `bvhtree_new_common` → [blender::bke::bvhtree_new_common · L431](09-BVH共享与运行时数据.md#f-1a50284e994a407c)。
+- `faces_mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](../04-虚拟数组与索引选择/09-分段存储与遍历.md#f-cd6cd317e2e2812c)。
+- `mesh::face_triangles_range` → [blender::bke::mesh::face_triangles_range · L359](../05-几何存储与拓扑映射/01-Mesh顶点边面角点.md#f-029966d2ab83c686)。
+- `copy_v3_v3` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L550。
+- `BLI_bvhtree_insert` → [blender::BLI_bvhtree_insert · L988](../90-实现依赖专题/01-BLI基础库/intern/BLI_kdopbvh.cc.md#f-00e2c6f8e338e6a0)。
 - `tree.get` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `BLI_bvhtree_balance` → [blender::BLI_bvhtree_balance · L946](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_kdopbvh-9f4bb8.md#f-623c82143d96130e)。
+- `BLI_bvhtree_balance` → [blender::BLI_bvhtree_balance · L946](../90-实现依赖专题/01-BLI基础库/intern/BLI_kdopbvh.cc.md#f-623c82143d96130e)。
 
 <!-- annotated:620e9bdc305b59 -->
 
@@ -3018,8 +3018,8 @@ BVHTreeFromMesh bvhtree_from_mesh_corner_tris_ex(const Span<float3> vert_positio
 
 **继续追踪实现**
 
-- `create_tris_tree_data` → [blender::bke::create_tris_tree_data · L406](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-f3b39fadd8ae0065)；[blender::bke::create_tris_tree_data · L421](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-a80bec9bc6639089)。同名重载需按实参类型选择。
-- `create_tree_from_tris` → [blender::bke::create_tree_from_tris · L506](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-8f13a8e45c55ea2f)；[blender::bke::create_tree_from_tris · L525](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-1936a97467f36e38)。同名重载需按实参类型选择。
+- `create_tris_tree_data` → [blender::bke::create_tris_tree_data · L406](09-BVH共享与运行时数据.md#f-f3b39fadd8ae0065)；[blender::bke::create_tris_tree_data · L421](09-BVH共享与运行时数据.md#f-a80bec9bc6639089)。同名重载需按实参类型选择。
+- `create_tree_from_tris` → [blender::bke::create_tree_from_tris · L506](09-BVH共享与运行时数据.md#f-8f13a8e45c55ea2f)；[blender::bke::create_tree_from_tris · L525](09-BVH共享与运行时数据.md#f-1936a97467f36e38)。同名重载需按实参类型选择。
 
 <!-- annotated:e61941153d6730 -->
 
@@ -3140,12 +3140,12 @@ static BitVector<> loose_verts_no_hidden_mask_get(const Mesh &mesh)
 
 **继续追踪实现**
 
-- `mesh.attributes` → [Mesh::attributes · L1298](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-607bbfe3e57cfc7f)。
-- `mesh.edges` → [Mesh::edges · L1205](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-7232f6756b674d12)。
-- `attributes.lookup_or_default` → [blender::bke::AttributeAccessor::lookup_or_default · L415](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-a0cc3e316f1da4bd)。
-- `edges.index_range` → [blender::Span::index_range · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-caaa9b06e13e53e0)。
-- `verts_mask[vert].reset` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L595。
-- `verts_mask.index_range` → [blender::bits::BitVector::index_range · L246](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/19-BitSpan%E4%B8%8EBitVector.md#f-0aea2de9e95e0e03)。
+- `mesh.attributes` → [Mesh::attributes · L1298](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-607bbfe3e57cfc7f)。
+- `mesh.edges` → [Mesh::edges · L1205](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-7232f6756b674d12)。
+- `attributes.lookup_or_default` → [blender::bke::AttributeAccessor::lookup_or_default · L415](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-a0cc3e316f1da4bd)。
+- `edges.index_range` → [blender::Span::index_range · L405](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-caaa9b06e13e53e0)。
+- `verts_mask[vert].reset` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L595。
+- `verts_mask.index_range` → [blender::bits::BitVector::index_range · L246](../01-基础容器与现代CPP/19-BitSpan与BitVector.md#f-0aea2de9e95e0e03)。
 
 <!-- annotated:a1fd59adef2405 -->
 
@@ -3268,14 +3268,14 @@ static BitVector<> loose_edges_no_hidden_mask_get(const Mesh &mesh)
 
 **继续追踪实现**
 
-- `mesh.attributes` → [Mesh::attributes · L1298](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-607bbfe3e57cfc7f)。
-- `mesh.faces` → [Mesh::faces · L1217](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ea444760154e17b2)。
-- `mesh.corner_edges` → [Mesh::corner_edges · L1252](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-687b790868e7f257)。
-- `attributes.lookup_or_default` → [blender::bke::AttributeAccessor::lookup_or_default · L415](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-a0cc3e316f1da4bd)。
-- `faces.index_range` → [blender::offset_indices::OffsetIndices::index_range · L77](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/02-OffsetIndices%E5%AE%8C%E6%95%B4%E6%8E%A5%E5%8F%A3.md#f-19b5ca1456de007d)。
-- `corner_edges.slice` → [blender::Span::slice · L141](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
-- `edge_mask[edge].reset` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L631。
-- `edge_mask.index_range` → [blender::bits::BitVector::index_range · L246](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/19-BitSpan%E4%B8%8EBitVector.md#f-0aea2de9e95e0e03)。
+- `mesh.attributes` → [Mesh::attributes · L1298](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-607bbfe3e57cfc7f)。
+- `mesh.faces` → [Mesh::faces · L1217](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-ea444760154e17b2)。
+- `mesh.corner_edges` → [Mesh::corner_edges · L1252](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-687b790868e7f257)。
+- `attributes.lookup_or_default` → [blender::bke::AttributeAccessor::lookup_or_default · L415](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-a0cc3e316f1da4bd)。
+- `faces.index_range` → [blender::offset_indices::OffsetIndices::index_range · L77](../05-几何存储与拓扑映射/02-OffsetIndices完整接口.md#f-19b5ca1456de007d)。
+- `corner_edges.slice` → [blender::Span::slice · L141](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
+- `edge_mask[edge].reset` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L631。
+- `edge_mask.index_range` → [blender::bits::BitVector::index_range · L246](../01-基础容器与现代CPP/19-BitSpan与BitVector.md#f-0aea2de9e95e0e03)。
 
 ### 类型布局、声明与编译条件 · bvhutils.cc L647—L649
 
@@ -3351,13 +3351,13 @@ bke::BVHTreeFromMesh Mesh::bvh_loose_verts() const
 
 **继续追踪实现**
 
-- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae4177e5c5f2b371)。
-- `this->runtime->bvh_cache_loose_verts.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L654。
-- `create_tree_from_verts` → [blender::bke::create_tree_from_verts · L439](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-470cf58b27f17fce)。
-- `this->loose_verts` → [blender::Mesh::loose_verts · L163](10-%E5%B1%80%E9%83%A8%E6%9B%B4%E6%96%B0%E4%B8%8E%E5%A4%B1%E6%95%88%E4%BF%AE%E5%A4%8D.md#f-9f31b4f671ff9085)。
-- `create_verts_tree_data` → [blender::bke::create_verts_tree_data · L351](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-b4d0af3d2a7b2414)；[blender::bke::create_verts_tree_data · L363](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-7aa5d5356a55d14e)。同名重载需按实参类型选择。
-- `this->runtime->bvh_cache_loose_verts.data().get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L657。
-- `this->runtime->bvh_cache_loose_verts.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L657。
+- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-ae4177e5c5f2b371)。
+- `this->runtime->bvh_cache_loose_verts.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L654。
+- `create_tree_from_verts` → [blender::bke::create_tree_from_verts · L439](09-BVH共享与运行时数据.md#f-470cf58b27f17fce)。
+- `this->loose_verts` → [blender::Mesh::loose_verts · L163](10-局部更新与失效修复.md#f-9f31b4f671ff9085)。
+- `create_verts_tree_data` → [blender::bke::create_verts_tree_data · L351](09-BVH共享与运行时数据.md#f-b4d0af3d2a7b2414)；[blender::bke::create_verts_tree_data · L363](09-BVH共享与运行时数据.md#f-7aa5d5356a55d14e)。同名重载需按实参类型选择。
+- `this->runtime->bvh_cache_loose_verts.data().get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L657。
+- `this->runtime->bvh_cache_loose_verts.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L657。
 
 <!-- annotated:085f9c55ea71a6 -->
 
@@ -3435,14 +3435,14 @@ bke::BVHTreeFromMesh Mesh::bvh_loose_no_hidden_verts() const
 
 **继续追踪实现**
 
-- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae4177e5c5f2b371)。
-- `this->runtime->bvh_cache_loose_verts_no_hidden.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L664。
-- `loose_verts_no_hidden_mask_get` → [blender::bke::loose_verts_no_hidden_mask_get · L577](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-16656cbcd94c4954)。
-- `create_tree_from_verts` → [blender::bke::create_tree_from_verts · L439](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-470cf58b27f17fce)。
-- `IndexMask::from_bits` → [blender::index_mask::IndexMask::from_bits · L452](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/10-IndexMask%E6%9E%84%E5%BB%BA%E4%B8%8E%E5%B9%B6%E8%A1%8C.md#f-793d0ba2aa866e11)；[blender::index_mask::IndexMask::from_bits · L485](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/10-IndexMask%E6%9E%84%E5%BB%BA%E4%B8%8E%E5%B9%B6%E8%A1%8C.md#f-c64648e6798fe52e)。同名重载需按实参类型选择。
-- `create_verts_tree_data` → [blender::bke::create_verts_tree_data · L351](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-b4d0af3d2a7b2414)；[blender::bke::create_verts_tree_data · L363](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-7aa5d5356a55d14e)。同名重载需按实参类型选择。
-- `this->runtime->bvh_cache_loose_verts_no_hidden.data().get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L670。
-- `this->runtime->bvh_cache_loose_verts_no_hidden.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L670。
+- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-ae4177e5c5f2b371)。
+- `this->runtime->bvh_cache_loose_verts_no_hidden.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L664。
+- `loose_verts_no_hidden_mask_get` → [blender::bke::loose_verts_no_hidden_mask_get · L577](09-BVH共享与运行时数据.md#f-16656cbcd94c4954)。
+- `create_tree_from_verts` → [blender::bke::create_tree_from_verts · L439](09-BVH共享与运行时数据.md#f-470cf58b27f17fce)。
+- `IndexMask::from_bits` → [blender::index_mask::IndexMask::from_bits · L452](../04-虚拟数组与索引选择/10-IndexMask构建与并行.md#f-793d0ba2aa866e11)；[blender::index_mask::IndexMask::from_bits · L485](../04-虚拟数组与索引选择/10-IndexMask构建与并行.md#f-c64648e6798fe52e)。同名重载需按实参类型选择。
+- `create_verts_tree_data` → [blender::bke::create_verts_tree_data · L351](09-BVH共享与运行时数据.md#f-b4d0af3d2a7b2414)；[blender::bke::create_verts_tree_data · L363](09-BVH共享与运行时数据.md#f-7aa5d5356a55d14e)。同名重载需按实参类型选择。
+- `this->runtime->bvh_cache_loose_verts_no_hidden.data().get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L670。
+- `this->runtime->bvh_cache_loose_verts_no_hidden.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L670。
 
 <!-- annotated:2ac4d52770957d -->
 
@@ -3513,11 +3513,11 @@ const bke::bvh::Tree &Mesh::bvh_verts() const
 
 **继续追踪实现**
 
-- `this->runtime->bvh_embree_verts_cache.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L677。
-- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae4177e5c5f2b371)。
-- `bvh::Tree::from_points` → [blender::bke::bvh::Tree::from_points · L391](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-bvh-718c1e.md#f-f582c23cfd1cfc7e)。
-- `positions.index_range` → [blender::Span::index_range · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-caaa9b06e13e53e0)。
-- `this->runtime->bvh_embree_verts_cache.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L681。
+- `this->runtime->bvh_embree_verts_cache.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L677。
+- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-ae4177e5c5f2b371)。
+- `bvh::Tree::from_points` → [blender::bke::bvh::Tree::from_points · L391](../90-实现依赖专题/02-BKE几何与数据/intern/bvh.cc.md#f-f582c23cfd1cfc7e)。
+- `positions.index_range` → [blender::Span::index_range · L405](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-caaa9b06e13e53e0)。
+- `this->runtime->bvh_embree_verts_cache.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L681。
 
 <!-- annotated:46cf5e511d4da9 -->
 
@@ -3591,14 +3591,14 @@ bke::BVHTreeFromMesh Mesh::bvh_loose_edges() const
 
 **继续追踪实现**
 
-- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae4177e5c5f2b371)。
-- `this->edges` → [Mesh::edges · L1205](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-7232f6756b674d12)。
-- `this->runtime->bvh_cache_loose_edges.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L689。
-- `create_tree_from_edges` → [blender::bke::create_tree_from_edges · L459](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-71b91847a4f82f1e)。
-- `this->loose_edges` → [blender::Mesh::loose_edges · L194](10-%E5%B1%80%E9%83%A8%E6%9B%B4%E6%96%B0%E4%B8%8E%E5%A4%B1%E6%95%88%E4%BF%AE%E5%A4%8D.md#f-80e2cb4f8c0f449d)。
-- `create_edges_tree_data` → [blender::bke::create_edges_tree_data · L371](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-804ab4bfc33be4c7)；[blender::bke::create_edges_tree_data · L384](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-bd42261919784f35)。同名重载需按实参类型选择。
-- `this->runtime->bvh_cache_loose_edges.data().get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L693。
-- `this->runtime->bvh_cache_loose_edges.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L693。
+- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-ae4177e5c5f2b371)。
+- `this->edges` → [Mesh::edges · L1205](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-7232f6756b674d12)。
+- `this->runtime->bvh_cache_loose_edges.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L689。
+- `create_tree_from_edges` → [blender::bke::create_tree_from_edges · L459](09-BVH共享与运行时数据.md#f-71b91847a4f82f1e)。
+- `this->loose_edges` → [blender::Mesh::loose_edges · L194](10-局部更新与失效修复.md#f-80e2cb4f8c0f449d)。
+- `create_edges_tree_data` → [blender::bke::create_edges_tree_data · L371](09-BVH共享与运行时数据.md#f-804ab4bfc33be4c7)；[blender::bke::create_edges_tree_data · L384](09-BVH共享与运行时数据.md#f-bd42261919784f35)。同名重载需按实参类型选择。
+- `this->runtime->bvh_cache_loose_edges.data().get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L693。
+- `this->runtime->bvh_cache_loose_edges.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L693。
 
 <!-- annotated:af3ae2f0513b14 -->
 
@@ -3678,15 +3678,15 @@ bke::BVHTreeFromMesh Mesh::bvh_loose_no_hidden_edges() const
 
 **继续追踪实现**
 
-- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae4177e5c5f2b371)。
-- `this->edges` → [Mesh::edges · L1205](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-7232f6756b674d12)。
-- `this->runtime->bvh_cache_loose_edges_no_hidden.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L701。
-- `loose_edges_no_hidden_mask_get` → [blender::bke::loose_edges_no_hidden_mask_get · L612](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-6caa0a814d5a280f)。
-- `create_tree_from_edges` → [blender::bke::create_tree_from_edges · L459](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-71b91847a4f82f1e)。
-- `IndexMask::from_bits` → [blender::index_mask::IndexMask::from_bits · L452](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/10-IndexMask%E6%9E%84%E5%BB%BA%E4%B8%8E%E5%B9%B6%E8%A1%8C.md#f-793d0ba2aa866e11)；[blender::index_mask::IndexMask::from_bits · L485](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/10-IndexMask%E6%9E%84%E5%BB%BA%E4%B8%8E%E5%B9%B6%E8%A1%8C.md#f-c64648e6798fe52e)。同名重载需按实参类型选择。
-- `create_edges_tree_data` → [blender::bke::create_edges_tree_data · L371](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-804ab4bfc33be4c7)；[blender::bke::create_edges_tree_data · L384](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-bd42261919784f35)。同名重载需按实参类型选择。
-- `this->runtime->bvh_cache_loose_edges_no_hidden.data().get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L708。
-- `this->runtime->bvh_cache_loose_edges_no_hidden.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L708。
+- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-ae4177e5c5f2b371)。
+- `this->edges` → [Mesh::edges · L1205](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-7232f6756b674d12)。
+- `this->runtime->bvh_cache_loose_edges_no_hidden.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L701。
+- `loose_edges_no_hidden_mask_get` → [blender::bke::loose_edges_no_hidden_mask_get · L612](09-BVH共享与运行时数据.md#f-6caa0a814d5a280f)。
+- `create_tree_from_edges` → [blender::bke::create_tree_from_edges · L459](09-BVH共享与运行时数据.md#f-71b91847a4f82f1e)。
+- `IndexMask::from_bits` → [blender::index_mask::IndexMask::from_bits · L452](../04-虚拟数组与索引选择/10-IndexMask构建与并行.md#f-793d0ba2aa866e11)；[blender::index_mask::IndexMask::from_bits · L485](../04-虚拟数组与索引选择/10-IndexMask构建与并行.md#f-c64648e6798fe52e)。同名重载需按实参类型选择。
+- `create_edges_tree_data` → [blender::bke::create_edges_tree_data · L371](09-BVH共享与运行时数据.md#f-804ab4bfc33be4c7)；[blender::bke::create_edges_tree_data · L384](09-BVH共享与运行时数据.md#f-bd42261919784f35)。同名重载需按实参类型选择。
+- `this->runtime->bvh_cache_loose_edges_no_hidden.data().get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L708。
+- `this->runtime->bvh_cache_loose_edges_no_hidden.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L708。
 
 <!-- annotated:fb00264dd57f17 -->
 
@@ -3757,12 +3757,12 @@ const bke::bvh::Tree &Mesh::bvh_edges() const
 
 **继续追踪实现**
 
-- `this->runtime->bvh_embree_edges_cache.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L714。
-- `this->edges` → [Mesh::edges · L1205](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-7232f6756b674d12)。
-- `bvh::Tree::from_edges` → [blender::bke::bvh::Tree::from_edges · L415](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-bvh-718c1e.md#f-8f554f5d0f5ee0f1)。
-- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae4177e5c5f2b371)。
-- `edges.index_range` → [blender::Span::index_range · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-caaa9b06e13e53e0)。
-- `this->runtime->bvh_embree_edges_cache.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L718。
+- `this->runtime->bvh_embree_edges_cache.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L714。
+- `this->edges` → [Mesh::edges · L1205](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-7232f6756b674d12)。
+- `bvh::Tree::from_edges` → [blender::bke::bvh::Tree::from_edges · L415](../90-实现依赖专题/02-BKE几何与数据/intern/bvh.cc.md#f-8f554f5d0f5ee0f1)。
+- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-ae4177e5c5f2b371)。
+- `edges.index_range` → [blender::Span::index_range · L405](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-caaa9b06e13e53e0)。
+- `this->runtime->bvh_embree_edges_cache.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L718。
 
 <!-- annotated:1bb18ad2546e16 -->
 
@@ -3835,14 +3835,14 @@ bke::BVHTreeFromMesh Mesh::bvh_edges_legacy() const
 
 **继续追踪实现**
 
-- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae4177e5c5f2b371)。
-- `this->edges` → [Mesh::edges · L1205](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-7232f6756b674d12)。
-- `this->runtime->bvh_cache_edges.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L726。
-- `create_tree_from_edges` → [blender::bke::create_tree_from_edges · L459](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-71b91847a4f82f1e)。
-- `edges.index_range` → [blender::Span::index_range · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-caaa9b06e13e53e0)。
-- `create_edges_tree_data` → [blender::bke::create_edges_tree_data · L371](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-804ab4bfc33be4c7)；[blender::bke::create_edges_tree_data · L384](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-bd42261919784f35)。同名重载需按实参类型选择。
-- `this->runtime->bvh_cache_edges.data().get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L729。
-- `this->runtime->bvh_cache_edges.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L729。
+- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-ae4177e5c5f2b371)。
+- `this->edges` → [Mesh::edges · L1205](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-7232f6756b674d12)。
+- `this->runtime->bvh_cache_edges.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L726。
+- `create_tree_from_edges` → [blender::bke::create_tree_from_edges · L459](09-BVH共享与运行时数据.md#f-71b91847a4f82f1e)。
+- `edges.index_range` → [blender::Span::index_range · L405](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-caaa9b06e13e53e0)。
+- `create_edges_tree_data` → [blender::bke::create_edges_tree_data · L371](09-BVH共享与运行时数据.md#f-804ab4bfc33be4c7)；[blender::bke::create_edges_tree_data · L384](09-BVH共享与运行时数据.md#f-bd42261919784f35)。同名重载需按实参类型选择。
+- `this->runtime->bvh_cache_edges.data().get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L729。
+- `this->runtime->bvh_cache_edges.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L729。
 
 <!-- annotated:e961ba7841723a -->
 
@@ -3923,15 +3923,15 @@ bke::BVHTreeFromMesh Mesh::bvh_legacy_faces() const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `CustomData_get_layer` → [blender::CustomData_get_layer · L3308](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-add1273f3ef3e57b)。
-- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae4177e5c5f2b371)。
-- `this->runtime->bvh_cache_faces.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L740。
-- `create_tree_from_legacy_faces` → [blender::bke::create_tree_from_legacy_faces · L485](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-74cec5b362c43b3e)。
-- `create_legacy_faces_tree_data` → [blender::bke::create_legacy_faces_tree_data · L393](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-b9165541f09fa292)。
-- `this->runtime->bvh_cache_faces.data().get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L744。
-- `this->runtime->bvh_cache_faces.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L744。
-- `legacy_faces.data` → [blender::Span::data · L219](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-10c5889198935800)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `CustomData_get_layer` → [blender::CustomData_get_layer · L3308](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-add1273f3ef3e57b)。
+- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-ae4177e5c5f2b371)。
+- `this->runtime->bvh_cache_faces.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L740。
+- `create_tree_from_legacy_faces` → [blender::bke::create_tree_from_legacy_faces · L485](09-BVH共享与运行时数据.md#f-74cec5b362c43b3e)。
+- `create_legacy_faces_tree_data` → [blender::bke::create_legacy_faces_tree_data · L393](09-BVH共享与运行时数据.md#f-b9165541f09fa292)。
+- `this->runtime->bvh_cache_faces.data().get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L744。
+- `this->runtime->bvh_cache_faces.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L744。
+- `legacy_faces.data` → [blender::Span::data · L219](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-10c5889198935800)。
 
 <!-- annotated:d0e4097638a536 -->
 
@@ -4034,21 +4034,21 @@ bke::BVHTreeFromMesh Mesh::bvh_corner_tris_no_hidden() const
 
 **继续追踪实现**
 
-- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae4177e5c5f2b371)。
-- `this->corner_verts` → [Mesh::corner_verts · L1238](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a59c61f583b64bc4)。
-- `this->corner_tris` → [blender::Mesh::corner_tris · L264](10-%E5%B1%80%E9%83%A8%E6%9B%B4%E6%96%B0%E4%B8%8E%E5%A4%B1%E6%95%88%E4%BF%AE%E5%A4%8D.md#f-9bb421790000fc20)。
-- `this->attributes` → [Mesh::attributes · L1298](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-607bbfe3e57cfc7f)。
-- `attributes.lookup<bool>` → [blender::bke::AttributeAccessor::lookup · L401](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-4673351b7bb3b651)。
-- `this->bvh_corner_tris` → [blender::Mesh::bvh_corner_tris · L773](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-9c8110cd438d92e1)。
-- `this->runtime->bvh_cache_corner_tris_no_hidden.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L758。
-- `this->faces` → [Mesh::faces · L1217](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ea444760154e17b2)。
-- `IndexMask::from_bools_inverse` → [blender::index_mask::IndexMask::from_bools_inverse · L603](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/10-IndexMask%E6%9E%84%E5%BB%BA%E4%B8%8E%E5%B9%B6%E8%A1%8C.md#f-96442cca3bb6cc50)；[blender::index_mask::IndexMask::from_bools_inverse · L608](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/10-IndexMask%E6%9E%84%E5%BB%BA%E4%B8%8E%E5%B9%B6%E8%A1%8C.md#f-c40b154f402a386c)；[blender::index_mask::IndexMask::from_bools_inverse · L640](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/10-IndexMask%E6%9E%84%E5%BB%BA%E4%B8%8E%E5%B9%B6%E8%A1%8C.md#f-f2da3a64e1eb2558)；[blender::index_mask::IndexMask::from_bools_inverse · L668](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/10-IndexMask%E6%9E%84%E5%BB%BA%E4%B8%8E%E5%B9%B6%E8%A1%8C.md#f-1975fcd2e2ded5f3)。同名重载需按实参类型选择。
-- `faces.index_range` → [blender::offset_indices::OffsetIndices::index_range · L77](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/02-OffsetIndices%E5%AE%8C%E6%95%B4%E6%8E%A5%E5%8F%A3.md#f-19b5ca1456de007d)。
-- `VArraySpan` → [blender::VArraySpan::VArraySpan · L954](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/04-%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%B0%8F%E5%AF%B9%E8%B1%A1%E4%BC%98%E5%8C%96.md#f-7f6b36035be3dc40)；[blender::VArraySpan::VArraySpan · L956](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/04-%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%B0%8F%E5%AF%B9%E8%B1%A1%E4%BC%98%E5%8C%96.md#f-40832e170cafb212)；[blender::VArraySpan::VArraySpan · L958](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/04-%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%B0%8F%E5%AF%B9%E8%B1%A1%E4%BC%98%E5%8C%96.md#f-3d07ad306af2ea15)；[blender::VArraySpan::VArraySpan · L976](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/04-%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%B0%8F%E5%AF%B9%E8%B1%A1%E4%BC%98%E5%8C%96.md#f-4ef6f24b8ef9ee54)。同名重载需按实参类型选择。
-- `create_tree_from_tris` → [blender::bke::create_tree_from_tris · L506](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-8f13a8e45c55ea2f)；[blender::bke::create_tree_from_tris · L525](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-1936a97467f36e38)。同名重载需按实参类型选择。
-- `create_tris_tree_data` → [blender::bke::create_tris_tree_data · L406](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-f3b39fadd8ae0065)；[blender::bke::create_tris_tree_data · L421](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-a80bec9bc6639089)。同名重载需按实参类型选择。
-- `this->runtime->bvh_cache_corner_tris_no_hidden.data().get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L767。
-- `this->runtime->bvh_cache_corner_tris_no_hidden.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L767。
+- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-ae4177e5c5f2b371)。
+- `this->corner_verts` → [Mesh::corner_verts · L1238](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-a59c61f583b64bc4)。
+- `this->corner_tris` → [blender::Mesh::corner_tris · L264](10-局部更新与失效修复.md#f-9bb421790000fc20)。
+- `this->attributes` → [Mesh::attributes · L1298](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-607bbfe3e57cfc7f)。
+- `attributes.lookup<bool>` → [blender::bke::AttributeAccessor::lookup · L401](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-4673351b7bb3b651)。
+- `this->bvh_corner_tris` → [blender::Mesh::bvh_corner_tris · L773](09-BVH共享与运行时数据.md#f-9c8110cd438d92e1)。
+- `this->runtime->bvh_cache_corner_tris_no_hidden.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L758。
+- `this->faces` → [Mesh::faces · L1217](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-ea444760154e17b2)。
+- `IndexMask::from_bools_inverse` → [blender::index_mask::IndexMask::from_bools_inverse · L603](../04-虚拟数组与索引选择/10-IndexMask构建与并行.md#f-96442cca3bb6cc50)；[blender::index_mask::IndexMask::from_bools_inverse · L608](../04-虚拟数组与索引选择/10-IndexMask构建与并行.md#f-c40b154f402a386c)；[blender::index_mask::IndexMask::from_bools_inverse · L640](../04-虚拟数组与索引选择/10-IndexMask构建与并行.md#f-f2da3a64e1eb2558)；[blender::index_mask::IndexMask::from_bools_inverse · L668](../04-虚拟数组与索引选择/10-IndexMask构建与并行.md#f-1975fcd2e2ded5f3)。同名重载需按实参类型选择。
+- `faces.index_range` → [blender::offset_indices::OffsetIndices::index_range · L77](../05-几何存储与拓扑映射/02-OffsetIndices完整接口.md#f-19b5ca1456de007d)。
+- `VArraySpan` → [blender::VArraySpan::VArraySpan · L954](../04-虚拟数组与索引选择/04-所有权与小对象优化.md#f-7f6b36035be3dc40)；[blender::VArraySpan::VArraySpan · L956](../04-虚拟数组与索引选择/04-所有权与小对象优化.md#f-40832e170cafb212)；[blender::VArraySpan::VArraySpan · L958](../04-虚拟数组与索引选择/04-所有权与小对象优化.md#f-3d07ad306af2ea15)；[blender::VArraySpan::VArraySpan · L976](../04-虚拟数组与索引选择/04-所有权与小对象优化.md#f-4ef6f24b8ef9ee54)。同名重载需按实参类型选择。
+- `create_tree_from_tris` → [blender::bke::create_tree_from_tris · L506](09-BVH共享与运行时数据.md#f-8f13a8e45c55ea2f)；[blender::bke::create_tree_from_tris · L525](09-BVH共享与运行时数据.md#f-1936a97467f36e38)。同名重载需按实参类型选择。
+- `create_tris_tree_data` → [blender::bke::create_tris_tree_data · L406](09-BVH共享与运行时数据.md#f-f3b39fadd8ae0065)；[blender::bke::create_tris_tree_data · L421](09-BVH共享与运行时数据.md#f-a80bec9bc6639089)。同名重载需按实参类型选择。
+- `this->runtime->bvh_cache_corner_tris_no_hidden.data().get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L767。
+- `this->runtime->bvh_cache_corner_tris_no_hidden.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L767。
 
 <!-- annotated:c19fea1d0906e7 -->
 
@@ -4124,14 +4124,14 @@ bke::BVHTreeFromMesh Mesh::bvh_corner_tris() const
 
 **继续追踪实现**
 
-- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae4177e5c5f2b371)。
-- `this->corner_verts` → [Mesh::corner_verts · L1238](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a59c61f583b64bc4)。
-- `this->corner_tris` → [blender::Mesh::corner_tris · L264](10-%E5%B1%80%E9%83%A8%E6%9B%B4%E6%96%B0%E4%B8%8E%E5%A4%B1%E6%95%88%E4%BF%AE%E5%A4%8D.md#f-9bb421790000fc20)。
-- `this->runtime->bvh_cache_corner_tris.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L779。
-- `create_tree_from_tris` → [blender::bke::create_tree_from_tris · L506](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-8f13a8e45c55ea2f)；[blender::bke::create_tree_from_tris · L525](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-1936a97467f36e38)。同名重载需按实参类型选择。
-- `create_tris_tree_data` → [blender::bke::create_tris_tree_data · L406](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-f3b39fadd8ae0065)；[blender::bke::create_tris_tree_data · L421](09-BVH%E5%85%B1%E4%BA%AB%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE.md#f-a80bec9bc6639089)。同名重载需按实参类型选择。
-- `this->runtime->bvh_cache_corner_tris.data().get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L783。
-- `this->runtime->bvh_cache_corner_tris.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L783。
+- `this->vert_positions` → [Mesh::vert_positions · L1193](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-ae4177e5c5f2b371)。
+- `this->corner_verts` → [Mesh::corner_verts · L1238](../05-几何存储与拓扑映射/03-MPoly迁移与兼容.md#f-a59c61f583b64bc4)。
+- `this->corner_tris` → [blender::Mesh::corner_tris · L264](10-局部更新与失效修复.md#f-9bb421790000fc20)。
+- `this->runtime->bvh_cache_corner_tris.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L779。
+- `create_tree_from_tris` → [blender::bke::create_tree_from_tris · L506](09-BVH共享与运行时数据.md#f-8f13a8e45c55ea2f)；[blender::bke::create_tree_from_tris · L525](09-BVH共享与运行时数据.md#f-1936a97467f36e38)。同名重载需按实参类型选择。
+- `create_tris_tree_data` → [blender::bke::create_tris_tree_data · L406](09-BVH共享与运行时数据.md#f-f3b39fadd8ae0065)；[blender::bke::create_tris_tree_data · L421](09-BVH共享与运行时数据.md#f-a80bec9bc6639089)。同名重载需按实参类型选择。
+- `this->runtime->bvh_cache_corner_tris.data().get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L783。
+- `this->runtime->bvh_cache_corner_tris.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L783。
 
 <!-- annotated:645e1e26e3685a -->
 
@@ -4193,9 +4193,9 @@ const bke::bvh::Tree &Mesh::bvh_tris() const
 
 **继续追踪实现**
 
-- `this->runtime->bvh_embree_tris_cache.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L789。
-- `bke::bvh::Tree::from_single_mesh` → [blender::bke::bvh::Tree::from_single_mesh · L352](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-bvh-718c1e.md#f-44f7595eaae5699e)。
-- `this->runtime->bvh_embree_tris_cache.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L791。
+- `this->runtime->bvh_embree_tris_cache.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L789。
+- `bke::bvh::Tree::from_single_mesh` → [blender::bke::bvh::Tree::from_single_mesh · L352](../90-实现依赖专题/02-BKE几何与数据/intern/bvh.cc.md#f-44f7595eaae5699e)。
+- `this->runtime->bvh_embree_tris_cache.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L791。
 
 ### 类型布局、声明与编译条件 · bvhutils.cc L793—L799
 
@@ -4280,11 +4280,11 @@ const bke::bvh::Tree &PointCloud::bvh_tree() const
 
 **继续追踪实现**
 
-- `this->runtime->bvh_cache.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L803。
-- `this->positions` → [blender::PointCloud::positions · L198](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-pointcloud-49a366.md#f-f02364be34f558ea)。
-- `bvh::Tree::from_points` → [blender::bke::bvh::Tree::from_points · L391](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-bvh-718c1e.md#f-f582c23cfd1cfc7e)。
-- `positions.index_range` → [blender::Span::index_range · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-caaa9b06e13e53e0)。
-- `this->runtime->bvh_cache.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L807。
+- `this->runtime->bvh_cache.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L803。
+- `this->positions` → [blender::PointCloud::positions · L198](../90-实现依赖专题/02-BKE几何与数据/intern/pointcloud.cc.md#f-f02364be34f558ea)。
+- `bvh::Tree::from_points` → [blender::bke::bvh::Tree::from_points · L391](../90-实现依赖专题/02-BKE几何与数据/intern/bvh.cc.md#f-f582c23cfd1cfc7e)。
+- `positions.index_range` → [blender::Span::index_range · L405](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-caaa9b06e13e53e0)。
+- `this->runtime->bvh_cache.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L807。
 
 ### 类型布局、声明与编译条件 · bvhutils.cc L809—L812
 
@@ -4373,4 +4373,4 @@ unique_ptr通过移动转移拥有关系，默认删除策略必须与资源来�
 
 与shared_ptr比较寿命管理，与写时复制容器比较写边界，与普通memoization比较键的等价性；SharedCache把等价对象的派生结果放在共同控制对象中。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

@@ -1,6 +1,6 @@
 # 04-03 单值与Span表示
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -171,8 +171,8 @@ flowchart TB
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `impl_->common_info` → [blender::VArrayCommon::common_info · L602](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-087793fc5c4b8977)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `impl_->common_info` → [blender::VArrayCommon::common_info · L602](02-VArrayImpl实现接口.md#f-087793fc5c4b8977)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L615—L619
 
@@ -242,11 +242,11 @@ flowchart TB
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->is_span` → [blender::VArrayCommon::is_span · L609](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-64290cd299f91a17)。
-- `impl_->common_info` → [blender::VArrayCommon::common_info · L602](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-087793fc5c4b8977)。
-- `Span<T>` → [blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
-- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->is_span` → [blender::VArrayCommon::is_span · L609](03-单值与Span表示.md#f-64290cd299f91a17)。
+- `impl_->common_info` → [blender::VArrayCommon::common_info · L602](02-VArrayImpl实现接口.md#f-087793fc5c4b8977)。
+- `Span<T>` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
+- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl实现接口.md#f-a098c32ba789341e)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L626—L627
 
@@ -310,8 +310,8 @@ flowchart TB
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `impl_->common_info` → [blender::VArrayCommon::common_info · L602](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-087793fc5c4b8977)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `impl_->common_info` → [blender::VArrayCommon::common_info · L602](02-VArrayImpl实现接口.md#f-087793fc5c4b8977)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L634—L638
 
@@ -381,9 +381,9 @@ flowchart TB
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->is_single` → [blender::VArrayCommon::is_single · L628](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-6ae3a68e4344a995)。
-- `impl_->common_info` → [blender::VArrayCommon::common_info · L602](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-087793fc5c4b8977)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->is_single` → [blender::VArrayCommon::is_single · L628](03-单值与Span表示.md#f-6ae3a68e4344a995)。
+- `impl_->common_info` → [blender::VArrayCommon::common_info · L602](02-VArrayImpl实现接口.md#f-087793fc5c4b8977)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L645—L648
 
@@ -456,7 +456,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `impl_->common_info` → [blender::VArrayCommon::common_info · L602](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-087793fc5c4b8977)。
+- `impl_->common_info` → [blender::VArrayCommon::common_info · L602](02-VArrayImpl实现接口.md#f-087793fc5c4b8977)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L657—L658
 
@@ -516,9 +516,9 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->materialize` → [blender::VArrayCommon::materialize · L659](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-027abeb1cca6e086)；[blender::VArrayCommon::materialize · L665](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-2b80aad83eab5a2b)。同名重载需按实参类型选择。
-- `IndexMask` → [blender::index_mask::IndexMask::IndexMask · L704](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-8c95440e4c5fec78)；[blender::index_mask::IndexMask::IndexMask · L709](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-fdd9dc18868bc0cd)；[blender::index_mask::IndexMask::IndexMask · L722](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-4b32f3ba3de66d05)。同名重载需按实参类型选择。
-- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
+- `this->materialize` → [blender::VArrayCommon::materialize · L659](03-单值与Span表示.md#f-027abeb1cca6e086)；[blender::VArrayCommon::materialize · L665](03-单值与Span表示.md#f-2b80aad83eab5a2b)。同名重载需按实参类型选择。
+- `IndexMask` → [blender::index_mask::IndexMask::IndexMask · L704](09-分段存储与遍历.md#f-8c95440e4c5fec78)；[blender::index_mask::IndexMask::IndexMask · L709](09-分段存储与遍历.md#f-fdd9dc18868bc0cd)；[blender::index_mask::IndexMask::IndexMask · L722](09-分段存储与遍历.md#f-4b32f3ba3de66d05)。同名重载需按实参类型选择。
+- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl实现接口.md#f-a098c32ba789341e)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L663—L664
 
@@ -582,11 +582,11 @@ flowchart TB
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `mask.min_array_size` → [blender::index_mask::IndexMask::min_array_size · L782](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-f3a460d74b4fc7d6)。
-- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
-- `impl_->materialize` → [blender::VArrayCommon::materialize · L659](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-027abeb1cca6e086)；[blender::VArrayCommon::materialize · L665](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-2b80aad83eab5a2b)。同名重载需按实参类型选择。
-- `r_span.data` → [blender::MutableSpan::data · L545](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-eb45a6e4d8211efd)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `mask.min_array_size` → [blender::index_mask::IndexMask::min_array_size · L782](09-分段存储与遍历.md#f-f3a460d74b4fc7d6)。
+- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl实现接口.md#f-a098c32ba789341e)。
+- `impl_->materialize` → [blender::VArrayCommon::materialize · L659](03-单值与Span表示.md#f-027abeb1cca6e086)；[blender::VArrayCommon::materialize · L665](03-单值与Span表示.md#f-2b80aad83eab5a2b)。同名重载需按实参类型选择。
+- `r_span.data` → [blender::MutableSpan::data · L545](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-eb45a6e4d8211efd)。
 
 <!-- annotated:860598d1921a88 -->
 
@@ -642,9 +642,9 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->materialize_to_uninitialized` → [blender::VArrayCommon::materialize_to_uninitialized · L671](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-be429d5ef5fbe3e8)；[blender::VArrayCommon::materialize_to_uninitialized · L676](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-48dc93aed240b8c8)。同名重载需按实参类型选择。
-- `IndexMask` → [blender::index_mask::IndexMask::IndexMask · L704](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-8c95440e4c5fec78)；[blender::index_mask::IndexMask::IndexMask · L709](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-fdd9dc18868bc0cd)；[blender::index_mask::IndexMask::IndexMask · L722](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-4b32f3ba3de66d05)。同名重载需按实参类型选择。
-- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
+- `this->materialize_to_uninitialized` → [blender::VArrayCommon::materialize_to_uninitialized · L671](03-单值与Span表示.md#f-be429d5ef5fbe3e8)；[blender::VArrayCommon::materialize_to_uninitialized · L676](03-单值与Span表示.md#f-48dc93aed240b8c8)。同名重载需按实参类型选择。
+- `IndexMask` → [blender::index_mask::IndexMask::IndexMask · L704](09-分段存储与遍历.md#f-8c95440e4c5fec78)；[blender::index_mask::IndexMask::IndexMask · L709](09-分段存储与遍历.md#f-fdd9dc18868bc0cd)；[blender::index_mask::IndexMask::IndexMask · L722](09-分段存储与遍历.md#f-4b32f3ba3de66d05)。同名重载需按实参类型选择。
+- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl实现接口.md#f-a098c32ba789341e)。
 
 <!-- annotated:ab5f86a1696530 -->
 
@@ -704,11 +704,11 @@ flowchart TB
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `mask.min_array_size` → [blender::index_mask::IndexMask::min_array_size · L782](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-f3a460d74b4fc7d6)。
-- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
-- `impl_->materialize` → [blender::VArrayCommon::materialize · L659](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-027abeb1cca6e086)；[blender::VArrayCommon::materialize · L665](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-2b80aad83eab5a2b)。同名重载需按实参类型选择。
-- `r_span.data` → [blender::MutableSpan::data · L545](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-eb45a6e4d8211efd)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `mask.min_array_size` → [blender::index_mask::IndexMask::min_array_size · L782](09-分段存储与遍历.md#f-f3a460d74b4fc7d6)。
+- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl实现接口.md#f-a098c32ba789341e)。
+- `impl_->materialize` → [blender::VArrayCommon::materialize · L659](03-单值与Span表示.md#f-027abeb1cca6e086)；[blender::VArrayCommon::materialize · L665](03-单值与Span表示.md#f-2b80aad83eab5a2b)。同名重载需按实参类型选择。
+- `r_span.data` → [blender::MutableSpan::data · L545](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-eb45a6e4d8211efd)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L681—L682
 
@@ -770,8 +770,8 @@ flowchart TB
 
 **继续追踪实现**
 
-- `impl_->materialize_compressed` → [blender::VArrayCommon::materialize_compressed · L683](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-94b54a4646bb2429)。
-- `r_span.data` → [blender::MutableSpan::data · L545](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-eb45a6e4d8211efd)。
+- `impl_->materialize_compressed` → [blender::VArrayCommon::materialize_compressed · L683](03-单值与Span表示.md#f-94b54a4646bb2429)。
+- `r_span.data` → [blender::MutableSpan::data · L545](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-eb45a6e4d8211efd)。
 
 <!-- annotated:cde212068ea08a -->
 
@@ -829,8 +829,8 @@ flowchart TB
 
 **继续追踪实现**
 
-- `impl_->materialize_compressed` → [blender::VArrayCommon::materialize_compressed · L683](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-94b54a4646bb2429)。
-- `r_span.data` → [blender::MutableSpan::data · L545](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-eb45a6e4d8211efd)。
+- `impl_->materialize_compressed` → [blender::VArrayCommon::materialize_compressed · L683](03-单值与Span表示.md#f-94b54a4646bb2429)。
+- `r_span.data` → [blender::MutableSpan::data · L545](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-eb45a6e4d8211efd)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L692—L693
 
@@ -894,7 +894,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `impl_->try_assign_GVArray` → [blender::VArrayCommon::try_assign_GVArray · L694](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-145e7934a3bdf83e)。
+- `impl_->try_assign_GVArray` → [blender::VArrayCommon::try_assign_GVArray · L694](03-单值与Span表示.md#f-145e7934a3bdf83e)。
 
 <!-- annotated:5ce6d507d9802d -->
 
@@ -950,7 +950,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `impl_.get` → [blender::AnyDerived::get · L167](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-ebda3f1086d3f9fc)。
+- `impl_.get` → [blender::AnyDerived::get · L167](../01-基础容器与现代CPP/18-AnyDerived多态对象值封装.md#f-ebda3f1086d3f9fc)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L703—L728
 
@@ -1215,7 +1215,7 @@ template<typename T> class VArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `this->template emplace<VArrayImpl_For_Span_final<T>>` → [blender::VArrayCommon::emplace · L531](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-bd0fffea634fdbce)。
+- `this->template emplace<VArrayImpl_For_Span_final<T>>` → [blender::VArrayCommon::emplace · L531](02-VArrayImpl实现接口.md#f-bd0fffea634fdbce)。
 
 <!-- annotated:07c5979e409f91 -->
 
@@ -1274,7 +1274,7 @@ template<typename T> class VArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `this->template emplace<VArrayImpl_For_Single<T>>` → [blender::VArrayCommon::emplace · L531](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-bd0fffea634fdbce)。
+- `this->template emplace<VArrayImpl_For_Single<T>>` → [blender::VArrayCommon::emplace · L531](02-VArrayImpl实现接口.md#f-bd0fffea634fdbce)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L744—L747
@@ -1346,7 +1346,7 @@ template<typename T> class VArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `varray.template emplace<ImplT>` → [blender::VArrayCommon::emplace · L531](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-bd0fffea634fdbce)。
+- `varray.template emplace<ImplT>` → [blender::VArrayCommon::emplace · L531](02-VArrayImpl实现接口.md#f-bd0fffea634fdbce)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L755—L758
@@ -1417,7 +1417,7 @@ template<typename T> class VArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `VArray` → [blender::VArray::VArray · L729](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-d7ae0ad405cffa83)；[blender::VArray::VArray · L731](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-23fc37534533119a)；[blender::VArray::VArray · L733](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-69612c15887be77d)；[blender::VArray::VArray · L735](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-75f0a06e36786df7)；[blender::VArray::VArray · L740](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-2f6f2caa2a2d034f)。同名重载需按实参类型选择。
+- `VArray` → [blender::VArray::VArray · L729](03-单值与Span表示.md#f-d7ae0ad405cffa83)；[blender::VArray::VArray · L731](03-单值与Span表示.md#f-23fc37534533119a)；[blender::VArray::VArray · L733](03-单值与Span表示.md#f-69612c15887be77d)；[blender::VArray::VArray · L735](03-单值与Span表示.md#f-75f0a06e36786df7)；[blender::VArray::VArray · L740](03-单值与Span表示.md#f-2f6f2caa2a2d034f)。同名重载需按实参类型选择。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L763—L767
@@ -1488,7 +1488,7 @@ template<typename T> class VArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `VArray` → [blender::VArray::VArray · L729](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-d7ae0ad405cffa83)；[blender::VArray::VArray · L731](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-23fc37534533119a)；[blender::VArray::VArray · L733](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-69612c15887be77d)；[blender::VArray::VArray · L735](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-75f0a06e36786df7)；[blender::VArray::VArray · L740](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-2f6f2caa2a2d034f)。同名重载需按实参类型选择。
+- `VArray` → [blender::VArray::VArray · L729](03-单值与Span表示.md#f-d7ae0ad405cffa83)；[blender::VArray::VArray · L731](03-单值与Span表示.md#f-23fc37534533119a)；[blender::VArray::VArray · L733](03-单值与Span表示.md#f-69612c15887be77d)；[blender::VArray::VArray · L735](03-单值与Span表示.md#f-75f0a06e36786df7)；[blender::VArray::VArray · L740](03-单值与Span表示.md#f-2f6f2caa2a2d034f)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L772—L776
 
@@ -1560,7 +1560,7 @@ template<typename T> class VArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `VArray::from<VArrayImpl_For_Func<T, decltype(get_func)>>` → [blender::VArray::from · L748](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-e96d850733ac0936)。
+- `VArray::from<VArrayImpl_For_Func<T, decltype(get_func)>>` → [blender::VArray::from · L748](03-单值与Span表示.md#f-e96d850733ac0936)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L781—L785
@@ -1633,7 +1633,7 @@ template<typename T> class VArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `VArray::from_func` → [blender::VArray::from_func · L777](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-960f6d3e81b7819d)。
+- `VArray::from_func` → [blender::VArray::from_func · L777](03-单值与Span表示.md#f-960f6d3e81b7819d)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L790—L794
 
@@ -1712,9 +1712,9 @@ template<typename T> class VArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `values.data` → [blender::Span::data · L219](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-10c5889198935800)。
-- `values.size` → [blender::Span::size · L256](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `VArray::from<VArrayImpl_For_DerivedSpan<StructT, T, GetFunc>>` → [blender::VArray::from · L748](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-e96d850733ac0936)。
+- `values.data` → [blender::Span::data · L219](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-10c5889198935800)。
+- `values.size` → [blender::Span::size · L256](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `VArray::from<VArrayImpl_For_DerivedSpan<StructT, T, GetFunc>>` → [blender::VArray::from · L748](03-单值与Span表示.md#f-e96d850733ac0936)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L803—L808
 
@@ -1787,7 +1787,7 @@ template<typename T> class VArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `VArray::from<VArrayImpl_For_ArrayContainer<ContainerT>>` → [blender::VArray::from · L748](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-e96d850733ac0936)。
+- `VArray::from<VArrayImpl_For_ArrayContainer<ContainerT>>` → [blender::VArray::from · L748](03-单值与Span表示.md#f-e96d850733ac0936)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L813—L819
@@ -2027,7 +2027,7 @@ template<typename T> class VMutableArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `varray.template emplace<ImplT>` → [blender::VArrayCommon::emplace · L531](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-bd0fffea634fdbce)。
+- `varray.template emplace<ImplT>` → [blender::VArrayCommon::emplace · L531](02-VArrayImpl实现接口.md#f-bd0fffea634fdbce)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L839—L842
@@ -2096,7 +2096,7 @@ template<typename T> class VMutableArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `VMutableArray::from<VArrayImpl_For_Span_final<T>>` → [blender::VMutableArray::from · L832](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-eeb70de90a9479c6)。
+- `VMutableArray::from<VArrayImpl_For_Span_final<T>>` → [blender::VMutableArray::from · L832](03-单值与Span表示.md#f-eeb70de90a9479c6)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L847—L851
 
@@ -2168,7 +2168,7 @@ template<typename T> class VMutableArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `VMutableArray::from<VArrayImpl_For_DerivedSpan<StructT, T, GetFunc, SetFunc>>` → [blender::VMutableArray::from · L832](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-eeb70de90a9479c6)。
+- `VMutableArray::from<VArrayImpl_For_DerivedSpan<StructT, T, GetFunc, SetFunc>>` → [blender::VMutableArray::from · L832](03-单值与Span表示.md#f-eeb70de90a9479c6)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L857—L862
 
@@ -2241,7 +2241,7 @@ template<typename T> class VMutableArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `VMutableArray::from<VArrayImpl_For_ArrayContainer<ContainerT>>` → [blender::VMutableArray::from · L832](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-eeb70de90a9479c6)。
+- `VMutableArray::from<VArrayImpl_For_ArrayContainer<ContainerT>>` → [blender::VMutableArray::from · L832](03-单值与Span表示.md#f-eeb70de90a9479c6)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L867—L868
@@ -2441,12 +2441,12 @@ template<typename T> class VMutableArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->is_span` → [blender::VArrayCommon::is_span · L609](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-64290cd299f91a17)。
-- `this->get_impl()->common_info` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L891。
-- `this->get_impl` → [blender::VMutableArray::get_impl · L922](04-%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%B0%8F%E5%AF%B9%E8%B1%A1%E4%BC%98%E5%8C%96.md#f-780a81eacf8ce915)。
-- `MutableSpan<T>` → [blender::MutableSpan::MutableSpan · L462](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
-- `this->size` → [blender::VArrayImpl::size · L93](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-fbf37f2ba6f22399)；[blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->is_span` → [blender::VArrayCommon::is_span · L609](03-单值与Span表示.md#f-64290cd299f91a17)。
+- `this->get_impl()->common_info` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L891。
+- `this->get_impl` → [blender::VMutableArray::get_impl · L922](04-所有权与小对象优化.md#f-780a81eacf8ce915)。
+- `MutableSpan<T>` → [blender::MutableSpan::MutableSpan · L462](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
+- `this->size` → [blender::VArrayImpl::size · L93](01-VArray表示与值语义.md#f-fbf37f2ba6f22399)；[blender::VArrayCommon::size · L569](02-VArrayImpl实现接口.md#f-a098c32ba789341e)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L894—L897
 
@@ -2516,10 +2516,10 @@ template<typename T> class VMutableArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::VArrayImpl::size · L93](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-fbf37f2ba6f22399)；[blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。同名重载需按实参类型选择。
-- `this->get_impl()->set` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L902。
-- `this->get_impl` → [blender::VMutableArray::get_impl · L922](04-%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%B0%8F%E5%AF%B9%E8%B1%A1%E4%BC%98%E5%8C%96.md#f-780a81eacf8ce915)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::VArrayImpl::size · L93](01-VArray表示与值语义.md#f-fbf37f2ba6f22399)；[blender::VArrayCommon::size · L569](02-VArrayImpl实现接口.md#f-a098c32ba789341e)。同名重载需按实参类型选择。
+- `this->get_impl()->set` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L902。
+- `this->get_impl` → [blender::VMutableArray::get_impl · L922](04-所有权与小对象优化.md#f-780a81eacf8ce915)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L904—L907
@@ -2587,11 +2587,11 @@ template<typename T> class VMutableArray : public VArrayCommon<T> {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `src.size` → [blender::Span::size · L256](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `this->size` → [blender::VArrayImpl::size · L93](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-fbf37f2ba6f22399)；[blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。同名重载需按实参类型选择。
-- `this->get_impl()->set_all` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L911。
-- `this->get_impl` → [blender::VMutableArray::get_impl · L922](04-%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%B0%8F%E5%AF%B9%E8%B1%A1%E4%BC%98%E5%8C%96.md#f-780a81eacf8ce915)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `src.size` → [blender::Span::size · L256](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `this->size` → [blender::VArrayImpl::size · L93](01-VArray表示与值语义.md#f-fbf37f2ba6f22399)；[blender::VArrayCommon::size · L569](02-VArrayImpl实现接口.md#f-a098c32ba789341e)。同名重载需按实参类型选择。
+- `this->get_impl()->set_all` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L911。
+- `this->get_impl` → [blender::VMutableArray::get_impl · L922](04-所有权与小对象优化.md#f-780a81eacf8ce915)。
 
 ## 语法与相关类型
 
@@ -2709,4 +2709,4 @@ std::function保存可调用目标并提供统一调用接口，复制能力与�
 
 对比普通Span、标准ranges惰性视图和虚拟数组时，明确随机索引能力、批量物化、类型擦除和拥有关系；接口外观相近不代表同一抽象。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

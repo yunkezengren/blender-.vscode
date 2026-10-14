@@ -1,6 +1,6 @@
 # 01-18 AnyDerived多态对象值封装
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -257,8 +257,8 @@ template<typename Base> struct AnyDerivedExtraInfo {
 
 **继续追踪实现**
 
-- `(const_cast<StorageT *>(static_cast<const StorageT *>(buffer)))->get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L41。
-- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
+- `(const_cast<StorageT *>(static_cast<const StorageT *>(buffer)))->get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L41。
+- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_any_derived.hh L49—L85
 
@@ -445,7 +445,7 @@ template<typename Base, int64_t InlineBufferCapacity = 24> struct AnyDerived {
 
 **继续追踪实现**
 
-- `this->impl_from_storage` → [blender::AnyDerived::impl_from_storage · L173](18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-7fb2c31d30ad3dc7)。
+- `this->impl_from_storage` → [blender::AnyDerived::impl_from_storage · L173](18-AnyDerived多态对象值封装.md#f-7fb2c31d30ad3dc7)。
 
 <!-- annotated:9ef1481965bd07 -->
 
@@ -510,8 +510,8 @@ template<typename Base, int64_t InlineBufferCapacity = 24> struct AnyDerived {
 
 **继续追踪实现**
 
-- `this->impl_from_storage` → [blender::AnyDerived::impl_from_storage · L173](18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-7fb2c31d30ad3dc7)。
-- `other.storage_.reset` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L96。
+- `this->impl_from_storage` → [blender::AnyDerived::impl_from_storage · L173](18-AnyDerived多态对象值封装.md#f-7fb2c31d30ad3dc7)。
+- `other.storage_.reset` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L96。
 
 <!-- annotated:9fa4a206024bd8 -->
 
@@ -711,7 +711,7 @@ template<typename Base, int64_t InlineBufferCapacity = 24> struct AnyDerived {
 
 **继续追踪实现**
 
-- `this->impl_from_storage` → [blender::AnyDerived::impl_from_storage · L173](18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-7fb2c31d30ad3dc7)。
+- `this->impl_from_storage` → [blender::AnyDerived::impl_from_storage · L173](18-AnyDerived多态对象值封装.md#f-7fb2c31d30ad3dc7)。
 
 <!-- annotated:e0fa97fda33e5a -->
 
@@ -793,8 +793,8 @@ template<typename Base, int64_t InlineBufferCapacity = 24> struct AnyDerived {
 **继续追踪实现**
 
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `this->impl_from_storage` → [blender::AnyDerived::impl_from_storage · L173](18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-7fb2c31d30ad3dc7)。
-- `other.storage_.reset` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L129。
+- `this->impl_from_storage` → [blender::AnyDerived::impl_from_storage · L173](18-AnyDerived多态对象值封装.md#f-7fb2c31d30ad3dc7)。
+- `other.storage_.reset` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L129。
 
 <!-- annotated:c7efb137f7bb88 -->
 
@@ -881,7 +881,7 @@ template<typename Base, int64_t InlineBufferCapacity = 24> struct AnyDerived {
 
 **继续追踪实现**
 
-- `storage_.template emplace<ImplT>` → [blender::AnyDerived::emplace · L134](18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-57e6b0e71dbdff55)。
+- `storage_.template emplace<ImplT>` → [blender::AnyDerived::emplace · L134](18-AnyDerived多态对象值封装.md#f-57e6b0e71dbdff55)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 - `std::make_shared<ImplT>` → [外部契约](https://eel.is/c++draft/util.smartptr.shared.create)：构造由共享控制块管理的对象；共享寿命不自动使被指对象读写线程安全，强引用环需单独处理。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
@@ -1175,10 +1175,10 @@ template<typename Base, int64_t InlineBufferCapacity = 24> struct AnyDerived {
 
 **继续追踪实现**
 
-- `storage_.has_value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L175。
-- `storage_.extra_info().get_impl` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L178。
-- `storage_.extra_info` → [blender::Any::extra_info · L390](17-Any%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4%E5%AD%98%E5%82%A8.md#f-7a560ad93b9c62eb)。
-- `storage_.get` → [blender::AnyDerived::get · L167](18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-ebda3f1086d3f9fc)。
+- `storage_.has_value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L175。
+- `storage_.extra_info().get_impl` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L178。
+- `storage_.extra_info` → [blender::Any::extra_info · L390](17-Any类型擦除存储.md#f-7a560ad93b9c62eb)。
+- `storage_.get` → [blender::AnyDerived::get · L167](18-AnyDerived多态对象值封装.md#f-ebda3f1086d3f9fc)。
 
 ### 类型布局、声明与编译条件 · BLI_any_derived.hh L180—L182
 
@@ -1325,4 +1325,4 @@ shared_ptr让控制块跟踪共享寿命，不自动使被指向对象的读写�
 
 对比std::vector、std::array、std::span与LLVM SmallVector、ArrayRef时，分别比较拥有关系、内嵌存储、大小是否属于类型和失效条件。不要根据同名方法推断完全相同契约。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

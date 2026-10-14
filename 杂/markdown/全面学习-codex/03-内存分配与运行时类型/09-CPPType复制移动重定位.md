@@ -1,6 +1,6 @@
 # 03-09 CPPType复制移动重定位
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -159,7 +159,7 @@ inline void CPPType::value_initialize(void *ptr) const
 
 **继续追踪实现**
 
-- `value_initialize_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L544。
+- `value_initialize_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L544。
 
 <!-- annotated:a7954a5366fa59 -->
 
@@ -216,7 +216,7 @@ inline void CPPType::value_initialize_n(void *ptr, int64_t n) const
 
 **继续追踪实现**
 
-- `value_initialize_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L549。
+- `value_initialize_n_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L549。
 
 <!-- annotated:3930d414fd7394 -->
 
@@ -273,7 +273,7 @@ inline void CPPType::value_initialize_indices(void *ptr, const IndexMask &mask) 
 
 **继续追踪实现**
 
-- `value_initialize_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L554。
+- `value_initialize_indices_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L554。
 
 <!-- annotated:04cb08ae2f960b -->
 
@@ -329,7 +329,7 @@ inline void CPPType::destruct(void *ptr) const
 
 **继续追踪实现**
 
-- `destruct_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L559。
+- `destruct_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L559。
 
 <!-- annotated:796a9f56f85366 -->
 
@@ -386,7 +386,7 @@ inline void CPPType::destruct_n(void *ptr, int64_t n) const
 
 **继续追踪实现**
 
-- `destruct_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L564。
+- `destruct_n_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L564。
 
 <!-- annotated:a4709b7c39f2d4 -->
 
@@ -443,7 +443,7 @@ inline void CPPType::destruct_indices(void *ptr, const IndexMask &mask) const
 
 **继续追踪实现**
 
-- `destruct_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L569。
+- `destruct_indices_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L569。
 
 <!-- annotated:04613f5cc38cb5 -->
 
@@ -500,7 +500,7 @@ inline void CPPType::copy_assign(const void *src, void *dst) const
 
 **继续追踪实现**
 
-- `copy_assign_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L574。
+- `copy_assign_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L574。
 
 <!-- annotated:4cfeb42e854066 -->
 
@@ -558,7 +558,7 @@ inline void CPPType::copy_assign_n(const void *src, void *dst, int64_t n) const
 
 **继续追踪实现**
 
-- `copy_assign_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L579。
+- `copy_assign_n_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L579。
 
 <!-- annotated:95270da1b52033 -->
 
@@ -616,7 +616,7 @@ inline void CPPType::copy_assign_indices(const void *src, void *dst, const Index
 
 **继续追踪实现**
 
-- `copy_assign_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L584。
+- `copy_assign_indices_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L584。
 
 <!-- annotated:19c38b0861d739 -->
 
@@ -678,7 +678,7 @@ inline void CPPType::copy_assign_compressed(const void *src,
 
 **继续追踪实现**
 
-- `copy_assign_compressed_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L591。
+- `copy_assign_compressed_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L591。
 
 <!-- annotated:fc9610d156cbf5 -->
 
@@ -735,7 +735,7 @@ inline void CPPType::copy_construct(const void *src, void *dst) const
 
 **继续追踪实现**
 
-- `copy_construct_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L596。
+- `copy_construct_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L596。
 
 <!-- annotated:01688e3153fbae -->
 
@@ -793,7 +793,7 @@ inline void CPPType::copy_construct_n(const void *src, void *dst, int64_t n) con
 
 **继续追踪实现**
 
-- `copy_construct_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L601。
+- `copy_construct_n_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L601。
 
 <!-- annotated:1c157aa07b8369 -->
 
@@ -855,7 +855,7 @@ inline void CPPType::copy_construct_indices(const void *src,
 
 **继续追踪实现**
 
-- `copy_construct_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L608。
+- `copy_construct_indices_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L608。
 
 <!-- annotated:94603475584263 -->
 
@@ -917,7 +917,7 @@ inline void CPPType::copy_construct_compressed(const void *src,
 
 **继续追踪实现**
 
-- `copy_construct_compressed_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L615。
+- `copy_construct_compressed_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L615。
 
 <!-- annotated:54c2f039201a47 -->
 
@@ -974,7 +974,7 @@ inline void CPPType::move_assign(void *src, void *dst) const
 
 **继续追踪实现**
 
-- `move_assign_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L620。
+- `move_assign_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L620。
 
 <!-- annotated:6451af58c6b9e8 -->
 
@@ -1032,7 +1032,7 @@ inline void CPPType::move_assign_n(void *src, void *dst, int64_t n) const
 
 **继续追踪实现**
 
-- `move_assign_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L625。
+- `move_assign_n_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L625。
 
 <!-- annotated:4d948eb4cc08f7 -->
 
@@ -1090,7 +1090,7 @@ inline void CPPType::move_assign_indices(void *src, void *dst, const IndexMask &
 
 **继续追踪实现**
 
-- `move_assign_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L630。
+- `move_assign_indices_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L630。
 
 <!-- annotated:7273e672dba5ce -->
 
@@ -1147,7 +1147,7 @@ inline void CPPType::move_construct(void *src, void *dst) const
 
 **继续追踪实现**
 
-- `move_construct_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L635。
+- `move_construct_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L635。
 
 <!-- annotated:ef08d88707ab13 -->
 
@@ -1205,7 +1205,7 @@ inline void CPPType::move_construct_n(void *src, void *dst, int64_t n) const
 
 **继续追踪实现**
 
-- `move_construct_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L640。
+- `move_construct_n_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L640。
 
 <!-- annotated:d32dc1c1cc675d -->
 
@@ -1263,7 +1263,7 @@ inline void CPPType::move_construct_indices(void *src, void *dst, const IndexMas
 
 **继续追踪实现**
 
-- `move_construct_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L645。
+- `move_construct_indices_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L645。
 
 <!-- annotated:e5f5d4b10567e4 -->
 
@@ -1320,7 +1320,7 @@ inline void CPPType::relocate_assign(void *src, void *dst) const
 
 **继续追踪实现**
 
-- `relocate_assign_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L650。
+- `relocate_assign_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L650。
 
 <!-- annotated:be4bb2c9872714 -->
 
@@ -1378,7 +1378,7 @@ inline void CPPType::relocate_assign_n(void *src, void *dst, int64_t n) const
 
 **继续追踪实现**
 
-- `relocate_assign_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L655。
+- `relocate_assign_n_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L655。
 
 <!-- annotated:8c3afcaf93faa8 -->
 
@@ -1436,7 +1436,7 @@ inline void CPPType::relocate_assign_indices(void *src, void *dst, const IndexMa
 
 **继续追踪实现**
 
-- `relocate_assign_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L660。
+- `relocate_assign_indices_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L660。
 
 <!-- annotated:5eedbd3d372a2b -->
 
@@ -1493,7 +1493,7 @@ inline void CPPType::relocate_construct(void *src, void *dst) const
 
 **继续追踪实现**
 
-- `relocate_construct_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L665。
+- `relocate_construct_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L665。
 
 <!-- annotated:cd9bb487465123 -->
 
@@ -1551,7 +1551,7 @@ inline void CPPType::relocate_construct_n(void *src, void *dst, int64_t n) const
 
 **继续追踪实现**
 
-- `relocate_construct_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L670。
+- `relocate_construct_n_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L670。
 
 <!-- annotated:736a52a8d1b124 -->
 
@@ -1609,7 +1609,7 @@ inline void CPPType::relocate_construct_indices(void *src, void *dst, const Inde
 
 **继续追踪实现**
 
-- `relocate_construct_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L675。
+- `relocate_construct_indices_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L675。
 
 <!-- annotated:9552a614384276 -->
 
@@ -1667,7 +1667,7 @@ inline void CPPType::fill_assign_n(const void *value, void *dst, int64_t n) cons
 
 **继续追踪实现**
 
-- `fill_assign_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L680。
+- `fill_assign_n_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L680。
 
 <!-- annotated:42e0469cbb3bfb -->
 
@@ -1725,7 +1725,7 @@ inline void CPPType::fill_assign_indices(const void *value, void *dst, const Ind
 
 **继续追踪实现**
 
-- `fill_assign_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L685。
+- `fill_assign_indices_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L685。
 
 <!-- annotated:769ab598bed5f8 -->
 
@@ -1783,7 +1783,7 @@ inline void CPPType::fill_construct_n(const void *value, void *dst, int64_t n) c
 
 **继续追踪实现**
 
-- `fill_construct_n_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L690。
+- `fill_construct_n_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L690。
 
 <!-- annotated:ab550af8bda7b9 -->
 
@@ -1845,7 +1845,7 @@ inline void CPPType::fill_construct_indices(const void *value,
 
 **继续追踪实现**
 
-- `fill_construct_indices_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L697。
+- `fill_construct_indices_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L697。
 
 <!-- annotated:b8e449f826a1df -->
 
@@ -1967,9 +1967,9 @@ inline void CPPType::print(const void *value, std::stringstream &ss) const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->pointer_can_point_to_instance` → [blender::CPPType::pointer_can_point_to_instance · L522](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-2e5140a882358ea2)。
-- `print_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L709。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->pointer_can_point_to_instance` → [blender::CPPType::pointer_can_point_to_instance · L522](08-CPPType构造与析构.md#f-2e5140a882358ea2)。
+- `print_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L709。
 
 <!-- annotated:78022de996d488 -->
 
@@ -2030,7 +2030,7 @@ inline bool CPPType::is_equal(const void *a, const void *b) const
 
 **继续追踪实现**
 
-- `is_equal_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L714。
+- `is_equal_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L714。
 
 <!-- annotated:8a7eb6a34dccf1 -->
 
@@ -2098,8 +2098,8 @@ inline bool CPPType::is_equal_or_false(const void *a, const void *b) const
 
 **继续追踪实现**
 
-- `this->is_equality_comparable` → [blender::CPPType::is_equality_comparable · L507](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-ed982afd031c9775)。
-- `this->is_equal` → [blender::CPPType::is_equal · L712](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-40e64570e7a3436a)。
+- `this->is_equality_comparable` → [blender::CPPType::is_equality_comparable · L507](08-CPPType构造与析构.md#f-ed982afd031c9775)。
+- `this->is_equal` → [blender::CPPType::is_equal · L712](09-CPPType复制移动重定位.md#f-40e64570e7a3436a)。
 
 <!-- annotated:e240a82131b961 -->
 
@@ -2159,7 +2159,7 @@ inline uint64_t CPPType::hash(const void *value) const
 
 **继续追踪实现**
 
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L727。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L727。
 
 <!-- annotated:5b154b61c5594a -->
 
@@ -2227,8 +2227,8 @@ inline uint64_t CPPType::hash_or_fallback(const void *value, uint64_t fallback_h
 
 **继续追踪实现**
 
-- `this->is_hashable` → [blender::CPPType::is_hashable · L512](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-b34f129b9afb9992)。
-- `this->hash` → [blender::CPPType::hash · L725](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-20cc5897cf92aa57)；[blender::CPPType::hash · L748](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-01b52b46dca406ee)。同名重载需按实参类型选择。
+- `this->is_hashable` → [blender::CPPType::is_hashable · L512](08-CPPType构造与析构.md#f-b34f129b9afb9992)。
+- `this->hash` → [blender::CPPType::hash · L725](09-CPPType复制移动重定位.md#f-20cc5897cf92aa57)；[blender::CPPType::hash · L748](09-CPPType复制移动重定位.md#f-01b52b46dca406ee)。同名重载需按实参类型选择。
 
 <!-- annotated:cc83eedbf3bd40 -->
 
@@ -2285,7 +2285,7 @@ inline void CPPType::hash_unique(const void *value, UniqueHashBytes &hash) const
 
 **继续追踪实现**
 
-- `this->hash_unique_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L740。
+- `this->hash_unique_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L740。
 
 <!-- annotated:a6bf80fbcc765f -->
 
@@ -2397,7 +2397,7 @@ inline uint64_t CPPType::hash() const
 
 **继续追踪实现**
 
-- `get_default_hash` → [blender::get_default_hash · L251](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/01-%E5%93%88%E5%B8%8C%E4%B8%8E%E7%9B%B8%E7%AD%89%E5%A5%91%E7%BA%A6.md#f-5f2c246aedf3dc0a)。
+- `get_default_hash` → [blender::get_default_hash · L251](../02-哈希表与关联数据结构/01-哈希与相等契约.md#f-5f2c246aedf3dc0a)。
 
 <!-- annotated:365bd39a4c1d44 -->
 
@@ -2513,7 +2513,7 @@ template<typename T> inline bool CPPType::is() const
 
 **继续追踪实现**
 
-- `CPPType::get<std::decay_t<T>>` → [blender::CPPType::get · L481](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
+- `CPPType::get<std::decay_t<T>>` → [blender::CPPType::get · L481](08-CPPType构造与析构.md#f-0cc10a3783d6abdb)。
 
 <!-- annotated:ebf4b0bbaa5083 -->
 
@@ -2569,7 +2569,7 @@ template<typename... T> inline bool CPPType::is_any() const
 
 **继续追踪实现**
 
-- `this->is<T>` → [blender::CPPType::is · L758](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-2e2c3ee7602530a4)。
+- `this->is<T>` → [blender::CPPType::is · L758](09-CPPType复制移动重定位.md#f-2e2c3ee7602530a4)。
 
 <!-- annotated:dc82588e5d010a -->
 
@@ -2631,8 +2631,8 @@ template<typename... Types, typename Fn> inline void CPPType::to_static_type(Fn 
 
 **继续追踪实现**
 
-- `this->to_static_type_try<Types...>` → [blender::CPPType::to_static_type_try · L776](09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-bd7d5b1f468949e8)。
-- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
+- `this->to_static_type_try<Types...>` → [blender::CPPType::to_static_type_try · L776](09-CPPType复制移动重定位.md#f-bd7d5b1f468949e8)。
+- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
 
 <!-- annotated:b56557993fcd2a -->
 
@@ -2750,11 +2750,11 @@ template<typename... Types, typename Fn> inline bool CPPType::to_static_type_try
 
 **继续追踪实现**
 
-- `[&]() { /* This way to compute the max generates less code than using std::max with an initializer * list. */ int max_type_index = 0; ((max_type_index = std::max(max_type_index, CP …（完整表达式见本函数源码）` → [blender::() · L390](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_vector_types-5b9874.md#f-26f597afed18e002)。
+- `[&]() { /* This way to compute the max generates less code than using std::max with an initializer * list. */ int max_type_index = 0; ((max_type_index = std::max(max_type_index, CP …（完整表达式见本函数源码）` → [blender::() · L390](../90-实现依赖专题/01-BLI基础库/BLI_math_vector_types.hh.md#f-26f597afed18e002)。
 - `std::max` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
-- `CPPType::get<Types>` → [blender::CPPType::get · L481](08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)。
-- `callback_array.size` → [blender::Array::size · L267](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-c13f1b5a44f423b2)。
-- `callback` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L804。
+- `CPPType::get<Types>` → [blender::CPPType::get · L481](08-CPPType构造与析构.md#f-0cc10a3783d6abdb)。
+- `callback_array.size` → [blender::Array::size · L267](../01-基础容器与现代CPP/08-Array复制移动与销毁.md#f-c13f1b5a44f423b2)。
+- `callback` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L804。
 
 ### 类型布局、声明与编译条件 · BLI_cpp_type.hh L807—L808
 
@@ -2827,4 +2827,4 @@ try定义异常传播的局部边界。失败路径需要销毁已经成功构�
 
 与std::pmr::monotonic_buffer_resource比较批量存储回收，与std::any比较拥有型类型擦除；CPPType描述类型操作，本身不保存每个值。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

@@ -1,6 +1,6 @@
 # 01-19 BitSpan与BitVector
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -342,7 +342,7 @@ class BitIteratorBase {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_bit_span.hh L44—L48
 
@@ -461,7 +461,7 @@ class BitIterator : public BitIteratorBase {
 
 **继续追踪实现**
 
-- `BitRef` → [blender::bits::BitRef::BitRef · L96](%E4%BE%9D%E8%B5%96-BLI_bit_ref-359167.md#f-3232b097aac6b63c)；[blender::bits::BitRef::BitRef · L102](%E4%BE%9D%E8%B5%96-BLI_bit_ref-359167.md#f-bc1f6add7403fe2f)。同名重载需按实参类型选择。
+- `BitRef` → [blender::bits::BitRef::BitRef · L96](../90-实现依赖专题/01-BLI基础库/BLI_bit_ref.hh.md#f-3232b097aac6b63c)；[blender::bits::BitRef::BitRef · L102](../90-实现依赖专题/01-BLI基础库/BLI_bit_ref.hh.md#f-bc1f6add7403fe2f)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_bit_span.hh L55—L59
 
@@ -580,7 +580,7 @@ class MutableBitIterator : public BitIteratorBase {
 
 **继续追踪实现**
 
-- `MutableBitRef` → [blender::bits::MutableBitRef::MutableBitRef · L135](%E4%BE%9D%E8%B5%96-BLI_bit_ref-359167.md#f-23b4dd05da7142b5)；[blender::bits::MutableBitRef::MutableBitRef · L141](%E4%BE%9D%E8%B5%96-BLI_bit_ref-359167.md#f-10beea2cd369d835)。同名重载需按实参类型选择。
+- `MutableBitRef` → [blender::bits::MutableBitRef::MutableBitRef · L135](../90-实现依赖专题/01-BLI基础库/BLI_bit_ref.hh.md#f-23b4dd05da7142b5)；[blender::bits::MutableBitRef::MutableBitRef · L141](../90-实现依赖专题/01-BLI基础库/BLI_bit_ref.hh.md#f-10beea2cd369d835)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_bit_span.hh L66—L73
 
@@ -659,7 +659,7 @@ class OneBitIterator {
 
 **继续追踪实现**
 
-- `this` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L76。
+- `this` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L76。
 
 <!-- annotated:84800450f8a263 -->
 
@@ -788,7 +788,7 @@ class OneBitIterator {
 
 **继续追踪实现**
 
-- `bitscan_forward_clear_uint64` → [blender::bitscan_forward_clear_uint64 · L56](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_bits_inline-8a26f2.md#f-2a2b9af8175029c7)。
+- `bitscan_forward_clear_uint64` → [blender::bitscan_forward_clear_uint64 · L56](../90-实现依赖专题/01-BLI基础库/intern/math_bits_inline.cc.md#f-2a2b9af8175029c7)。
 
 <!-- annotated:6b785a791d5214 -->
 
@@ -975,7 +975,7 @@ class OneBitIteratorRange {
 
 **继续追踪实现**
 
-- `OneBitIterator` → [blender::bits::OneBitIterator::OneBitIterator · L74](19-BitSpan%E4%B8%8EBitVector.md#f-109a651a8d2c3ce6)。
+- `OneBitIterator` → [blender::bits::OneBitIterator::OneBitIterator · L74](19-BitSpan与BitVector.md#f-109a651a8d2c3ce6)。
 
 <a id="f-a2accf9d07735340"></a>
 
@@ -1014,7 +1014,7 @@ class OneBitIteratorRange {
 
 **继续追踪实现**
 
-- `OneBitIterator` → [blender::bits::OneBitIterator::OneBitIterator · L74](19-BitSpan%E4%B8%8EBitVector.md#f-109a651a8d2c3ce6)。
+- `OneBitIterator` → [blender::bits::OneBitIterator::OneBitIterator · L74](19-BitSpan与BitVector.md#f-109a651a8d2c3ce6)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_span.hh L116—L117
 
@@ -1078,7 +1078,7 @@ inline OneBitIteratorRange iter_1_indices(BitInt value)
 
 **继续追踪实现**
 
-- `OneBitIteratorRange` → [blender::bits::OneBitIteratorRange::OneBitIteratorRange · L106](19-BitSpan%E4%B8%8EBitVector.md#f-951e4a3ffd86e85a)。
+- `OneBitIteratorRange` → [blender::bits::OneBitIteratorRange::OneBitIteratorRange · L106](19-BitSpan与BitVector.md#f-951e4a3ffd86e85a)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_span.hh L122—L141
 
@@ -1338,7 +1338,7 @@ class BitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
 
 <!-- annotated:c60c923c2f0d8e -->
 
@@ -1395,7 +1395,7 @@ class BitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.is_empty` → [blender::IndexRange::is_empty · L169](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-9501e070be01ff71)。
+- `bit_range_.is_empty` → [blender::IndexRange::is_empty · L169](04-IndexRange连续整数区间.md#f-9501e070be01ff71)。
 
 <!-- annotated:b67511ed5c0c8c -->
 
@@ -1452,8 +1452,8 @@ class BitSpan {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
 
 <!-- annotated:5ebfd0427af861 -->
 
@@ -1519,9 +1519,9 @@ class BitSpan {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
-- `bit_range_.start` → [blender::IndexRange::start · L243](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
+- `bit_range_.start` → [blender::IndexRange::start · L243](04-IndexRange连续整数区间.md#f-99d2195bd9cfd1f0)。
 
 <!-- annotated:e8a7857f06e34e -->
 
@@ -1582,7 +1582,7 @@ class BitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.slice` → [blender::IndexRange::slice · L276](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-6249bf624e38d609)；[blender::IndexRange::slice · L284](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-eb80885fefc31b6f)。同名重载需按实参类型选择。
+- `bit_range_.slice` → [blender::IndexRange::slice · L276](04-IndexRange连续整数区间.md#f-6249bf624e38d609)；[blender::IndexRange::slice · L284](04-IndexRange连续整数区间.md#f-eb80885fefc31b6f)。同名重载需按实参类型选择。
 
 <!-- annotated:3096218729d43d -->
 
@@ -1642,7 +1642,7 @@ class BitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.take_front` → [blender::IndexRange::take_front · L328](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-63ad1817cc7169c5)。
+- `bit_range_.take_front` → [blender::IndexRange::take_front · L328](04-IndexRange连续整数区间.md#f-63ad1817cc7169c5)。
 
 <!-- annotated:073669ac4fb2e9 -->
 
@@ -1702,7 +1702,7 @@ class BitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.take_back` → [blender::IndexRange::take_back · L339](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-90cb4525591ba822)。
+- `bit_range_.take_back` → [blender::IndexRange::take_back · L339](04-IndexRange连续整数区间.md#f-90cb4525591ba822)。
 
 <!-- annotated:dba8363af6a897 -->
 
@@ -1762,7 +1762,7 @@ class BitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.drop_front` → [blender::IndexRange::drop_front · L306](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-ef3101407d982c90)。
+- `bit_range_.drop_front` → [blender::IndexRange::drop_front · L306](04-IndexRange连续整数区间.md#f-ef3101407d982c90)。
 
 <!-- annotated:05347e22560e2f -->
 
@@ -1822,7 +1822,7 @@ class BitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.drop_back` → [blender::IndexRange::drop_back · L317](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-be17c307e5b14575)。
+- `bit_range_.drop_back` → [blender::IndexRange::drop_back · L317](04-IndexRange连续整数区间.md#f-be17c307e5b14575)。
 
 <!-- annotated:41aa26e797f469 -->
 
@@ -1991,7 +1991,7 @@ class BitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.start` → [blender::IndexRange::start · L243](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
+- `bit_range_.start` → [blender::IndexRange::start · L243](04-IndexRange连续整数区间.md#f-99d2195bd9cfd1f0)。
 
 <!-- annotated:93b37635646fe6 -->
 
@@ -2048,7 +2048,7 @@ class BitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.one_after_last` → [blender::IndexRange::one_after_last · L235](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-ed04bec9c731fc86)。
+- `bit_range_.one_after_last` → [blender::IndexRange::one_after_last · L235](04-IndexRange连续整数区间.md#f-ed04bec9c731fc86)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_span.hh L217—L225
 
@@ -2160,9 +2160,9 @@ inline bool is_bounded_span(const BitSpan span)
 
 **继续追踪实现**
 
-- `span.bit_range().start` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L228。
-- `span.bit_range` → [blender::bits::BitSpan::bit_range · L203](19-BitSpan%E4%B8%8EBitVector.md#f-8752cfebfc5d5dc6)。
-- `span.size` → [blender::bits::BitSpan::size · L151](19-BitSpan%E4%B8%8EBitVector.md#f-619593bac6a150f5)。
+- `span.bit_range().start` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L228。
+- `span.bit_range` → [blender::bits::BitSpan::bit_range · L203](19-BitSpan与BitVector.md#f-8752cfebfc5d5dc6)。
+- `span.size` → [blender::bits::BitSpan::size · L151](19-BitSpan与BitVector.md#f-619593bac6a150f5)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_span.hh L246—L251
 
@@ -2279,8 +2279,8 @@ class BoundedBitSpan : public BitSpan {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan与BitVector.md#f-319fb838ca0d0737)。
 
 <!-- annotated:b3d089f3ea8244 -->
 
@@ -2337,8 +2337,8 @@ class BoundedBitSpan : public BitSpan {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan与BitVector.md#f-319fb838ca0d0737)。
 
 <!-- annotated:cc60c42b925466 -->
 
@@ -2394,8 +2394,8 @@ class BoundedBitSpan : public BitSpan {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan与BitVector.md#f-319fb838ca0d0737)。
 
 <!-- annotated:4a05d97e70ca64 -->
 
@@ -2451,7 +2451,7 @@ class BoundedBitSpan : public BitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.start` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L271。
+- `bit_range_.start` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L271。
 
 <!-- annotated:36f186b95f7de4 -->
 
@@ -2507,7 +2507,7 @@ class BoundedBitSpan : public BitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L276。
+- `bit_range_.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L276。
 
 <!-- annotated:596ca72abe3e34 -->
 
@@ -2563,7 +2563,7 @@ class BoundedBitSpan : public BitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L281。
+- `bit_range_.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L281。
 
 <!-- annotated:f2dd3f3b596114 -->
 
@@ -2623,7 +2623,7 @@ class BoundedBitSpan : public BitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.take_front` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L286。
+- `bit_range_.take_front` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L286。
 
 ### 类型布局、声明与编译条件 · BLI_bit_span.hh L288—L296
 
@@ -2853,7 +2853,7 @@ class MutableBitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
 
 <!-- annotated:9bd186c65c130e -->
 
@@ -2910,7 +2910,7 @@ class MutableBitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.is_empty` → [blender::IndexRange::is_empty · L169](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-9501e070be01ff71)。
+- `bit_range_.is_empty` → [blender::IndexRange::is_empty · L169](04-IndexRange连续整数区间.md#f-9501e070be01ff71)。
 
 <!-- annotated:dbacdd0c132836 -->
 
@@ -2967,8 +2967,8 @@ class MutableBitSpan {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
 
 <!-- annotated:0807c1633ea759 -->
 
@@ -3034,9 +3034,9 @@ class MutableBitSpan {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
-- `bit_range_.start` → [blender::IndexRange::start · L243](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `bit_range_.size` → [blender::IndexRange::size · L156](04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
+- `bit_range_.start` → [blender::IndexRange::start · L243](04-IndexRange连续整数区间.md#f-99d2195bd9cfd1f0)。
 
 <!-- annotated:7e328e862403f2 -->
 
@@ -3097,7 +3097,7 @@ class MutableBitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.slice` → [blender::IndexRange::slice · L276](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-6249bf624e38d609)；[blender::IndexRange::slice · L284](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-eb80885fefc31b6f)。同名重载需按实参类型选择。
+- `bit_range_.slice` → [blender::IndexRange::slice · L276](04-IndexRange连续整数区间.md#f-6249bf624e38d609)；[blender::IndexRange::slice · L284](04-IndexRange连续整数区间.md#f-eb80885fefc31b6f)。同名重载需按实参类型选择。
 
 <!-- annotated:42ba9da04126dd -->
 
@@ -3157,7 +3157,7 @@ class MutableBitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.take_front` → [blender::IndexRange::take_front · L328](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-63ad1817cc7169c5)。
+- `bit_range_.take_front` → [blender::IndexRange::take_front · L328](04-IndexRange连续整数区间.md#f-63ad1817cc7169c5)。
 
 <!-- annotated:203326a7b918e4 -->
 
@@ -3217,7 +3217,7 @@ class MutableBitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.take_back` → [blender::IndexRange::take_back · L339](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-90cb4525591ba822)。
+- `bit_range_.take_back` → [blender::IndexRange::take_back · L339](04-IndexRange连续整数区间.md#f-90cb4525591ba822)。
 
 <!-- annotated:7a369ddac3099d -->
 
@@ -3386,7 +3386,7 @@ class MutableBitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.start` → [blender::IndexRange::start · L243](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
+- `bit_range_.start` → [blender::IndexRange::start · L243](04-IndexRange连续整数区间.md#f-99d2195bd9cfd1f0)。
 
 <!-- annotated:476f64b80b7a08 -->
 
@@ -3443,7 +3443,7 @@ class MutableBitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.one_after_last` → [blender::IndexRange::one_after_last · L235](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-ed04bec9c731fc86)。
+- `bit_range_.one_after_last` → [blender::IndexRange::one_after_last · L235](04-IndexRange连续整数区间.md#f-ed04bec9c731fc86)。
 
 <!-- annotated:0f2c8dea078aee -->
 
@@ -3587,8 +3587,8 @@ class MutableBitSpan {
 
 **继续追踪实现**
 
-- `this->set_all` → [blender::bits::MutableBitSpan::set_all · L375](19-BitSpan%E4%B8%8EBitVector.md#f-c716291e63f0f992)。
-- `this->reset_all` → [blender::bits::MutableBitSpan::reset_all · L41](%E4%BE%9D%E8%B5%96-bit_span-6f3ef8.md#f-db6f6242245cb907)。
+- `this->set_all` → [blender::bits::MutableBitSpan::set_all · L375](19-BitSpan与BitVector.md#f-c716291e63f0f992)。
+- `this->reset_all` → [blender::bits::MutableBitSpan::reset_all · L41](../90-实现依赖专题/01-BLI基础库/intern/bit_span.cc.md#f-db6f6242245cb907)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_span.hh L384—L385
 
@@ -3648,7 +3648,7 @@ class MutableBitSpan {
 
 **继续追踪实现**
 
-- `this->set_all` → [blender::bits::MutableBitSpan::set_all · L375](19-BitSpan%E4%B8%8EBitVector.md#f-c716291e63f0f992)。
+- `this->set_all` → [blender::bits::MutableBitSpan::set_all · L375](19-BitSpan与BitVector.md#f-c716291e63f0f992)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_span.hh L390—L396
 
@@ -3767,8 +3767,8 @@ class MutableBoundedBitSpan : public MutableBitSpan {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan与BitVector.md#f-319fb838ca0d0737)。
 
 <!-- annotated:176ef8858e6229 -->
 
@@ -3825,8 +3825,8 @@ class MutableBoundedBitSpan : public MutableBitSpan {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan与BitVector.md#f-319fb838ca0d0737)。
 
 <!-- annotated:2aa40fe76e25d2 -->
 
@@ -3882,8 +3882,8 @@ class MutableBoundedBitSpan : public MutableBitSpan {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan与BitVector.md#f-319fb838ca0d0737)。
 
 <!-- annotated:d44d618990be90 -->
 
@@ -3939,7 +3939,7 @@ class MutableBoundedBitSpan : public MutableBitSpan {
 
 **继续追踪实现**
 
-- `BitSpan` → [blender::bits::BitSpan::BitSpan · L142](19-BitSpan%E4%B8%8EBitVector.md#f-910f6695cf3e6c50)；[blender::bits::BitSpan::BitSpan · L144](19-BitSpan%E4%B8%8EBitVector.md#f-01ead3d0eaf1cbb8)；[blender::bits::BitSpan::BitSpan · L148](19-BitSpan%E4%B8%8EBitVector.md#f-424d11167d1bc782)。同名重载需按实参类型选择。
+- `BitSpan` → [blender::bits::BitSpan::BitSpan · L142](19-BitSpan与BitVector.md#f-910f6695cf3e6c50)；[blender::bits::BitSpan::BitSpan · L144](19-BitSpan与BitVector.md#f-01ead3d0eaf1cbb8)；[blender::bits::BitSpan::BitSpan · L148](19-BitSpan与BitVector.md#f-424d11167d1bc782)。同名重载需按实参类型选择。
 
 <!-- annotated:c4db42a959b7c9 -->
 
@@ -3995,7 +3995,7 @@ class MutableBoundedBitSpan : public MutableBitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.start` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L421。
+- `bit_range_.start` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L421。
 
 <!-- annotated:83562e5ffede20 -->
 
@@ -4051,7 +4051,7 @@ class MutableBoundedBitSpan : public MutableBitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L426。
+- `bit_range_.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L426。
 
 <!-- annotated:7602c32a809e50 -->
 
@@ -4107,7 +4107,7 @@ class MutableBoundedBitSpan : public MutableBitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L431。
+- `bit_range_.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L431。
 
 <!-- annotated:c514c20dfa69fd -->
 
@@ -4167,7 +4167,7 @@ class MutableBoundedBitSpan : public MutableBitSpan {
 
 **继续追踪实现**
 
-- `bit_range_.take_front` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L436。
+- `bit_range_.take_front` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L436。
 
 <!-- annotated:c5f28d4610aad3 -->
 
@@ -4223,7 +4223,7 @@ class MutableBoundedBitSpan : public MutableBitSpan {
 
 **继续追踪实现**
 
-- `BoundedBitSpan` → [blender::bits::BoundedBitSpan::BoundedBitSpan · L252](19-BitSpan%E4%B8%8EBitVector.md#f-32131d22e1d5bfb9)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L254](19-BitSpan%E4%B8%8EBitVector.md#f-4486a1f04b261177)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L259](19-BitSpan%E4%B8%8EBitVector.md#f-79f2490316451de0)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L264](19-BitSpan%E4%B8%8EBitVector.md#f-0264bf64a7ffe34e)。同名重载需按实参类型选择。
+- `BoundedBitSpan` → [blender::bits::BoundedBitSpan::BoundedBitSpan · L252](19-BitSpan与BitVector.md#f-32131d22e1d5bfb9)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L254](19-BitSpan与BitVector.md#f-4486a1f04b261177)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L259](19-BitSpan与BitVector.md#f-79f2490316451de0)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L264](19-BitSpan与BitVector.md#f-0264bf64a7ffe34e)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_bit_span.hh L443—L447
 
@@ -4309,12 +4309,12 @@ inline std::optional<BoundedBitSpan> try_get_bounded_span(const BitSpan span)
 
 **继续追踪实现**
 
-- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan%E4%B8%8EBitVector.md#f-319fb838ca0d0737)。
-- `BoundedBitSpan` → [blender::bits::BoundedBitSpan::BoundedBitSpan · L252](19-BitSpan%E4%B8%8EBitVector.md#f-32131d22e1d5bfb9)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L254](19-BitSpan%E4%B8%8EBitVector.md#f-4486a1f04b261177)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L259](19-BitSpan%E4%B8%8EBitVector.md#f-79f2490316451de0)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L264](19-BitSpan%E4%B8%8EBitVector.md#f-0264bf64a7ffe34e)。同名重载需按实参类型选择。
-- `span.bit_range().start` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L453。
-- `span.bit_range` → [blender::bits::BitSpan::bit_range · L203](19-BitSpan%E4%B8%8EBitVector.md#f-8752cfebfc5d5dc6)。
-- `span.data` → [blender::bits::BitSpan::data · L198](19-BitSpan%E4%B8%8EBitVector.md#f-7fb8ab932727dff6)。
-- `span.size` → [blender::bits::BitSpan::size · L151](19-BitSpan%E4%B8%8EBitVector.md#f-619593bac6a150f5)。
+- `is_bounded_span` → [blender::bits::is_bounded_span · L226](19-BitSpan与BitVector.md#f-319fb838ca0d0737)。
+- `BoundedBitSpan` → [blender::bits::BoundedBitSpan::BoundedBitSpan · L252](19-BitSpan与BitVector.md#f-32131d22e1d5bfb9)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L254](19-BitSpan与BitVector.md#f-4486a1f04b261177)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L259](19-BitSpan与BitVector.md#f-79f2490316451de0)；[blender::bits::BoundedBitSpan::BoundedBitSpan · L264](19-BitSpan与BitVector.md#f-0264bf64a7ffe34e)。同名重载需按实参类型选择。
+- `span.bit_range().start` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L453。
+- `span.bit_range` → [blender::bits::BitSpan::bit_range · L203](19-BitSpan与BitVector.md#f-8752cfebfc5d5dc6)。
+- `span.data` → [blender::bits::BitSpan::data · L198](19-BitSpan与BitVector.md#f-7fb8ab932727dff6)。
+- `span.size` → [blender::bits::BitSpan::size · L151](19-BitSpan与BitVector.md#f-619593bac6a150f5)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_span.hh L459—L463
 
@@ -4742,8 +4742,8 @@ class BitVector {
 
 **继续追踪实现**
 
-- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-020ca78eff5f9227)。
-- `BitInt` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L94。
+- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](01-对象生命周期与值类别.md#f-020ca78eff5f9227)。
+- `BitInt` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L94。
 
 <!-- annotated:bac455697c1a7d -->
 
@@ -4884,11 +4884,11 @@ class BitVector {
 
 **继续追踪实现**
 
-- `required_ints_for_bits` → [blender::bits::BitVector::required_ints_for_bits · L61](19-BitSpan%E4%B8%8EBitVector.md#f-1a38d1364142c5e6)。
-- `span.size` → [blender::bits::BitVector::size · L198](19-BitSpan%E4%B8%8EBitVector.md#f-a7b6c5beecee4b89)。
-- `allocator_.allocate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L110。
-- `uninitialized_copy_n` → [blender::uninitialized_copy_n · L53](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-6cd63ebede164cd2)。
-- `span.data` → [blender::bits::BitVector::data · L216](19-BitSpan%E4%B8%8EBitVector.md#f-a9301c662d0e70bf)；[blender::bits::BitVector::data · L221](19-BitSpan%E4%B8%8EBitVector.md#f-08d0139b117e5585)。同名重载需按实参类型选择。
+- `required_ints_for_bits` → [blender::bits::BitVector::required_ints_for_bits · L61](19-BitSpan与BitVector.md#f-1a38d1364142c5e6)。
+- `span.size` → [blender::bits::BitVector::size · L198](19-BitSpan与BitVector.md#f-a7b6c5beecee4b89)。
+- `allocator_.allocate` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L110。
+- `uninitialized_copy_n` → [blender::uninitialized_copy_n · L53](01-对象生命周期与值类别.md#f-6cd63ebede164cd2)。
+- `span.data` → [blender::bits::BitVector::data · L216](19-BitSpan与BitVector.md#f-a9301c662d0e70bf)；[blender::bits::BitVector::data · L221](19-BitSpan与BitVector.md#f-08d0139b117e5585)。同名重载需按实参类型选择。
 
 <!-- annotated:85b2004b6c9cec -->
 
@@ -5059,9 +5059,9 @@ class BitVector {
 
 **继续追踪实现**
 
-- `other.is_inline` → [blender::bits::BitVector::is_inline · L379](19-BitSpan%E4%B8%8EBitVector.md#f-f5129a79970cea79)。
-- `other.used_ints_amount` → [blender::bits::BitVector::used_ints_amount · L384](19-BitSpan%E4%B8%8EBitVector.md#f-c163a82e76b7acb7)。
-- `uninitialized_copy_n` → [blender::uninitialized_copy_n · L53](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-6cd63ebede164cd2)。
+- `other.is_inline` → [blender::bits::BitVector::is_inline · L379](19-BitSpan与BitVector.md#f-f5129a79970cea79)。
+- `other.used_ints_amount` → [blender::bits::BitVector::used_ints_amount · L384](19-BitSpan与BitVector.md#f-c163a82e76b7acb7)。
+- `uninitialized_copy_n` → [blender::uninitialized_copy_n · L53](01-对象生命周期与值类别.md#f-6cd63ebede164cd2)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_vector.hh L148—L151
 
@@ -5129,7 +5129,7 @@ class BitVector {
 
 **继续追踪实现**
 
-- `this->resize` → [blender::bits::BitVector::resize · L286](19-BitSpan%E4%B8%8EBitVector.md#f-eeab855041750a13)。
+- `this->resize` → [blender::bits::BitVector::resize · L286](19-BitSpan与BitVector.md#f-eeab855041750a13)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_vector.hh L157—L160
 
@@ -5199,9 +5199,9 @@ class BitVector {
 
 **继续追踪实现**
 
-- `this->resize` → [blender::bits::BitVector::resize · L286](19-BitSpan%E4%B8%8EBitVector.md#f-eeab855041750a13)。
-- `values.size` → [blender::Span::size · L256](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `or_bools_into_bits` → [blender::bits::or_bools_into_bits · L88](%E4%BE%9D%E8%B5%96-bit_bool_conversion-6a719a.md#f-6ecebb0659e9185a)。
+- `this->resize` → [blender::bits::BitVector::resize · L286](19-BitSpan与BitVector.md#f-eeab855041750a13)。
+- `values.size` → [blender::Span::size · L256](05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `or_bools_into_bits` → [blender::bits::or_bools_into_bits · L88](../90-实现依赖专题/01-BLI基础库/intern/bit_bool_conversion.cc.md#f-6ecebb0659e9185a)。
 
 <!-- annotated:0a210f2f21fffa -->
 
@@ -5257,8 +5257,8 @@ class BitVector {
 
 **继续追踪实现**
 
-- `this->is_inline` → [blender::bits::BitVector::is_inline · L379](19-BitSpan%E4%B8%8EBitVector.md#f-f5129a79970cea79)。
-- `allocator_.deallocate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L171。
+- `this->is_inline` → [blender::bits::BitVector::is_inline · L379](19-BitSpan与BitVector.md#f-f5129a79970cea79)。
+- `allocator_.deallocate` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L171。
 
 <!-- annotated:abdc71aafbe645 -->
 
@@ -5318,7 +5318,7 @@ class BitVector {
 
 **继续追踪实现**
 
-- `copy_assign_container` → [blender::copy_assign_container · L284](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-546a45b4d8b5ab44)。
+- `copy_assign_container` → [blender::copy_assign_container · L284](../03-内存分配与运行时类型/01-对齐与未初始化存储.md#f-546a45b4d8b5ab44)。
 
 <!-- annotated:a66b44edd1c6f0 -->
 
@@ -5379,7 +5379,7 @@ class BitVector {
 
 **继续追踪实现**
 
-- `move_assign_container` → [blender::move_assign_container · L300](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/01-%E5%AF%B9%E9%BD%90%E4%B8%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AD%98%E5%82%A8.md#f-5144b56be86e6f42)。
+- `move_assign_container` → [blender::move_assign_container · L300](../03-内存分配与运行时类型/01-对齐与未初始化存储.md#f-5144b56be86e6f42)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:16d4c141630804 -->
@@ -5436,7 +5436,7 @@ class BitVector {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
 
 <!-- annotated:db875ce87b1240 -->
 
@@ -5492,7 +5492,7 @@ class BitVector {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_vector.hh L194—L197
 
@@ -5860,7 +5860,7 @@ class BitVector {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_bit_vector.hh L235—L238
 
@@ -5932,7 +5932,7 @@ class BitVector {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:08ab945225bfe5 -->
 
@@ -5988,7 +5988,7 @@ class BitVector {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_vector.hh L250—L253
 
@@ -6058,8 +6058,8 @@ class BitVector {
 
 **继续追踪实现**
 
-- `this->ensure_space_for_one` → [blender::bits::BitVector::ensure_space_for_one · L340](19-BitSpan%E4%B8%8EBitVector.md#f-928c1ea7459b573f)。
-- `bit.set` → [blender::bits::MutableBitRef::set · L176](%E4%BE%9D%E8%B5%96-BLI_bit_ref-359167.md#f-598a402a4d1cd233)；[blender::bits::MutableBitRef::set · L193](%E4%BE%9D%E8%B5%96-BLI_bit_ref-359167.md#f-aefc2b6946e75707)。同名重载需按实参类型选择。
+- `this->ensure_space_for_one` → [blender::bits::BitVector::ensure_space_for_one · L340](19-BitSpan与BitVector.md#f-928c1ea7459b573f)。
+- `bit.set` → [blender::bits::MutableBitRef::set · L176](../90-实现依赖专题/01-BLI基础库/BLI_bit_ref.hh.md#f-598a402a4d1cd233)；[blender::bits::MutableBitRef::set · L193](../90-实现依赖专题/01-BLI基础库/BLI_bit_ref.hh.md#f-aefc2b6946e75707)。同名重载需按实参类型选择。
 
 <!-- annotated:f7d4615fb742a3 -->
 
@@ -6372,11 +6372,11 @@ class BitVector {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->reserve` → [blender::bits::BitVector::reserve · L312](19-BitSpan%E4%B8%8EBitVector.md#f-8190103e0c15f743)。
-- `MutableBitSpan(data_, IndexRange::from_begin_end(old_size_in_bits, new_size_in_bits)) .set_all` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L295。
-- `MutableBitSpan` → [blender::bits::MutableBitSpan::MutableBitSpan · L297](19-BitSpan%E4%B8%8EBitVector.md#f-84ef7fce1e590bd4)；[blender::bits::MutableBitSpan::MutableBitSpan · L299](19-BitSpan%E4%B8%8EBitVector.md#f-7736cbfc8277cb34)；[blender::bits::MutableBitSpan::MutableBitSpan · L301](19-BitSpan%E4%B8%8EBitVector.md#f-840e1097a65b5c26)。同名重载需按实参类型选择。
-- `IndexRange::from_begin_end` → [blender::IndexRange::from_begin_end · L78](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-a523839fb9650253)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->reserve` → [blender::bits::BitVector::reserve · L312](19-BitSpan与BitVector.md#f-8190103e0c15f743)。
+- `MutableBitSpan(data_, IndexRange::from_begin_end(old_size_in_bits, new_size_in_bits)) .set_all` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L295。
+- `MutableBitSpan` → [blender::bits::MutableBitSpan::MutableBitSpan · L297](19-BitSpan与BitVector.md#f-84ef7fce1e590bd4)；[blender::bits::MutableBitSpan::MutableBitSpan · L299](19-BitSpan与BitVector.md#f-7736cbfc8277cb34)；[blender::bits::MutableBitSpan::MutableBitSpan · L301](19-BitSpan与BitVector.md#f-840e1097a65b5c26)。同名重载需按实参类型选择。
+- `IndexRange::from_begin_end` → [blender::IndexRange::from_begin_end · L78](04-IndexRange连续整数区间.md#f-a523839fb9650253)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_vector.hh L299—L302
 
@@ -6440,8 +6440,8 @@ class BitVector {
 
 **继续追踪实现**
 
-- `MutableBitSpan(data_, size_in_bits_).set_all` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L305。
-- `MutableBitSpan` → [blender::bits::MutableBitSpan::MutableBitSpan · L297](19-BitSpan%E4%B8%8EBitVector.md#f-84ef7fce1e590bd4)；[blender::bits::MutableBitSpan::MutableBitSpan · L299](19-BitSpan%E4%B8%8EBitVector.md#f-7736cbfc8277cb34)；[blender::bits::MutableBitSpan::MutableBitSpan · L301](19-BitSpan%E4%B8%8EBitVector.md#f-840e1097a65b5c26)。同名重载需按实参类型选择。
+- `MutableBitSpan(data_, size_in_bits_).set_all` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L305。
+- `MutableBitSpan` → [blender::bits::MutableBitSpan::MutableBitSpan · L297](19-BitSpan与BitVector.md#f-84ef7fce1e590bd4)；[blender::bits::MutableBitSpan::MutableBitSpan · L299](19-BitSpan与BitVector.md#f-7736cbfc8277cb34)；[blender::bits::MutableBitSpan::MutableBitSpan · L301](19-BitSpan与BitVector.md#f-840e1097a65b5c26)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_bit_vector.hh L307—L311
 
@@ -6507,7 +6507,7 @@ class BitVector {
 
 **继续追踪实现**
 
-- `this->realloc_to_at_least` → [blender::bits::BitVector::realloc_to_at_least · L347](19-BitSpan%E4%B8%8EBitVector.md#f-bc52520c3f09e80f)。
+- `this->realloc_to_at_least` → [blender::bits::BitVector::realloc_to_at_least · L347](19-BitSpan与BitVector.md#f-bc52520c3f09e80f)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_vector.hh L316—L320
 
@@ -6649,8 +6649,8 @@ class BitVector {
 
 **继续追踪实现**
 
-- `this->is_inline` → [blender::bits::BitVector::is_inline · L379](19-BitSpan%E4%B8%8EBitVector.md#f-f5129a79970cea79)。
-- `allocator_.deallocate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L334。
+- `this->is_inline` → [blender::bits::BitVector::is_inline · L379](19-BitSpan与BitVector.md#f-f5129a79970cea79)。
+- `allocator_.deallocate` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L334。
 
 ### 类型布局、声明与编译条件 · BLI_bit_vector.hh L338—L339
 
@@ -6710,7 +6710,7 @@ class BitVector {
 
 **继续追踪实现**
 
-- `this->realloc_to_at_least` → [blender::bits::BitVector::realloc_to_at_least · L347](19-BitSpan%E4%B8%8EBitVector.md#f-bc52520c3f09e80f)。
+- `this->realloc_to_at_least` → [blender::bits::BitVector::realloc_to_at_least · L347](19-BitSpan与BitVector.md#f-bc52520c3f09e80f)。
 
 <!-- annotated:d0185ef43da236 -->
 
@@ -6828,14 +6828,14 @@ class BitVector {
 
 **继续追踪实现**
 
-- `this->required_ints_for_bits` → [blender::bits::BitVector::required_ints_for_bits · L61](19-BitSpan%E4%B8%8EBitVector.md#f-1a38d1364142c5e6)。
+- `this->required_ints_for_bits` → [blender::bits::BitVector::required_ints_for_bits · L61](19-BitSpan与BitVector.md#f-1a38d1364142c5e6)。
 - `std::max` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
-- `this->used_ints_amount` → [blender::bits::BitVector::used_ints_amount · L384](19-BitSpan%E4%B8%8EBitVector.md#f-c163a82e76b7acb7)。
-- `allocator_.allocate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L363。
-- `uninitialized_copy_n` → [blender::uninitialized_copy_n · L53](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-6cd63ebede164cd2)。
-- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-020ca78eff5f9227)。
-- `this->is_inline` → [blender::bits::BitVector::is_inline · L379](19-BitSpan%E4%B8%8EBitVector.md#f-f5129a79970cea79)。
-- `allocator_.deallocate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L372。
+- `this->used_ints_amount` → [blender::bits::BitVector::used_ints_amount · L384](19-BitSpan与BitVector.md#f-c163a82e76b7acb7)。
+- `allocator_.allocate` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L363。
+- `uninitialized_copy_n` → [blender::uninitialized_copy_n · L53](01-对象生命周期与值类别.md#f-6cd63ebede164cd2)。
+- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](01-对象生命周期与值类别.md#f-020ca78eff5f9227)。
+- `this->is_inline` → [blender::bits::BitVector::is_inline · L379](19-BitSpan与BitVector.md#f-f5129a79970cea79)。
+- `allocator_.deallocate` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L372。
 
 <!-- annotated:c5ba9fb2025d86 -->
 
@@ -6947,7 +6947,7 @@ class BitVector {
 
 **继续追踪实现**
 
-- `this->required_ints_for_bits` → [blender::bits::BitVector::required_ints_for_bits · L61](19-BitSpan%E4%B8%8EBitVector.md#f-1a38d1364142c5e6)。
+- `this->required_ints_for_bits` → [blender::bits::BitVector::required_ints_for_bits · L61](19-BitSpan与BitVector.md#f-1a38d1364142c5e6)。
 
 ### 类型布局、声明与编译条件 · BLI_bit_vector.hh L388—L389
 
@@ -7228,4 +7228,4 @@ friend授予指定函数或类访问非公开成员的权限，并不意味着�
 
 对比std::vector、std::array、std::span与LLVM SmallVector、ArrayRef时，分别比较拥有关系、内嵌存储、大小是否属于类型和失效条件。不要根据同名方法推断完全相同契约。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

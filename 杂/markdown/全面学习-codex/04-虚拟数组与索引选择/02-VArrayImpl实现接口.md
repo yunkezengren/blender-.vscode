@@ -1,6 +1,6 @@
 # 04-02 VArrayImpl实现接口
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -310,7 +310,7 @@ template<typename T> class VArrayImpl_For_Single final : public VArrayImpl<T> {
 
 **继续追踪实现**
 
-- `CommonVArrayInfo` → [blender::CommonVArrayInfo::CommonVArrayInfo · L66](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-a716088fcd760d27)；[blender::CommonVArrayInfo::CommonVArrayInfo · L67](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-018a4490310fea4d)。同名重载需按实参类型选择。
+- `CommonVArrayInfo` → [blender::CommonVArrayInfo::CommonVArrayInfo · L66](01-VArray表示与值语义.md#f-a716088fcd760d27)；[blender::CommonVArrayInfo::CommonVArrayInfo · L67](01-VArray表示与值语义.md#f-018a4490310fea4d)。同名重载需按实参类型选择。
 
 <!-- annotated:a93a28d8f46256 -->
 
@@ -388,8 +388,8 @@ template<typename T> class VArrayImpl_For_Single final : public VArrayImpl<T> {
 
 **继续追踪实现**
 
-- `index_mask::detail::fill` → [blender::index_mask::detail::fill · L1251](12-%E9%87%8D%E6%9E%84%E5%8E%86%E5%8F%B2%E4%B8%8E%E5%9F%BA%E5%87%86%E7%BB%83%E4%B9%A0.md#f-ea2ed6e1c98523f9)。
-- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
+- `index_mask::detail::fill` → [blender::index_mask::detail::fill · L1251](12-重构历史与基准练习.md#f-ea2ed6e1c98523f9)。
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-分段存储与遍历.md#f-cd6cd317e2e2812c)。
 
 <!-- annotated:8dac7a96d13760 -->
 
@@ -472,9 +472,9 @@ template<typename T> class VArrayImpl_For_Single final : public VArrayImpl<T> {
 
 **继续追踪实现**
 
-- `initialized_fill_n` → [blender::initialized_fill_n · L86](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-4af3bf5ccfdcee6c)。
-- `mask.size` → [blender::index_mask::IndexMask::size · L743](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-0163b32abc9a0d9c)。
-- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-020ca78eff5f9227)。
+- `initialized_fill_n` → [blender::initialized_fill_n · L86](../01-基础容器与现代CPP/01-对象生命周期与值类别.md#f-4af3bf5ccfdcee6c)。
+- `mask.size` → [blender::index_mask::IndexMask::size · L743](09-分段存储与遍历.md#f-0163b32abc9a0d9c)。
+- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](../01-基础容器与现代CPP/01-对象生命周期与值类别.md#f-020ca78eff5f9227)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L366—L379
 
@@ -629,7 +629,7 @@ template<typename T, typename GetFunc> class VArrayImpl_For_Func final : public 
 
 **继续追踪实现**
 
-- `get_func_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L388。
+- `get_func_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L388。
 
 <!-- annotated:ddc07be5adbc09 -->
 
@@ -707,8 +707,8 @@ template<typename T, typename GetFunc> class VArrayImpl_For_Func final : public 
 
 **继续追踪实现**
 
-- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
-- `get_func_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L394。
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-分段存储与遍历.md#f-cd6cd317e2e2812c)。
+- `get_func_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L394。
 
 <!-- annotated:7bc7bb248a378f -->
 
@@ -792,8 +792,8 @@ template<typename T, typename GetFunc> class VArrayImpl_For_Func final : public 
 
 **继续追踪实现**
 
-- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
-- `get_func_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L411。
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-分段存储与遍历.md#f-cd6cd317e2e2812c)。
+- `get_func_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L411。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L423—L436
 
@@ -959,7 +959,7 @@ class VArrayImpl_For_DerivedSpan final : public VMutableArrayImpl<ElemT> {
 
 **继续追踪实现**
 
-- `GetFunc` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L451。
+- `GetFunc` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L451。
 
 <!-- annotated:b1443b3a7033ef -->
 
@@ -1017,7 +1017,7 @@ class VArrayImpl_For_DerivedSpan final : public VMutableArrayImpl<ElemT> {
 
 **继续追踪实现**
 
-- `SetFunc` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L456。
+- `SetFunc` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L456。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:17e4492f36b64b -->
@@ -1100,8 +1100,8 @@ class VArrayImpl_For_DerivedSpan final : public VMutableArrayImpl<ElemT> {
 
 **继续追踪实现**
 
-- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
-- `GetFunc` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L464。
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-分段存储与遍历.md#f-cd6cd317e2e2812c)。
+- `GetFunc` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L464。
 
 <!-- annotated:0336d7b7bbe7b6 -->
 
@@ -1189,8 +1189,8 @@ class VArrayImpl_For_DerivedSpan final : public VMutableArrayImpl<ElemT> {
 
 **继续追踪实现**
 
-- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-cd6cd317e2e2812c)。
-- `GetFunc` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L482。
+- `mask.foreach_index` → [blender::index_mask::IndexMask::foreach_index · L855](09-分段存储与遍历.md#f-cd6cd317e2e2812c)。
+- `GetFunc` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L482。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L495—L514
 
@@ -1461,7 +1461,7 @@ template<typename T> class VArrayCommon {
 
 **继续追踪实现**
 
-- `impl_.template emplace<ImplT>` → [blender::AnyDerived::emplace · L134](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-57e6b0e71dbdff55)。
+- `impl_.template emplace<ImplT>` → [blender::AnyDerived::emplace · L134](../01-基础容器与现代CPP/18-AnyDerived多态对象值封装.md#f-57e6b0e71dbdff55)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L535—L537
@@ -1602,9 +1602,9 @@ template<typename T> class VArrayCommon {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
-- `impl_->get` → [blender::AnyDerived::get · L167](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-ebda3f1086d3f9fc)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl实现接口.md#f-a098c32ba789341e)。
+- `impl_->get` → [blender::AnyDerived::get · L167](../01-基础容器与现代CPP/18-AnyDerived多态对象值封装.md#f-ebda3f1086d3f9fc)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L555—L559
 
@@ -1747,7 +1747,7 @@ template<typename T> class VArrayCommon {
 
 **继续追踪实现**
 
-- `impl_->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
+- `impl_->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl实现接口.md#f-a098c32ba789341e)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L576—L578
 
@@ -1875,7 +1875,7 @@ template<typename T> class VArrayCommon {
 
 **继续追踪实现**
 
-- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
+- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl实现接口.md#f-a098c32ba789341e)。
 
 ### 类型布局、声明与编译条件 · BLI_virtual_array.hh L590—L591
 
@@ -1935,7 +1935,7 @@ template<typename T> class VArrayCommon {
 
 **继续追踪实现**
 
-- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
+- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl实现接口.md#f-a098c32ba789341e)。
 
 <!-- annotated:e69048caf86964 -->
 
@@ -1991,8 +1991,8 @@ template<typename T> class VArrayCommon {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-a098c32ba789341e)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `this->size` → [blender::VArrayCommon::size · L569](02-VArrayImpl实现接口.md#f-a098c32ba789341e)。
 
 <!-- annotated:35c73e3fd9902e -->
 
@@ -2050,8 +2050,8 @@ template<typename T> class VArrayCommon {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `impl_->common_info` → [blender::VArrayCommon::common_info · L602](02-VArrayImpl%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3.md#f-087793fc5c4b8977)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `impl_->common_info` → [blender::VArrayCommon::common_info · L602](02-VArrayImpl实现接口.md#f-087793fc5c4b8977)。
 
 ## 语法与相关类型
 
@@ -2145,4 +2145,4 @@ shared_ptr让控制块跟踪共享寿命，不自动使被指向对象的读写�
 
 对比普通Span、标准ranges惰性视图和虚拟数组时，明确随机索引能力、批量物化、类型擦除和拥有关系；接口外观相近不代表同一抽象。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

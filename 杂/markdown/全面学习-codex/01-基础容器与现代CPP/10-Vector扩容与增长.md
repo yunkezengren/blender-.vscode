@@ -1,6 +1,6 @@
 # 01-10 Vector扩容与增长
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -28,28 +28,28 @@ reserve改变容量保障，不应使未构造位置变成元素；扩容必须�
 
 先读reserve和realloc_to_at_least，再沿迁移工具进入标准库契约；最后比较resize、reinitialize与两种clear。这里列出跨篇精确入口，避免把全文中的operator[]等辅助接口误当成扩容主链。
 
-- [`mallocn.cc::aligned_malloc` · L77](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-48812794cdf34f28)
-- [`mallocn.cc::aligned_free` · L99](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9dceace8dd60fe03)
-- [`mallocn.cc::MEM_delete_void` · L109](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9a07b26421f2bee6)
-- [`mallocn.cc::MEM_new_uninitialized_aligned` · L134](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9f3d21bd7da93c68)
-- [`BLI_allocator.hh::allocate` · L43](03-%E5%86%85%E5%AD%98%E5%B7%A5%E5%85%B7%E4%B8%8E%E5%88%86%E9%85%8D%E5%99%A8%E6%8E%A5%E5%8F%A3.md#f-a57239e6d3bd10d9)
-- [`BLI_allocator.hh::deallocate` · L60](03-%E5%86%85%E5%AD%98%E5%B7%A5%E5%85%B7%E4%B8%8E%E5%88%86%E9%85%8D%E5%99%A8%E6%8E%A5%E5%8F%A3.md#f-c1586978e7959acb)
-- [`BLI_vector.hh::reserve` · L405](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)
-- [`BLI_vector.hh::resize` · L418](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-059312cabb8abe3a)
-- [`BLI_vector.hh::resize` · L439](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-ab8f94924ebe2d12)
-- [`BLI_vector.hh::reinitialize` · L458](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-9249cd61747c1405)
-- [`BLI_vector.hh::clear` · L468](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-d051bebff5275a43)
-- [`BLI_vector.hh::clear_and_shrink` · L479](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-bc6dd407df52ad34)
-- [`BLI_vector.hh::size` · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)
-- [`BLI_vector.hh::capacity` · L1007](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-1a73aecfff2e3366)
-- [`BLI_vector.hh::is_inline` · L1108](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-6bbcba0fedd158a9)
-- [`BLI_vector.hh::ensure_space_for_one` · L1114](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-eafa5315534c2edf)
-- [`BLI_vector.hh::realloc_to_at_least` · L1121](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-9189de35f17e7c08)
-- [`BLI_memory_utils.hh::destruct_n` · L34](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-cb5bcdbd0ee77885)
-- [`BLI_memory_utils.hh::default_construct_n` · L43](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-7fba5f8c23635f17)
-- [`BLI_memory_utils.hh::uninitialized_move_n` · L69](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-fc5f51bf717c3b5a)
-- [`BLI_memory_utils.hh::uninitialized_relocate_n` · L80](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-9de0365b9a47fd68)
-- [`BLI_memory_utils.hh::uninitialized_fill_n` · L91](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-020ca78eff5f9227)
+- [`mallocn.cc::aligned_malloc` · L77](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-48812794cdf34f28)
+- [`mallocn.cc::aligned_free` · L99](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-9dceace8dd60fe03)
+- [`mallocn.cc::MEM_delete_void` · L109](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-9a07b26421f2bee6)
+- [`mallocn.cc::MEM_new_uninitialized_aligned` · L134](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-9f3d21bd7da93c68)
+- [`BLI_allocator.hh::allocate` · L43](03-内存工具与分配器接口.md#f-a57239e6d3bd10d9)
+- [`BLI_allocator.hh::deallocate` · L60](03-内存工具与分配器接口.md#f-c1586978e7959acb)
+- [`BLI_vector.hh::reserve` · L405](10-Vector扩容与增长.md#f-4cf9c0f00e01102e)
+- [`BLI_vector.hh::resize` · L418](10-Vector扩容与增长.md#f-059312cabb8abe3a)
+- [`BLI_vector.hh::resize` · L439](10-Vector扩容与增长.md#f-ab8f94924ebe2d12)
+- [`BLI_vector.hh::reinitialize` · L458](10-Vector扩容与增长.md#f-9249cd61747c1405)
+- [`BLI_vector.hh::clear` · L468](10-Vector扩容与增长.md#f-d051bebff5275a43)
+- [`BLI_vector.hh::clear_and_shrink` · L479](10-Vector扩容与增长.md#f-bc6dd407df52ad34)
+- [`BLI_vector.hh::size` · L780](11-Vector插入删除与重排.md#f-714773731767349c)
+- [`BLI_vector.hh::capacity` · L1007](12-Vector异常安全与边界.md#f-1a73aecfff2e3366)
+- [`BLI_vector.hh::is_inline` · L1108](12-Vector异常安全与边界.md#f-6bbcba0fedd158a9)
+- [`BLI_vector.hh::ensure_space_for_one` · L1114](10-Vector扩容与增长.md#f-eafa5315534c2edf)
+- [`BLI_vector.hh::realloc_to_at_least` · L1121](10-Vector扩容与增长.md#f-9189de35f17e7c08)
+- [`BLI_memory_utils.hh::destruct_n` · L34](01-对象生命周期与值类别.md#f-cb5bcdbd0ee77885)
+- [`BLI_memory_utils.hh::default_construct_n` · L43](01-对象生命周期与值类别.md#f-7fba5f8c23635f17)
+- [`BLI_memory_utils.hh::uninitialized_move_n` · L69](01-对象生命周期与值类别.md#f-fc5f51bf717c3b5a)
+- [`BLI_memory_utils.hh::uninitialized_relocate_n` · L80](01-对象生命周期与值类别.md#f-9de0365b9a47fd68)
+- [`BLI_memory_utils.hh::uninitialized_fill_n` · L91](01-对象生命周期与值类别.md#f-020ca78eff5f9227)
 
 `begin_`是存储起点，`end_`是已构造元素的尾后边界，`capacity_end_`是可用存储的尾后边界。只有前两个指针之间存在Vector负责销毁的T对象。
 
@@ -205,8 +205,8 @@ flowchart LR
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 
 <!-- annotated:056601de7954d0 -->
 
@@ -271,8 +271,8 @@ flowchart LR
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 
 <!-- annotated:0a76bd52b07000 -->
 
@@ -329,8 +329,8 @@ flowchart LR
 
 **继续追踪实现**
 
-- `Span<T>` → [blender::Span](%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `Span<T>` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 
 <!-- annotated:a5a46c0da27be2 -->
 
@@ -387,8 +387,8 @@ flowchart LR
 
 **继续追踪实现**
 
-- `MutableSpan<T>` → [blender::MutableSpan::MutableSpan · L462](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `MutableSpan<T>` → [blender::MutableSpan::MutableSpan · L462](06-MutableSpan可写视图.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](06-MutableSpan可写视图.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](06-MutableSpan可写视图.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](06-MutableSpan可写视图.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](06-MutableSpan可写视图.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 
 <!-- annotated:17f0712b416213 -->
 
@@ -449,8 +449,8 @@ flowchart LR
 
 **继续追踪实现**
 
-- `Span<U>` → [blender::Span](%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `Span<U>` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 
 <!-- annotated:5237e93017c662 -->
 
@@ -511,8 +511,8 @@ flowchart LR
 
 **继续追踪实现**
 
-- `MutableSpan<U>` → [blender::MutableSpan::MutableSpan · L462](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `MutableSpan<U>` → [blender::MutableSpan::MutableSpan · L462](06-MutableSpan可写视图.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](06-MutableSpan可写视图.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](06-MutableSpan可写视图.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](06-MutableSpan可写视图.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](06-MutableSpan可写视图.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 
 <!-- annotated:036792ae947483 -->
 
@@ -723,8 +723,8 @@ flowchart LR
 
 **继续追踪实现**
 
-- `this->capacity` → [blender::Vector::capacity · L1007](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-1a73aecfff2e3366)。
-- `this->realloc_to_at_least` → [blender::Vector::realloc_to_at_least · L1121](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-9189de35f17e7c08)。
+- `this->capacity` → [blender::Vector::capacity · L1007](12-Vector异常安全与边界.md#f-1a73aecfff2e3366)。
+- `this->realloc_to_at_least` → [blender::Vector::realloc_to_at_least · L1121](10-Vector扩容与增长.md#f-9189de35f17e7c08)。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L411—L417
 
@@ -842,12 +842,12 @@ value若引用本Vector内部元素，还要单独检查reserve导致的引用�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `this->reserve` → [blender::Vector::reserve · L405](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)。
-- `default_construct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L424。
-- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L427。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
+- `this->reserve` → [blender::Vector::reserve · L405](10-Vector扩容与增长.md#f-4cf9c0f00e01102e)。
+- `default_construct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L424。
+- `destruct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L427。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L432—L438
 
@@ -966,12 +966,12 @@ value若引用本Vector内部元素，还要单独检查reserve导致的引用�
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `this->reserve` → [blender::Vector::reserve · L405](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)。
-- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-020ca78eff5f9227)。
-- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L448。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
+- `this->reserve` → [blender::Vector::reserve · L405](10-Vector扩容与增长.md#f-4cf9c0f00e01102e)。
+- `uninitialized_fill_n` → [blender::uninitialized_fill_n · L91](01-对象生命周期与值类别.md#f-020ca78eff5f9227)。
+- `destruct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L448。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L453—L457
 
@@ -1051,8 +1051,8 @@ clear已经改变状态，后续构造失败不会恢复旧元素；接口不具
 
 **继续追踪实现**
 
-- `this->clear` → [blender::Vector::clear · L468](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-d051bebff5275a43)。
-- `this->resize` → [blender::Vector::resize · L418](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-059312cabb8abe3a)；[blender::Vector::resize · L439](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-ab8f94924ebe2d12)。同名重载需按实参类型选择。
+- `this->clear` → [blender::Vector::clear · L468](10-Vector扩容与增长.md#f-d051bebff5275a43)。
+- `this->resize` → [blender::Vector::resize · L418](10-Vector扩容与增长.md#f-059312cabb8abe3a)；[blender::Vector::resize · L439](10-Vector扩容与增长.md#f-ab8f94924ebe2d12)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L463—L467
 
@@ -1135,9 +1135,9 @@ clear之后begin_与capacity_end_仍描述原存储。end_回到begin_，只说�
 
 **继续追踪实现**
 
-- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L470。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+- `destruct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L470。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L474—L478
 
@@ -1237,11 +1237,11 @@ clear之后begin_与capacity_end_仍描述原存储。end_回到begin_，只说�
 
 **继续追踪实现**
 
-- `destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L481。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `this->is_inline` → [blender::Vector::is_inline · L1108](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-6bbcba0fedd158a9)。
-- `allocator_.deallocate` → [blender::GuardedAllocator::deallocate · L60](03-%E5%86%85%E5%AD%98%E5%B7%A5%E5%85%B7%E4%B8%8E%E5%88%86%E9%85%8D%E5%99%A8%E6%8E%A5%E5%8F%A3.md#f-c1586978e7959acb)。
-- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](%E4%BE%9D%E8%B5%96-BLI_vector-c355b1.md#m-fe457862705a)。宏定义由构建条件选择。
+- `destruct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L481。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
+- `this->is_inline` → [blender::Vector::is_inline · L1108](12-Vector异常安全与边界.md#f-6bbcba0fedd158a9)。
+- `allocator_.deallocate` → [blender::GuardedAllocator::deallocate · L60](03-内存工具与分配器接口.md#f-c1586978e7959acb)。
+- `UPDATE_VECTOR_SIZE` → [UPDATE_VECTOR_SIZE · L112](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-85858f378a28)；[UPDATE_VECTOR_SIZE · L114](../90-实现依赖专题/01-BLI基础库/BLI_vector.hh.md#m-fe457862705a)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L491—L497
 
@@ -1323,8 +1323,8 @@ ensure完成后，调用者仍负责构造新元素并在成功后推进end_。
 
 **继续追踪实现**
 
-- `this->realloc_to_at_least` → [blender::Vector::realloc_to_at_least · L1121](10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-9189de35f17e7c08)。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
+- `this->realloc_to_at_least` → [blender::Vector::realloc_to_at_least · L1121](10-Vector扩容与增长.md#f-9189de35f17e7c08)。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
 
 <!-- annotated:9652e7372515d0 -->
 
@@ -1472,13 +1472,13 @@ uninitialized_relocate_n先移动构造所有目标对象，全部成功后才�
 
 **继续追踪实现**
 
-- `this->capacity` → [blender::Vector::capacity · L1007](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-1a73aecfff2e3366)。
+- `this->capacity` → [blender::Vector::capacity · L1007](12-Vector异常安全与边界.md#f-1a73aecfff2e3366)。
 - `std::max` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
-- `this->size` → [blender::Vector::size · L780](11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `allocator_.allocate` → [blender::GuardedAllocator::allocate · L43](03-%E5%86%85%E5%AD%98%E5%B7%A5%E5%85%B7%E4%B8%8E%E5%88%86%E9%85%8D%E5%99%A8%E6%8E%A5%E5%8F%A3.md#f-a57239e6d3bd10d9)。
-- `uninitialized_relocate_n` → [blender::uninitialized_relocate_n · L80](01-%E5%AF%B9%E8%B1%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E5%80%BC%E7%B1%BB%E5%88%AB.md#f-9de0365b9a47fd68)。
-- `allocator_.deallocate` → [blender::GuardedAllocator::deallocate · L60](03-%E5%86%85%E5%AD%98%E5%B7%A5%E5%85%B7%E4%B8%8E%E5%88%86%E9%85%8D%E5%99%A8%E6%8E%A5%E5%8F%A3.md#f-c1586978e7959acb)。
-- `this->is_inline` → [blender::Vector::is_inline · L1108](12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-6bbcba0fedd158a9)。
+- `this->size` → [blender::Vector::size · L780](11-Vector插入删除与重排.md#f-714773731767349c)。
+- `allocator_.allocate` → [blender::GuardedAllocator::allocate · L43](03-内存工具与分配器接口.md#f-a57239e6d3bd10d9)。
+- `uninitialized_relocate_n` → [blender::uninitialized_relocate_n · L80](01-对象生命周期与值类别.md#f-9de0365b9a47fd68)。
+- `allocator_.deallocate` → [blender::GuardedAllocator::deallocate · L60](03-内存工具与分配器接口.md#f-c1586978e7959acb)。
+- `this->is_inline` → [blender::Vector::is_inline · L1108](12-Vector异常安全与边界.md#f-6bbcba0fedd158a9)。
 
 ### 类型布局、声明与编译条件 · BLI_vector.hh L1152—L1167
 
@@ -1615,7 +1615,7 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
 
 对比std::vector、std::array、std::span与LLVM SmallVector、ArrayRef时，分别比较拥有关系、内嵌存储、大小是否属于类型和失效条件。不要根据同名方法推断完全相同契约。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)
 
 ## 已运行的真实头文件验证
 

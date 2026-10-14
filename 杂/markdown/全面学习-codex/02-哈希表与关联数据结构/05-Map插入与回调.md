@@ -1,6 +1,6 @@
 # 02-05 Map插入与回调
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -158,8 +158,8 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_ptr_as` → [blender::Map::lookup_ptr_as · L516](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-c82b929e8b2a18fb)；[blender::Map::lookup_ptr_as · L521](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-6350d153de2baf1d)。同名重载需按实参类型选择。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->lookup_ptr_as` → [blender::Map::lookup_ptr_as · L516](04-Map查找与键访问.md#f-c82b929e8b2a18fb)；[blender::Map::lookup_ptr_as · L521](04-Map查找与键访问.md#f-6350d153de2baf1d)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <a id="f-2c59f935773aaceb"></a>
 
@@ -213,8 +213,8 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_ptr_as` → [blender::Map::lookup_ptr_as · L516](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-c82b929e8b2a18fb)；[blender::Map::lookup_ptr_as · L521](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-6350d153de2baf1d)。同名重载需按实参类型选择。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->lookup_ptr_as` → [blender::Map::lookup_ptr_as · L516](04-Map查找与键访问.md#f-c82b929e8b2a18fb)；[blender::Map::lookup_ptr_as · L521](04-Map查找与键访问.md#f-6350d153de2baf1d)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L565—L569
 
@@ -291,7 +291,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_default_as` → [blender::Map::lookup_default_as · L574](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-e564beca3ee75526)。
+- `this->lookup_default_as` → [blender::Map::lookup_default_as · L574](05-Map插入与回调.md#f-e564beca3ee75526)。
 
 <a id="f-e564beca3ee75526"></a>
 
@@ -347,8 +347,8 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_ptr_as` → [blender::Map::lookup_ptr_as · L516](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-c82b929e8b2a18fb)；[blender::Map::lookup_ptr_as · L521](04-Map%E6%9F%A5%E6%89%BE%E4%B8%8E%E9%94%AE%E8%AE%BF%E9%97%AE.md#f-6350d153de2baf1d)。同名重载需按实参类型选择。
-- `Value` → [blender::io::serialize::Value](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-asset_index-66abf0.md#t-12f6bd59d805)；[blender::io::serialize::Value](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_serialize-5b362e.md#t-68cc6c9eb2b6)；[blender::io::serialize::Value](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_serialize-5b362e.md#t-6338b3e5fd60)；[blender::math::Axis::Value](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_basis_types-fc7090.md#t-ef2f63ee0ed5)；[blender::math::AxisSigned::Value](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_basis_types-fc7090.md#t-fde967b6970e)；[blender::io::serialize::Value](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_idprop-fe422c.md#t-295d951f0692)；[blender::gpu::shader::SpecializationConstant::Value](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GPU_common_types-5aca01.md#t-8b4628c1c185)；[blender::fn::GFieldRef::Value](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/%E4%BE%9D%E8%B5%96-FN_field-351dc0.md#t-c10039d00c56)。
+- `this->lookup_ptr_as` → [blender::Map::lookup_ptr_as · L516](04-Map查找与键访问.md#f-c82b929e8b2a18fb)；[blender::Map::lookup_ptr_as · L521](04-Map查找与键访问.md#f-6350d153de2baf1d)。同名重载需按实参类型选择。
+- `Value` → [blender::io::serialize::Value](../90-实现依赖专题/08-其他Blender模块/editors/asset/intern/asset_index.hh.md#t-12f6bd59d805)；[blender::io::serialize::Value](../90-实现依赖专题/01-BLI基础库/BLI_serialize.hh.md#t-68cc6c9eb2b6)；[blender::io::serialize::Value](../90-实现依赖专题/01-BLI基础库/BLI_serialize.hh.md#t-6338b3e5fd60)；[blender::math::Axis::Value](../90-实现依赖专题/01-BLI基础库/BLI_math_basis_types.hh.md#t-ef2f63ee0ed5)；[blender::math::AxisSigned::Value](../90-实现依赖专题/01-BLI基础库/BLI_math_basis_types.hh.md#t-fde967b6970e)；[blender::io::serialize::Value](../90-实现依赖专题/02-BKE几何与数据/BKE_idprop.hh.md#t-295d951f0692)；[blender::gpu::shader::SpecializationConstant::Value](../90-实现依赖专题/08-其他Blender模块/gpu/GPU_common_types.hh.md#t-8b4628c1c185)；[blender::fn::GFieldRef::Value](../90-实现依赖专题/03-FN函数与求值/FN_field.hh.md#t-c10039d00c56)。
 - `std::forward<ForwardValue>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L583—L587
@@ -427,7 +427,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_or_add_as` → [blender::Map::lookup_or_add_as · L604](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-d3d3b432f492ec61)。
+- `this->lookup_or_add_as` → [blender::Map::lookup_or_add_as · L604](05-Map插入与回调.md#f-d3d3b432f492ec61)。
 
 <a id="f-85b5fa3f7399794c"></a>
 
@@ -478,7 +478,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_or_add_as` → [blender::Map::lookup_or_add_as · L604](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-d3d3b432f492ec61)。
+- `this->lookup_or_add_as` → [blender::Map::lookup_or_add_as · L604](05-Map插入与回调.md#f-d3d3b432f492ec61)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-45a386e54e052059"></a>
@@ -530,7 +530,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_or_add_as` → [blender::Map::lookup_or_add_as · L604](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-d3d3b432f492ec61)。
+- `this->lookup_or_add_as` → [blender::Map::lookup_or_add_as · L604](05-Map插入与回调.md#f-d3d3b432f492ec61)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-fee760b21dfabceb"></a>
@@ -582,7 +582,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_or_add_as` → [blender::Map::lookup_or_add_as · L604](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-d3d3b432f492ec61)。
+- `this->lookup_or_add_as` → [blender::Map::lookup_or_add_as · L604](05-Map插入与回调.md#f-d3d3b432f492ec61)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-d3d3b432f492ec61"></a>
@@ -637,9 +637,9 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_or_add__impl` → [blender::Map::lookup_or_add__impl · L1271](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-e91ef5efdcac2964)。
+- `this->lookup_or_add__impl` → [blender::Map::lookup_or_add__impl · L1271](07-重建与摊还复杂度.md#f-e91ef5efdcac2964)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L608。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L608。
 - `std::forward<ForwardValue>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L610—L618
@@ -728,7 +728,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_or_add_cb_as` → [blender::Map::lookup_or_add_cb_as · L629](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-5209824801eb636c)。
+- `this->lookup_or_add_cb_as` → [blender::Map::lookup_or_add_cb_as · L629](05-Map插入与回调.md#f-5209824801eb636c)。
 
 <a id="f-9685875870107c12"></a>
 
@@ -781,7 +781,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_or_add_cb_as` → [blender::Map::lookup_or_add_cb_as · L629](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-5209824801eb636c)。
+- `this->lookup_or_add_cb_as` → [blender::Map::lookup_or_add_cb_as · L629](05-Map插入与回调.md#f-5209824801eb636c)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-5209824801eb636c"></a>
@@ -835,9 +835,9 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_or_add_cb__impl` → [blender::Map::lookup_or_add_cb__impl · L1251](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-04674c71289a8005)。
+- `this->lookup_or_add_cb__impl` → [blender::Map::lookup_or_add_cb__impl · L1251](07-重建与摊还复杂度.md#f-04674c71289a8005)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L632。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L632。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L634—L638
 
@@ -907,7 +907,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_or_add_default_as` → [blender::Map::lookup_or_add_default_as · L647](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-85914156c7417813)。
+- `this->lookup_or_add_default_as` → [blender::Map::lookup_or_add_default_as · L647](05-Map插入与回调.md#f-85914156c7417813)。
 
 <a id="f-d67ab6e12fd0a267"></a>
 
@@ -951,7 +951,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_or_add_default_as` → [blender::Map::lookup_or_add_default_as · L647](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-85914156c7417813)。
+- `this->lookup_or_add_default_as` → [blender::Map::lookup_or_add_default_as · L647](05-Map插入与回调.md#f-85914156c7417813)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <a id="f-85914156c7417813"></a>
@@ -996,9 +996,9 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_or_add_cb_as` → [blender::Map::lookup_or_add_cb_as · L629](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-5209824801eb636c)。
+- `this->lookup_or_add_cb_as` → [blender::Map::lookup_or_add_cb_as · L629](05-Map插入与回调.md#f-5209824801eb636c)。
 - `std::forward<ForwardKey>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `Value` → [blender::io::serialize::Value](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-asset_index-66abf0.md#t-12f6bd59d805)；[blender::io::serialize::Value](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_serialize-5b362e.md#t-68cc6c9eb2b6)；[blender::io::serialize::Value](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_serialize-5b362e.md#t-6338b3e5fd60)；[blender::math::Axis::Value](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_basis_types-fc7090.md#t-ef2f63ee0ed5)；[blender::math::AxisSigned::Value](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_basis_types-fc7090.md#t-fde967b6970e)；[blender::io::serialize::Value](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-BKE_idprop-fe422c.md#t-295d951f0692)；[blender::gpu::shader::SpecializationConstant::Value](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-GPU_common_types-5aca01.md#t-8b4628c1c185)；[blender::fn::GFieldRef::Value](../08-Field%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%8E%E6%B1%82%E5%80%BC/%E4%BE%9D%E8%B5%96-FN_field-351dc0.md#t-c10039d00c56)。
+- `Value` → [blender::io::serialize::Value](../90-实现依赖专题/08-其他Blender模块/editors/asset/intern/asset_index.hh.md#t-12f6bd59d805)；[blender::io::serialize::Value](../90-实现依赖专题/01-BLI基础库/BLI_serialize.hh.md#t-68cc6c9eb2b6)；[blender::io::serialize::Value](../90-实现依赖专题/01-BLI基础库/BLI_serialize.hh.md#t-6338b3e5fd60)；[blender::math::Axis::Value](../90-实现依赖专题/01-BLI基础库/BLI_math_basis_types.hh.md#t-ef2f63ee0ed5)；[blender::math::AxisSigned::Value](../90-实现依赖专题/01-BLI基础库/BLI_math_basis_types.hh.md#t-fde967b6970e)；[blender::io::serialize::Value](../90-实现依赖专题/02-BKE几何与数据/BKE_idprop.hh.md#t-295d951f0692)；[blender::gpu::shader::SpecializationConstant::Value](../90-实现依赖专题/08-其他Blender模块/gpu/GPU_common_types.hh.md#t-8b4628c1c185)；[blender::fn::GFieldRef::Value](../90-实现依赖专题/03-FN函数与求值/FN_field.hh.md#t-c10039d00c56)。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L651—L655
 
@@ -1068,7 +1068,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_key_as` → [blender::Map::lookup_key_as · L660](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-7d4693e0bc2252d8)。
+- `this->lookup_key_as` → [blender::Map::lookup_key_as · L660](05-Map插入与回调.md#f-7d4693e0bc2252d8)。
 
 <a id="f-7d4693e0bc2252d8"></a>
 
@@ -1113,9 +1113,9 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_slot` → [blender::Map::lookup_slot · L1306](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-7180cfdde1dfaf79)；[blender::Map::lookup_slot · L1318](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-94b5328db99e893f)。同名重载需按实参类型选择。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L662。
-- `slot.key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L663。
+- `this->lookup_slot` → [blender::Map::lookup_slot · L1306](07-重建与摊还复杂度.md#f-7180cfdde1dfaf79)；[blender::Map::lookup_slot · L1318](07-重建与摊还复杂度.md#f-94b5328db99e893f)。同名重载需按实参类型选择。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L662。
+- `slot.key` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L663。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L665—L669
 
@@ -1185,7 +1185,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_key_ptr_as` → [blender::Map::lookup_key_ptr_as · L674](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-d6fbaf53a7a0a28e)。
+- `this->lookup_key_ptr_as` → [blender::Map::lookup_key_ptr_as · L674](05-Map插入与回调.md#f-d6fbaf53a7a0a28e)。
 
 <a id="f-d6fbaf53a7a0a28e"></a>
 
@@ -1237,9 +1237,9 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->lookup_slot_ptr` → [blender::Map::lookup_slot_ptr · L1323](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-93cb8db01f95f07b)；[blender::Map::lookup_slot_ptr · L1337](07-%E9%87%8D%E5%BB%BA%E4%B8%8E%E6%91%8A%E8%BF%98%E5%A4%8D%E6%9D%82%E5%BA%A6.md#f-eeec937f512ef4fe)。同名重载需按实参类型选择。
-- `hash_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L676。
-- `slot->key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L680。
+- `this->lookup_slot_ptr` → [blender::Map::lookup_slot_ptr · L1323](07-重建与摊还复杂度.md#f-93cb8db01f95f07b)；[blender::Map::lookup_slot_ptr · L1337](07-重建与摊还复杂度.md#f-eeec937f512ef4fe)。同名重载需按实参类型选择。
+- `hash_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L676。
+- `slot->key` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L680。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L682—L686
 
@@ -1322,11 +1322,11 @@ flowchart TB
 
 **继续追踪实现**
 
-- `slots_.size` → [blender::Map::size · L976](06-%E5%88%A0%E9%99%A4%E5%A2%93%E7%A2%91%E4%B8%8E%E5%80%BC%E9%94%80%E6%AF%81.md#f-ac1e466c97fbbebe)。
-- `slot.is_occupied` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L692。
-- `slot.key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L693。
-- `slot.value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：Slot模板参数提供的操作协议。调用位置L694。
-- `func` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L695。
+- `slots_.size` → [blender::Map::size · L976](06-删除墓碑与值销毁.md#f-ac1e466c97fbbebe)。
+- `slot.is_occupied` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L692。
+- `slot.key` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L693。
+- `slot.value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：Slot模板参数提供的操作协议。调用位置L694。
+- `func` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L695。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L699—L715
 
@@ -1492,7 +1492,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `slots_[current_slot_].is_occupied` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L724。
+- `slots_[current_slot_].is_occupied` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L724。
 
 <!-- annotated:f93904966be691 -->
 
@@ -1621,7 +1621,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:f7db6c4bf53964 -->
 
@@ -1885,9 +1885,9 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->slots_[i].is_occupied` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L771。
-- `SubIterator` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L772。
-- `this->end` → [blender::Map::BaseIteratorRange::end · L778](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-00a44046aabf3a7b)。
+- `this->slots_[i].is_occupied` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L771。
+- `SubIterator` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L772。
+- `this->end` → [blender::Map::BaseIteratorRange::end · L778](05-Map插入与回调.md#f-00a44046aabf3a7b)。
 
 <!-- annotated:fc348ca69f3e5b -->
 
@@ -1943,7 +1943,7 @@ flowchart TB
 
 **继续追踪实现**
 
-- `SubIterator` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L780。
+- `SubIterator` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L780。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L782—L789
 
@@ -2075,8 +2075,8 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->current_slot().key` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L797。
-- `this->current_slot` → [blender::Map::BaseIterator::current_slot · L751](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-283fe72c7ce12584)。
+- `this->current_slot().key` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L797。
+- `this->current_slot` → [blender::Map::BaseIterator::current_slot · L751](05-Map插入与回调.md#f-283fe72c7ce12584)。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L799—L806
 
@@ -2208,8 +2208,8 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->current_slot().value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L814。
-- `this->current_slot` → [blender::Map::BaseIterator::current_slot · L751](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-283fe72c7ce12584)。
+- `this->current_slot().value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L814。
+- `this->current_slot` → [blender::Map::BaseIterator::current_slot · L751](05-Map插入与回调.md#f-283fe72c7ce12584)。
 
 ### 类型布局、声明与编译条件 · BLI_map.hh L816—L823
 
@@ -2341,8 +2341,8 @@ flowchart TB
 
 **继续追踪实现**
 
-- `this->current_slot().value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L831。
-- `this->current_slot` → [blender::Map::BaseIterator::current_slot · L751](05-Map%E6%8F%92%E5%85%A5%E4%B8%8E%E5%9B%9E%E8%B0%83.md#f-283fe72c7ce12584)。
+- `this->current_slot().value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L831。
+- `this->current_slot` → [blender::Map::BaseIterator::current_slot · L751](05-Map插入与回调.md#f-283fe72c7ce12584)。
 
 ## 语法与相关类型
 
@@ -2418,4 +2418,4 @@ friend授予指定函数或类访问非公开成员的权限，并不意味着�
 
 对比std::unordered_map、Abseil flat_hash_map与node_hash_map时，优先比较地址稳定性、键值搬移要求和删除行为；不同实现的平均常数及负载策略需要测量。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

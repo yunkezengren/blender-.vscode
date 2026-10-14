@@ -1,6 +1,6 @@
 # 01-05 Span只读连续视图
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -402,7 +402,7 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:a0820d00717a37 -->
 
@@ -465,7 +465,7 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L106—L117
 
@@ -796,8 +796,8 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `Span` → [blender::Span::Span · L92](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `Span` → [blender::Span::Span · L92](05-Span只读连续视图.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span只读连续视图.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span只读连续视图.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span只读连续视图.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span只读连续视图.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span只读连续视图.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span只读连续视图.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
 
 <!-- annotated:10bac87ce4fc09 -->
 
@@ -864,9 +864,9 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `this->slice` → [blender::Span::slice · L141](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
-- `range.start` → [blender::IndexRange::start · L243](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
-- `range.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `this->slice` → [blender::Span::slice · L141](05-Span只读连续视图.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](05-Span只读连续视图.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
+- `range.start` → [blender::IndexRange::start · L243](04-IndexRange连续整数区间.md#f-99d2195bd9cfd1f0)。
+- `range.size` → [blender::IndexRange::size · L156](04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L153—L157
 
@@ -950,10 +950,10 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::max<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
 - `std::min` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
-- `Span` → [blender::Span::Span · L92](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
+- `Span` → [blender::Span::Span · L92](05-Span只读连续视图.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span只读连续视图.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span只读连续视图.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span只读连续视图.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span只读连续视图.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span只读连续视图.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span只读连续视图.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
 
 <!-- annotated:971f62ce377980 -->
 
@@ -1020,9 +1020,9 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `this->slice_safe` → [blender::Span::slice_safe · L158](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5ffbda70864e9d0b)；[blender::Span::slice_safe · L166](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8438e78e505b5ff4)。同名重载需按实参类型选择。
-- `range.start` → [blender::IndexRange::start · L243](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
-- `range.size` → [blender::IndexRange::size · L156](04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `this->slice_safe` → [blender::Span::slice_safe · L158](05-Span只读连续视图.md#f-5ffbda70864e9d0b)；[blender::Span::slice_safe · L166](05-Span只读连续视图.md#f-8438e78e505b5ff4)。同名重载需按实参类型选择。
+- `range.start` → [blender::IndexRange::start · L243](04-IndexRange连续整数区间.md#f-99d2195bd9cfd1f0)。
+- `range.size` → [blender::IndexRange::size · L156](04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L170—L174
 
@@ -1103,9 +1103,9 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::max<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
-- `Span` → [blender::Span::Span · L92](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
+- `Span` → [blender::Span::Span · L92](05-Span只读连续视图.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span只读连续视图.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span只读连续视图.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span只读连续视图.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span只读连续视图.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span只读连续视图.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span只读连续视图.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L181—L185
 
@@ -1186,9 +1186,9 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::max<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
-- `Span` → [blender::Span::Span · L92](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
+- `Span` → [blender::Span::Span · L92](05-Span只读连续视图.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span只读连续视图.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span只读连续视图.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span只读连续视图.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span只读连续视图.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span只读连续视图.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span只读连续视图.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L192—L196
 
@@ -1269,9 +1269,9 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::min<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
-- `Span` → [blender::Span::Span · L92](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
+- `Span` → [blender::Span::Span · L92](05-Span只读连续视图.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span只读连续视图.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span只读连续视图.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span只读连续视图.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span只读连续视图.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span只读连续视图.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span只读连续视图.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L203—L207
 
@@ -1352,9 +1352,9 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::min<int64_t>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较小值；截断范围时还需先满足非负和可表示范围，min本身不会证明边界安全。
-- `Span` → [blender::Span::Span · L92](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
+- `Span` → [blender::Span::Span · L92](05-Span只读连续视图.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span只读连续视图.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span只读连续视图.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span只读连续视图.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span只读连续视图.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span只读连续视图.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span只读连续视图.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L214—L218
 
@@ -1591,7 +1591,7 @@ template<typename T> class Span {
 **继续追踪实现**
 
 - `std::reverse_iterator<const T *>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `this->end` → [blender::Span::end · L228](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-a7d8b9e494c291a7)。
+- `this->end` → [blender::Span::end · L228](05-Span只读连续视图.md#f-a7d8b9e494c291a7)。
 
 <a id="f-cb6fb4c63c153082"></a>
 
@@ -1632,7 +1632,7 @@ template<typename T> class Span {
 **继续追踪实现**
 
 - `std::reverse_iterator<const T *>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `this->begin` → [blender::Span::begin · L224](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-415883b512284f46)。
+- `this->begin` → [blender::Span::begin · L224](05-Span只读连续视图.md#f-415883b512284f46)。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L241—L245
 
@@ -1712,7 +1712,7 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L252—L255
 
@@ -2068,8 +2068,8 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `this->begin` → [blender::Span::begin · L224](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-415883b512284f46)。
-- `this->end` → [blender::Span::end · L228](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-a7d8b9e494c291a7)。
+- `this->begin` → [blender::Span::begin · L224](05-Span只读连续视图.md#f-415883b512284f46)。
+- `this->end` → [blender::Span::end · L228](05-Span只读连续视图.md#f-a7d8b9e494c291a7)。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L299—L303
 
@@ -2225,7 +2225,7 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L324—L328
 
@@ -2305,7 +2305,7 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L335—L339
 
@@ -2396,7 +2396,7 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L356—L361
 
@@ -2489,8 +2489,8 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `other.contains` → [blender::Span::contains · L281](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-7caee498c984f2c0)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `other.contains` → [blender::Span::contains · L281](05-Span只读连续视图.md#f-7caee498c984f2c0)。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L376—L380
 
@@ -2564,8 +2564,8 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `this->first_index_try` → [blender::Span::first_index_try · L391](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-811ebd0e3e302c09)。
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->first_index_try` → [blender::Span::first_index_try · L391](05-Span只读连续视图.md#f-811ebd0e3e302c09)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L387—L390
 
@@ -2716,7 +2716,7 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
 
 <!-- annotated:2e55227646af94 -->
 
@@ -2784,7 +2784,7 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `get_default_hash` → [blender::get_default_hash · L251](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/01-%E5%93%88%E5%B8%8C%E4%B8%8E%E7%9B%B8%E7%AD%89%E5%A5%91%E7%BA%A6.md#f-5f2c246aedf3dc0a)。
+- `get_default_hash` → [blender::get_default_hash · L251](../02-哈希表与关联数据结构/01-哈希与相等契约.md#f-5f2c246aedf3dc0a)。
 
 ### 类型布局、声明与编译条件 · BLI_span.hh L418—L421
 
@@ -2858,8 +2858,8 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `Span<NewT>` → [blender::Span::Span · L92](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `Span<NewT>` → [blender::Span::Span · L92](05-Span只读连续视图.md#f-e40cbae1aae23eb8)；[blender::Span::Span · L94](05-Span只读连续视图.md#f-8e13b31cdc54dc44)；[blender::Span::Span · L99](05-Span只读连续视图.md#f-e3f5617e03851c03)；[blender::Span::Span · L118](05-Span只读连续视图.md#f-6dbccc3a78910bb7)；[blender::Span::Span · L122](05-Span只读连续视图.md#f-0692c02d691e68a6)；[blender::Span::Span · L124](05-Span只读连续视图.md#f-45073fe4b3cefa46)；[blender::Span::Span · L130](05-Span只读连续视图.md#f-b2e1b3c3e3349048)。同名重载需按实参类型选择。
 
 <!-- annotated:da84d24752e1c0 -->
 
@@ -2929,12 +2929,12 @@ template<typename T> class Span {
 
 **继续追踪实现**
 
-- `a.size` → [blender::Span::size · L256](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `b.size` → [blender::Span::size · L256](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
+- `a.size` → [blender::Span::size · L256](05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `b.size` → [blender::Span::size · L256](05-Span只读连续视图.md#f-5f80fa006089c998)。
 - `std::equal` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `a.begin` → [blender::Span::begin · L224](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-415883b512284f46)。
-- `a.end` → [blender::Span::end · L228](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-a7d8b9e494c291a7)。
-- `b.begin` → [blender::Span::begin · L224](05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-415883b512284f46)。
+- `a.begin` → [blender::Span::begin · L224](05-Span只读连续视图.md#f-415883b512284f46)。
+- `a.end` → [blender::Span::end · L228](05-Span只读连续视图.md#f-a7d8b9e494c291a7)。
+- `b.begin` → [blender::Span::begin · L224](05-Span只读连续视图.md#f-415883b512284f46)。
 
 <!-- annotated:3a3dd740ba5d01 -->
 
@@ -3161,4 +3161,4 @@ friend授予指定函数或类访问非公开成员的权限，并不意味着�
 
 对比std::vector、std::array、std::span与LLVM SmallVector、ArrayRef时，分别比较拥有关系、内嵌存储、大小是否属于类型和失效条件。不要根据同名方法推断完全相同契约。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

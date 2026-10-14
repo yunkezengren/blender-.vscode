@@ -1,6 +1,6 @@
 # 09-02 LazyFunction接口
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -568,11 +568,11 @@ inline void LazyFunction::execute(Params &params, const Context &context) const
 
 **继续追踪实现**
 
-- `PRF_scope_with_name` → [PRF_scope_with_name · L52](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-adc22c3a3f8c)；[PRF_scope_with_name · L91](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-3cbbaddb89c4)。宏定义由构建条件选择。
-- `PRF_scope_set_dynamic_name` → [PRF_scope_set_dynamic_name · L55](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-27e2ed8a1ee1)；[PRF_scope_set_dynamic_name · L93](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-PRF_profile-5a3577.md#m-525677247e79)。宏定义由构建条件选择。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->always_used_inputs_available` → [blender::fn::lazy_function::LazyFunction::always_used_inputs_available · L50](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-68ec2a24506330a6)。
-- `this->execute_impl` → [blender::fn::lazy_function::GraphExecutor::execute_impl · L68](10-%E6%99%AE%E9%80%9A%E8%8A%82%E7%82%B9%E4%B8%8E%E5%87%BD%E6%95%B0%E9%80%82%E9%85%8D.md#f-161c82696993ca52)。
+- `PRF_scope_with_name` → [PRF_scope_with_name · L52](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-adc22c3a3f8c)；[PRF_scope_with_name · L91](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-3cbbaddb89c4)。宏定义由构建条件选择。
+- `PRF_scope_set_dynamic_name` → [PRF_scope_set_dynamic_name · L55](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-27e2ed8a1ee1)；[PRF_scope_set_dynamic_name · L93](../90-实现依赖专题/07-Intern运行时与平台/profile/PRF_profile.hh.md#m-525677247e79)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->always_used_inputs_available` → [blender::fn::lazy_function::LazyFunction::always_used_inputs_available · L50](02-LazyFunction接口.md#f-68ec2a24506330a6)。
+- `this->execute_impl` → [blender::fn::lazy_function::GraphExecutor::execute_impl · L68](10-普通节点与函数适配.md#f-161c82696993ca52)。
 
 ### 类型布局、声明与编译条件 · FN_lazy_function.hh L348—L354
 
@@ -717,10 +717,10 @@ inline void *Params::try_get_input_data_ptr(const int index) const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `fn_.inputs().size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L368。
-- `fn_.inputs` → [blender::fn::lazy_function::LazyFunction::inputs · L331](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-bdcd40e6f47d0ad9)。
-- `this->try_get_input_data_ptr_impl` → [blender::fn::lazy_function::BasicParams::try_get_input_data_ptr_impl · L32](03-Params%E4%B8%8EValueUsage.md#f-1422dd7ac14d9590)；[blender::fn::lazy_function::RemappedParams::try_get_input_data_ptr_impl · L95](03-Params%E4%B8%8EValueUsage.md#f-a44ad7e251b760d6)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `fn_.inputs().size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L368。
+- `fn_.inputs` → [blender::fn::lazy_function::LazyFunction::inputs · L331](02-LazyFunction接口.md#f-bdcd40e6f47d0ad9)。
+- `this->try_get_input_data_ptr_impl` → [blender::fn::lazy_function::BasicParams::try_get_input_data_ptr_impl · L32](03-Params与ValueUsage.md#f-1422dd7ac14d9590)；[blender::fn::lazy_function::RemappedParams::try_get_input_data_ptr_impl · L95](03-Params与ValueUsage.md#f-a44ad7e251b760d6)。同名重载需按实参类型选择。
 
 <!-- annotated:1cf79030d829a2 -->
 
@@ -784,11 +784,11 @@ inline void *Params::try_get_input_data_ptr_or_request(const int index)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `fn_.inputs().size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L374。
-- `fn_.inputs` → [blender::fn::lazy_function::LazyFunction::inputs · L331](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-bdcd40e6f47d0ad9)。
-- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-9848da8ca4109c9c)。
-- `this->try_get_input_data_ptr_or_request_impl` → [blender::fn::lazy_function::BasicParams::try_get_input_data_ptr_or_request_impl · L37](03-Params%E4%B8%8EValueUsage.md#f-22d47a20a372fa8d)；[blender::fn::lazy_function::RemappedParams::try_get_input_data_ptr_or_request_impl · L100](03-Params%E4%B8%8EValueUsage.md#f-f03f4458bc818a1b)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `fn_.inputs().size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L374。
+- `fn_.inputs` → [blender::fn::lazy_function::LazyFunction::inputs · L331](02-LazyFunction接口.md#f-bdcd40e6f47d0ad9)。
+- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction接口.md#f-9848da8ca4109c9c)。
+- `this->try_get_input_data_ptr_or_request_impl` → [blender::fn::lazy_function::BasicParams::try_get_input_data_ptr_or_request_impl · L37](03-Params与ValueUsage.md#f-22d47a20a372fa8d)；[blender::fn::lazy_function::RemappedParams::try_get_input_data_ptr_or_request_impl · L100](03-Params与ValueUsage.md#f-f03f4458bc818a1b)。同名重载需按实参类型选择。
 
 <!-- annotated:0da1d86c7404fa -->
 
@@ -852,11 +852,11 @@ inline void *Params::get_output_data_ptr(const int index)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `fn_.outputs().size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L381。
-- `fn_.outputs` → [blender::fn::lazy_function::LazyFunction::outputs · L336](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-8131802149321817)。
-- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-9848da8ca4109c9c)。
-- `this->get_output_data_ptr_impl` → [blender::fn::lazy_function::BasicParams::get_output_data_ptr_impl · L46](03-Params%E4%B8%8EValueUsage.md#f-143832f4f24356bc)；[blender::fn::lazy_function::RemappedParams::get_output_data_ptr_impl · L105](03-Params%E4%B8%8EValueUsage.md#f-f6e6f74be370f1aa)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `fn_.outputs().size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L381。
+- `fn_.outputs` → [blender::fn::lazy_function::LazyFunction::outputs · L336](02-LazyFunction接口.md#f-8131802149321817)。
+- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction接口.md#f-9848da8ca4109c9c)。
+- `this->get_output_data_ptr_impl` → [blender::fn::lazy_function::BasicParams::get_output_data_ptr_impl · L46](03-Params与ValueUsage.md#f-143832f4f24356bc)；[blender::fn::lazy_function::RemappedParams::get_output_data_ptr_impl · L105](03-Params与ValueUsage.md#f-f6e6f74be370f1aa)。同名重载需按实参类型选择。
 
 <!-- annotated:90d810f5f4ea56 -->
 
@@ -916,11 +916,11 @@ inline void Params::output_set(const int index)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `fn_.outputs().size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L388。
-- `fn_.outputs` → [blender::fn::lazy_function::LazyFunction::outputs · L336](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-8131802149321817)。
-- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-9848da8ca4109c9c)。
-- `this->output_set_impl` → [blender::fn::lazy_function::BasicParams::output_set_impl · L51](03-Params%E4%B8%8EValueUsage.md#f-3a457b9afe1e2aef)；[blender::fn::lazy_function::RemappedParams::output_set_impl · L110](03-Params%E4%B8%8EValueUsage.md#f-798dba657e63240e)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `fn_.outputs().size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L388。
+- `fn_.outputs` → [blender::fn::lazy_function::LazyFunction::outputs · L336](02-LazyFunction接口.md#f-8131802149321817)。
+- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction接口.md#f-9848da8ca4109c9c)。
+- `this->output_set_impl` → [blender::fn::lazy_function::BasicParams::output_set_impl · L51](03-Params与ValueUsage.md#f-3a457b9afe1e2aef)；[blender::fn::lazy_function::RemappedParams::output_set_impl · L110](03-Params与ValueUsage.md#f-798dba657e63240e)。同名重载需按实参类型选择。
 
 <!-- annotated:a8092f3bd50a6a -->
 
@@ -982,10 +982,10 @@ inline bool Params::output_was_set(const int index) const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `fn_.outputs().size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L395。
-- `fn_.outputs` → [blender::fn::lazy_function::LazyFunction::outputs · L336](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-8131802149321817)。
-- `this->output_was_set_impl` → [blender::fn::lazy_function::BasicParams::output_was_set_impl · L56](03-Params%E4%B8%8EValueUsage.md#f-ecc713de96899c1d)；[blender::fn::lazy_function::RemappedParams::output_was_set_impl · L115](03-Params%E4%B8%8EValueUsage.md#f-db78cc9177a7febd)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `fn_.outputs().size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L395。
+- `fn_.outputs` → [blender::fn::lazy_function::LazyFunction::outputs · L336](02-LazyFunction接口.md#f-8131802149321817)。
+- `this->output_was_set_impl` → [blender::fn::lazy_function::BasicParams::output_was_set_impl · L56](03-Params与ValueUsage.md#f-ecc713de96899c1d)；[blender::fn::lazy_function::RemappedParams::output_was_set_impl · L115](03-Params与ValueUsage.md#f-db78cc9177a7febd)。同名重载需按实参类型选择。
 
 <!-- annotated:18fdf0dee81dc0 -->
 
@@ -1047,10 +1047,10 @@ inline ValueUsage Params::get_output_usage(const int index) const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `fn_.outputs().size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L401。
-- `fn_.outputs` → [blender::fn::lazy_function::LazyFunction::outputs · L336](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-8131802149321817)。
-- `this->get_output_usage_impl` → [blender::fn::lazy_function::BasicParams::get_output_usage_impl · L61](03-Params%E4%B8%8EValueUsage.md#f-12bb4bf0c8b54c4d)；[blender::fn::lazy_function::RemappedParams::get_output_usage_impl · L120](03-Params%E4%B8%8EValueUsage.md#f-a13e246cbfe9d624)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `fn_.outputs().size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L401。
+- `fn_.outputs` → [blender::fn::lazy_function::LazyFunction::outputs · L336](02-LazyFunction接口.md#f-8131802149321817)。
+- `this->get_output_usage_impl` → [blender::fn::lazy_function::BasicParams::get_output_usage_impl · L61](03-Params与ValueUsage.md#f-12bb4bf0c8b54c4d)；[blender::fn::lazy_function::RemappedParams::get_output_usage_impl · L120](03-Params与ValueUsage.md#f-a13e246cbfe9d624)。同名重载需按实参类型选择。
 
 <!-- annotated:2024ea6d274b9e -->
 
@@ -1110,11 +1110,11 @@ inline void Params::set_input_unused(const int index)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `fn_.inputs().size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L407。
-- `fn_.inputs` → [blender::fn::lazy_function::LazyFunction::inputs · L331](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-bdcd40e6f47d0ad9)。
-- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-9848da8ca4109c9c)。
-- `this->set_input_unused_impl` → [blender::fn::lazy_function::BasicParams::set_input_unused_impl · L66](03-Params%E4%B8%8EValueUsage.md#f-c6697b764ff44fb0)；[blender::fn::lazy_function::RemappedParams::set_input_unused_impl · L125](03-Params%E4%B8%8EValueUsage.md#f-55f236aa7f49af91)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `fn_.inputs().size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L407。
+- `fn_.inputs` → [blender::fn::lazy_function::LazyFunction::inputs · L331](02-LazyFunction接口.md#f-bdcd40e6f47d0ad9)。
+- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction接口.md#f-9848da8ca4109c9c)。
+- `this->set_input_unused_impl` → [blender::fn::lazy_function::BasicParams::set_input_unused_impl · L66](03-Params与ValueUsage.md#f-c6697b764ff44fb0)；[blender::fn::lazy_function::RemappedParams::set_input_unused_impl · L125](03-Params与ValueUsage.md#f-55f236aa7f49af91)。同名重载需按实参类型选择。
 
 <!-- annotated:d1b64fe0eec2bb -->
 
@@ -1183,9 +1183,9 @@ template<typename T> inline T Params::extract_input(const int index)
 
 **继续追踪实现**
 
-- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-9848da8ca4109c9c)。
-- `this->try_get_input_data_ptr` → [blender::fn::lazy_function::Params::try_get_input_data_ptr · L366](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-9dc147b3722ce6e6)；[blender::fn::lazy_function::Params::try_get_input_data_ptr · L428](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-3751fbc263e091cc)。同名重载需按实参类型选择。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction接口.md#f-9848da8ca4109c9c)。
+- `this->try_get_input_data_ptr` → [blender::fn::lazy_function::Params::try_get_input_data_ptr · L366](02-LazyFunction接口.md#f-9dc147b3722ce6e6)；[blender::fn::lazy_function::Params::try_get_input_data_ptr · L428](02-LazyFunction接口.md#f-3751fbc263e091cc)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:fa50c1a208df9b -->
@@ -1250,8 +1250,8 @@ template<typename T> inline T &Params::get_input(const int index) const
 
 **继续追踪实现**
 
-- `this->try_get_input_data_ptr` → [blender::fn::lazy_function::Params::try_get_input_data_ptr · L366](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-9dc147b3722ce6e6)；[blender::fn::lazy_function::Params::try_get_input_data_ptr · L428](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-3751fbc263e091cc)。同名重载需按实参类型选择。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->try_get_input_data_ptr` → [blender::fn::lazy_function::Params::try_get_input_data_ptr · L366](02-LazyFunction接口.md#f-9dc147b3722ce6e6)；[blender::fn::lazy_function::Params::try_get_input_data_ptr · L428](02-LazyFunction接口.md#f-3751fbc263e091cc)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:77c11921a4b954 -->
 
@@ -1313,8 +1313,8 @@ template<typename T> inline T *Params::try_get_input_data_ptr(const int index) c
 
 **继续追踪实现**
 
-- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-9848da8ca4109c9c)。
-- `this->try_get_input_data_ptr` → [blender::fn::lazy_function::Params::try_get_input_data_ptr · L366](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-9dc147b3722ce6e6)；[blender::fn::lazy_function::Params::try_get_input_data_ptr · L428](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-3751fbc263e091cc)。同名重载需按实参类型选择。
+- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction接口.md#f-9848da8ca4109c9c)。
+- `this->try_get_input_data_ptr` → [blender::fn::lazy_function::Params::try_get_input_data_ptr · L366](02-LazyFunction接口.md#f-9dc147b3722ce6e6)；[blender::fn::lazy_function::Params::try_get_input_data_ptr · L428](02-LazyFunction接口.md#f-3751fbc263e091cc)。同名重载需按实参类型选择。
 
 <!-- annotated:7ccc7b62310b97 -->
 
@@ -1376,8 +1376,8 @@ template<typename T> inline T *Params::try_get_input_data_ptr_or_request(const i
 
 **继续追踪实现**
 
-- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-9848da8ca4109c9c)。
-- `this->try_get_input_data_ptr_or_request` → [blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L372](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-89de2295f5baa94f)；[blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L434](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-97ba143c63061e47)。同名重载需按实参类型选择。
+- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction接口.md#f-9848da8ca4109c9c)。
+- `this->try_get_input_data_ptr_or_request` → [blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L372](02-LazyFunction接口.md#f-89de2295f5baa94f)；[blender::fn::lazy_function::Params::try_get_input_data_ptr_or_request · L434](02-LazyFunction接口.md#f-97ba143c63061e47)。同名重载需按实参类型选择。
 
 <!-- annotated:2dbaa9173f725f -->
 
@@ -1443,10 +1443,10 @@ template<typename T> inline void Params::set_output(const int index, T &&value)
 
 **继续追踪实现**
 
-- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-9848da8ca4109c9c)。
-- `this->get_output_data_ptr` → [blender::fn::lazy_function::Params::get_output_data_ptr · L379](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-e994bf059ecf6ba3)。
+- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction接口.md#f-9848da8ca4109c9c)。
+- `this->get_output_data_ptr` → [blender::fn::lazy_function::Params::get_output_data_ptr · L379](02-LazyFunction接口.md#f-e994bf059ecf6ba3)。
 - `std::forward<T>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `this->output_set` → [blender::fn::lazy_function::Params::output_set · L386](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-ccb221ae62d438f5)。
+- `this->output_set` → [blender::fn::lazy_function::Params::output_set · L386](02-LazyFunction接口.md#f-ccb221ae62d438f5)。
 
 <!-- annotated:7e094a4ad695ab -->
 
@@ -1520,8 +1520,8 @@ inline bool Params::try_enable_multi_threading()
 
 **继续追踪实现**
 
-- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-9848da8ca4109c9c)。
-- `this->try_enable_multi_threading_impl` → [blender::fn::lazy_function::Params::try_enable_multi_threading_impl · L66](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-67fdc9655cbfdfc5)。
+- `this->assert_valid_thread` → [blender::fn::lazy_function::Params::assert_valid_thread · L461](02-LazyFunction接口.md#f-9848da8ca4109c9c)。
+- `this->try_enable_multi_threading_impl` → [blender::fn::lazy_function::Params::try_enable_multi_threading_impl · L66](02-LazyFunction接口.md#f-67fdc9655cbfdfc5)。
 
 <!-- annotated:fdbe044377c217 -->
 
@@ -1588,7 +1588,7 @@ inline void Params::assert_valid_thread() const
 **继续追踪实现**
 
 - `std::this_thread::get_id` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
+- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · FN_lazy_function.hh L472—L479
 
@@ -1951,8 +1951,8 @@ void LazyFunction::destruct_storage(void *storage) const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `UNUSED_VARS_NDEBUG` → [UNUSED_VARS_NDEBUG · L526](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-fea439f7d366)；[UNUSED_VARS_NDEBUG · L528](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-a8f8cfac06c0)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `UNUSED_VARS_NDEBUG` → [UNUSED_VARS_NDEBUG · L526](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-fea439f7d366)；[UNUSED_VARS_NDEBUG · L528](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-a8f8cfac06c0)。宏定义由构建条件选择。
 
 <!-- annotated:9fd304929f3639 -->
 
@@ -2026,9 +2026,9 @@ void LazyFunction::possible_output_dependencies(const int /*output_index*/,
 
 **继续追踪实现**
 
-- `inputs_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L43。
-- `inputs_.index_range` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L44。
-- `fn` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L47。
+- `inputs_.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L43。
+- `inputs_.index_range` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L44。
+- `fn` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L47。
 
 <!-- annotated:4add3dc0e3c4e6 -->
 
@@ -2111,8 +2111,8 @@ bool LazyFunction::always_used_inputs_available(const Params &params) const
 
 **继续追踪实现**
 
-- `inputs_.index_range` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L55。
-- `params.try_get_input_data_ptr` → [blender::fn::lazy_function::Params::try_get_input_data_ptr · L366](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-9dc147b3722ce6e6)；[blender::fn::lazy_function::Params::try_get_input_data_ptr · L428](02-LazyFunction%E6%8E%A5%E5%8F%A3.md#f-3751fbc263e091cc)。同名重载需按实参类型选择。
+- `inputs_.index_range` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L55。
+- `params.try_get_input_data_ptr` → [blender::fn::lazy_function::Params::try_get_input_data_ptr · L366](02-LazyFunction接口.md#f-9dc147b3722ce6e6)；[blender::fn::lazy_function::Params::try_get_input_data_ptr · L428](02-LazyFunction接口.md#f-3751fbc263e091cc)。同名重载需按实参类型选择。
 
 <!-- annotated:6cdf7a822ac37d -->
 
@@ -2271,4 +2271,4 @@ static_cast表达编译期允许的转换，不会自动验证运行时真实类
 
 与拓扑一次求值、future和数据流调度比较：惰性函数允许执行过程中继续请求输入，同一个计算单元可分多次推进。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

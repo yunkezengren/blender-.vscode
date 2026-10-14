@@ -1,6 +1,6 @@
 # 08-05 FieldOperation运算节点
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -323,7 +323,7 @@ inline GField GField::from_non_owning_ref(const GField &field)
 
 **继续追踪实现**
 
-- `GField` → [blender::fn::GField::GField · L450](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-211db26b169f2f41)；[blender::fn::GField::GField · L454](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-7fdb26f58de14966)；[blender::fn::GField::GField · L455](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-0f8304d195c6e071)；[blender::fn::GField::GField · L456](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-49cf4fb08737a047)。同名重载需按实参类型选择。
+- `GField` → [blender::fn::GField::GField · L450](05-FieldOperation运算节点.md#f-211db26b169f2f41)；[blender::fn::GField::GField · L454](05-FieldOperation运算节点.md#f-7fdb26f58de14966)；[blender::fn::GField::GField · L455](05-FieldOperation运算节点.md#f-0f8304d195c6e071)；[blender::fn::GField::GField · L456](05-FieldOperation运算节点.md#f-49cf4fb08737a047)。同名重载需按实参类型选择。
 
 <!-- annotated:d1c6cc9d9d1bbd -->
 
@@ -446,7 +446,7 @@ inline GField GField::from_non_owning_constant(const CPPType &type, const void *
 
 **继续追踪实现**
 
-- `GField` → [blender::fn::GField::GField · L450](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-211db26b169f2f41)；[blender::fn::GField::GField · L454](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-7fdb26f58de14966)；[blender::fn::GField::GField · L455](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-0f8304d195c6e071)；[blender::fn::GField::GField · L456](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-49cf4fb08737a047)。同名重载需按实参类型选择。
+- `GField` → [blender::fn::GField::GField · L450](05-FieldOperation运算节点.md#f-211db26b169f2f41)；[blender::fn::GField::GField · L454](05-FieldOperation运算节点.md#f-7fdb26f58de14966)；[blender::fn::GField::GField · L455](05-FieldOperation运算节点.md#f-0f8304d195c6e071)；[blender::fn::GField::GField · L456](05-FieldOperation运算节点.md#f-49cf4fb08737a047)。同名重载需按实参类型选择。
 
 <!-- annotated:b592e579f378fa -->
 
@@ -513,8 +513,8 @@ template<typename T> inline Field<T> Field<T>::from_non_owning_ref(const Field &
 
 **继续追踪实现**
 
-- `GField::from_non_owning_ref(field).template typed<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L479。
-- `GField::from_non_owning_ref` → [blender::fn::GField::from_non_owning_ref · L461](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-3418a2faa8f1c8c6)。
+- `GField::from_non_owning_ref(field).template typed<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L479。
+- `GField::from_non_owning_ref` → [blender::fn::GField::from_non_owning_ref · L461](05-FieldOperation运算节点.md#f-3418a2faa8f1c8c6)。
 
 <!-- annotated:51f3bb29638f0e -->
 
@@ -574,9 +574,9 @@ template<typename InputT, typename... Args> inline GField GField::from_input(Arg
 
 **继续追踪实现**
 
-- `MEM_new<InputT>` → [MEM_new · L351](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-115f9b6784f89912)。
+- `MEM_new<InputT>` → [MEM_new · L351](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-115f9b6784f89912)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
-- `GField` → [blender::fn::GField::GField · L450](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-211db26b169f2f41)；[blender::fn::GField::GField · L454](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-7fdb26f58de14966)；[blender::fn::GField::GField · L455](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-0f8304d195c6e071)；[blender::fn::GField::GField · L456](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-49cf4fb08737a047)。同名重载需按实参类型选择。
+- `GField` → [blender::fn::GField::GField · L450](05-FieldOperation运算节点.md#f-211db26b169f2f41)；[blender::fn::GField::GField · L454](05-FieldOperation运算节点.md#f-7fdb26f58de14966)；[blender::fn::GField::GField · L455](05-FieldOperation运算节点.md#f-0f8304d195c6e071)；[blender::fn::GField::GField · L456](05-FieldOperation运算节点.md#f-49cf4fb08737a047)。同名重载需按实参类型选择。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 ### 类型布局、声明与编译条件 · FN_field.hh L487—L488
@@ -640,8 +640,8 @@ inline Field<T> Field<T>::from_input(Args &&...args)
 
 **继续追踪实现**
 
-- `GField::from_input<InputT>(std::forward<Args>(args)...).template typed<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L492。
-- `GField::from_input<InputT>` → [blender::fn::GField::from_input · L482](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-53eedc63fedfa749)。
+- `GField::from_input<InputT>(std::forward<Args>(args)...).template typed<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L492。
+- `GField::from_input<InputT>` → [blender::fn::GField::from_input · L482](05-FieldOperation运算节点.md#f-53eedc63fedfa749)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 <!-- annotated:a97a7c7408b882 -->
@@ -780,7 +780,7 @@ template<typename T> inline bool Field<T>::depends_on_input() const
 
 **继续追踪实现**
 
-- `field_.depends_on_input` → [blender::fn::GField::depends_on_input · L614](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-f9ec31f757d56a15)。
+- `field_.depends_on_input` → [blender::fn::GField::depends_on_input · L614](05-FieldOperation运算节点.md#f-f9ec31f757d56a15)。
 
 <!-- annotated:ddc2bdf40f127b -->
 
@@ -884,10 +884,10 @@ inline const CPPType &GField::cpp_type() const
 **继续追踪实现**
 
 - `std::visit` → [外部契约](https://eel.is/c++draft/variant.visit)：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
-- `v.node->cpp_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L523。
-- `v.node->output_cpp_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L526。
-- `v.field_ref->cpp_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L529。
-- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-368120c7952b)。宏定义由构建条件选择。
+- `v.node->cpp_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L523。
+- `v.node->output_cpp_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L526。
+- `v.field_ref->cpp_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L529。
+- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-368120c7952b)。宏定义由构建条件选择。
 
 <!-- annotated:d63886d7e96209 -->
 
@@ -951,7 +951,7 @@ inline const GField &GField::deref_field_ref() const
 **继续追踪实现**
 
 - `std::get_if<FieldRef>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `field_ref->field_ref->deref_field_ref` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L544。
+- `field_ref->field_ref->deref_field_ref` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L544。
 
 <!-- annotated:abac138aeeeebb -->
 
@@ -1075,7 +1075,7 @@ template<typename T> inline uint64_t Field<T>::hash() const
 
 **继续追踪实现**
 
-- `field_.hash` → [blender::fn::GField::hash · L87](06-FieldContext%E4%B8%8A%E4%B8%8B%E6%96%87.md#f-032ec4a1ea6ba9ad)。
+- `field_.hash` → [blender::fn::GField::hash · L87](06-FieldContext上下文.md#f-032ec4a1ea6ba9ad)。
 
 <!-- annotated:1c807d766fd69a -->
 
@@ -1422,9 +1422,9 @@ template<typename T> inline const Field<T> &GField::typed() const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->cpp_type().is<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L587。
-- `this->cpp_type` → [blender::fn::GField::cpp_type · L518](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-284e6a7a85c0110e)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->cpp_type().is<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L587。
+- `this->cpp_type` → [blender::fn::GField::cpp_type · L518](05-FieldOperation运算节点.md#f-284e6a7a85c0110e)。
 
 <!-- annotated:5c7806bf9189b5 -->
 
@@ -1485,9 +1485,9 @@ template<typename T> inline Field<T> &GField::typed()
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->cpp_type().is<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L594。
-- `this->cpp_type` → [blender::fn::GField::cpp_type · L518](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-284e6a7a85c0110e)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->cpp_type().is<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L594。
+- `this->cpp_type` → [blender::fn::GField::cpp_type · L518](05-FieldOperation运算节点.md#f-284e6a7a85c0110e)。
 
 <!-- annotated:1e64006b88caa2 -->
 
@@ -1750,8 +1750,8 @@ inline bool GField::depends_on_input() const
 
 **继续追踪实现**
 
-- `this->field_inputs` → [blender::fn::GField::field_inputs · L504](12-Field%E9%87%8D%E6%9E%84%E4%B8%8E%E6%B7%B1%E9%93%BE%E9%94%80%E6%AF%81.md#f-38d3beaa39d9b6e4)。
-- `inputs->inputs.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L620。
+- `this->field_inputs` → [blender::fn::GField::field_inputs · L504](12-Field重构与深链销毁.md#f-38d3beaa39d9b6e4)。
+- `inputs->inputs.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L620。
 
 <!-- annotated:23bdc5a007d3c3 -->
 
@@ -1816,10 +1816,10 @@ template<typename InputT> inline const InputT *GField::get_input_if() const
 
 **继续追踪实现**
 
-- `this->deref_field_ref` → [blender::fn::GField::deref_field_ref · L541](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-a19407c284f28fcf)。
+- `this->deref_field_ref` → [blender::fn::GField::deref_field_ref · L541](05-FieldOperation运算节点.md#f-a19407c284f28fcf)。
 - `std::get_if<Input>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `deref_field.variant` → [blender::fn::GField::variant · L598](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-8f429c3ff862c024)。
-- `input->node.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L627。
+- `deref_field.variant` → [blender::fn::GField::variant · L598](05-FieldOperation运算节点.md#f-8f429c3ff862c024)。
+- `input->node.get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L627。
 
 <!-- annotated:109a510d4dae15 -->
 
@@ -1904,7 +1904,7 @@ inline const void *GField::get_if_constant() const
 **继续追踪实现**
 
 - `std::visit` → [外部契约](https://eel.is/c++draft/variant.visit)：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
-- `v.field_ref->get_if_constant` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L640。
+- `v.field_ref->get_if_constant` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L640。
 
 <!-- annotated:5447e264ae121a -->
 
@@ -1960,7 +1960,7 @@ template<typename T> template<typename InputT> inline const InputT *Field<T>::ge
 
 **继续追踪实现**
 
-- `field_.get_input_if<InputT>` → [blender::fn::GField::get_input_if · L623](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-38e9a387769f7559)。
+- `field_.get_input_if<InputT>` → [blender::fn::GField::get_input_if · L623](05-FieldOperation运算节点.md#f-38e9a387769f7559)。
 
 <!-- annotated:42e8fa5fd3ae06 -->
 
@@ -2234,7 +2234,7 @@ inline GFieldRef GFieldRef::from_constant(const CPPType &type, const void *value
 
 **继续追踪实现**
 
-- `GFieldRef` → [blender::fn::GFieldRef::GFieldRef · L659](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-7c3c61754c76e5b3)；[blender::fn::GFieldRef::GFieldRef · L661](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-15ef31dab45d2b47)；[blender::fn::GFieldRef::GFieldRef · L666](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-484aa20064f4a61a)；[blender::fn::GFieldRef::GFieldRef · L673](05-FieldOperation%E8%BF%90%E7%AE%97%E8%8A%82%E7%82%B9.md#f-e54eebdf61c69d0c)。同名重载需按实参类型选择。
+- `GFieldRef` → [blender::fn::GFieldRef::GFieldRef · L659](05-FieldOperation运算节点.md#f-7c3c61754c76e5b3)；[blender::fn::GFieldRef::GFieldRef · L661](05-FieldOperation运算节点.md#f-15ef31dab45d2b47)；[blender::fn::GFieldRef::GFieldRef · L666](05-FieldOperation运算节点.md#f-484aa20064f4a61a)；[blender::fn::GFieldRef::GFieldRef · L673](05-FieldOperation运算节点.md#f-e54eebdf61c69d0c)。同名重载需按实参类型选择。
 
 <!-- annotated:f3ba99d8ecf30f -->
 
@@ -2437,9 +2437,9 @@ inline const CPPType &GFieldRef::cpp_type() const
 **继续追踪实现**
 
 - `std::visit` → [外部契约](https://eel.is/c++draft/variant.visit)：按variant当前活动分支调用访客；所有候选分支的类型要求需满足，不能读取非活动分支的对象表示。
-- `v.node->cpp_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L691。
-- `v.node->output_cpp_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L694。
-- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-368120c7952b)。宏定义由构建条件选择。
+- `v.node->cpp_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L691。
+- `v.node->output_cpp_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L694。
+- `BLI_assert_unreachable_static_t` → [BLI_assert_unreachable_static_t · L99](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-368120c7952b)。宏定义由构建条件选择。
 
 <!-- annotated:fe697652f67aa4 -->
 
@@ -2675,4 +2675,4 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
 
 与表达式模板、AST和闭包比较：Field可在运行时组合并对不同上下文批量求值；不要把Field对象误当作固定几何的结果数组。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

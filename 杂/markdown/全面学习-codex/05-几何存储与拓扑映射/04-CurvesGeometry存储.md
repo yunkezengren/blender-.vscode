@@ -1,6 +1,6 @@
 # 05-04 CurvesGeometry存储
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -1318,9 +1318,9 @@ class CurvesGeometry : public blender::CurvesGeometry {
 
 **继续追踪实现**
 
-- `this->adapt_domain(GVArray(varray), from, to).typed<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L502。
-- `this->adapt_domain` → [blender::bke::CurvesGeometry::adapt_domain · L499](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-352cb47463117f12)。
-- `GVArray` → [blender::GVArray::GVArray · L163](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-64f7cbf5d9f0e955)；[blender::GVArray::GVArray · L800](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-92ab30090a1a4c9d)；[blender::GVArray::GVArray · L808](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-ffdfb9685892d387)；[blender::GVArray::GVArray · L848](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-9750722bb98b7336)；[blender::GVArray::GVArray · L852](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-570ef42684f1d635)；[blender::GVArray::GVArray · L874](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-ae91aa8c66a4a0d1)；[blender::GVArray::GVArray · L876](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3397bbb4ba5e7ea4)；[blender::GVArray::GVArray · L626](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-fac576444532110b)。同名重载需按实参类型选择。
+- `this->adapt_domain(GVArray(varray), from, to).typed<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L502。
+- `this->adapt_domain` → [blender::bke::CurvesGeometry::adapt_domain · L499](04-CurvesGeometry存储.md#f-352cb47463117f12)。
+- `GVArray` → [blender::GVArray::GVArray · L163](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-64f7cbf5d9f0e955)；[blender::GVArray::GVArray · L800](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-92ab30090a1a4c9d)；[blender::GVArray::GVArray · L808](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-ffdfb9685892d387)；[blender::GVArray::GVArray · L848](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-9750722bb98b7336)；[blender::GVArray::GVArray · L852](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-570ef42684f1d635)；[blender::GVArray::GVArray · L874](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-ae91aa8c66a4a0d1)；[blender::GVArray::GVArray · L876](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-3397bbb4ba5e7ea4)；[blender::GVArray::GVArray · L626](../04-虚拟数组与索引选择/05-GVArray运行时类型.md#f-fac576444532110b)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BKE_curves.hh L504—L549
 
@@ -1588,7 +1588,7 @@ inline int segments_num(const int points_num, const bool cyclic)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:5a8a81c7f54b10 -->
 
@@ -1650,7 +1650,7 @@ inline float2 encode_surface_bary_coord(const float3 &v)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 - `std::abs` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 
 <!-- annotated:73a5a259fb1cc1 -->
@@ -1787,8 +1787,8 @@ inline IndexRange per_curve_point_offsets_range(const IndexRange points, const i
 
 **继续追踪实现**
 
-- `points.start` → [blender::IndexRange::start · L243](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
-- `points.size` → [blender::IndexRange::size · L156](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `points.start` → [blender::IndexRange::start · L243](../01-基础容器与现代CPP/04-IndexRange连续整数区间.md#f-99d2195bd9cfd1f0)。
+- `points.size` → [blender::IndexRange::size · L156](../01-基础容器与现代CPP/04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
 
 ### 类型布局、声明与编译条件 · BKE_curves.hh L601—L840
 
@@ -2361,9 +2361,9 @@ T interpolate(const T &a, const T &b, const T &c, const T &d, const float parame
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `calculate_basis` → [blender::bke::curves::catmull_rom::calculate_basis · L28](%E4%BE%9D%E8%B5%96-curve_catmull_rom-e9ebc0.md#f-f99b22d64d08635a)。
-- `attribute_math::mix4<T>` → [blender::bke::attribute_math::mix4 · L219](%E4%BE%9D%E8%B5%96-BKE_attribute_math-ac7998.md#f-85af8e84cba2f0da)；[blender::bke::attribute_math::mix4 · L226](%E4%BE%9D%E8%B5%96-BKE_attribute_math-ac7998.md#f-967e89d1be1ace48)；[blender::bke::attribute_math::mix4 · L233](%E4%BE%9D%E8%B5%96-BKE_attribute_math-ac7998.md#f-e6f853c01d530853)；[blender::bke::attribute_math::mix4 · L239](%E4%BE%9D%E8%B5%96-BKE_attribute_math-ac7998.md#f-23ee9c4dcbf8aeb5)；[blender::bke::attribute_math::mix4 · L247](%E4%BE%9D%E8%B5%96-BKE_attribute_math-ac7998.md#f-0ec66d431ae48d66)；[blender::bke::attribute_math::mix4 · L255](%E4%BE%9D%E8%B5%96-BKE_attribute_math-ac7998.md#f-39f875e4e6b49664)；[blender::bke::attribute_math::mix4 · L262](%E4%BE%9D%E8%B5%96-BKE_attribute_math-ac7998.md#f-e66911f38510d175)；[blender::bke::attribute_math::mix4 · L269](%E4%BE%9D%E8%B5%96-BKE_attribute_math-ac7998.md#f-b9e623b431abc37b)；[blender::bke::attribute_math::mix4 · L276](%E4%BE%9D%E8%B5%96-BKE_attribute_math-ac7998.md#f-49d7c2ccbd904198)；[blender::bke::attribute_math::mix4 · L283](%E4%BE%9D%E8%B5%96-BKE_attribute_math-ac7998.md#f-d623c982f5c767e4)；[blender::bke::attribute_math::mix4 · L295](%E4%BE%9D%E8%B5%96-BKE_attribute_math-ac7998.md#f-0a6155232f93d0ef)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `calculate_basis` → [blender::bke::curves::catmull_rom::calculate_basis · L28](../90-实现依赖专题/02-BKE几何与数据/intern/curve_catmull_rom.cc.md#f-f99b22d64d08635a)。
+- `attribute_math::mix4<T>` → [blender::bke::attribute_math::mix4 · L219](../90-实现依赖专题/02-BKE几何与数据/BKE_attribute_math.hh.md#f-85af8e84cba2f0da)；[blender::bke::attribute_math::mix4 · L226](../90-实现依赖专题/02-BKE几何与数据/BKE_attribute_math.hh.md#f-967e89d1be1ace48)；[blender::bke::attribute_math::mix4 · L233](../90-实现依赖专题/02-BKE几何与数据/BKE_attribute_math.hh.md#f-e6f853c01d530853)；[blender::bke::attribute_math::mix4 · L239](../90-实现依赖专题/02-BKE几何与数据/BKE_attribute_math.hh.md#f-23ee9c4dcbf8aeb5)；[blender::bke::attribute_math::mix4 · L247](../90-实现依赖专题/02-BKE几何与数据/BKE_attribute_math.hh.md#f-0ec66d431ae48d66)；[blender::bke::attribute_math::mix4 · L255](../90-实现依赖专题/02-BKE几何与数据/BKE_attribute_math.hh.md#f-39f875e4e6b49664)；[blender::bke::attribute_math::mix4 · L262](../90-实现依赖专题/02-BKE几何与数据/BKE_attribute_math.hh.md#f-e66911f38510d175)；[blender::bke::attribute_math::mix4 · L269](../90-实现依赖专题/02-BKE几何与数据/BKE_attribute_math.hh.md#f-b9e623b431abc37b)；[blender::bke::attribute_math::mix4 · L276](../90-实现依赖专题/02-BKE几何与数据/BKE_attribute_math.hh.md#f-49d7c2ccbd904198)；[blender::bke::attribute_math::mix4 · L283](../90-实现依赖专题/02-BKE几何与数据/BKE_attribute_math.hh.md#f-d623c982f5c767e4)；[blender::bke::attribute_math::mix4 · L295](../90-实现依赖专题/02-BKE几何与数据/BKE_attribute_math.hh.md#f-0a6155232f93d0ef)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BKE_curves.hh L854—L1000
 
@@ -2834,7 +2834,7 @@ inline bool CurvesGeometry::is_empty() const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <a id="f-4559390918002dfa"></a>
 
@@ -2873,8 +2873,8 @@ inline IndexRange CurvesGeometry::points_range() const
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `this->points_num` → [blender::bke::CurvesGeometry::points_num · L1001](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-049421b1f643c700)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `this->points_num` → [blender::bke::CurvesGeometry::points_num · L1001](04-CurvesGeometry存储.md#f-049421b1f643c700)。
 
 <a id="f-9aedfb1afc5ebcfb"></a>
 
@@ -2913,8 +2913,8 @@ inline IndexRange CurvesGeometry::curves_range() const
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `this->curves_num` → [blender::bke::CurvesGeometry::curves_num · L1005](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-eabb3f0e5d3c57be)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `this->curves_num` → [blender::bke::CurvesGeometry::curves_num · L1005](04-CurvesGeometry存储.md#f-eabb3f0e5d3c57be)。
 
 <!-- annotated:613b865213e486 -->
 
@@ -2974,8 +2974,8 @@ inline bool CurvesGeometry::is_single_type(const CurveType type) const
 
 **继续追踪实现**
 
-- `this->curve_type_counts` → [blender::bke::CurvesGeometry::curve_type_counts · L1044](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-c350479811891ffd)。
-- `this->curves_num` → [blender::bke::CurvesGeometry::curves_num · L1005](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-eabb3f0e5d3c57be)。
+- `this->curve_type_counts` → [blender::bke::CurvesGeometry::curve_type_counts · L1044](04-CurvesGeometry存储.md#f-c350479811891ffd)。
+- `this->curves_num` → [blender::bke::CurvesGeometry::curves_num · L1005](04-CurvesGeometry存储.md#f-eabb3f0e5d3c57be)。
 
 <!-- annotated:289e295cbf9043 -->
 
@@ -3035,7 +3035,7 @@ inline bool CurvesGeometry::has_curve_with_type(const CurveType type) const
 
 **继续追踪实现**
 
-- `this->curve_type_counts` → [blender::bke::CurvesGeometry::curve_type_counts · L1044](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-c350479811891ffd)。
+- `this->curve_type_counts` → [blender::bke::CurvesGeometry::curve_type_counts · L1044](04-CurvesGeometry存储.md#f-c350479811891ffd)。
 
 <!-- annotated:0928c894462c19 -->
 
@@ -3099,9 +3099,9 @@ inline bool CurvesGeometry::has_curve_with_type(const Span<CurveType> types) con
 **继续追踪实现**
 
 - `std::any_of` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `types.begin` → [blender::Span::begin · L224](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-415883b512284f46)。
-- `types.end` → [blender::Span::end · L228](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-a7d8b9e494c291a7)。
-- `this->has_curve_with_type` → [blender::bke::CurvesGeometry::has_curve_with_type · L1033](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-ad6af25919eba48f)；[blender::bke::CurvesGeometry::has_curve_with_type · L1038](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-63c87ca1983c206e)。同名重载需按实参类型选择。
+- `types.begin` → [blender::Span::begin · L224](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-415883b512284f46)。
+- `types.end` → [blender::Span::end · L228](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-a7d8b9e494c291a7)。
+- `this->has_curve_with_type` → [blender::bke::CurvesGeometry::has_curve_with_type · L1033](04-CurvesGeometry存储.md#f-ad6af25919eba48f)；[blender::bke::CurvesGeometry::has_curve_with_type · L1038](04-CurvesGeometry存储.md#f-63c87ca1983c206e)。同名重载需按实参类型选择。
 
 <!-- annotated:19d432dc8cfc80 -->
 
@@ -3179,9 +3179,9 @@ inline const std::array<int, CURVE_TYPES_NUM> &CurvesGeometry::curve_type_counts
 
 **继续追踪实现**
 
-- `calculate_type_counts` → [blender::bke::calculate_type_counts · L285](%E4%BE%9D%E8%B5%96-curves_geometry-ad7f9f.md#f-f7a150abf6fce904)。
-- `this->curve_types` → [blender::bke::CurvesGeometry::curve_types · L229](%E4%BE%9D%E8%B5%96-curves_geometry-ad7f9f.md#f-e3847cb390c85e93)。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `calculate_type_counts` → [blender::bke::calculate_type_counts · L285](../90-实现依赖专题/02-BKE几何与数据/intern/curves_geometry.cc.md#f-f7a150abf6fce904)。
+- `this->curve_types` → [blender::bke::CurvesGeometry::curve_types · L229](../90-实现依赖专题/02-BKE几何与数据/intern/curves_geometry.cc.md#f-e3847cb390c85e93)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:c058d7cf44cd35 -->
 
@@ -3239,7 +3239,7 @@ inline OffsetIndices<int> CurvesGeometry::points_by_curve() const
 
 **继续追踪实现**
 
-- `OffsetIndices<int>` → [blender::offset_indices::OffsetIndices::OffsetIndices · L44](02-OffsetIndices%E5%AE%8C%E6%95%B4%E6%8E%A5%E5%8F%A3.md#f-52a26009810ef8ec)；[blender::offset_indices::OffsetIndices::OffsetIndices · L45](02-OffsetIndices%E5%AE%8C%E6%95%B4%E6%8E%A5%E5%8F%A3.md#f-7be713f9489f3dd7)；[blender::offset_indices::OffsetIndices::OffsetIndices · L55](02-OffsetIndices%E5%AE%8C%E6%95%B4%E6%8E%A5%E5%8F%A3.md#f-db7e81a5ec2dfb8d)。同名重载需按实参类型选择。
+- `OffsetIndices<int>` → [blender::offset_indices::OffsetIndices::OffsetIndices · L44](02-OffsetIndices完整接口.md#f-52a26009810ef8ec)；[blender::offset_indices::OffsetIndices::OffsetIndices · L45](02-OffsetIndices完整接口.md#f-7be713f9489f3dd7)；[blender::offset_indices::OffsetIndices::OffsetIndices · L55](02-OffsetIndices完整接口.md#f-db7e81a5ec2dfb8d)。同名重载需按实参类型选择。
 
 <!-- annotated:12cf06bd63f776 -->
 
@@ -3297,8 +3297,8 @@ inline int CurvesGeometry::evaluated_points_num() const
 
 **继续追踪实现**
 
-- `this->evaluated_points_by_curve().total_size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1067。
-- `this->evaluated_points_by_curve` → [blender::bke::CurvesGeometry::evaluated_points_by_curve · L706](%E4%BE%9D%E8%B5%96-curves_geometry-ad7f9f.md#f-50a98b54f67dd20c)。
+- `this->evaluated_points_by_curve().total_size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1067。
+- `this->evaluated_points_by_curve` → [blender::bke::CurvesGeometry::evaluated_points_by_curve · L706](../90-实现依赖专题/02-BKE几何与数据/intern/curves_geometry.cc.md#f-50a98b54f67dd20c)。
 
 <!-- annotated:a5f5b7b6bd15f2 -->
 
@@ -3367,10 +3367,10 @@ inline Span<int> CurvesGeometry::bezier_evaluated_offsets_for_curve(const int cu
 
 **继续追踪实现**
 
-- `this->points_by_curve` → [blender::bke::CurvesGeometry::points_by_curve · L1058](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-a0416697e10ec205)。
-- `curves::per_curve_point_offsets_range` → [blender::bke::curves::per_curve_point_offsets_range · L597](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-92c59782b4fd056e)。
-- `this->runtime->evaluated_offsets_cache.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1075。
-- `offsets.slice` → [blender::Span::slice · L141](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
+- `this->points_by_curve` → [blender::bke::CurvesGeometry::points_by_curve · L1058](04-CurvesGeometry存储.md#f-a0416697e10ec205)。
+- `curves::per_curve_point_offsets_range` → [blender::bke::curves::per_curve_point_offsets_range · L597](04-CurvesGeometry存储.md#f-92c59782b4fd056e)。
+- `this->runtime->evaluated_offsets_cache.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1075。
+- `offsets.slice` → [blender::Span::slice · L141](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
 
 <!-- annotated:b22ca72b9785cb -->
 
@@ -3441,12 +3441,12 @@ inline IndexRange CurvesGeometry::lengths_range_for_curve(const int curve_index,
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->cyclic` → [blender::bke::CurvesGeometry::cyclic · L362](%E4%BE%9D%E8%B5%96-curves_geometry-ad7f9f.md#f-ec08c2a1d6f3bfea)。
-- `this->evaluated_points_by_curve` → [blender::bke::CurvesGeometry::evaluated_points_by_curve · L706](%E4%BE%9D%E8%B5%96-curves_geometry-ad7f9f.md#f-50a98b54f67dd20c)。
-- `points.start` → [blender::IndexRange::start · L243](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-99d2195bd9cfd1f0)。
-- `curves::segments_num` → [blender::bke::curves::segments_num · L574](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-279080e6d7ab269f)。
-- `points.size` → [blender::IndexRange::size · L156](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->cyclic` → [blender::bke::CurvesGeometry::cyclic · L362](../90-实现依赖专题/02-BKE几何与数据/intern/curves_geometry.cc.md#f-ec08c2a1d6f3bfea)。
+- `this->evaluated_points_by_curve` → [blender::bke::CurvesGeometry::evaluated_points_by_curve · L706](../90-实现依赖专题/02-BKE几何与数据/intern/curves_geometry.cc.md#f-50a98b54f67dd20c)。
+- `points.start` → [blender::IndexRange::start · L243](../01-基础容器与现代CPP/04-IndexRange连续整数区间.md#f-99d2195bd9cfd1f0)。
+- `curves::segments_num` → [blender::bke::curves::segments_num · L574](04-CurvesGeometry存储.md#f-279080e6d7ab269f)。
+- `points.size` → [blender::IndexRange::size · L156](../01-基础容器与现代CPP/04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
 
 <!-- annotated:ed843917d4c1b7 -->
 
@@ -3511,10 +3511,10 @@ inline Span<float> CurvesGeometry::evaluated_lengths_for_curve(const int curve_i
 
 **继续追踪实现**
 
-- `this->lengths_range_for_curve` → [blender::bke::CurvesGeometry::lengths_range_for_curve · L1079](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-dd2120f77219d8be)。
-- `this->runtime->evaluated_length_cache.data().as_span().slice` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1092。
-- `this->runtime->evaluated_length_cache.data().as_span` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1092。
-- `this->runtime->evaluated_length_cache.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1092。
+- `this->lengths_range_for_curve` → [blender::bke::CurvesGeometry::lengths_range_for_curve · L1079](04-CurvesGeometry存储.md#f-dd2120f77219d8be)。
+- `this->runtime->evaluated_length_cache.data().as_span().slice` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1092。
+- `this->runtime->evaluated_length_cache.data().as_span` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1092。
+- `this->runtime->evaluated_length_cache.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1092。
 
 <!-- annotated:0f35d9ced15a68 -->
 
@@ -3588,9 +3588,9 @@ inline float CurvesGeometry::evaluated_length_total_for_curve(const int curve_in
 
 **继续追踪实现**
 
-- `this->evaluated_lengths_for_curve` → [blender::bke::CurvesGeometry::evaluated_lengths_for_curve · L1088](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-d88b56fe4968987d)。
-- `lengths.is_empty` → [blender::Span::is_empty · L264](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-8cc1d7ba8feb50e6)。
-- `lengths.last` → [blender::Span::last · L329](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-a92146c285596891)。
+- `this->evaluated_lengths_for_curve` → [blender::bke::CurvesGeometry::evaluated_lengths_for_curve · L1088](04-CurvesGeometry存储.md#f-d88b56fe4968987d)。
+- `lengths.is_empty` → [blender::Span::is_empty · L264](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-8cc1d7ba8feb50e6)。
+- `lengths.last` → [blender::Span::last · L329](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-a92146c285596891)。
 
 ### 类型布局、声明与编译条件 · BKE_curves.hh L1104—L1114
 
@@ -3680,7 +3680,7 @@ inline bool point_is_sharp(const Span<int8_t> handle_types_left,
 
 **继续追踪实现**
 
-- `ELEM` → [ELEM · L88](%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
 
 <!-- annotated:0c1513aca228db -->
 
@@ -3802,8 +3802,8 @@ inline bool segment_is_vector(const int8_t left, const int8_t right)
 
 **继续追踪实现**
 
-- `segment_is_vector` → [blender::bke::curves::bezier::segment_is_vector · L1123](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-54be6c52a3cd4fb2)；[blender::bke::curves::bezier::segment_is_vector · L1128](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-c7eda14849965cee)。同名重载需按实参类型选择。
-- `HandleType` → [blender::HandleType](%E4%BE%9D%E8%B5%96-DNA_curves_types-3af677.md#t-daf7799cb5ba)。
+- `segment_is_vector` → [blender::bke::curves::bezier::segment_is_vector · L1123](04-CurvesGeometry存储.md#f-54be6c52a3cd4fb2)；[blender::bke::curves::bezier::segment_is_vector · L1128](04-CurvesGeometry存储.md#f-c7eda14849965cee)。同名重载需按实参类型选择。
+- `HandleType` → [blender::HandleType](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_curves_types.h.md#t-daf7799cb5ba)。
 
 <!-- annotated:3126751ea00837 -->
 
@@ -3872,7 +3872,7 @@ inline bool has_vector_handles(const int num_curve_points,
 
 **继续追踪实现**
 
-- `segments_num` → [blender::bke::curves::segments_num · L574](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-279080e6d7ab269f)。
+- `segments_num` → [blender::bke::curves::segments_num · L574](04-CurvesGeometry存储.md#f-279080e6d7ab269f)。
 
 <!-- annotated:a8ed1a0e7448e1 -->
 
@@ -3933,7 +3933,7 @@ inline float3 calculate_vector_handle(const float3 &point, const float3 &next_po
 
 **继续追踪实现**
 
-- `math::interpolate` → [blender::bke::curves::catmull_rom::interpolate · L841](04-CurvesGeometry%E5%AD%98%E5%82%A8.md#f-fb6d6db316a5388b)。
+- `math::interpolate` → [blender::bke::curves::catmull_rom::interpolate · L841](04-CurvesGeometry存储.md#f-fb6d6db316a5388b)。
 
 ### 类型布局、声明与编译条件 · BKE_curves.hh L1145—L1155
 
@@ -4407,4 +4407,4 @@ unique_ptr通过移动转移拥有关系，默认删除策略必须与资源来�
 
 把偏移数组与vector<vector<int>>、CSR邻接表示作比较：前者集中存储，后者方便独立增长；是否稳定修改比容器名字更影响选型。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

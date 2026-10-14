@@ -1,6 +1,6 @@
 # 04-05 GVArray运行时类型
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -760,7 +760,7 @@ class GVArray : public GVArrayCommon {
 
 **继续追踪实现**
 
-- `impl_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L194。
+- `impl_.get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L194。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L196—L200
 
@@ -1302,8 +1302,8 @@ template<typename T> class GVArrayImpl_For_VArray : public GVArrayImpl {
 
 **继续追踪实现**
 
-- `varray_.get_implementation()->materialize` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L309。
-- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6ffca701d1b3b981)；[blender::GVMutableArray::get_implementation · L695](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-00cf64c9a9fed688)。同名重载需按实参类型选择。
+- `varray_.get_implementation()->materialize` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L309。
+- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray运行时类型.md#f-6ffca701d1b3b981)；[blender::GVMutableArray::get_implementation · L695](05-GVArray运行时类型.md#f-00cf64c9a9fed688)。同名重载需按实参类型选择。
 
 <!-- annotated:bf221cbe3492b7 -->
 
@@ -1367,8 +1367,8 @@ template<typename T> class GVArrayImpl_For_VArray : public GVArrayImpl {
 
 **继续追踪实现**
 
-- `varray_.get_implementation()->materialize_compressed` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L316。
-- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6ffca701d1b3b981)；[blender::GVMutableArray::get_implementation · L695](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-00cf64c9a9fed688)。同名重载需按实参类型选择。
+- `varray_.get_implementation()->materialize_compressed` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L316。
+- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray运行时类型.md#f-6ffca701d1b3b981)；[blender::GVMutableArray::get_implementation · L695](05-GVArray运行时类型.md#f-00cf64c9a9fed688)。同名重载需按实参类型选择。
 
 <!-- annotated:3b138451123f2b -->
 
@@ -1486,7 +1486,7 @@ template<typename T> class GVArrayImpl_For_VArray : public GVArrayImpl {
 
 **继续追踪实现**
 
-- `varray_.common_info` → [blender::GVArrayImpl_For_VArray::common_info · L326](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-234755181abe3b17)。
+- `varray_.common_info` → [blender::GVArrayImpl_For_VArray::common_info · L326](05-GVArray运行时类型.md#f-234755181abe3b17)。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L330—L337
 
@@ -1566,9 +1566,9 @@ template<typename T> class VArrayImpl_For_GVArray : public VArrayImpl<T> {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `varray_.type().template is<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L341。
-- `varray_.type` → [blender::GVArrayImpl::type · L646](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3b02e0dea8c95656)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `varray_.type().template is<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L341。
+- `varray_.type` → [blender::GVArrayImpl::type · L646](05-GVArray运行时类型.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray运行时类型.md#f-3b02e0dea8c95656)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L343—L344
 
@@ -1636,7 +1636,7 @@ template<typename T> class VArrayImpl_For_GVArray : public VArrayImpl<T> {
 
 **继续追踪实现**
 
-- `varray_.get` → [blender::VArrayImpl_For_GVArray::get · L345](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-d8bb24f77c251248)。
+- `varray_.get` → [blender::VArrayImpl_For_GVArray::get · L345](05-GVArray运行时类型.md#f-d8bb24f77c251248)。
 
 <!-- annotated:2859d928a9e5d2 -->
 
@@ -1692,7 +1692,7 @@ template<typename T> class VArrayImpl_For_GVArray : public VArrayImpl<T> {
 
 **继续追踪实现**
 
-- `varray_.common_info` → [blender::VArrayImpl_For_GVArray::common_info · L352](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-99a5494ea39f947e)。
+- `varray_.common_info` → [blender::VArrayImpl_For_GVArray::common_info · L352](05-GVArray运行时类型.md#f-99a5494ea39f947e)。
 
 <!-- annotated:4b11412dce23ea -->
 
@@ -1816,8 +1816,8 @@ template<typename T> class VArrayImpl_For_GVArray : public VArrayImpl<T> {
 
 **继续追踪实现**
 
-- `varray_.get_implementation()->materialize` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L365。
-- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6ffca701d1b3b981)。
+- `varray_.get_implementation()->materialize` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L365。
+- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray运行时类型.md#f-6ffca701d1b3b981)。
 
 <!-- annotated:d25543315b7b78 -->
 
@@ -1879,8 +1879,8 @@ template<typename T> class VArrayImpl_For_GVArray : public VArrayImpl<T> {
 
 **继续追踪实现**
 
-- `varray_.get_implementation()->materialize_compressed` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L372。
-- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6ffca701d1b3b981)。
+- `varray_.get_implementation()->materialize_compressed` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L372。
+- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray运行时类型.md#f-6ffca701d1b3b981)。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L374—L381
 
@@ -2132,7 +2132,7 @@ template<typename T> class GVMutableArrayImpl_For_VMutableArray : public GVMutab
 
 **继续追踪实现**
 
-- `varray_.common_info` → [blender::GVMutableArrayImpl_For_VMutableArray::common_info · L398](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-5f0b15448c6851ed)。
+- `varray_.common_info` → [blender::GVMutableArrayImpl_For_VMutableArray::common_info · L398](05-GVArray运行时类型.md#f-5f0b15448c6851ed)。
 
 <!-- annotated:36351b075e14c0 -->
 
@@ -2191,7 +2191,7 @@ template<typename T> class GVMutableArrayImpl_For_VMutableArray : public GVMutab
 
 **继续追踪实现**
 
-- `varray_.set` → [blender::VMutableArray::set · L898](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-05bfe1c89a3b807f)。
+- `varray_.set` → [blender::VMutableArray::set · L898](03-单值与Span表示.md#f-05bfe1c89a3b807f)。
 
 <!-- annotated:d3d32e4ad3fb04 -->
 
@@ -2253,9 +2253,9 @@ template<typename T> class GVMutableArrayImpl_For_VMutableArray : public GVMutab
 
 **继续追踪实现**
 
-- `varray_.set` → [blender::VMutableArray::set · L898](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-05bfe1c89a3b807f)。
+- `varray_.set` → [blender::VMutableArray::set · L898](03-单值与Span表示.md#f-05bfe1c89a3b807f)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
-- `value_.~T` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：T模板参数提供的操作协议。调用位置L413。
+- `value_.~T` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：T模板参数提供的操作协议。调用位置L413。
 
 <!-- annotated:ada551a3f91f43 -->
 
@@ -2315,7 +2315,7 @@ template<typename T> class GVMutableArrayImpl_For_VMutableArray : public GVMutab
 
 **继续追踪实现**
 
-- `varray_.set` → [blender::VMutableArray::set · L898](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-05bfe1c89a3b807f)。
+- `varray_.set` → [blender::VMutableArray::set · L898](03-单值与Span表示.md#f-05bfe1c89a3b807f)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:8c766ba26abdbf -->
@@ -2372,8 +2372,8 @@ template<typename T> class GVMutableArrayImpl_For_VMutableArray : public GVMutab
 
 **继续追踪实现**
 
-- `varray_.set_all` → [blender::VMutableArray::set_all · L908](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-dad1ed84c715ae1f)。
-- `Span` → [blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
+- `varray_.set_all` → [blender::VMutableArray::set_all · L908](03-单值与Span表示.md#f-dad1ed84c715ae1f)。
+- `Span` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
 
 <!-- annotated:ff9ce037ab3e5d -->
 
@@ -2435,8 +2435,8 @@ template<typename T> class GVMutableArrayImpl_For_VMutableArray : public GVMutab
 
 **继续追踪实现**
 
-- `varray_.get_implementation()->materialize` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L431。
-- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6ffca701d1b3b981)；[blender::GVMutableArray::get_implementation · L695](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-00cf64c9a9fed688)。同名重载需按实参类型选择。
+- `varray_.get_implementation()->materialize` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L431。
+- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray运行时类型.md#f-6ffca701d1b3b981)；[blender::GVMutableArray::get_implementation · L695](05-GVArray运行时类型.md#f-00cf64c9a9fed688)。同名重载需按实参类型选择。
 
 <!-- annotated:c62cf80a72bba0 -->
 
@@ -2500,8 +2500,8 @@ template<typename T> class GVMutableArrayImpl_For_VMutableArray : public GVMutab
 
 **继续追踪实现**
 
-- `varray_.get_implementation()->materialize_compressed` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L438。
-- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6ffca701d1b3b981)；[blender::GVMutableArray::get_implementation · L695](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-00cf64c9a9fed688)。同名重载需按实参类型选择。
+- `varray_.get_implementation()->materialize_compressed` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L438。
+- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray运行时类型.md#f-6ffca701d1b3b981)；[blender::GVMutableArray::get_implementation · L695](05-GVArray运行时类型.md#f-00cf64c9a9fed688)。同名重载需按实参类型选择。
 
 <!-- annotated:f66f2d4c459226 -->
 
@@ -2707,9 +2707,9 @@ template<typename T> class VMutableArrayImpl_For_GVMutableArray : public VMutabl
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `varray_.type().template is<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L465。
-- `varray_.type` → [blender::GVArrayImpl::type · L646](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3b02e0dea8c95656)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `varray_.type().template is<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L465。
+- `varray_.type` → [blender::GVArrayImpl::type · L646](05-GVArray运行时类型.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray运行时类型.md#f-3b02e0dea8c95656)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L467—L468
 
@@ -2777,7 +2777,7 @@ template<typename T> class VMutableArrayImpl_For_GVMutableArray : public VMutabl
 
 **继续追踪实现**
 
-- `varray_.get` → [blender::VMutableArrayImpl_For_GVMutableArray::get · L469](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-68e9f7023c27846a)。
+- `varray_.get` → [blender::VMutableArrayImpl_For_GVMutableArray::get · L469](05-GVArray运行时类型.md#f-68e9f7023c27846a)。
 
 <!-- annotated:d4f45b4b4c1ad6 -->
 
@@ -2834,7 +2834,7 @@ template<typename T> class VMutableArrayImpl_For_GVMutableArray : public VMutabl
 
 **继续追踪实现**
 
-- `varray_.set_by_relocate` → [blender::GVMutableArray::set_by_relocate · L676](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-82717e356f72d9d0)。
+- `varray_.set_by_relocate` → [blender::GVMutableArray::set_by_relocate · L676](05-GVArray运行时类型.md#f-82717e356f72d9d0)。
 
 <!-- annotated:98dcfbb505e008 -->
 
@@ -2890,7 +2890,7 @@ template<typename T> class VMutableArrayImpl_For_GVMutableArray : public VMutabl
 
 **继续追踪实现**
 
-- `varray_.common_info` → [blender::VMutableArrayImpl_For_GVMutableArray::common_info · L481](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-c51144f73f5a6fc7)。
+- `varray_.common_info` → [blender::VMutableArrayImpl_For_GVMutableArray::common_info · L481](05-GVArray运行时类型.md#f-c51144f73f5a6fc7)。
 
 <!-- annotated:1390c0b085da94 -->
 
@@ -3080,8 +3080,8 @@ template<typename T> class VMutableArrayImpl_For_GVMutableArray : public VMutabl
 
 **继续追踪实现**
 
-- `varray_.get_implementation()->materialize` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L500。
-- `varray_.get_implementation` → [blender::GVMutableArray::get_implementation · L695](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-00cf64c9a9fed688)。
+- `varray_.get_implementation()->materialize` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L500。
+- `varray_.get_implementation` → [blender::GVMutableArray::get_implementation · L695](05-GVArray运行时类型.md#f-00cf64c9a9fed688)。
 
 <!-- annotated:412b9a287e485a -->
 
@@ -3143,8 +3143,8 @@ template<typename T> class VMutableArrayImpl_For_GVMutableArray : public VMutabl
 
 **继续追踪实现**
 
-- `varray_.get_implementation()->materialize_compressed` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L507。
-- `varray_.get_implementation` → [blender::GVMutableArray::get_implementation · L695](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-00cf64c9a9fed688)。
+- `varray_.get_implementation()->materialize_compressed` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L507。
+- `varray_.get_implementation` → [blender::GVMutableArray::get_implementation · L695](05-GVArray运行时类型.md#f-00cf64c9a9fed688)。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L509—L522
 
@@ -3708,8 +3708,8 @@ template<typename GetToUninitFn> class GVArrayImpl_For_Func final : public GVArr
 
 **继续追踪实现**
 
-- `type_->destruct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L623。
-- `get_to_uninit_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L625。
+- `type_->destruct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L623。
+- `get_to_uninit_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L625。
 
 <!-- annotated:c770e6a6c5c43b -->
 
@@ -3770,7 +3770,7 @@ template<typename GetToUninitFn> class GVArrayImpl_For_Func final : public GVArr
 
 **继续追踪实现**
 
-- `get_to_uninit_` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L630。
+- `get_to_uninit_` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L630。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L632—L639
 
@@ -3845,7 +3845,7 @@ inline GVArrayImpl::GVArrayImpl(const CPPType &type, const int64_t size)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:ce7cadddda1ee9 -->
 
@@ -4032,10 +4032,10 @@ inline void GVMutableArray::set_by_copy(const int64_t index, const void *value)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::GVArrayImpl::size · L651](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
-- `this->get_impl()->set_by_copy` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L666。
-- `this->get_impl` → [blender::GVMutableArray::get_impl · L690](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f8cd81d9d8dd534e)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::GVArrayImpl::size · L651](05-GVArray运行时类型.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
+- `this->get_impl()->set_by_copy` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L666。
+- `this->get_impl` → [blender::GVMutableArray::get_impl · L690](05-GVArray运行时类型.md#f-f8cd81d9d8dd534e)。
 
 <!-- annotated:a16a38c75d096c -->
 
@@ -4096,10 +4096,10 @@ inline void GVMutableArray::set_by_move(const int64_t index, void *value)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::GVArrayImpl::size · L651](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
-- `this->get_impl()->set_by_move` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L673。
-- `this->get_impl` → [blender::GVMutableArray::get_impl · L690](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f8cd81d9d8dd534e)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::GVArrayImpl::size · L651](05-GVArray运行时类型.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
+- `this->get_impl()->set_by_move` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L673。
+- `this->get_impl` → [blender::GVMutableArray::get_impl · L690](05-GVArray运行时类型.md#f-f8cd81d9d8dd534e)。
 
 <!-- annotated:878495fd3b56bb -->
 
@@ -4160,10 +4160,10 @@ inline void GVMutableArray::set_by_relocate(const int64_t index, void *value)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::GVArrayImpl::size · L651](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
-- `this->get_impl()->set_by_relocate` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L680。
-- `this->get_impl` → [blender::GVMutableArray::get_impl · L690](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f8cd81d9d8dd534e)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::GVArrayImpl::size · L651](05-GVArray运行时类型.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
+- `this->get_impl()->set_by_relocate` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L680。
+- `this->get_impl` → [blender::GVMutableArray::get_impl · L690](05-GVArray运行时类型.md#f-f8cd81d9d8dd534e)。
 
 <!-- annotated:5337608659cc03 -->
 
@@ -4227,11 +4227,11 @@ inline bool GVMutableArray::try_assign_VMutableArray(VMutableArray<T> &varray) c
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `impl_->type().is<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L686。
-- `impl_->type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L686。
-- `this->get_impl()->try_assign_VMutableArray` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L687。
-- `this->get_impl` → [blender::GVMutableArray::get_impl · L690](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f8cd81d9d8dd534e)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `impl_->type().is<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L686。
+- `impl_->type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L686。
+- `this->get_impl()->try_assign_VMutableArray` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L687。
+- `this->get_impl` → [blender::GVMutableArray::get_impl · L690](05-GVArray运行时类型.md#f-f8cd81d9d8dd534e)。
 
 <!-- annotated:f22e8805c5887f -->
 
@@ -4287,7 +4287,7 @@ inline GVMutableArrayImpl *GVMutableArray::get_impl() const
 
 **继续追踪实现**
 
-- `impl_.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L692。
+- `impl_.get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L692。
 
 <!-- annotated:8ba4def20feb20 -->
 
@@ -4343,7 +4343,7 @@ inline GVMutableArrayImpl *GVMutableArray::get_implementation() const
 
 **继续追踪实现**
 
-- `this->get_impl` → [blender::GVMutableArray::get_impl · L690](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f8cd81d9d8dd534e)。
+- `this->get_impl` → [blender::GVMutableArray::get_impl · L690](05-GVArray运行时类型.md#f-f8cd81d9d8dd534e)。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L699—L705
 
@@ -4410,7 +4410,7 @@ template<typename ImplT, typename... Args> inline void GVArrayCommon::emplace(Ar
 
 **继续追踪实现**
 
-- `impl_.emplace<ImplT>` → [blender::AnyDerived::emplace · L134](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-57e6b0e71dbdff55)。
+- `impl_.emplace<ImplT>` → [blender::AnyDerived::emplace · L134](../01-基础容器与现代CPP/18-AnyDerived多态对象值封装.md#f-57e6b0e71dbdff55)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L710—L712
@@ -4478,9 +4478,9 @@ inline void GVArrayCommon::get(const int64_t index, void *r_value) const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。
-- `impl_->get` → [blender::AnyDerived::get · L167](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-ebda3f1086d3f9fc)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。
+- `impl_->get` → [blender::AnyDerived::get · L167](../01-基础容器与现代CPP/18-AnyDerived多态对象值封装.md#f-ebda3f1086d3f9fc)。
 
 <!-- annotated:0ce3479daca739 -->
 
@@ -4550,11 +4550,11 @@ template<typename T> inline T GVArrayCommon::get(const int64_t index) const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。
-- `this->type().is<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L724。
-- `this->type` → [blender::GVArrayCommon::type · L744](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3b02e0dea8c95656)。
-- `impl_->get` → [blender::AnyDerived::get · L167](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/18-AnyDerived%E5%A4%9A%E6%80%81%E5%AF%B9%E8%B1%A1%E5%80%BC%E5%B0%81%E8%A3%85.md#f-ebda3f1086d3f9fc)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。
+- `this->type().is<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L724。
+- `this->type` → [blender::GVArrayCommon::type · L744](05-GVArray运行时类型.md#f-3b02e0dea8c95656)。
+- `impl_->get` → [blender::AnyDerived::get · L167](../01-基础容器与现代CPP/18-AnyDerived多态对象值封装.md#f-ebda3f1086d3f9fc)。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L729—L730
 
@@ -4619,9 +4619,9 @@ inline void GVArrayCommon::get_to_uninitialized(const int64_t index, void *r_val
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->size` → [blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。
-- `impl_->get_to_uninitialized` → [blender::GVArrayCommon::get_to_uninitialized · L731](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-4552f48d024ca567)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->size` → [blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。
+- `impl_->get_to_uninitialized` → [blender::GVArrayCommon::get_to_uninitialized · L731](05-GVArray运行时类型.md#f-4552f48d024ca567)。
 
 <!-- annotated:49cf260e14b08c -->
 
@@ -4683,10 +4683,10 @@ template<typename T> inline bool GVArrayCommon::try_assign_VArray(VArray<T> &var
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `impl_->type().is<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L740。
-- `impl_->type` → [blender::GVArrayImpl::type · L646](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3b02e0dea8c95656)。同名重载需按实参类型选择。
-- `impl_->try_assign_VArray` → [blender::GVArrayCommon::try_assign_VArray · L738](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-705f92ec047b4c3d)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `impl_->type().is<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L740。
+- `impl_->type` → [blender::GVArrayImpl::type · L646](05-GVArray运行时类型.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray运行时类型.md#f-3b02e0dea8c95656)。同名重载需按实参类型选择。
+- `impl_->try_assign_VArray` → [blender::GVArrayCommon::try_assign_VArray · L738](05-GVArray运行时类型.md#f-705f92ec047b4c3d)。
 
 <!-- annotated:e3c7aef02947db -->
 
@@ -4742,7 +4742,7 @@ inline const CPPType &GVArrayCommon::type() const
 
 **继续追踪实现**
 
-- `impl_->type` → [blender::GVArrayImpl::type · L646](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3b02e0dea8c95656)。同名重载需按实参类型选择。
+- `impl_->type` → [blender::GVArrayImpl::type · L646](05-GVArray运行时类型.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray运行时类型.md#f-3b02e0dea8c95656)。同名重载需按实参类型选择。
 
 <!-- annotated:c25348ebef1c82 -->
 
@@ -4854,7 +4854,7 @@ inline CommonVArrayInfo GVArrayCommon::common_info() const
 
 **继续追踪实现**
 
-- `impl_->common_info` → [blender::GVArrayCommon::common_info · L754](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6e36f872f4ef34e2)。
+- `impl_->common_info` → [blender::GVArrayCommon::common_info · L754](05-GVArray运行时类型.md#f-6e36f872f4ef34e2)。
 
 <!-- annotated:84cf7746e7d4b6 -->
 
@@ -4917,7 +4917,7 @@ inline int64_t GVArrayCommon::size() const
 
 **继续追踪实现**
 
-- `impl_->size` → [blender::GVArrayImpl::size · L651](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
+- `impl_->size` → [blender::GVArrayImpl::size · L651](05-GVArray运行时类型.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
 
 <!-- annotated:37669c99a01ea7 -->
 
@@ -4973,7 +4973,7 @@ inline bool GVArrayCommon::is_empty() const
 
 **继续追踪实现**
 
-- `this->size` → [blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。
+- `this->size` → [blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L771—L777
 
@@ -5079,11 +5079,11 @@ template<typename T, bool UseSingle, bool UseSpan> struct GVArrayDevirtualizer {
 
 **继续追踪实现**
 
-- `this->varray_impl.common_info` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L780。
-- `this->varray_impl.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L781。
-- `fn` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L784。
-- `SingleAsSpan<T>` → [blender::SingleAsSpan::SingleAsSpan · L1122](04-%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%B0%8F%E5%AF%B9%E8%B1%A1%E4%BC%98%E5%8C%96.md#f-be255a0bc8ee3fdb)；[blender::SingleAsSpan::SingleAsSpan · L1127](04-%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%B0%8F%E5%AF%B9%E8%B1%A1%E4%BC%98%E5%8C%96.md#f-39c1d292d667288b)。同名重载需按实参类型选择。
-- `Span<T>` → [blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
+- `this->varray_impl.common_info` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L780。
+- `this->varray_impl.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L781。
+- `fn` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L784。
+- `SingleAsSpan<T>` → [blender::SingleAsSpan::SingleAsSpan · L1122](04-所有权与小对象优化.md#f-be255a0bc8ee3fdb)；[blender::SingleAsSpan::SingleAsSpan · L1127](04-所有权与小对象优化.md#f-39c1d292d667288b)。同名重载需按实参类型选择。
+- `Span<T>` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L794—L799
 
@@ -5158,10 +5158,10 @@ inline GVArray::GVArray(varray_tag::span /*tag*/, const GSpan span)
 
 **继续追踪实现**
 
-- `span.type` → [blender::GSpan::type · L55](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-4c44cc0364dcf191)。
-- `span.data` → [blender::GSpan::data · L81](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-25f2f0038c437d19)。
-- `span.size` → [blender::GSpan::size · L71](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-c942a700d5d93de1)。
-- `this->emplace<GVArrayImpl_For_GSpan_final>` → [blender::GVArrayCommon::emplace · L706](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f0a1f1400cf15e73)。
+- `span.type` → [blender::GSpan::type · L55](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-4c44cc0364dcf191)。
+- `span.data` → [blender::GSpan::data · L81](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-25f2f0038c437d19)。
+- `span.size` → [blender::GSpan::size · L71](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-c942a700d5d93de1)。
+- `this->emplace<GVArrayImpl_For_GSpan_final>` → [blender::GVArrayCommon::emplace · L706](05-GVArray运行时类型.md#f-f0a1f1400cf15e73)。
 
 <!-- annotated:b0d4ad5ef25405 -->
 
@@ -5226,7 +5226,7 @@ inline GVArray::GVArray(varray_tag::single_ref /*tag*/,
 
 **继续追踪实现**
 
-- `this->emplace<GVArrayImpl_For_SingleValueRef_final>` → [blender::GVArrayCommon::emplace · L706](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f0a1f1400cf15e73)。
+- `this->emplace<GVArrayImpl_For_SingleValueRef_final>` → [blender::GVArrayCommon::emplace · L706](05-GVArray运行时类型.md#f-f0a1f1400cf15e73)。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L815—L816
 
@@ -5324,8 +5324,8 @@ template<typename StorageT> constexpr GVArrayAnyExtraInfo GVArrayAnyExtraInfo::g
 
 **继续追踪实现**
 
-- `(static_cast<const StorageT *>(buffer))->get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L831。
-- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
+- `(static_cast<const StorageT *>(buffer))->get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L831。
+- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L838—L839
 
@@ -5392,7 +5392,7 @@ template<typename ImplT, typename... Args> inline GVArray GVArray::from(Args &&.
 
 **继续追踪实现**
 
-- `varray.template emplace<ImplT>` → [blender::GVArrayCommon::emplace · L706](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f0a1f1400cf15e73)。
+- `varray.template emplace<ImplT>` → [blender::GVArrayCommon::emplace · L706](05-GVArray运行时类型.md#f-f0a1f1400cf15e73)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 <!-- annotated:67929a3e444864 -->
@@ -5538,14 +5538,14 @@ template<typename T> inline GVArray::GVArray(VArray<T> &&varray)
 
 **继续追踪实现**
 
-- `varray.common_info` → [blender::GVArrayCommon::common_info · L754](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6e36f872f4ef34e2)。
-- `GVArray::from_single` → [blender::GVArray::from_single · L880](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-1c85e09520e47c5a)。
-- `CPPType::get<T>` → [blender::CPPType::get · L481](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)；[blender::GVArrayCommon::get · L713](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-1d82b6393ee549e4)；[blender::GVArrayCommon::get · L720](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-edb10a209a2dac3e)。同名重载需按实参类型选择。
-- `varray.size` → [blender::GVArrayImpl::size · L651](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
-- `GVArray::from_span` → [blender::GVArray::from_span · L895](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-e8b978ca15febb67)。
-- `GSpan` → [blender::GSpan::GSpan · L26](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
-- `varray.try_assign_GVArray` → [blender::VArrayImpl_For_GVArray::try_assign_GVArray · L357](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-eb95a72fae366bef)；[blender::VMutableArrayImpl_For_GVMutableArray::try_assign_GVArray · L486](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-b1a3711797daffae)。同名重载需按实参类型选择。
-- `GVArray::from<GVArrayImpl_For_VArray<T>>` → [blender::GVArray::from · L840](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6cde33ece049b395)；[blender::GVMutableArray::from · L948](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-50ec35cb9127911e)。同名重载需按实参类型选择。
+- `varray.common_info` → [blender::GVArrayCommon::common_info · L754](05-GVArray运行时类型.md#f-6e36f872f4ef34e2)。
+- `GVArray::from_single` → [blender::GVArray::from_single · L880](05-GVArray运行时类型.md#f-1c85e09520e47c5a)。
+- `CPPType::get<T>` → [blender::CPPType::get · L481](../03-内存分配与运行时类型/08-CPPType构造与析构.md#f-0cc10a3783d6abdb)；[blender::GVArrayCommon::get · L713](05-GVArray运行时类型.md#f-1d82b6393ee549e4)；[blender::GVArrayCommon::get · L720](05-GVArray运行时类型.md#f-edb10a209a2dac3e)。同名重载需按实参类型选择。
+- `varray.size` → [blender::GVArrayImpl::size · L651](05-GVArray运行时类型.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
+- `GVArray::from_span` → [blender::GVArray::from_span · L895](05-GVArray运行时类型.md#f-e8b978ca15febb67)。
+- `GSpan` → [blender::GSpan::GSpan · L26](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
+- `varray.try_assign_GVArray` → [blender::VArrayImpl_For_GVArray::try_assign_GVArray · L357](05-GVArray运行时类型.md#f-eb95a72fae366bef)；[blender::VMutableArrayImpl_For_GVMutableArray::try_assign_GVArray · L486](05-GVArray运行时类型.md#f-b1a3711797daffae)。同名重载需按实参类型选择。
+- `GVArray::from<GVArrayImpl_For_VArray<T>>` → [blender::GVArray::from · L840](05-GVArray运行时类型.md#f-6cde33ece049b395)；[blender::GVMutableArray::from · L948](05-GVArray运行时类型.md#f-50ec35cb9127911e)。同名重载需按实参类型选择。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:6feb4a2a1d0c4b -->
@@ -5712,7 +5712,7 @@ inline GVArray GVArray::from_single(const CPPType &type, const int64_t size, con
 
 **继续追踪实现**
 
-- `GVArray` → [blender::GVArray::GVArray · L800](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-92ab30090a1a4c9d)；[blender::GVArray::GVArray · L808](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-ffdfb9685892d387)；[blender::GVArray::GVArray · L848](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-9750722bb98b7336)；[blender::GVArray::GVArray · L852](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-570ef42684f1d635)；[blender::GVArray::GVArray · L874](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-ae91aa8c66a4a0d1)；[blender::GVArray::GVArray · L876](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3397bbb4ba5e7ea4)。同名重载需按实参类型选择。
+- `GVArray` → [blender::GVArray::GVArray · L800](05-GVArray运行时类型.md#f-92ab30090a1a4c9d)；[blender::GVArray::GVArray · L808](05-GVArray运行时类型.md#f-ffdfb9685892d387)；[blender::GVArray::GVArray · L848](05-GVArray运行时类型.md#f-9750722bb98b7336)；[blender::GVArray::GVArray · L852](05-GVArray运行时类型.md#f-570ef42684f1d635)；[blender::GVArray::GVArray · L874](05-GVArray运行时类型.md#f-ae91aa8c66a4a0d1)；[blender::GVArray::GVArray · L876](05-GVArray运行时类型.md#f-3397bbb4ba5e7ea4)。同名重载需按实参类型选择。
 
 <!-- annotated:3df5f185c40f3f -->
 
@@ -5774,7 +5774,7 @@ inline GVArray GVArray::from_single_ref(const CPPType &type, const int64_t size,
 
 **继续追踪实现**
 
-- `GVArray` → [blender::GVArray::GVArray · L800](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-92ab30090a1a4c9d)；[blender::GVArray::GVArray · L808](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-ffdfb9685892d387)；[blender::GVArray::GVArray · L848](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-9750722bb98b7336)；[blender::GVArray::GVArray · L852](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-570ef42684f1d635)；[blender::GVArray::GVArray · L874](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-ae91aa8c66a4a0d1)；[blender::GVArray::GVArray · L876](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3397bbb4ba5e7ea4)。同名重载需按实参类型选择。
+- `GVArray` → [blender::GVArray::GVArray · L800](05-GVArray运行时类型.md#f-92ab30090a1a4c9d)；[blender::GVArray::GVArray · L808](05-GVArray运行时类型.md#f-ffdfb9685892d387)；[blender::GVArray::GVArray · L848](05-GVArray运行时类型.md#f-9750722bb98b7336)；[blender::GVArray::GVArray · L852](05-GVArray运行时类型.md#f-570ef42684f1d635)；[blender::GVArray::GVArray · L874](05-GVArray运行时类型.md#f-ae91aa8c66a4a0d1)；[blender::GVArray::GVArray · L876](05-GVArray运行时类型.md#f-3397bbb4ba5e7ea4)。同名重载需按实参类型选择。
 
 <!-- annotated:5cb4f695599529 -->
 
@@ -5835,8 +5835,8 @@ inline GVArray GVArray::from_single_default(const CPPType &type, const int64_t s
 
 **继续追踪实现**
 
-- `GVArray::from_single_ref` → [blender::GVArray::from_single_ref · L885](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-8208f854554701e4)。
-- `type.default_value` → [blender::CPPType::default_value · L743](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-95e76cbe74b383e8)。
+- `GVArray::from_single_ref` → [blender::GVArray::from_single_ref · L885](05-GVArray运行时类型.md#f-8208f854554701e4)。
+- `type.default_value` → [blender::CPPType::default_value · L743](../03-内存分配与运行时类型/09-CPPType复制移动重定位.md#f-95e76cbe74b383e8)。
 
 <!-- annotated:7afb55e259f304 -->
 
@@ -5896,7 +5896,7 @@ inline GVArray GVArray::from_span(GSpan span)
 
 **继续追踪实现**
 
-- `GVArray` → [blender::GVArray::GVArray · L800](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-92ab30090a1a4c9d)；[blender::GVArray::GVArray · L808](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-ffdfb9685892d387)；[blender::GVArray::GVArray · L848](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-9750722bb98b7336)；[blender::GVArray::GVArray · L852](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-570ef42684f1d635)；[blender::GVArray::GVArray · L874](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-ae91aa8c66a4a0d1)；[blender::GVArray::GVArray · L876](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3397bbb4ba5e7ea4)。同名重载需按实参类型选择。
+- `GVArray` → [blender::GVArray::GVArray · L800](05-GVArray运行时类型.md#f-92ab30090a1a4c9d)；[blender::GVArray::GVArray · L808](05-GVArray运行时类型.md#f-ffdfb9685892d387)；[blender::GVArray::GVArray · L848](05-GVArray运行时类型.md#f-9750722bb98b7336)；[blender::GVArray::GVArray · L852](05-GVArray运行时类型.md#f-570ef42684f1d635)；[blender::GVArray::GVArray · L874](05-GVArray运行时类型.md#f-ae91aa8c66a4a0d1)；[blender::GVArray::GVArray · L876](05-GVArray运行时类型.md#f-3397bbb4ba5e7ea4)。同名重载需按实参类型选择。
 
 <!-- annotated:0bf04a8fef2f4c -->
 
@@ -5956,8 +5956,8 @@ inline GVArray GVArray::from_empty(const CPPType &type)
 
 **继续追踪实现**
 
-- `GVArray::from_span` → [blender::GVArray::from_span · L895](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-e8b978ca15febb67)。
-- `GSpan` → [blender::GSpan::GSpan · L26](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
+- `GVArray::from_span` → [blender::GVArray::from_span · L895](05-GVArray运行时类型.md#f-e8b978ca15febb67)。
+- `GSpan` → [blender::GSpan::GSpan · L26](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
 
 <!-- annotated:bf0a302317c1f0 -->
 
@@ -6028,7 +6028,7 @@ inline GVArray GVArray::from_std_func(
 
 **继续追踪实现**
 
-- `GVArray::from_func` → [blender::GVArray::from_func · L935](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-5284f38409debf59)。
+- `GVArray::from_func` → [blender::GVArray::from_func · L935](05-GVArray运行时类型.md#f-5284f38409debf59)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:fa1a89118acca4 -->
@@ -6123,16 +6123,16 @@ template<typename T> inline VArray<T> GVArray::typed() const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `impl_->type().is<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L918。
-- `impl_->type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L918。
-- `this->common_info` → [blender::GVArrayCommon::common_info · L754](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6e36f872f4ef34e2)。
-- `VArray<T>::from_single` → [blender::GVArray::from_single · L880](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-1c85e09520e47c5a)。
-- `this->size` → [blender::GVArrayImpl::size · L651](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
-- `VArray<T>::from_span` → [blender::GVArray::from_span · L895](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-e8b978ca15febb67)。
-- `Span<T>` → [blender::Span · L214](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/15-StringRef%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%A7%86%E5%9B%BE.md#f-eea723436ab634ed)。
-- `this->try_assign_VArray` → [blender::GVArrayCommon::try_assign_VArray · L738](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-705f92ec047b4c3d)。
-- `VArray<T>::template from<VArrayImpl_For_GVArray<T>>` → [blender::VArray::VArray · L729](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-d7ae0ad405cffa83)；[blender::VArray::VArray · L731](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-23fc37534533119a)；[blender::VArray::VArray · L733](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-69612c15887be77d)；[blender::VArray::VArray · L735](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-75f0a06e36786df7)；[blender::VArray::VArray · L740](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-2f6f2caa2a2d034f)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `impl_->type().is<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L918。
+- `impl_->type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L918。
+- `this->common_info` → [blender::GVArrayCommon::common_info · L754](05-GVArray运行时类型.md#f-6e36f872f4ef34e2)。
+- `VArray<T>::from_single` → [blender::GVArray::from_single · L880](05-GVArray运行时类型.md#f-1c85e09520e47c5a)。
+- `this->size` → [blender::GVArrayImpl::size · L651](05-GVArray运行时类型.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
+- `VArray<T>::from_span` → [blender::GVArray::from_span · L895](05-GVArray运行时类型.md#f-e8b978ca15febb67)。
+- `Span<T>` → [blender::Span · L214](../01-基础容器与现代CPP/15-StringRef字符串视图.md#f-eea723436ab634ed)。
+- `this->try_assign_VArray` → [blender::GVArrayCommon::try_assign_VArray · L738](05-GVArray运行时类型.md#f-705f92ec047b4c3d)。
+- `VArray<T>::template from<VArrayImpl_For_GVArray<T>>` → [blender::VArray::VArray · L729](03-单值与Span表示.md#f-d7ae0ad405cffa83)；[blender::VArray::VArray · L731](03-单值与Span表示.md#f-23fc37534533119a)；[blender::VArray::VArray · L733](03-单值与Span表示.md#f-69612c15887be77d)；[blender::VArray::VArray · L735](03-单值与Span表示.md#f-75f0a06e36786df7)；[blender::VArray::VArray · L740](03-单值与Span表示.md#f-2f6f2caa2a2d034f)。同名重载需按实参类型选择。
 
 <!-- annotated:218b82a8b652c0 -->
 
@@ -6199,7 +6199,7 @@ inline GVArray GVArray::from_func(const CPPType &type, int64_t size, GetToUninit
 
 **继续追踪实现**
 
-- `GVArray::from<GVArrayImpl_For_Func<GetToUninitFn>>` → [blender::GVArray::from · L840](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6cde33ece049b395)；[blender::GVMutableArray::from · L948](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-50ec35cb9127911e)。同名重载需按实参类型选择。
+- `GVArray::from<GVArrayImpl_For_Func<GetToUninitFn>>` → [blender::GVArray::from · L840](05-GVArray运行时类型.md#f-6cde33ece049b395)；[blender::GVMutableArray::from · L948](05-GVArray运行时类型.md#f-50ec35cb9127911e)。同名重载需按实参类型选择。
 - `std::forward<GetToUninitFn>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L941—L947
@@ -6279,7 +6279,7 @@ inline GVMutableArray GVMutableArray::from(Args &&...args)
 
 **继续追踪实现**
 
-- `varray.emplace<ImplT>` → [blender::GVArrayCommon::emplace · L706](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f0a1f1400cf15e73)。
+- `varray.emplace<ImplT>` → [blender::GVArrayCommon::emplace · L706](05-GVArray运行时类型.md#f-f0a1f1400cf15e73)。
 - `std::forward<Args>` → [外部契约](https://eel.is/c++draft/utility.forward)：在转发引用中恢复调用者传入的值类别；依赖推导类型，不能与无条件move互换。
 
 <!-- annotated:fe8f815c815949 -->
@@ -6360,13 +6360,13 @@ template<typename T> inline GVMutableArray::GVMutableArray(const VMutableArray<T
 
 **继续追踪实现**
 
-- `varray.common_info` → [blender::GVArrayCommon::common_info · L754](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6e36f872f4ef34e2)。
-- `GVMutableArray::from_span` → [blender::GVArray::from_span · L895](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-e8b978ca15febb67)。
-- `GMutableSpan` → [blender::GMutableSpan::GMutableSpan · L152](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-b4ef5399177eeedd)；[blender::GMutableSpan::GMutableSpan · L154](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-6439a40f33c7a2e5)；[blender::GMutableSpan::GMutableSpan · L163](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-6054339faadc1405)；[blender::GMutableSpan::GMutableSpan · L167](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-d1333b42c7982310)；[blender::GMutableSpan::GMutableSpan · L169](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-3584f997d0fe9a96)；[blender::GMutableSpan::GMutableSpan · L171](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-3074afdbe5232417)。同名重载需按实参类型选择。
-- `CPPType::get<T>` → [blender::CPPType::get · L481](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/08-CPPType%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84.md#f-0cc10a3783d6abdb)；[blender::GVArrayCommon::get · L713](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-1d82b6393ee549e4)；[blender::GVArrayCommon::get · L720](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-edb10a209a2dac3e)。同名重载需按实参类型选择。
-- `varray.size` → [blender::GVArrayImpl::size · L651](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
-- `varray.try_assign_GVMutableArray` → [blender::VMutableArray::try_assign_GVMutableArray · L915](04-%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%B0%8F%E5%AF%B9%E8%B1%A1%E4%BC%98%E5%8C%96.md#f-ef455b7aaf50f0df)。
-- `GVMutableArray::from<GVMutableArrayImpl_For_VMutableArray<T>>` → [blender::GVArray::from · L840](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6cde33ece049b395)；[blender::GVMutableArray::from · L948](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-50ec35cb9127911e)。同名重载需按实参类型选择。
+- `varray.common_info` → [blender::GVArrayCommon::common_info · L754](05-GVArray运行时类型.md#f-6e36f872f4ef34e2)。
+- `GVMutableArray::from_span` → [blender::GVArray::from_span · L895](05-GVArray运行时类型.md#f-e8b978ca15febb67)。
+- `GMutableSpan` → [blender::GMutableSpan::GMutableSpan · L152](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-b4ef5399177eeedd)；[blender::GMutableSpan::GMutableSpan · L154](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-6439a40f33c7a2e5)；[blender::GMutableSpan::GMutableSpan · L163](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-6054339faadc1405)；[blender::GMutableSpan::GMutableSpan · L167](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-d1333b42c7982310)；[blender::GMutableSpan::GMutableSpan · L169](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-3584f997d0fe9a96)；[blender::GMutableSpan::GMutableSpan · L171](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-3074afdbe5232417)。同名重载需按实参类型选择。
+- `CPPType::get<T>` → [blender::CPPType::get · L481](../03-内存分配与运行时类型/08-CPPType构造与析构.md#f-0cc10a3783d6abdb)；[blender::GVArrayCommon::get · L713](05-GVArray运行时类型.md#f-1d82b6393ee549e4)；[blender::GVArrayCommon::get · L720](05-GVArray运行时类型.md#f-edb10a209a2dac3e)。同名重载需按实参类型选择。
+- `varray.size` → [blender::GVArrayImpl::size · L651](05-GVArray运行时类型.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
+- `varray.try_assign_GVMutableArray` → [blender::VMutableArray::try_assign_GVMutableArray · L915](04-所有权与小对象优化.md#f-ef455b7aaf50f0df)。
+- `GVMutableArray::from<GVMutableArrayImpl_For_VMutableArray<T>>` → [blender::GVArray::from · L840](05-GVArray运行时类型.md#f-6cde33ece049b395)；[blender::GVMutableArray::from · L948](05-GVArray运行时类型.md#f-50ec35cb9127911e)。同名重载需按实参类型选择。
 
 <!-- annotated:e6f5ed713e8d14 -->
 
@@ -6451,15 +6451,15 @@ template<typename T> inline VMutableArray<T> GVMutableArray::typed() const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->type().is<T>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L979。
-- `this->type` → [blender::GVArrayImpl::type · L646](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3b02e0dea8c95656)。同名重载需按实参类型选择。
-- `this->common_info` → [blender::GVArrayCommon::common_info · L754](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6e36f872f4ef34e2)。
-- `VMutableArray<T>::from_span` → [blender::GVArray::from_span · L895](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-e8b978ca15febb67)。
-- `MutableSpan<T>` → [blender::MutableSpan::MutableSpan · L462](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
-- `this->size` → [blender::GVArrayImpl::size · L651](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
-- `this->try_assign_VMutableArray` → [blender::GVMutableArray::try_assign_VMutableArray · L683](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-a6f247b69e2c3829)。
-- `VMutableArray<T>::template from<VMutableArrayImpl_For_GVMutableArray<T>>` → [blender::VMutableArray::VMutableArray · L820](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-7d00cfe7e0f39894)；[blender::VMutableArray::VMutableArray · L822](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-6aa931086ad8c337)；[blender::VMutableArray::VMutableArray · L824](03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-501f53822265efe6)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->type().is<T>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L979。
+- `this->type` → [blender::GVArrayImpl::type · L646](05-GVArray运行时类型.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray运行时类型.md#f-3b02e0dea8c95656)。同名重载需按实参类型选择。
+- `this->common_info` → [blender::GVArrayCommon::common_info · L754](05-GVArray运行时类型.md#f-6e36f872f4ef34e2)。
+- `VMutableArray<T>::from_span` → [blender::GVArray::from_span · L895](05-GVArray运行时类型.md#f-e8b978ca15febb67)。
+- `MutableSpan<T>` → [blender::MutableSpan::MutableSpan · L462](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
+- `this->size` → [blender::GVArrayImpl::size · L651](05-GVArray运行时类型.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。同名重载需按实参类型选择。
+- `this->try_assign_VMutableArray` → [blender::GVMutableArray::try_assign_VMutableArray · L683](05-GVArray运行时类型.md#f-a6f247b69e2c3829)。
+- `VMutableArray<T>::template from<VMutableArrayImpl_For_GVMutableArray<T>>` → [blender::VMutableArray::VMutableArray · L820](03-单值与Span表示.md#f-7d00cfe7e0f39894)；[blender::VMutableArray::VMutableArray · L822](03-单值与Span表示.md#f-6aa931086ad8c337)；[blender::VMutableArray::VMutableArray · L824](03-单值与Span表示.md#f-501f53822265efe6)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · BLI_generic_virtual_array.hh L991—L994
 
@@ -6604,10 +6604,10 @@ void GVArrayImpl::materialize(const IndexMask &mask,
 
 **继续追踪实现**
 
-- `mask.foreach_index_optimized<int64_t>` → [blender::index_mask::IndexMask::foreach_index_optimized · L937](12-%E9%87%8D%E6%9E%84%E5%8E%86%E5%8F%B2%E4%B8%8E%E5%9F%BA%E5%87%86%E7%BB%83%E4%B9%A0.md#f-a2c3e7876407eaaf)。
-- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
-- `this->get_to_uninitialized` → [blender::GVArrayImpl_For_GSpan::get_to_uninitialized · L133](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-4f0d272272959642)；[blender::GVArrayImpl_For_SingleValueRef::get_to_uninitialized · L194](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-90dfa9913fe053ac)。同名重载需按实参类型选择。
-- `this->get` → [blender::GVArrayImpl::get · L55](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-c7354dce945e059b)。
+- `mask.foreach_index_optimized<int64_t>` → [blender::index_mask::IndexMask::foreach_index_optimized · L937](12-重构历史与基准练习.md#f-a2c3e7876407eaaf)。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-c812e199f26c)。宏定义由构建条件选择。
+- `this->get_to_uninitialized` → [blender::GVArrayImpl_For_GSpan::get_to_uninitialized · L133](05-GVArray运行时类型.md#f-4f0d272272959642)；[blender::GVArrayImpl_For_SingleValueRef::get_to_uninitialized · L194](05-GVArray运行时类型.md#f-90dfa9913fe053ac)。同名重载需按实参类型选择。
+- `this->get` → [blender::GVArrayImpl::get · L55](05-GVArray运行时类型.md#f-c7354dce945e059b)。
 
 <!-- annotated:81f5a2718911b0 -->
 
@@ -6691,10 +6691,10 @@ void GVArrayImpl::materialize_compressed(const IndexMask &mask,
 
 **继续追踪实现**
 
-- `mask.foreach_index_optimized<int64_t>` → [blender::index_mask::IndexMask::foreach_index_optimized · L937](12-%E9%87%8D%E6%9E%84%E5%8E%86%E5%8F%B2%E4%B8%8E%E5%9F%BA%E5%87%86%E7%BB%83%E4%B9%A0.md#f-a2c3e7876407eaaf)。
-- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
-- `this->get_to_uninitialized` → [blender::GVArrayImpl_For_GSpan::get_to_uninitialized · L133](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-4f0d272272959642)；[blender::GVArrayImpl_For_SingleValueRef::get_to_uninitialized · L194](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-90dfa9913fe053ac)。同名重载需按实参类型选择。
-- `this->get` → [blender::GVArrayImpl::get · L55](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-c7354dce945e059b)。
+- `mask.foreach_index_optimized<int64_t>` → [blender::index_mask::IndexMask::foreach_index_optimized · L937](12-重构历史与基准练习.md#f-a2c3e7876407eaaf)。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-c812e199f26c)。宏定义由构建条件选择。
+- `this->get_to_uninitialized` → [blender::GVArrayImpl_For_GSpan::get_to_uninitialized · L133](05-GVArray运行时类型.md#f-4f0d272272959642)；[blender::GVArrayImpl_For_SingleValueRef::get_to_uninitialized · L194](05-GVArray运行时类型.md#f-90dfa9913fe053ac)。同名重载需按实参类型选择。
+- `this->get` → [blender::GVArrayImpl::get · L55](05-GVArray运行时类型.md#f-c7354dce945e059b)。
 
 <!-- annotated:828e63fc4b2d86 -->
 
@@ -6753,8 +6753,8 @@ void GVArrayImpl::get(const int64_t index, void *r_value) const
 
 **继续追踪实现**
 
-- `type_->destruct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L57。
-- `this->get_to_uninitialized` → [blender::GVArrayImpl_For_GSpan::get_to_uninitialized · L133](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-4f0d272272959642)；[blender::GVArrayImpl_For_SingleValueRef::get_to_uninitialized · L194](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-90dfa9913fe053ac)。同名重载需按实参类型选择。
+- `type_->destruct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L57。
+- `this->get_to_uninitialized` → [blender::GVArrayImpl_For_GSpan::get_to_uninitialized · L133](05-GVArray运行时类型.md#f-4f0d272272959642)；[blender::GVArrayImpl_For_SingleValueRef::get_to_uninitialized · L194](05-GVArray运行时类型.md#f-90dfa9913fe053ac)。同名重载需按实参类型选择。
 
 <!-- annotated:166e6b58ea216c -->
 
@@ -6947,10 +6947,10 @@ void GVMutableArrayImpl::set_by_copy(const int64_t index, const void *value)
 
 **继续追踪实现**
 
-- `BUFFER_FOR_CPP_TYPE_VALUE` → [BUFFER_FOR_CPP_TYPE_VALUE · L460](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-BLI_cpp_type-7649cc.md#m-ef0157733591)。宏定义由构建条件选择。
-- `type_->copy_construct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L80。
-- `this->set_by_move` → [blender::GVArrayImpl_For_GSpan::set_by_move · L143](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-27e6bad1464913d4)。
-- `type_->destruct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L82。
+- `BUFFER_FOR_CPP_TYPE_VALUE` → [BUFFER_FOR_CPP_TYPE_VALUE · L460](../90-实现依赖专题/01-BLI基础库/BLI_cpp_type.hh.md#m-ef0157733591)。宏定义由构建条件选择。
+- `type_->copy_construct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L80。
+- `this->set_by_move` → [blender::GVArrayImpl_For_GSpan::set_by_move · L143](05-GVArray运行时类型.md#f-27e6bad1464913d4)。
+- `type_->destruct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L82。
 
 <!-- annotated:9215ab964439c5 -->
 
@@ -7009,8 +7009,8 @@ void GVMutableArrayImpl::set_by_relocate(const int64_t index, void *value)
 
 **继续追踪实现**
 
-- `this->set_by_move` → [blender::GVArrayImpl_For_GSpan::set_by_move · L143](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-27e6bad1464913d4)。
-- `type_->destruct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L88。
+- `this->set_by_move` → [blender::GVArrayImpl_For_GSpan::set_by_move · L143](05-GVArray运行时类型.md#f-27e6bad1464913d4)。
+- `type_->destruct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L88。
 
 <!-- annotated:3801153ad7dd2c -->
 
@@ -7082,11 +7082,11 @@ void GVMutableArrayImpl::set_all(const void *src)
 
 **继续追踪实现**
 
-- `this->common_info` → [blender::GVArrayImpl::common_info · L61](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-05cf2613df5cf341)；[blender::GVArrayImpl_For_GSpan::common_info · L153](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6c4a162c38b6415f)；[blender::GVArrayImpl_For_SingleValueRef::common_info · L200](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-834c569e1dd69e0f)；[blender::GVArrayImpl_For_GSpan_final::common_info · L712](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-8b760d26627d58a7)；[blender::GVArrayImpl_For_SingleValueRef_final::common_info · L717](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3e14cde911ade0d0)。同名重载需按实参类型选择。
-- `type_->copy_assign_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L95。
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `this->set_by_copy` → [blender::GVMutableArrayImpl::set_by_copy · L77](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f9c4e210455779c1)。
-- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+- `this->common_info` → [blender::GVArrayImpl::common_info · L61](05-GVArray运行时类型.md#f-05cf2613df5cf341)；[blender::GVArrayImpl_For_GSpan::common_info · L153](05-GVArray运行时类型.md#f-6c4a162c38b6415f)；[blender::GVArrayImpl_For_SingleValueRef::common_info · L200](05-GVArray运行时类型.md#f-834c569e1dd69e0f)；[blender::GVArrayImpl_For_GSpan_final::common_info · L712](05-GVArray运行时类型.md#f-8b760d26627d58a7)；[blender::GVArrayImpl_For_SingleValueRef_final::common_info · L717](05-GVArray运行时类型.md#f-3e14cde911ade0d0)。同名重载需按实参类型选择。
+- `type_->copy_assign_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L95。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `this->set_by_copy` → [blender::GVMutableArrayImpl::set_by_copy · L77](05-GVArray运行时类型.md#f-f9c4e210455779c1)。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-c812e199f26c)。宏定义由构建条件选择。
 
 <!-- annotated:7da168434e90f7 -->
 
@@ -7158,12 +7158,12 @@ void GVMutableArray::fill(const void *value)
 
 **继续追踪实现**
 
-- `this->common_info` → [blender::GVArrayImpl::common_info · L61](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-05cf2613df5cf341)；[blender::GVArrayImpl_For_GSpan::common_info · L153](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6c4a162c38b6415f)；[blender::GVArrayImpl_For_SingleValueRef::common_info · L200](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-834c569e1dd69e0f)；[blender::GVArrayImpl_For_GSpan_final::common_info · L712](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-8b760d26627d58a7)；[blender::GVArrayImpl_For_SingleValueRef_final::common_info · L717](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3e14cde911ade0d0)。同名重载需按实参类型选择。
-- `this->type().fill_assign_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L108。
-- `this->type` → [blender::GVArrayImpl::type · L646](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3b02e0dea8c95656)；[blender::AttributeOwner::type · L65](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-attribute-2d9c29.md#f-bb6f5c58325d639c)。同名重载需按实参类型选择。
-- `this->size` → [blender::Bounds<T>::size · L543](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-fcce88c0824fcd97)；[blender::GVArrayImpl::size · L651](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)；[blender::StringRefBase::size · L196](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/15-StringRef%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%A7%86%E5%9B%BE.md#f-60d4631c74931d2e)；[blender::KDTreeNew<T>::size · L493](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/05-K%E8%BF%91%E9%82%BB%E4%B8%8E%E8%8C%83%E5%9B%B4%E6%9F%A5%E8%AF%A2.md#f-233c05ce6d5c8d39)；[blender::MainAllIDsIterator::size · L1291](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-main-ffa8b3.md#f-520d1311c646452f)；[blender::GLSourcesBaked::size · L1541](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-gl_shader-766737.md#f-5b5b539d533c6792)。同名重载需按实参类型选择。
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `this->set_by_copy` → [blender::GVMutableArray::set_by_copy · L662](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f544e119875f7082)。
+- `this->common_info` → [blender::GVArrayImpl::common_info · L61](05-GVArray运行时类型.md#f-05cf2613df5cf341)；[blender::GVArrayImpl_For_GSpan::common_info · L153](05-GVArray运行时类型.md#f-6c4a162c38b6415f)；[blender::GVArrayImpl_For_SingleValueRef::common_info · L200](05-GVArray运行时类型.md#f-834c569e1dd69e0f)；[blender::GVArrayImpl_For_GSpan_final::common_info · L712](05-GVArray运行时类型.md#f-8b760d26627d58a7)；[blender::GVArrayImpl_For_SingleValueRef_final::common_info · L717](05-GVArray运行时类型.md#f-3e14cde911ade0d0)。同名重载需按实参类型选择。
+- `this->type().fill_assign_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L108。
+- `this->type` → [blender::GVArrayImpl::type · L646](05-GVArray运行时类型.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray运行时类型.md#f-3b02e0dea8c95656)；[blender::AttributeOwner::type · L65](../90-实现依赖专题/02-BKE几何与数据/intern/attribute.cc.md#f-bb6f5c58325d639c)。同名重载需按实参类型选择。
+- `this->size` → [blender::Bounds<T>::size · L543](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-fcce88c0824fcd97)；[blender::GVArrayImpl::size · L651](05-GVArray运行时类型.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)；[blender::StringRefBase::size · L196](../01-基础容器与现代CPP/15-StringRef字符串视图.md#f-60d4631c74931d2e)；[blender::KDTreeNew<T>::size · L493](../12-空间数据结构与几何算法/05-K近邻与范围查询.md#f-233c05ce6d5c8d39)；[blender::MainAllIDsIterator::size · L1291](../90-实现依赖专题/02-BKE几何与数据/intern/main.cc.md#f-520d1311c646452f)；[blender::GLSourcesBaked::size · L1541](../90-实现依赖专题/08-其他Blender模块/gpu/opengl/gl_shader.cc.md#f-5b5b539d533c6792)。同名重载需按实参类型选择。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `this->set_by_copy` → [blender::GVMutableArray::set_by_copy · L662](05-GVArray运行时类型.md#f-f544e119875f7082)。
 
 <!-- annotated:b6681644c1b797 -->
 
@@ -7294,8 +7294,8 @@ void GVArrayImpl_For_GSpan::get(const int64_t index, void *r_value) const
 
 **继续追踪实现**
 
-- `type_->copy_assign` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L130。
-- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+- `type_->copy_assign` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L130。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-c812e199f26c)。宏定义由构建条件选择。
 
 <!-- annotated:5f4a3c8bf3e9a7 -->
 
@@ -7352,8 +7352,8 @@ void GVArrayImpl_For_GSpan::get_to_uninitialized(const int64_t index, void *r_va
 
 **继续追踪实现**
 
-- `type_->copy_construct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L135。
-- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+- `type_->copy_construct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L135。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-c812e199f26c)。宏定义由构建条件选择。
 
 <!-- annotated:113d436c7c1407 -->
 
@@ -7410,8 +7410,8 @@ void GVArrayImpl_For_GSpan::set_by_copy(const int64_t index, const void *value)
 
 **继续追踪实现**
 
-- `type_->copy_assign` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L140。
-- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+- `type_->copy_assign` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L140。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-c812e199f26c)。宏定义由构建条件选择。
 
 <!-- annotated:a2c315bd18aaf1 -->
 
@@ -7468,8 +7468,8 @@ void GVArrayImpl_For_GSpan::set_by_move(const int64_t index, void *value)
 
 **继续追踪实现**
 
-- `type_->move_construct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L145。
-- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+- `type_->move_construct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L145。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-c812e199f26c)。宏定义由构建条件选择。
 
 <!-- annotated:9f770823100f69 -->
 
@@ -7526,8 +7526,8 @@ void GVArrayImpl_For_GSpan::set_by_relocate(const int64_t index, void *value)
 
 **继续追踪实现**
 
-- `type_->relocate_assign` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L150。
-- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
+- `type_->relocate_assign` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L150。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-c812e199f26c)。宏定义由构建条件选择。
 
 <!-- annotated:9bb05b0d8c6541 -->
 
@@ -7655,8 +7655,8 @@ void GVArrayImpl_For_GSpan::materialize(const IndexMask &mask,
 
 **继续追踪实现**
 
-- `type_->copy_construct_indices` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L163。
-- `type_->copy_assign_indices` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L166。
+- `type_->copy_construct_indices` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L163。
+- `type_->copy_assign_indices` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L166。
 
 <!-- annotated:0e430bcadbc93d -->
 
@@ -7728,8 +7728,8 @@ void GVArrayImpl_For_GSpan::materialize_compressed(const IndexMask &mask,
 
 **继续追踪实现**
 
-- `type_->copy_construct_compressed` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L175。
-- `type_->copy_assign_compressed` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L178。
+- `type_->copy_construct_compressed` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L175。
+- `type_->copy_assign_compressed` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L178。
 
 ### 类型布局、声明与编译条件 · generic_virtual_array.cc L181—L189
 
@@ -7804,7 +7804,7 @@ void GVArrayImpl_For_SingleValueRef::get(const int64_t /*index*/, void *r_value)
 
 **继续追踪实现**
 
-- `type_->copy_assign` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L192。
+- `type_->copy_assign` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L192。
 
 <a id="f-90dfa9913fe053ac"></a>
 
@@ -7846,7 +7846,7 @@ void GVArrayImpl_For_SingleValueRef::get_to_uninitialized(const int64_t /*index*
 
 **继续追踪实现**
 
-- `type_->copy_construct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L197。
+- `type_->copy_construct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L197。
 
 <!-- annotated:ce57aa1a261911 -->
 
@@ -7974,8 +7974,8 @@ void GVArrayImpl_For_SingleValueRef::materialize(const IndexMask &mask,
 
 **继续追踪实现**
 
-- `type_->fill_construct_indices` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L210。
-- `type_->fill_assign_indices` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L213。
+- `type_->fill_construct_indices` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L210。
+- `type_->fill_assign_indices` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L213。
 
 <!-- annotated:1d8d2f84a0ded3 -->
 
@@ -8047,9 +8047,9 @@ void GVArrayImpl_For_SingleValueRef::materialize_compressed(const IndexMask &mas
 
 **继续追踪实现**
 
-- `type_->fill_construct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L222。
-- `mask.size` → [blender::index_mask::IndexMask::size · L743](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-0163b32abc9a0d9c)。
-- `type_->fill_assign_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L225。
+- `type_->fill_construct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L222。
+- `mask.size` → [blender::index_mask::IndexMask::size · L743](09-分段存储与遍历.md#f-0163b32abc9a0d9c)。
+- `type_->fill_assign_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L225。
 
 ### 类型布局、声明与编译条件 · generic_virtual_array.cc L228—L239
 
@@ -8142,8 +8142,8 @@ class GVArrayImpl_For_SingleValue : public GVArrayImpl_For_SingleValueRef,
 
 **继续追踪实现**
 
-- `MEM_new_uninitialized_aligned` → [MEM_new_uninitialized_aligned · L134](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9f3d21bd7da93c68)。
-- `type.copy_construct` → [blender::CPPType::copy_construct · L594](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-cfda413a9784073e)。
+- `MEM_new_uninitialized_aligned` → [MEM_new_uninitialized_aligned · L134](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-9f3d21bd7da93c68)。
+- `type.copy_construct` → [blender::CPPType::copy_construct · L594](../03-内存分配与运行时类型/09-CPPType复制移动重定位.md#f-cfda413a9784073e)。
 
 <!-- annotated:b0a139c8bafffb -->
 
@@ -8198,8 +8198,8 @@ class GVArrayImpl_For_SingleValue : public GVArrayImpl_For_SingleValueRef,
 
 **继续追踪实现**
 
-- `type_->destruct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L249。
-- `MEM_delete_void` → [MEM_delete_void · L647](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-642896c7c62ff8b9)；[MEM_delete_void · L109](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9a07b26421f2bee6)。同名重载需按实参类型选择。
+- `type_->destruct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L249。
+- `MEM_delete_void` → [MEM_delete_void · L647](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-642896c7c62ff8b9)；[MEM_delete_void · L109](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-9a07b26421f2bee6)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · generic_virtual_array.cc L252—L268
 
@@ -8309,8 +8309,8 @@ template<int BufferSize> class GVArrayImpl_For_SmallTrivialSingleValue : public 
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `type.copy_construct` → [blender::CPPType::copy_construct · L594](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-cfda413a9784073e)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `type.copy_construct` → [blender::CPPType::copy_construct · L594](../03-内存分配与运行时类型/09-CPPType复制移动重定位.md#f-cfda413a9784073e)。
 
 ### 类型布局、声明与编译条件 · generic_virtual_array.cc L279—L280
 
@@ -8371,7 +8371,7 @@ template<int BufferSize> class GVArrayImpl_For_SmallTrivialSingleValue : public 
 
 **继续追踪实现**
 
-- `this->get_to_uninitialized` → [blender::GVArrayImpl_For_SmallTrivialSingleValue::get_to_uninitialized · L285](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-77cfeec2b64185d8)。
+- `this->get_to_uninitialized` → [blender::GVArrayImpl_For_SmallTrivialSingleValue::get_to_uninitialized · L285](05-GVArray运行时类型.md#f-77cfeec2b64185d8)。
 
 <a id="f-77cfeec2b64185d8"></a>
 
@@ -8474,7 +8474,7 @@ template<int BufferSize> class GVArrayImpl_For_SmallTrivialSingleValue : public 
 
 **继续追踪实现**
 
-- `type_->fill_construct_indices` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L294。
+- `type_->fill_construct_indices` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L294。
 
 <!-- annotated:ab64b832f5311c -->
 
@@ -8536,8 +8536,8 @@ template<int BufferSize> class GVArrayImpl_For_SmallTrivialSingleValue : public 
 
 **继续追踪实现**
 
-- `type_->fill_construct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L301。
-- `mask.size` → [blender::index_mask::IndexMask::size · L743](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-0163b32abc9a0d9c)。
+- `type_->fill_construct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L301。
+- `mask.size` → [blender::index_mask::IndexMask::size · L743](09-分段存储与遍历.md#f-0163b32abc9a0d9c)。
 
 <!-- annotated:47ad220e2a2ff9 -->
 
@@ -8747,11 +8747,11 @@ GVArraySpan::GVArraySpan(GVArray varray)
 
 **继续追踪实现**
 
-- `varray_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L325。
-- `varray_.common_info` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L326。
-- `MEM_new_uninitialized_aligned` → [MEM_new_uninitialized_aligned · L134](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9f3d21bd7da93c68)。
-- `varray_.materialize_to_uninitialized` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L332。
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
+- `varray_.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L325。
+- `varray_.common_info` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L326。
+- `MEM_new_uninitialized_aligned` → [MEM_new_uninitialized_aligned · L134](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-9f3d21bd7da93c68)。
+- `varray_.materialize_to_uninitialized` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L332。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
 
 <!-- annotated:b9ea1923518a31 -->
 
@@ -8846,8 +8846,8 @@ GVArraySpan::GVArraySpan(GVArraySpan &&other)
 
 **继续追踪实现**
 
-- `varray_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L344。
-- `varray_.common_info` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L345。
+- `varray_.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L344。
+- `varray_.common_info` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L345。
 
 <!-- annotated:2db3eec7a41def -->
 
@@ -8906,8 +8906,8 @@ GVArraySpan::~GVArraySpan()
 
 **继续追踪实现**
 
-- `type_->destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L360。
-- `MEM_delete_void` → [MEM_delete_void · L647](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-642896c7c62ff8b9)；[MEM_delete_void · L109](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9a07b26421f2bee6)。同名重载需按实参类型选择。
+- `type_->destruct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L360。
+- `MEM_delete_void` → [MEM_delete_void · L647](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-642896c7c62ff8b9)；[MEM_delete_void · L109](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-9a07b26421f2bee6)。同名重载需按实参类型选择。
 
 <!-- annotated:c58bf401fbcdc4 -->
 
@@ -9140,12 +9140,12 @@ GMutableVArraySpan::GMutableVArraySpan(GVMutableArray varray, const bool copy_va
 
 **继续追踪实现**
 
-- `varray_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L389。
-- `varray_.common_info` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L390。
-- `MEM_new_uninitialized_aligned` → [MEM_new_uninitialized_aligned · L134](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9f3d21bd7da93c68)。
-- `varray_.materialize_to_uninitialized` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L397。
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `type_->default_construct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L400。
+- `varray_.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L389。
+- `varray_.common_info` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L390。
+- `MEM_new_uninitialized_aligned` → [MEM_new_uninitialized_aligned · L134](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-9f3d21bd7da93c68)。
+- `varray_.materialize_to_uninitialized` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L397。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `type_->default_construct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L400。
 
 <!-- annotated:f9d0cb4ea55840 -->
 
@@ -9244,8 +9244,8 @@ GMutableVArraySpan::GMutableVArraySpan(GMutableVArraySpan &&other)
 
 **继续追踪实现**
 
-- `varray_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L415。
-- `varray_.common_info` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L416。
+- `varray_.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L415。
+- `varray_.common_info` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L416。
 
 <!-- annotated:522e8d57b65e72 -->
 
@@ -9318,8 +9318,8 @@ GMutableVArraySpan::~GMutableVArraySpan()
 
 **继续追踪实现**
 
-- `type_->destruct_n` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L438。
-- `MEM_delete_void` → [MEM_delete_void · L647](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-642896c7c62ff8b9)；[MEM_delete_void · L109](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-9a07b26421f2bee6)。同名重载需按实参类型选择。
+- `type_->destruct_n` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L438。
+- `MEM_delete_void` → [MEM_delete_void · L647](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-642896c7c62ff8b9)；[MEM_delete_void · L109](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-9a07b26421f2bee6)。同名重载需按实参类型选择。
 
 <!-- annotated:1710f38c3607f4 -->
 
@@ -9455,7 +9455,7 @@ void GMutableVArraySpan::save()
 
 **继续追踪实现**
 
-- `varray_.set_all` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L459。
+- `varray_.set_all` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L459。
 
 <!-- annotated:1850ea08416266 -->
 
@@ -9669,9 +9669,9 @@ class GVArrayImpl_For_SlicedGVArray : public GVArrayImpl {
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `slice.one_after_last` → [blender::IndexRange::one_after_last · L235](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-ed04bec9c731fc86)。
-- `varray_.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L491。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `slice.one_after_last` → [blender::IndexRange::one_after_last · L235](../01-基础容器与现代CPP/04-IndexRange连续整数区间.md#f-ed04bec9c731fc86)。
+- `varray_.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L491。
 
 <!-- annotated:bd944c9a3cc18d -->
 
@@ -9728,7 +9728,7 @@ class GVArrayImpl_For_SlicedGVArray : public GVArrayImpl {
 
 **继续追踪实现**
 
-- `varray_.get` → [blender::GVArrayImpl_For_SlicedGVArray::get · L494](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-c5d4297cc6f59df8)。
+- `varray_.get` → [blender::GVArrayImpl_For_SlicedGVArray::get · L494](05-GVArray运行时类型.md#f-c5d4297cc6f59df8)。
 
 <!-- annotated:2e923545be2e65 -->
 
@@ -9785,7 +9785,7 @@ class GVArrayImpl_For_SlicedGVArray : public GVArrayImpl {
 
 **继续追踪实现**
 
-- `varray_.get_to_uninitialized` → [blender::GVArrayImpl_For_SlicedGVArray::get_to_uninitialized · L499](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-754a9075440e5046)。
+- `varray_.get_to_uninitialized` → [blender::GVArrayImpl_For_SlicedGVArray::get_to_uninitialized · L499](05-GVArray运行时类型.md#f-754a9075440e5046)。
 
 <!-- annotated:ed92441ecc13c8 -->
 
@@ -9873,10 +9873,10 @@ class GVArrayImpl_For_SlicedGVArray : public GVArrayImpl {
 
 **继续追踪实现**
 
-- `varray_.common_info` → [blender::GVArrayImpl_For_SlicedGVArray::common_info · L504](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-2ce071a68f18d77f)。
-- `CommonVArrayInfo` → [blender::CommonVArrayInfo::CommonVArrayInfo · L66](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-a716088fcd760d27)；[blender::CommonVArrayInfo::CommonVArrayInfo · L67](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-018a4490310fea4d)。同名重载需按实参类型选择。
-- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
-- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
+- `varray_.common_info` → [blender::GVArrayImpl_For_SlicedGVArray::common_info · L504](05-GVArray运行时类型.md#f-2ce071a68f18d77f)。
+- `CommonVArrayInfo` → [blender::CommonVArrayInfo::CommonVArrayInfo · L66](01-VArray表示与值语义.md#f-a716088fcd760d27)；[blender::CommonVArrayInfo::CommonVArrayInfo · L67](01-VArray表示与值语义.md#f-018a4490310fea4d)。同名重载需按实参类型选择。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-c812e199f26c)。宏定义由构建条件选择。
+- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
 
 <!-- annotated:5c9770cb34763f -->
 
@@ -9940,10 +9940,10 @@ class GVArrayImpl_For_SlicedGVArray : public GVArrayImpl {
 
 **继续追踪实现**
 
-- `mask.shift` → [blender::index_mask::IndexMask::shift · L205](10-IndexMask%E6%9E%84%E5%BB%BA%E4%B8%8E%E5%B9%B6%E8%A1%8C.md#f-cca6002a18fe18fd)。
-- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-c812e199f26c)。宏定义由构建条件选择。
-- `varray_.get_implementation()->materialize` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L529。
-- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6ffca701d1b3b981)。
+- `mask.shift` → [blender::index_mask::IndexMask::shift · L205](10-IndexMask构建与并行.md#f-cca6002a18fe18fd)。
+- `POINTER_OFFSET` → [POINTER_OFFSET · L316](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-c812e199f26c)。宏定义由构建条件选择。
+- `varray_.get_implementation()->materialize` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L529。
+- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray运行时类型.md#f-6ffca701d1b3b981)。
 
 <!-- annotated:e24f406818113f -->
 
@@ -10009,9 +10009,9 @@ class GVArrayImpl_For_SlicedGVArray : public GVArrayImpl {
 
 **继续追踪实现**
 
-- `mask.shift` → [blender::index_mask::IndexMask::shift · L205](10-IndexMask%E6%9E%84%E5%BB%BA%E4%B8%8E%E5%B9%B6%E8%A1%8C.md#f-cca6002a18fe18fd)。
-- `varray_.get_implementation()->materialize_compressed` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L538。
-- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6ffca701d1b3b981)。
+- `mask.shift` → [blender::index_mask::IndexMask::shift · L205](10-IndexMask构建与并行.md#f-cca6002a18fe18fd)。
+- `varray_.get_implementation()->materialize_compressed` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L538。
+- `varray_.get_implementation` → [blender::GVArray::get_implementation · L192](05-GVArray运行时类型.md#f-6ffca701d1b3b981)。
 
 ### 类型布局、声明与编译条件 · generic_virtual_array.cc L540—L547
 
@@ -10183,9 +10183,9 @@ void GVArrayCommon::materialize(void *dst) const
 
 **继续追踪实现**
 
-- `this->materialize` → [blender::GVArrayCommon::materialize · L552](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-17121b3b54df2314)；[blender::GVArrayCommon::materialize · L557](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-5327fee1c9a8f46d)。同名重载需按实参类型选择。
-- `IndexMask` → [blender::index_mask::IndexMask::IndexMask · L704](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-8c95440e4c5fec78)；[blender::index_mask::IndexMask::IndexMask · L709](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-fdd9dc18868bc0cd)；[blender::index_mask::IndexMask::IndexMask · L722](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-4b32f3ba3de66d05)。同名重载需按实参类型选择。
-- `impl_->size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L554。
+- `this->materialize` → [blender::GVArrayCommon::materialize · L552](05-GVArray运行时类型.md#f-17121b3b54df2314)；[blender::GVArrayCommon::materialize · L557](05-GVArray运行时类型.md#f-5327fee1c9a8f46d)。同名重载需按实参类型选择。
+- `IndexMask` → [blender::index_mask::IndexMask::IndexMask · L704](09-分段存储与遍历.md#f-8c95440e4c5fec78)；[blender::index_mask::IndexMask::IndexMask · L709](09-分段存储与遍历.md#f-fdd9dc18868bc0cd)；[blender::index_mask::IndexMask::IndexMask · L722](09-分段存储与遍历.md#f-4b32f3ba3de66d05)。同名重载需按实参类型选择。
+- `impl_->size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L554。
 
 <!-- annotated:b51a478df02b16 -->
 
@@ -10242,7 +10242,7 @@ void GVArrayCommon::materialize(const IndexMask &mask, void *dst) const
 
 **继续追踪实现**
 
-- `impl_->materialize` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L559。
+- `impl_->materialize` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L559。
 
 <!-- annotated:2fe245555d7af5 -->
 
@@ -10298,9 +10298,9 @@ void GVArrayCommon::materialize_to_uninitialized(void *dst) const
 
 **继续追踪实现**
 
-- `this->materialize_to_uninitialized` → [blender::GVArrayCommon::materialize_to_uninitialized · L562](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0ef617099e7a1b09)；[blender::GVArrayCommon::materialize_to_uninitialized · L567](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-9111da5be58c2dee)。同名重载需按实参类型选择。
-- `IndexMask` → [blender::index_mask::IndexMask::IndexMask · L704](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-8c95440e4c5fec78)；[blender::index_mask::IndexMask::IndexMask · L709](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-fdd9dc18868bc0cd)；[blender::index_mask::IndexMask::IndexMask · L722](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-4b32f3ba3de66d05)。同名重载需按实参类型选择。
-- `impl_->size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L564。
+- `this->materialize_to_uninitialized` → [blender::GVArrayCommon::materialize_to_uninitialized · L562](05-GVArray运行时类型.md#f-0ef617099e7a1b09)；[blender::GVArrayCommon::materialize_to_uninitialized · L567](05-GVArray运行时类型.md#f-9111da5be58c2dee)。同名重载需按实参类型选择。
+- `IndexMask` → [blender::index_mask::IndexMask::IndexMask · L704](09-分段存储与遍历.md#f-8c95440e4c5fec78)；[blender::index_mask::IndexMask::IndexMask · L709](09-分段存储与遍历.md#f-fdd9dc18868bc0cd)；[blender::index_mask::IndexMask::IndexMask · L722](09-分段存储与遍历.md#f-4b32f3ba3de66d05)。同名重载需按实参类型选择。
+- `impl_->size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L564。
 
 <!-- annotated:453df9204dacb9 -->
 
@@ -10359,10 +10359,10 @@ void GVArrayCommon::materialize_to_uninitialized(const IndexMask &mask, void *ds
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `mask.min_array_size` → [blender::index_mask::IndexMask::min_array_size · L782](09-%E5%88%86%E6%AE%B5%E5%AD%98%E5%82%A8%E4%B8%8E%E9%81%8D%E5%8E%86.md#f-f3a460d74b4fc7d6)。
-- `impl_->size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L569。
-- `impl_->materialize` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L570。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `mask.min_array_size` → [blender::index_mask::IndexMask::min_array_size · L782](09-分段存储与遍历.md#f-f3a460d74b4fc7d6)。
+- `impl_->size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L569。
+- `impl_->materialize` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L570。
 
 <!-- annotated:2fec6d7b85d613 -->
 
@@ -10419,7 +10419,7 @@ void GVArrayCommon::materialize_compressed(const IndexMask &mask, void *dst) con
 
 **继续追踪实现**
 
-- `impl_->materialize_compressed` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L575。
+- `impl_->materialize_compressed` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L575。
 
 <!-- annotated:7a13fcc402ea35 -->
 
@@ -10476,7 +10476,7 @@ void GVArrayCommon::materialize_compressed_to_uninitialized(const IndexMask &mas
 
 **继续追踪实现**
 
-- `impl_->materialize_compressed` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L580。
+- `impl_->materialize_compressed` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L580。
 
 <!-- annotated:bd98e2ecc70407 -->
 
@@ -10534,7 +10534,7 @@ bool GVArrayCommon::is_span() const
 
 **继续追踪实现**
 
-- `impl_->common_info` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L585。
+- `impl_->common_info` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L585。
 
 <!-- annotated:4f60210214d1a9 -->
 
@@ -10594,12 +10594,12 @@ GSpan GVArrayCommon::get_internal_span() const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->is_span` → [blender::GVArrayCommon::is_span · L583](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-9e55c2a04e9917ef)。
-- `impl_->common_info` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L592。
-- `GSpan` → [blender::GSpan::GSpan · L26](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
-- `this->type` → [blender::GVArrayCommon::type · L744](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3b02e0dea8c95656)。
-- `this->size` → [blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->is_span` → [blender::GVArrayCommon::is_span · L583](05-GVArray运行时类型.md#f-9e55c2a04e9917ef)。
+- `impl_->common_info` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L592。
+- `GSpan` → [blender::GSpan::GSpan · L26](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
+- `this->type` → [blender::GVArrayCommon::type · L744](05-GVArray运行时类型.md#f-3b02e0dea8c95656)。
+- `this->size` → [blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。
 
 <!-- annotated:5e311cee7f6bc1 -->
 
@@ -10657,7 +10657,7 @@ bool GVArrayCommon::is_single() const
 
 **继续追踪实现**
 
-- `impl_->common_info` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L598。
+- `impl_->common_info` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L598。
 
 <!-- annotated:ae6286eb62a7d9 -->
 
@@ -10717,11 +10717,11 @@ void GVArrayCommon::get_internal_single(void *r_value) const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->is_single` → [blender::GVArrayCommon::is_single · L596](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-12dadf2e2bd191c4)。
-- `impl_->common_info` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L605。
-- `this->type().copy_assign` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L606。
-- `this->type` → [blender::GVArrayCommon::type · L744](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3b02e0dea8c95656)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->is_single` → [blender::GVArrayCommon::is_single · L596](05-GVArray运行时类型.md#f-12dadf2e2bd191c4)。
+- `impl_->common_info` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L605。
+- `this->type().copy_assign` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L606。
+- `this->type` → [blender::GVArrayCommon::type · L744](05-GVArray运行时类型.md#f-3b02e0dea8c95656)。
 
 <!-- annotated:b0aa8d5525b2cc -->
 
@@ -10779,9 +10779,9 @@ void GVArrayCommon::get_internal_single_to_uninitialized(void *r_value) const
 
 **继续追踪实现**
 
-- `impl_->type().default_construct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L611。
-- `impl_->type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L611。
-- `this->get_internal_single` → [blender::GVArrayCommon::get_internal_single · L602](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-88fec63a67b9e1c4)。
+- `impl_->type().default_construct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L611。
+- `impl_->type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L611。
+- `this->get_internal_single` → [blender::GVArrayCommon::get_internal_single · L602](05-GVArray运行时类型.md#f-88fec63a67b9e1c4)。
 
 <!-- annotated:2b7508054ac9fe -->
 
@@ -10837,8 +10837,8 @@ IndexRange GVArrayCommon::index_range() const
 
 **继续追踪实现**
 
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `this->size` → [blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `this->size` → [blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)。
 
 ### 类型布局、声明与编译条件 · generic_virtual_array.cc L619—L625
 
@@ -10921,8 +10921,8 @@ GVArray::GVArray(varray_tag::single /*tag*/, const CPPType &type, int64_t size, 
 
 **继续追踪实现**
 
-- `this->emplace<GVArrayImpl_For_SmallTrivialSingleValue<16>>` → [blender::GVArrayCommon::emplace · L706](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f0a1f1400cf15e73)。
-- `this->emplace<GVArrayImpl_For_SingleValue>` → [blender::GVArrayCommon::emplace · L706](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f0a1f1400cf15e73)。
+- `this->emplace<GVArrayImpl_For_SmallTrivialSingleValue<16>>` → [blender::GVArrayCommon::emplace · L706](05-GVArray运行时类型.md#f-f0a1f1400cf15e73)。
+- `this->emplace<GVArrayImpl_For_SingleValue>` → [blender::GVArrayCommon::emplace · L706](05-GVArray运行时类型.md#f-f0a1f1400cf15e73)。
 
 ### 类型布局、声明与编译条件 · generic_virtual_array.cc L635—L640
 
@@ -11061,7 +11061,7 @@ GVArray GVArray::from_garray(GArray<> array)
 
 **继续追踪实现**
 
-- `GVArray::from<GVArrayImpl_For_GArray>` → [blender::GVArray::from · L840](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6cde33ece049b395)。
+- `GVArray::from<GVArrayImpl_For_GArray>` → [blender::GVArray::from · L840](05-GVArray运行时类型.md#f-6cde33ece049b395)。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
 <!-- annotated:310de68176a5f7 -->
@@ -11143,15 +11143,15 @@ GVArray GVArray::slice(IndexRange slice) const
 
 **继续追踪实现**
 
-- `this->common_info` → [blender::GVArrayImpl::common_info · L61](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-05cf2613df5cf341)；[blender::GVArrayImpl_For_GSpan::common_info · L153](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6c4a162c38b6415f)；[blender::GVArrayImpl_For_SingleValueRef::common_info · L200](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-834c569e1dd69e0f)；[blender::GVArrayImpl_For_GSpan_final::common_info · L712](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-8b760d26627d58a7)；[blender::GVArrayImpl_For_SingleValueRef_final::common_info · L717](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3e14cde911ade0d0)。同名重载需按实参类型选择。
-- `GVArray::from_single` → [blender::GVArray::from_single · L880](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-1c85e09520e47c5a)。
-- `this->type` → [blender::GVArrayImpl::type · L646](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3b02e0dea8c95656)；[blender::AttributeOwner::type · L65](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-attribute-2d9c29.md#f-bb6f5c58325d639c)。同名重载需按实参类型选择。
-- `slice.size` → [blender::IndexRange::size · L156](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
-- `GVArray::from_span` → [blender::GVMutableArray::from_span · L679](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-ad97783cbbc9da66)。
-- `GSpan(this->type(), info.data, this->size()).slice` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L661。
-- `GSpan` → [blender::GSpan::GSpan · L26](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
-- `this->size` → [blender::Bounds<T>::size · L543](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-fcce88c0824fcd97)；[blender::GVArrayImpl::size · L651](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)；[blender::StringRefBase::size · L196](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/15-StringRef%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%A7%86%E5%9B%BE.md#f-60d4631c74931d2e)；[blender::KDTreeNew<T>::size · L493](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/05-K%E8%BF%91%E9%82%BB%E4%B8%8E%E8%8C%83%E5%9B%B4%E6%9F%A5%E8%AF%A2.md#f-233c05ce6d5c8d39)；[blender::MainAllIDsIterator::size · L1291](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-main-ffa8b3.md#f-520d1311c646452f)；[blender::GLSourcesBaked::size · L1541](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-gl_shader-766737.md#f-5b5b539d533c6792)。同名重载需按实参类型选择。
-- `GVArray::from<GVArrayImpl_For_SlicedGVArray>` → [blender::GVArray::from · L840](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-6cde33ece049b395)。
+- `this->common_info` → [blender::GVArrayImpl::common_info · L61](05-GVArray运行时类型.md#f-05cf2613df5cf341)；[blender::GVArrayImpl_For_GSpan::common_info · L153](05-GVArray运行时类型.md#f-6c4a162c38b6415f)；[blender::GVArrayImpl_For_SingleValueRef::common_info · L200](05-GVArray运行时类型.md#f-834c569e1dd69e0f)；[blender::GVArrayImpl_For_GSpan_final::common_info · L712](05-GVArray运行时类型.md#f-8b760d26627d58a7)；[blender::GVArrayImpl_For_SingleValueRef_final::common_info · L717](05-GVArray运行时类型.md#f-3e14cde911ade0d0)。同名重载需按实参类型选择。
+- `GVArray::from_single` → [blender::GVArray::from_single · L880](05-GVArray运行时类型.md#f-1c85e09520e47c5a)。
+- `this->type` → [blender::GVArrayImpl::type · L646](05-GVArray运行时类型.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray运行时类型.md#f-3b02e0dea8c95656)；[blender::AttributeOwner::type · L65](../90-实现依赖专题/02-BKE几何与数据/intern/attribute.cc.md#f-bb6f5c58325d639c)。同名重载需按实参类型选择。
+- `slice.size` → [blender::IndexRange::size · L156](../01-基础容器与现代CPP/04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
+- `GVArray::from_span` → [blender::GVMutableArray::from_span · L679](05-GVArray运行时类型.md#f-ad97783cbbc9da66)。
+- `GSpan(this->type(), info.data, this->size()).slice` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L661。
+- `GSpan` → [blender::GSpan::GSpan · L26](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-9d0c95702007eea6)；[blender::GSpan::GSpan · L28](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-6650bd08c7eecc66)；[blender::GSpan::GSpan · L37](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-bf180950832673fb)；[blender::GSpan::GSpan · L39](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-cf949d5590ea9ab6)；[blender::GSpan::GSpan · L41](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-a66ab52ee0842aee)；[blender::GSpan::GSpan · L43](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-d9084fa10964390f)；[blender::GSpan::GSpan · L49](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-76e3de3cc3d65761)。同名重载需按实参类型选择。
+- `this->size` → [blender::Bounds<T>::size · L543](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-fcce88c0824fcd97)；[blender::GVArrayImpl::size · L651](05-GVArray运行时类型.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)；[blender::StringRefBase::size · L196](../01-基础容器与现代CPP/15-StringRef字符串视图.md#f-60d4631c74931d2e)；[blender::KDTreeNew<T>::size · L493](../12-空间数据结构与几何算法/05-K近邻与范围查询.md#f-233c05ce6d5c8d39)；[blender::MainAllIDsIterator::size · L1291](../90-实现依赖专题/02-BKE几何与数据/intern/main.cc.md#f-520d1311c646452f)；[blender::GLSourcesBaked::size · L1541](../90-实现依赖专题/08-其他Blender模块/gpu/opengl/gl_shader.cc.md#f-5b5b539d533c6792)。同名重载需按实参类型选择。
+- `GVArray::from<GVArrayImpl_For_SlicedGVArray>` → [blender::GVArray::from · L840](05-GVArray运行时类型.md#f-6cde33ece049b395)。
 
 ### 类型布局、声明与编译条件 · generic_virtual_array.cc L665—L671
 
@@ -11331,7 +11331,7 @@ GVMutableArray GVMutableArray::from_span(GMutableSpan span)
 
 **继续追踪实现**
 
-- `GVMutableArray::from<GVArrayImpl_For_GSpan_final>` → [blender::GVMutableArray::from · L948](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-50ec35cb9127911e)。
+- `GVMutableArray::from<GVArrayImpl_For_GSpan_final>` → [blender::GVMutableArray::from · L948](05-GVArray运行时类型.md#f-50ec35cb9127911e)。
 
 <!-- annotated:1fdc79e7287f75 -->
 
@@ -11508,8 +11508,8 @@ void GVMutableArray::set_all(const void *src)
 
 **继续追踪实现**
 
-- `this->get_impl()->set_all` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L700。
-- `this->get_impl` → [blender::GVMutableArray::get_impl · L690](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f8cd81d9d8dd534e)。
+- `this->get_impl()->set_all` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L700。
+- `this->get_impl` → [blender::GVMutableArray::get_impl · L690](05-GVArray运行时类型.md#f-f8cd81d9d8dd534e)。
 
 <!-- annotated:0081c85046c99c -->
 
@@ -11569,12 +11569,12 @@ GMutableSpan GVMutableArray::get_internal_span() const
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `this->is_span` → [blender::GVArrayCommon::is_span · L583](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-9e55c2a04e9917ef)。
-- `impl_->common_info` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L706。
-- `GMutableSpan` → [blender::GMutableSpan::GMutableSpan · L152](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-b4ef5399177eeedd)；[blender::GMutableSpan::GMutableSpan · L154](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-6439a40f33c7a2e5)；[blender::GMutableSpan::GMutableSpan · L163](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-6054339faadc1405)；[blender::GMutableSpan::GMutableSpan · L167](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-d1333b42c7982310)；[blender::GMutableSpan::GMutableSpan · L169](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-3584f997d0fe9a96)；[blender::GMutableSpan::GMutableSpan · L171](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-3074afdbe5232417)。同名重载需按实参类型选择。
-- `this->type` → [blender::GVArrayImpl::type · L646](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-3b02e0dea8c95656)；[blender::AttributeOwner::type · L65](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-attribute-2d9c29.md#f-bb6f5c58325d639c)。同名重载需按实参类型选择。
-- `this->size` → [blender::Bounds<T>::size · L543](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-fcce88c0824fcd97)；[blender::GVArrayImpl::size · L651](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B.md#f-0856784f4e4fd3c9)；[blender::StringRefBase::size · L196](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/15-StringRef%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%A7%86%E5%9B%BE.md#f-60d4631c74931d2e)；[blender::KDTreeNew<T>::size · L493](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/05-K%E8%BF%91%E9%82%BB%E4%B8%8E%E8%8C%83%E5%9B%B4%E6%9F%A5%E8%AF%A2.md#f-233c05ce6d5c8d39)；[blender::MainAllIDsIterator::size · L1291](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-main-ffa8b3.md#f-520d1311c646452f)；[blender::GLSourcesBaked::size · L1541](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-gl_shader-766737.md#f-5b5b539d533c6792)。同名重载需按实参类型选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `this->is_span` → [blender::GVArrayCommon::is_span · L583](05-GVArray运行时类型.md#f-9e55c2a04e9917ef)。
+- `impl_->common_info` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L706。
+- `GMutableSpan` → [blender::GMutableSpan::GMutableSpan · L152](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-b4ef5399177eeedd)；[blender::GMutableSpan::GMutableSpan · L154](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-6439a40f33c7a2e5)；[blender::GMutableSpan::GMutableSpan · L163](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-6054339faadc1405)；[blender::GMutableSpan::GMutableSpan · L167](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-d1333b42c7982310)；[blender::GMutableSpan::GMutableSpan · L169](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-3584f997d0fe9a96)；[blender::GMutableSpan::GMutableSpan · L171](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-3074afdbe5232417)。同名重载需按实参类型选择。
+- `this->type` → [blender::GVArrayImpl::type · L646](05-GVArray运行时类型.md#f-cd6180e689f8f58f)；[blender::GVArrayCommon::type · L744](05-GVArray运行时类型.md#f-3b02e0dea8c95656)；[blender::AttributeOwner::type · L65](../90-实现依赖专题/02-BKE几何与数据/intern/attribute.cc.md#f-bb6f5c58325d639c)。同名重载需按实参类型选择。
+- `this->size` → [blender::Bounds<T>::size · L543](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-fcce88c0824fcd97)；[blender::GVArrayImpl::size · L651](05-GVArray运行时类型.md#f-f23d3d1f3b110f1e)；[blender::GVArrayCommon::size · L759](05-GVArray运行时类型.md#f-0856784f4e4fd3c9)；[blender::StringRefBase::size · L196](../01-基础容器与现代CPP/15-StringRef字符串视图.md#f-60d4631c74931d2e)；[blender::KDTreeNew<T>::size · L493](../12-空间数据结构与几何算法/05-K近邻与范围查询.md#f-233c05ce6d5c8d39)；[blender::MainAllIDsIterator::size · L1291](../90-实现依赖专题/02-BKE几何与数据/intern/main.cc.md#f-520d1311c646452f)；[blender::GLSourcesBaked::size · L1541](../90-实现依赖专题/08-其他Blender模块/gpu/opengl/gl_shader.cc.md#f-5b5b539d533c6792)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · generic_virtual_array.cc L709—L711
 
@@ -11636,7 +11636,7 @@ CommonVArrayInfo GVArrayImpl_For_GSpan_final::common_info() const
 
 **继续追踪实现**
 
-- `CommonVArrayInfo` → [blender::CommonVArrayInfo::CommonVArrayInfo · L66](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-a716088fcd760d27)；[blender::CommonVArrayInfo::CommonVArrayInfo · L67](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-018a4490310fea4d)。同名重载需按实参类型选择。
+- `CommonVArrayInfo` → [blender::CommonVArrayInfo::CommonVArrayInfo · L66](01-VArray表示与值语义.md#f-a716088fcd760d27)；[blender::CommonVArrayInfo::CommonVArrayInfo · L67](01-VArray表示与值语义.md#f-018a4490310fea4d)。同名重载需按实参类型选择。
 
 <!-- annotated:9879f065b81e53 -->
 
@@ -11692,7 +11692,7 @@ CommonVArrayInfo GVArrayImpl_For_SingleValueRef_final::common_info() const
 
 **继续追踪实现**
 
-- `CommonVArrayInfo` → [blender::CommonVArrayInfo::CommonVArrayInfo · L66](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-a716088fcd760d27)；[blender::CommonVArrayInfo::CommonVArrayInfo · L67](01-VArray%E8%A1%A8%E7%A4%BA%E4%B8%8E%E5%80%BC%E8%AF%AD%E4%B9%89.md#f-018a4490310fea4d)。同名重载需按实参类型选择。
+- `CommonVArrayInfo` → [blender::CommonVArrayInfo::CommonVArrayInfo · L66](01-VArray表示与值语义.md#f-a716088fcd760d27)；[blender::CommonVArrayInfo::CommonVArrayInfo · L67](01-VArray表示与值语义.md#f-018a4490310fea4d)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · generic_virtual_array.cc L721—L722
 
@@ -11843,4 +11843,4 @@ std::function保存可调用目标并提供统一调用接口，复制能力与�
 
 对比普通Span、标准ranges惰性视图和虚拟数组时，明确随机索引能力、批量物化、类型擦除和拥有关系；接口外观相近不代表同一抽象。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

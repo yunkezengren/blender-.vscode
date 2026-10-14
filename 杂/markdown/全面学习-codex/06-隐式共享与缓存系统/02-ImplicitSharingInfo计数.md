@@ -1,6 +1,6 @@
 # 06-02 ImplicitSharingInfo计数
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -180,8 +180,8 @@ flowchart TB
 **继续追踪实现**
 
 - `weak_users_.fetch_sub` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `const_cast<ImplicitSharingInfo *>(this)->delete_self_with_data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L179。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `const_cast<ImplicitSharingInfo *>(this)->delete_self_with_data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L179。
 
 ### 类型布局、声明与编译条件 · BLI_implicit_sharing.hh L182—L189
 
@@ -317,7 +317,7 @@ class ImplicitSharingMixin : public ImplicitSharingInfo {
 
 **继续追踪实现**
 
-- `this->delete_self` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L203。
+- `this->delete_self` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L203。
 
 ### 类型布局、声明与编译条件 · BLI_implicit_sharing.hh L205—L216
 
@@ -523,7 +523,7 @@ template<typename T> class ImplicitSharedValue : public ImplicitSharingInfo {
 
 **继续追踪实现**
 
-- `T` → [DiagSplit::T · L96](../05-%E5%87%A0%E4%BD%95%E5%AD%98%E5%82%A8%E4%B8%8E%E6%8B%93%E6%89%91%E6%98%A0%E5%B0%84/%E4%BE%9D%E8%B5%96-split-5f5804.md#f-d5d0885c790cc4e4)。
+- `T` → [DiagSplit::T · L96](../90-实现依赖专题/07-Intern运行时与平台/cycles/subd/split.cpp.md#f-d5d0885c790cc4e4)。
 
 ### 类型布局、声明与编译条件 · BLI_implicit_sharing.hh L238—L269
 
@@ -671,8 +671,8 @@ void copy_shared_pointer(T *src_ptr,
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `(*r_dst_sharing_info)->add_user` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L280。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `(*r_dst_sharing_info)->add_user` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L280。
 
 ### 类型布局、声明与编译条件 · BLI_implicit_sharing.hh L283—L286
 
@@ -747,8 +747,8 @@ template<typename T> void free_shared_data(T **data, const ImplicitSharingInfo *
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `(*sharing_info)->remove_user_and_delete_if_last` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L291。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `(*sharing_info)->remove_user_and_delete_if_last` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L291。
 
 ### 类型布局、声明与编译条件 · BLI_implicit_sharing.hh L296—L300
 
@@ -824,7 +824,7 @@ template<typename T> const ImplicitSharingInfo *info_for_mem_free(T *data)
 
 **继续追踪实现**
 
-- `detail::info_for_mem_free_impl` → [blender::implicit_sharing::detail::info_for_mem_free_impl · L37](%E4%BE%9D%E8%B5%96-implicit_sharing-d2e4c3.md#f-2522ab5f1adfc701)。
+- `detail::info_for_mem_free_impl` → [blender::implicit_sharing::detail::info_for_mem_free_impl · L37](../90-实现依赖专题/01-BLI基础库/intern/implicit_sharing.cc.md#f-2522ab5f1adfc701)。
 
 ### 类型布局、声明与编译条件 · BLI_implicit_sharing.hh L308—L311
 
@@ -898,7 +898,7 @@ void make_trivial_data_mutable(T **data,
 
 **继续追踪实现**
 
-- `detail::make_trivial_data_mutable_impl` → [blender::implicit_sharing::detail::make_trivial_data_mutable_impl · L42](%E4%BE%9D%E8%B5%96-implicit_sharing-d2e4c3.md#f-14280f49abfad7a3)。
+- `detail::make_trivial_data_mutable_impl` → [blender::implicit_sharing::detail::make_trivial_data_mutable_impl · L42](../90-实现依赖专题/01-BLI基础库/intern/implicit_sharing.cc.md#f-14280f49abfad7a3)。
 
 ### 类型布局、声明与编译条件 · BLI_implicit_sharing.hh L320—L324
 
@@ -977,7 +977,7 @@ void resize_trivial_array(T **data,
 
 **继续追踪实现**
 
-- `detail::resize_trivial_array_impl` → [blender::implicit_sharing::detail::resize_trivial_array_impl · L67](%E4%BE%9D%E8%B5%96-implicit_sharing-d2e4c3.md#f-534bbbd5b932748a)。
+- `detail::resize_trivial_array_impl` → [blender::implicit_sharing::detail::resize_trivial_array_impl · L67](../90-实现依赖专题/01-BLI基础库/intern/implicit_sharing.cc.md#f-534bbbd5b932748a)。
 
 ### 类型布局、声明与编译条件 · BLI_implicit_sharing.hh L334—L337
 
@@ -1108,4 +1108,4 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
 
 与shared_ptr比较寿命管理，与写时复制容器比较写边界，与普通memoization比较键的等价性；SharedCache把等价对象的派生结果放在共同控制对象中。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

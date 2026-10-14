@@ -1,6 +1,6 @@
 # 05-03 MPoly迁移与兼容
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -364,11 +364,11 @@ static void mesh_init_data(ID *id)
 
 **继续追踪实现**
 
-- `INIT_DEFAULT_STRUCT_AFTER` → [INIT_DEFAULT_STRUCT_AFTER · L422](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-30b1f74075b1)。宏定义由构建条件选择。
-- `CustomData_reset` → [blender::CustomData_reset · L2495](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-b5d2fd143bcd64b1)。
-- `mesh->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L100。
-- `BLI_hash_int` → [blender::BLI_hash_int · L89](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E4%BE%9D%E8%B5%96-BLI_hash_c-2ab8ea.md#f-32ff2a82e559cc1e)。
-- `BLI_time_now_seconds_i` → [blender::BLI_time_now_seconds_i · L36](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-time-be4317.md#f-38db665188e3ded7)。
+- `INIT_DEFAULT_STRUCT_AFTER` → [INIT_DEFAULT_STRUCT_AFTER · L422](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-30b1f74075b1)。宏定义由构建条件选择。
+- `CustomData_reset` → [blender::CustomData_reset · L2495](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-b5d2fd143bcd64b1)。
+- `mesh->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L100。
+- `BLI_hash_int` → [blender::BLI_hash_int · L89](../90-实现依赖专题/01-BLI基础库/BLI_hash_c.hh.md#f-32ff2a82e559cc1e)。
+- `BLI_time_now_seconds_i` → [blender::BLI_time_now_seconds_i · L36](../90-实现依赖专题/01-BLI基础库/intern/time.cc.md#f-38db665188e3ded7)。
 
 <!-- annotated:f067780e1b9394 -->
 
@@ -772,18 +772,18 @@ static void mesh_copy_data(Main *bmain,
 **继续追踪实现**
 
 - `std::make_unique<bke::bake::BakeMaterialsList>` → [外部契约](https://eel.is/c++draft/unique.ptr.create)：创建独占拥有的对象，拥有关系可移动，get返回的借用指针不自动延长寿命。
-- `CustomData_MeshMasks_update` → [blender::CustomData_MeshMasks_update · L89](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-5a41f0d857270b16)。
-- `mesh_src->runtime->edit_data.get` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L196。
+- `CustomData_MeshMasks_update` → [blender::CustomData_MeshMasks_update · L89](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-5a41f0d857270b16)。
+- `mesh_src->runtime->edit_data.get` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L196。
 - `std::make_unique<bke::EditMeshData>` → [外部契约](https://eel.is/c++draft/unique.ptr.create)：创建独占拥有的对象，拥有关系可移动，get返回的借用指针不自动延长寿命。
-- `MEM_dupalloc` → [MEM_dupalloc · L627](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-78a72b71e3c57010)。
-- `BKE_defgroup_copy_list` → [blender::BKE_defgroup_copy_list · L75](%E4%BE%9D%E8%B5%96-deform-6949f4.md#f-abb39694bedcca18)。
-- `CustomData_init_from` → [blender::CustomData_init_from · L2448](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-f317525a89779ded)。
-- `mesh_dst->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L225。
-- `mesh_src->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L226。
-- `implicit_sharing::copy_shared_pointer` → [blender::implicit_sharing::copy_shared_pointer · L270](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/02-ImplicitSharingInfo%E8%AE%A1%E6%95%B0.md#f-6888195eb0e306f7)。
-- `mesh_tessface_clear_intern` → [mesh_tessface_clear_intern · L1155](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-572aa4b8a6355d9c)。
-- `BKE_id_copy_in_lib` → [blender::BKE_id_copy_in_lib · L749](%E4%BE%9D%E8%B5%96-lib_id-d4e6bd.md#f-1ed32b930b96ebb2)。
-- `id_us_min` → [blender::id_us_min · L441](%E4%BE%9D%E8%B5%96-lib_id-d4e6bd.md#f-c5e5246a79962257)。
+- `MEM_dupalloc` → [MEM_dupalloc · L627](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-78a72b71e3c57010)。
+- `BKE_defgroup_copy_list` → [blender::BKE_defgroup_copy_list · L75](../90-实现依赖专题/02-BKE几何与数据/intern/deform.cc.md#f-abb39694bedcca18)。
+- `CustomData_init_from` → [blender::CustomData_init_from · L2448](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-f317525a89779ded)。
+- `mesh_dst->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L225。
+- `mesh_src->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L226。
+- `implicit_sharing::copy_shared_pointer` → [blender::implicit_sharing::copy_shared_pointer · L270](../06-隐式共享与缓存系统/02-ImplicitSharingInfo计数.md#f-6888195eb0e306f7)。
+- `mesh_tessface_clear_intern` → [mesh_tessface_clear_intern · L1155](03-MPoly迁移与兼容.md#f-572aa4b8a6355d9c)。
+- `BKE_id_copy_in_lib` → [blender::BKE_id_copy_in_lib · L749](../90-实现依赖专题/02-BKE几何与数据/intern/lib_id.cc.md#f-1ed32b930b96ebb2)。
+- `id_us_min` → [blender::id_us_min · L441](../90-实现依赖专题/02-BKE几何与数据/intern/lib_id.cc.md#f-c5e5246a79962257)。
 
 <!-- annotated:5b16431789c7c2 -->
 
@@ -881,12 +881,12 @@ static void mesh_free_data(ID *id)
 
 **继续追踪实现**
 
-- `CustomData_free` → [blender::CustomData_free · L2501](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-af45329c2d7b60ae)。
-- `mesh->vertex_group_names.free_no_destruct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L265。
-- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#m-eadb3bc5b902)。宏定义由构建条件选择。
-- `mesh->attribute_storage.wrap().~AttributeStorage` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L272。
-- `mesh->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L272。
-- `implicit_sharing::free_shared_data` → [blender::implicit_sharing::free_shared_data · L287](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/02-ImplicitSharingInfo%E8%AE%A1%E6%95%B0.md#f-8e443cc043206969)。
+- `CustomData_free` → [blender::CustomData_free · L2501](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-af45329c2d7b60ae)。
+- `mesh->vertex_group_names.free_no_destruct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L265。
+- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#m-eadb3bc5b902)。宏定义由构建条件选择。
+- `mesh->attribute_storage.wrap().~AttributeStorage` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L272。
+- `mesh->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L272。
+- `implicit_sharing::free_shared_data` → [blender::implicit_sharing::free_shared_data · L287](../06-隐式共享与缓存系统/02-ImplicitSharingInfo计数.md#f-8e443cc043206969)。
 
 <!-- annotated:1993b2f830e1c4 -->
 
@@ -955,7 +955,7 @@ static void mesh_foreach_id(ID *id, LibraryForeachIDData *data)
 
 **继续追踪实现**
 
-- `BKE_LIB_FOREACHID_PROCESS_IDSUPER` → [BKE_LIB_FOREACHID_PROCESS_IDSUPER · L293](%E4%BE%9D%E8%B5%96-BKE_lib_query-b986a2.md#m-1b059b49d6cb)。宏定义由构建条件选择。
+- `BKE_LIB_FOREACHID_PROCESS_IDSUPER` → [BKE_LIB_FOREACHID_PROCESS_IDSUPER · L293](../90-实现依赖专题/02-BKE几何与数据/BKE_lib_query.hh.md#m-1b059b49d6cb)。宏定义由构建条件选择。
 
 <!-- annotated:355d37c778f28f -->
 
@@ -1049,11 +1049,11 @@ static void mesh_foreach_path(ID *id, BPathForeachPathData *bpath_data)
 **继续追踪实现**
 
 - `std::any_of` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `layers.begin` → [blender::Span::begin · L224](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-415883b512284f46)。
-- `layers.end` → [blender::Span::end · L228](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-a7d8b9e494c291a7)。
-- `CustomData_external_test` → [blender::CustomData_external_test · L4471](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-fa4fc636dd1438c4)。
-- `eCustomDataType` → [blender::eCustomDataType](%E4%BE%9D%E8%B5%96-DNA_customdata_types-f584e8.md#t-dfbf4a4ce0e1)。
-- `BKE_bpath_foreach_path_fixed_process` → [blender::BKE_bpath_foreach_path_fixed_process · L130](%E4%BE%9D%E8%B5%96-bpath-8b7c95.md#f-4bb257dc829a7935)。
+- `layers.begin` → [blender::Span::begin · L224](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-415883b512284f46)。
+- `layers.end` → [blender::Span::end · L228](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-a7d8b9e494c291a7)。
+- `CustomData_external_test` → [blender::CustomData_external_test · L4471](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-fa4fc636dd1438c4)。
+- `eCustomDataType` → [blender::eCustomDataType](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_customdata_types.h.md#t-dfbf4a4ce0e1)。
+- `BKE_bpath_foreach_path_fixed_process` → [blender::BKE_bpath_foreach_path_fixed_process · L130](../90-实现依赖专题/02-BKE几何与数据/intern/bpath.cc.md#f-4bb257dc829a7935)。
 
 <!-- annotated:cf6b0b2fd1b68c -->
 
@@ -1150,10 +1150,10 @@ static void mesh_foreach_working_space_color(ID *id, const IDTypeForeachColorFun
 
 **继续追踪实现**
 
-- `mesh->attribute_storage.wrap().foreach_working_space_color` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L318。
-- `mesh->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L318。
-- `fn.implicit_sharing_array` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L324。
-- `convert_domain` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L331。
+- `mesh->attribute_storage.wrap().foreach_working_space_color` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L318。
+- `mesh->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L318。
+- `fn.implicit_sharing_array` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L324。
+- `convert_domain` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L331。
 
 <!-- annotated:e85c2ce6282e81 -->
 
@@ -1423,29 +1423,29 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
 
 **继续追踪实现**
 
-- `writer->is_undo` → [blender::BlendWriter::is_undo · L2199](%E4%BE%9D%E8%B5%96-writefile-3eb36f.md#f-575a0be6b62031df)。
-- `ID_IS_OVERRIDE_LIBRARY` → [ID_IS_OVERRIDE_LIBRARY · L736](%E4%BE%9D%E8%B5%96-DNA_ID-3eb091.md#m-c84b86cfb14f)。宏定义由构建条件选择。
-- `attribute_storage_blend_write_prepare` → [blender::bke::attribute_storage_blend_write_prepare · L599](%E4%BE%9D%E8%B5%96-attribute_storage-1cb73b.md#f-4cc74c04f88b3aee)。
-- `mesh->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L374。
-- `mesh->attributes().domain_size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L376。
-- `mesh->attributes` → [Mesh::attributes · L1298](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-607bbfe3e57cfc7f)。
-- `CustomData_blend_write_prepare` → [blender::CustomData_blend_write_prepare · L4716](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-dcc81dc3ae68b598)。
-- `mesh_skin_to_legacy` → [bke::mesh_skin_to_legacy · L2537](%E4%BE%9D%E8%B5%96-mesh_legacy_convert-87e0b4.md#f-767c084009227caa)。
-- `attribute_data.attributes.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L385。
-- `attribute_data.attributes.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L390。
-- `attribute_data.attributes.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L391。
-- `writer->generated_pointer_tag` → [blender::BlendWriter::generated_pointer_tag · L2364](%E4%BE%9D%E8%B5%96-writefile-3eb36f.md#f-ab0ea35e3e80b4ed)。
-- `writer->write_id_struct` → [blender::BlendWriter::write_id_struct · L305](%E4%BE%9D%E8%B5%96-BLO_read_write-a54308.md#f-78070d7dc12e9476)；[blender::BlendWriter::write_id_struct · L322](%E4%BE%9D%E8%B5%96-BLO_read_write-a54308.md#f-24d448cce2a1cc5b)。同名重载需按实参类型选择。
-- `struct_writer.generated_ptr` → [blender::BlendStructWriterVoid::generated_ptr · L986](%E4%BE%9D%E8%B5%96-writefile-3eb36f.md#f-56a411a03902a3d8)。
-- `BKE_id_blend_write` → [blender::BKE_id_blend_write · L2890](%E4%BE%9D%E8%B5%96-lib_id-d4e6bd.md#f-85ea0225c867bd69)。
-- `BKE_defbase_blend_write` → [blender::BKE_defbase_blend_write · L1597](%E4%BE%9D%E8%B5%96-deform-6949f4.md#f-78eb2228b5b9335f)。
-- `writer->write_string` → [blender::BlendWriter::write_string · L2357](%E4%BE%9D%E8%B5%96-writefile-3eb36f.md#f-3fd83db72afbdcbe)。
-- `writer->write_pointer_array` → [blender::BlendWriter::write_pointer_array · L2344](%E4%BE%9D%E8%B5%96-writefile-3eb36f.md#f-cc1f2cbff41105e7)。
-- `writer->write_struct_array` → [blender::BlendWriter::write_struct_array · L267](%E4%BE%9D%E8%B5%96-BLO_read_write-a54308.md#f-0dbd1649a1c88312)。
-- `CustomData_blend_write` → [blender::CustomData_blend_write · L4826](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-125208f466b1dce7)。
-- `mesh->attribute_storage.wrap().blend_write` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L428。
-- `writer->write_shared` → [blender::BlendWriter::write_shared · L2384](%E4%BE%9D%E8%B5%96-writefile-3eb36f.md#f-e666f6767154bed1)。
-- `writer->write_int32_array` → [blender::BlendWriter::write_int32_array · L2319](%E4%BE%9D%E8%B5%96-writefile-3eb36f.md#f-c9f578dfe7ff0191)。
+- `writer->is_undo` → [blender::BlendWriter::is_undo · L2199](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/writefile.cc.md#f-575a0be6b62031df)。
+- `ID_IS_OVERRIDE_LIBRARY` → [ID_IS_OVERRIDE_LIBRARY · L736](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_ID.h.md#m-c84b86cfb14f)。宏定义由构建条件选择。
+- `attribute_storage_blend_write_prepare` → [blender::bke::attribute_storage_blend_write_prepare · L599](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage.cc.md#f-4cc74c04f88b3aee)。
+- `mesh->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L374。
+- `mesh->attributes().domain_size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L376。
+- `mesh->attributes` → [Mesh::attributes · L1298](03-MPoly迁移与兼容.md#f-607bbfe3e57cfc7f)。
+- `CustomData_blend_write_prepare` → [blender::CustomData_blend_write_prepare · L4716](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-dcc81dc3ae68b598)。
+- `mesh_skin_to_legacy` → [bke::mesh_skin_to_legacy · L2537](../90-实现依赖专题/02-BKE几何与数据/intern/mesh_legacy_convert.cc.md#f-767c084009227caa)。
+- `attribute_data.attributes.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L385。
+- `attribute_data.attributes.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L390。
+- `attribute_data.attributes.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L391。
+- `writer->generated_pointer_tag` → [blender::BlendWriter::generated_pointer_tag · L2364](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/writefile.cc.md#f-ab0ea35e3e80b4ed)。
+- `writer->write_id_struct` → [blender::BlendWriter::write_id_struct · L305](../90-实现依赖专题/08-其他Blender模块/blenloader/BLO_read_write.hh.md#f-78070d7dc12e9476)；[blender::BlendWriter::write_id_struct · L322](../90-实现依赖专题/08-其他Blender模块/blenloader/BLO_read_write.hh.md#f-24d448cce2a1cc5b)。同名重载需按实参类型选择。
+- `struct_writer.generated_ptr` → [blender::BlendStructWriterVoid::generated_ptr · L986](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/writefile.cc.md#f-56a411a03902a3d8)。
+- `BKE_id_blend_write` → [blender::BKE_id_blend_write · L2890](../90-实现依赖专题/02-BKE几何与数据/intern/lib_id.cc.md#f-85ea0225c867bd69)。
+- `BKE_defbase_blend_write` → [blender::BKE_defbase_blend_write · L1597](../90-实现依赖专题/02-BKE几何与数据/intern/deform.cc.md#f-78eb2228b5b9335f)。
+- `writer->write_string` → [blender::BlendWriter::write_string · L2357](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/writefile.cc.md#f-3fd83db72afbdcbe)。
+- `writer->write_pointer_array` → [blender::BlendWriter::write_pointer_array · L2344](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/writefile.cc.md#f-cc1f2cbff41105e7)。
+- `writer->write_struct_array` → [blender::BlendWriter::write_struct_array · L267](../90-实现依赖专题/08-其他Blender模块/blenloader/BLO_read_write.hh.md#f-0dbd1649a1c88312)。
+- `CustomData_blend_write` → [blender::CustomData_blend_write · L4826](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-125208f466b1dce7)。
+- `mesh->attribute_storage.wrap().blend_write` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L428。
+- `writer->write_shared` → [blender::BlendWriter::write_shared · L2384](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/writefile.cc.md#f-e666f6767154bed1)。
+- `writer->write_int32_array` → [blender::BlendWriter::write_int32_array · L2319](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/writefile.cc.md#f-c9f578dfe7ff0191)。
 
 <!-- annotated:30fddd75481349 -->
 
@@ -1643,19 +1643,19 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
 
 **继续追踪实现**
 
-- `BLO_read_pointer_array_and_validate_size` → [blender::BLO_read_pointer_array_and_validate_size · L602](%E4%BE%9D%E8%B5%96-BLO_read_write-a54308.md#f-339156ce23ff000f)。
-- `BLO_read_array` → [blender::BLO_read_array · L560](%E4%BE%9D%E8%B5%96-BLO_read_write-a54308.md#f-72510af36964431f)。
-- `BLO_read_array_and_validate_size` → [blender::BLO_read_array_and_validate_size · L571](%E4%BE%9D%E8%B5%96-BLO_read_write-a54308.md#f-645e9600b66d0b15)。
-- `BLO_read_struct_list` → [BLO_read_struct_list · L542](%E4%BE%9D%E8%B5%96-BLO_read_write-a54308.md#m-7f0b2171679f)。宏定义由构建条件选择。
-- `CustomData_blend_read` → [blender::CustomData_blend_read · L4952](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-2181b5f20a9d0db1)。
-- `mesh->attribute_storage.wrap().blend_read` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L470。
-- `mesh->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L470。
-- `mesh->deform_verts().is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L471。
-- `mesh->deform_verts` → [Mesh::deform_verts · L1266](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-4c0433aad24aa301)。
-- `BKE_defvert_blend_read` → [blender::BKE_defvert_blend_read · L1621](%E4%BE%9D%E8%B5%96-deform-6949f4.md#f-bbdea50fd243433d)。
-- `BLO_read_string` → [BLO_read_string · L6348](%E4%BE%9D%E8%B5%96-readfile-05cc37.md#f-b9cb42e390941235)；[BLO_read_string · L6370](%E4%BE%9D%E8%B5%96-readfile-05cc37.md#f-1bb75b8661d718d2)；[BLO_read_string · L6375](%E4%BE%9D%E8%B5%96-readfile-05cc37.md#f-5714da923b3ad83d)。同名重载需按实参类型选择。
-- `BLO_read_shared` → [blender::BLO_read_shared · L630](%E4%BE%9D%E8%B5%96-BLO_read_write-a54308.md#f-80b03c9e038d30eb)。
-- `implicit_sharing::info_for_mem_free` → [blender::implicit_sharing::info_for_mem_free · L301](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/02-ImplicitSharingInfo%E8%AE%A1%E6%95%B0.md#f-7ad95caa930eb54d)。
+- `BLO_read_pointer_array_and_validate_size` → [blender::BLO_read_pointer_array_and_validate_size · L602](../90-实现依赖专题/08-其他Blender模块/blenloader/BLO_read_write.hh.md#f-339156ce23ff000f)。
+- `BLO_read_array` → [blender::BLO_read_array · L560](../90-实现依赖专题/08-其他Blender模块/blenloader/BLO_read_write.hh.md#f-72510af36964431f)。
+- `BLO_read_array_and_validate_size` → [blender::BLO_read_array_and_validate_size · L571](../90-实现依赖专题/08-其他Blender模块/blenloader/BLO_read_write.hh.md#f-645e9600b66d0b15)。
+- `BLO_read_struct_list` → [BLO_read_struct_list · L542](../90-实现依赖专题/08-其他Blender模块/blenloader/BLO_read_write.hh.md#m-7f0b2171679f)。宏定义由构建条件选择。
+- `CustomData_blend_read` → [blender::CustomData_blend_read · L4952](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-2181b5f20a9d0db1)。
+- `mesh->attribute_storage.wrap().blend_read` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L470。
+- `mesh->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L470。
+- `mesh->deform_verts().is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L471。
+- `mesh->deform_verts` → [Mesh::deform_verts · L1266](03-MPoly迁移与兼容.md#f-4c0433aad24aa301)。
+- `BKE_defvert_blend_read` → [blender::BKE_defvert_blend_read · L1621](../90-实现依赖专题/02-BKE几何与数据/intern/deform.cc.md#f-bbdea50fd243433d)。
+- `BLO_read_string` → [BLO_read_string · L6348](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/readfile.cc.md#f-b9cb42e390941235)；[BLO_read_string · L6370](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/readfile.cc.md#f-1bb75b8661d718d2)；[BLO_read_string · L6375](../90-实现依赖专题/08-其他Blender模块/blenloader/intern/readfile.cc.md#f-5714da923b3ad83d)。同名重载需按实参类型选择。
+- `BLO_read_shared` → [blender::BLO_read_shared · L630](../90-实现依赖专题/08-其他Blender模块/blenloader/BLO_read_write.hh.md#f-80b03c9e038d30eb)。
+- `implicit_sharing::info_for_mem_free` → [blender::implicit_sharing::info_for_mem_free · L301](../06-隐式共享与缓存系统/02-ImplicitSharingInfo计数.md#f-7ad95caa930eb54d)。
 
 ### 类型布局、声明与编译条件 · mesh.cc L507—L539
 
@@ -1781,7 +1781,7 @@ bool BKE_mesh_attribute_required(const StringRef name)
 
 **继续追踪实现**
 
-- `ELEM` → [ELEM · L88](%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
 
 <!-- annotated:f7603b091ff5f2 -->
 
@@ -1883,14 +1883,14 @@ void BKE_mesh_ensure_skin_customdata(Mesh *mesh)
 
 **继续追踪实现**
 
-- `BKE_editmesh_bmesh_get_for_write` → [blender::BKE_editmesh_bmesh_get_for_write · L79](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-fa556ba8fafc4b41)；[blender::BKE_editmesh_bmesh_get_for_write · L87](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-6137590869c86e48)。同名重载需按实参类型选择。
-- `CustomData_has_layer_named` → [blender::CustomData_has_layer_named · L2998](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-5faa0eea3d0b58c5)。
-- `BM_data_layer_add_named` → [blender::BM_data_layer_add_named · L866](%E4%BE%9D%E8%B5%96-bmesh_interp-cac3db.md#f-4683d35b7673494f)。
-- `CustomData_get_offset_named` → [blender::CustomData_get_offset_named · L3398](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-fe199f3da62e9c30)。
-- `BM_ITER_MESH` → [BM_ITER_MESH · L72](%E4%BE%9D%E8%B5%96-bmesh_iterators-13971c.md#m-cfc837c73218)。宏定义由构建条件选择。
-- `BM_ELEM_CD_GET_VOID_P` → [BM_ELEM_CD_GET_VOID_P · L610](%E4%BE%9D%E8%B5%96-bmesh_class-4cf146.md#m-cdfe9f3023fa)；[BM_ELEM_CD_GET_VOID_P · L618](%E4%BE%9D%E8%B5%96-bmesh_class-4cf146.md#m-126b1260772d)。宏定义由构建条件选择。
-- `float2` → [float2::float2 · L45](%E4%BE%9D%E8%B5%96-sky_math-8091a6.md#f-04c2783f21f996aa)；[float2::float2 · L47](%E4%BE%9D%E8%B5%96-sky_math-8091a6.md#f-dba79c4c10e5ea46)；[float2::float2 · L49](%E4%BE%9D%E8%B5%96-sky_math-8091a6.md#f-920ca90efa37bf0b)；[float2::float2 · L51](%E4%BE%9D%E8%B5%96-sky_math-8091a6.md#f-4b3fbf848d719a63)；[float2::float2 · L53](%E4%BE%9D%E8%B5%96-sky_math-8091a6.md#f-9b2acd8475cc2843)；[float2::float2 · L55](%E4%BE%9D%E8%B5%96-sky_math-8091a6.md#f-1e9233a9a231be51)。同名重载需按实参类型选择。
-- `BM_ELEM_CD_SET_BOOL` → [BM_ELEM_CD_SET_BOOL · L585](%E4%BE%9D%E8%B5%96-bmesh_class-4cf146.md#m-3ead25bdabee)。宏定义由构建条件选择。
+- `BKE_editmesh_bmesh_get_for_write` → [blender::BKE_editmesh_bmesh_get_for_write · L79](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-fa556ba8fafc4b41)；[blender::BKE_editmesh_bmesh_get_for_write · L87](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-6137590869c86e48)。同名重载需按实参类型选择。
+- `CustomData_has_layer_named` → [blender::CustomData_has_layer_named · L2998](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-5faa0eea3d0b58c5)。
+- `BM_data_layer_add_named` → [blender::BM_data_layer_add_named · L866](../90-实现依赖专题/08-其他Blender模块/bmesh/intern/bmesh_interp.cc.md#f-4683d35b7673494f)。
+- `CustomData_get_offset_named` → [blender::CustomData_get_offset_named · L3398](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-fe199f3da62e9c30)。
+- `BM_ITER_MESH` → [BM_ITER_MESH · L72](../90-实现依赖专题/08-其他Blender模块/bmesh/intern/bmesh_iterators.hh.md#m-cfc837c73218)。宏定义由构建条件选择。
+- `BM_ELEM_CD_GET_VOID_P` → [BM_ELEM_CD_GET_VOID_P · L610](../90-实现依赖专题/08-其他Blender模块/bmesh/bmesh_class.hh.md#m-cdfe9f3023fa)；[BM_ELEM_CD_GET_VOID_P · L618](../90-实现依赖专题/08-其他Blender模块/bmesh/bmesh_class.hh.md#m-126b1260772d)。宏定义由构建条件选择。
+- `float2` → [float2::float2 · L45](../90-实现依赖专题/07-Intern运行时与平台/sky/source/sky_math.h.md#f-04c2783f21f996aa)；[float2::float2 · L47](../90-实现依赖专题/07-Intern运行时与平台/sky/source/sky_math.h.md#f-dba79c4c10e5ea46)；[float2::float2 · L49](../90-实现依赖专题/07-Intern运行时与平台/sky/source/sky_math.h.md#f-920ca90efa37bf0b)；[float2::float2 · L51](../90-实现依赖专题/07-Intern运行时与平台/sky/source/sky_math.h.md#f-4b3fbf848d719a63)；[float2::float2 · L53](../90-实现依赖专题/07-Intern运行时与平台/sky/source/sky_math.h.md#f-9b2acd8475cc2843)；[float2::float2 · L55](../90-实现依赖专题/07-Intern运行时与平台/sky/source/sky_math.h.md#f-1e9233a9a231be51)。同名重载需按实参类型选择。
+- `BM_ELEM_CD_SET_BOOL` → [BM_ELEM_CD_SET_BOOL · L585](../90-实现依赖专题/08-其他Blender模块/bmesh/bmesh_class.hh.md#m-3ead25bdabee)。宏定义由构建条件选择。
 
 ### 类型布局、声明与编译条件 · mesh.cc L572—L587
 
@@ -1991,10 +1991,10 @@ bool BKE_mesh_has_custom_loop_normals(Mesh *mesh)
 
 **继续追踪实现**
 
-- `BKE_editmesh_bmesh_get_for_write` → [blender::BKE_editmesh_bmesh_get_for_write · L79](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-fa556ba8fafc4b41)；[blender::BKE_editmesh_bmesh_get_for_write · L87](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-6137590869c86e48)。同名重载需按实参类型选择。
-- `CustomData_has_layer_named` → [blender::CustomData_has_layer_named · L2998](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-5faa0eea3d0b58c5)。
-- `mesh->attributes().contains` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L594。
-- `mesh->attributes` → [Mesh::attributes · L1298](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-607bbfe3e57cfc7f)。
+- `BKE_editmesh_bmesh_get_for_write` → [blender::BKE_editmesh_bmesh_get_for_write · L79](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-fa556ba8fafc4b41)；[blender::BKE_editmesh_bmesh_get_for_write · L87](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-6137590869c86e48)。同名重载需按实参类型选择。
+- `CustomData_has_layer_named` → [blender::CustomData_has_layer_named · L2998](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-5faa0eea3d0b58c5)。
+- `mesh->attributes().contains` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L594。
+- `mesh->attributes` → [Mesh::attributes · L1298](03-MPoly迁移与兼容.md#f-607bbfe3e57cfc7f)。
 
 ### 类型布局、声明与编译条件 · mesh.cc L596—L598
 
@@ -2087,11 +2087,11 @@ void mesh_ensure_default_color_attribute_on_add(Mesh &mesh,
 
 **继续追踪实现**
 
-- `bke::attribute_name_is_anonymous` → [blender::bke::attribute_name_is_anonymous · L24](../10-%E5%BC%95%E7%94%A8%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8EClosure/01-%E5%8C%BF%E5%90%8D%E5%B1%9E%E6%80%A7%E4%B8%8E%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98.md#f-ce0c92720483f1bc)。
-- `mesh::is_color_attribute` → [bke::mesh::is_color_attribute · L1400](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a46946697ca88d8b)；[bke::mesh::is_color_attribute · L1406](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a459162c156510fd)。同名重载需按实参类型选择。
-- `BLI_strdupn` → [blender::BLI_strdupn · L32](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-string-1d986f.md#f-65dc033cf6e67cff)。
-- `name.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L613。
-- `name.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L613。
+- `bke::attribute_name_is_anonymous` → [blender::bke::attribute_name_is_anonymous · L24](../10-引用生命周期与Closure/01-匿名属性与引用问题.md#f-ce0c92720483f1bc)。
+- `mesh::is_color_attribute` → [bke::mesh::is_color_attribute · L1400](03-MPoly迁移与兼容.md#f-a46946697ca88d8b)；[bke::mesh::is_color_attribute · L1406](03-MPoly迁移与兼容.md#f-a459162c156510fd)。同名重载需按实参类型选择。
+- `BLI_strdupn` → [blender::BLI_strdupn · L32](../90-实现依赖专题/01-BLI基础库/intern/string.cc.md#f-65dc033cf6e67cff)。
+- `name.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L613。
+- `name.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L613。
 
 <!-- annotated:86bf914831e04d -->
 
@@ -2174,11 +2174,11 @@ void mesh_ensure_default_uv_attribute_on_add(Mesh &mesh,
 
 **继续追踪实现**
 
-- `bke::attribute_name_is_anonymous` → [blender::bke::attribute_name_is_anonymous · L24](../10-%E5%BC%95%E7%94%A8%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8EClosure/01-%E5%8C%BF%E5%90%8D%E5%B1%9E%E6%80%A7%E4%B8%8E%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98.md#f-ce0c92720483f1bc)。
-- `mesh::is_uv_map` → [bke::mesh::is_uv_map · L1390](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-d54e2b7387551a2a)；[bke::mesh::is_uv_map · L1395](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ccba85e25e6455e3)。同名重载需按实参类型选择。
-- `mesh.default_uv_map_name().is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L627。
-- `mesh.default_uv_map_name` → [Mesh::default_uv_map_name · L1328](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-69e95ac159da434a)。
-- `mesh.uv_maps_default_set` → [Mesh::uv_maps_default_set · L1361](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-d754397489bfa6aa)。
+- `bke::attribute_name_is_anonymous` → [blender::bke::attribute_name_is_anonymous · L24](../10-引用生命周期与Closure/01-匿名属性与引用问题.md#f-ce0c92720483f1bc)。
+- `mesh::is_uv_map` → [bke::mesh::is_uv_map · L1390](03-MPoly迁移与兼容.md#f-d54e2b7387551a2a)；[bke::mesh::is_uv_map · L1395](03-MPoly迁移与兼容.md#f-ccba85e25e6455e3)。同名重载需按实参类型选择。
+- `mesh.default_uv_map_name().is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L627。
+- `mesh.default_uv_map_name` → [Mesh::default_uv_map_name · L1328](03-MPoly迁移与兼容.md#f-69e95ac159da434a)。
+- `mesh.uv_maps_default_set` → [Mesh::uv_maps_default_set · L1361](03-MPoly迁移与兼容.md#f-d754397489bfa6aa)。
 
 <!-- annotated:39bbb5b110f999 -->
 
@@ -2248,8 +2248,8 @@ void mesh_ensure_required_data_layers(Mesh &mesh)
 
 **继续追踪实现**
 
-- `mesh.attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ca7af2f1a15f0bc4)。
-- `attributes.add` → [blender::bke::MutableAttributeAccessor::add · L769](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-5fa7f06d7e22891a)；[blender::bke::MutableAttributeAccessor::add · L785](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-42998ceb23ada8cc)。同名重载需按实参类型选择。
+- `mesh.attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly迁移与兼容.md#f-ca7af2f1a15f0bc4)。
+- `attributes.add` → [blender::bke::MutableAttributeAccessor::add · L769](08-AttributeAccessor接口.md#f-5fa7f06d7e22891a)；[blender::bke::MutableAttributeAccessor::add · L785](08-AttributeAccessor接口.md#f-42998ceb23ada8cc)。同名重载需按实参类型选择。
 
 <!-- annotated:d2ccfcfc35fcdf -->
 
@@ -2327,9 +2327,9 @@ static StringRefNull get_first_uv_map_name(const Mesh &mesh)
 
 **继续追踪实现**
 
-- `mesh.attributes().foreach_attribute` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L648。
-- `mesh.attributes` → [Mesh::attributes · L1298](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-607bbfe3e57cfc7f)。
-- `iter.stop` → [blender::bke::AttributeIter::stop · L414](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-d7a4971daaf59ad1)。
+- `mesh.attributes().foreach_attribute` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L648。
+- `mesh.attributes` → [Mesh::attributes · L1298](03-MPoly迁移与兼容.md#f-607bbfe3e57cfc7f)。
+- `iter.stop` → [blender::bke::AttributeIter::stop · L414](08-AttributeAccessor接口.md#f-d7a4971daaf59ad1)。
 
 <!-- annotated:b9c6e838c78edc -->
 
@@ -2409,13 +2409,13 @@ void mesh_ensure_active_uv_map(Mesh &mesh)
 
 **继续追踪实现**
 
-- `mesh.active_uv_map_name` → [Mesh::active_uv_map_name · L1319](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-9b4762e851836e79)。
-- `active_name.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L660。
-- `mesh.default_uv_map_name` → [Mesh::default_uv_map_name · L1328](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-69e95ac159da434a)。
-- `default_name.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L664。
-- `mesh.uv_maps_active_set` → [Mesh::uv_maps_active_set · L1346](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-bcaa0129e8e6bbb3)。
-- `get_first_uv_map_name` → [bke::get_first_uv_map_name · L645](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-23fcc2a43421fff9)。
-- `found.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L669。
+- `mesh.active_uv_map_name` → [Mesh::active_uv_map_name · L1319](03-MPoly迁移与兼容.md#f-9b4762e851836e79)。
+- `active_name.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L660。
+- `mesh.default_uv_map_name` → [Mesh::default_uv_map_name · L1328](03-MPoly迁移与兼容.md#f-69e95ac159da434a)。
+- `default_name.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L664。
+- `mesh.uv_maps_active_set` → [Mesh::uv_maps_active_set · L1346](03-MPoly迁移与兼容.md#f-bcaa0129e8e6bbb3)。
+- `get_first_uv_map_name` → [bke::get_first_uv_map_name · L645](03-MPoly迁移与兼容.md#f-23fcc2a43421fff9)。
+- `found.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L669。
 
 <!-- annotated:d76a11e286383f -->
 
@@ -2485,11 +2485,11 @@ void mesh_ensure_default_uv_map(Mesh &mesh)
 
 **继续追踪实现**
 
-- `mesh.default_uv_map_name` → [Mesh::default_uv_map_name · L1328](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-69e95ac159da434a)。
-- `default_name.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L677。
-- `get_first_uv_map_name` → [bke::get_first_uv_map_name · L645](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-23fcc2a43421fff9)。
-- `found.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L681。
-- `mesh.uv_maps_default_set` → [Mesh::uv_maps_default_set · L1361](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-d754397489bfa6aa)。
+- `mesh.default_uv_map_name` → [Mesh::default_uv_map_name · L1328](03-MPoly迁移与兼容.md#f-69e95ac159da434a)。
+- `default_name.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L677。
+- `get_first_uv_map_name` → [bke::get_first_uv_map_name · L645](03-MPoly迁移与兼容.md#f-23fcc2a43421fff9)。
+- `found.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L681。
+- `mesh.uv_maps_default_set` → [Mesh::uv_maps_default_set · L1361](03-MPoly迁移与兼容.md#f-d754397489bfa6aa)。
 
 <!-- annotated:be1e4c08b11510 -->
 
@@ -2581,13 +2581,13 @@ void mesh_remove_invalid_attribute_strings(Mesh &mesh)
 
 **继续追踪实现**
 
-- `mesh.attributes` → [Mesh::attributes · L1298](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-607bbfe3e57cfc7f)。
-- `mesh::is_color_attribute` → [bke::mesh::is_color_attribute · L1400](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a46946697ca88d8b)；[bke::mesh::is_color_attribute · L1406](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a459162c156510fd)。同名重载需按实参类型选择。
-- `attributes.lookup_meta_data` → [blender::bke::AttributeAccessor::lookup_meta_data · L533](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-8e846cee4b51f075)。
-- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#m-eadb3bc5b902)。宏定义由构建条件选择。
-- `mesh::is_uv_map` → [bke::mesh::is_uv_map · L1390](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-d54e2b7387551a2a)；[bke::mesh::is_uv_map · L1395](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ccba85e25e6455e3)。同名重载需按实参类型选择。
-- `mesh.active_uv_map_name` → [Mesh::active_uv_map_name · L1319](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-9b4762e851836e79)。
-- `mesh.default_uv_map_name` → [Mesh::default_uv_map_name · L1328](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-69e95ac159da434a)。
+- `mesh.attributes` → [Mesh::attributes · L1298](03-MPoly迁移与兼容.md#f-607bbfe3e57cfc7f)。
+- `mesh::is_color_attribute` → [bke::mesh::is_color_attribute · L1400](03-MPoly迁移与兼容.md#f-a46946697ca88d8b)；[bke::mesh::is_color_attribute · L1406](03-MPoly迁移与兼容.md#f-a459162c156510fd)。同名重载需按实参类型选择。
+- `attributes.lookup_meta_data` → [blender::bke::AttributeAccessor::lookup_meta_data · L533](08-AttributeAccessor接口.md#f-8e846cee4b51f075)。
+- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#m-eadb3bc5b902)。宏定义由构建条件选择。
+- `mesh::is_uv_map` → [bke::mesh::is_uv_map · L1390](03-MPoly迁移与兼容.md#f-d54e2b7387551a2a)；[bke::mesh::is_uv_map · L1395](03-MPoly迁移与兼容.md#f-ccba85e25e6455e3)。同名重载需按实参类型选择。
+- `mesh.active_uv_map_name` → [Mesh::active_uv_map_name · L1319](03-MPoly迁移与兼容.md#f-9b4762e851836e79)。
+- `mesh.default_uv_map_name` → [Mesh::default_uv_map_name · L1328](03-MPoly迁移与兼容.md#f-69e95ac159da434a)。
 
 <!-- annotated:564e24b39a8389 -->
 
@@ -2648,7 +2648,7 @@ static Bounds<float3> merge_bounds(const Bounds<float3> &a, const Bounds<float3>
 
 **继续追踪实现**
 
-- `bounds::merge` → [blender::bounds::merge · L27](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-26dade32771df176)；[blender::bounds::merge · L32](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
+- `bounds::merge` → [blender::bounds::merge · L27](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-26dade32771df176)；[blender::bounds::merge · L32](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
 
 <!-- annotated:bae2bc7423cd90 -->
 
@@ -2705,7 +2705,7 @@ static Bounds<float3> negative_bounds()
 
 **继续追踪实现**
 
-- `float3` → [float3 · L641](%E4%BE%9D%E8%B5%96-smaa-b67bc2.md#m-0ea8254cfdb4)。宏定义由构建条件选择。
+- `float3` → [float3 · L641](../90-实现依赖专题/08-其他Blender模块/compositor/algorithms/intern/smaa.cc.md#m-0ea8254cfdb4)。宏定义由构建条件选择。
 - `std::numeric_limits<float>::max` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
 - `std::numeric_limits<float>::lowest` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 
@@ -2955,28 +2955,28 @@ static void partition_faces_recursively(const Span<float3> face_centers,
 
 **继续追踪实现**
 
-- `face_indices.size` → [blender::MutableSpan::size · L499](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-1de6a66839c304a8)；[blender::gpu::shader::parser::MutableSpan::size · L87](%E4%BE%9D%E8%B5%96-utils-06433d.md#f-5e684af6ee7990e9)。同名重载需按实参类型选择。
-- `bke::pbvh::leaf_needs_material_split` → [blender::bke::pbvh::leaf_needs_material_split · L132](%E4%BE%9D%E8%B5%96-pbvh-41a537.md#f-f86df6e34a2a5e9b)。
-- `Array<int>` → [blender::Array::Array · L78](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-001fd5eb3c658238)；[blender::Array::Array · L84](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-674e2f10361a462b)；[blender::Array::Array · L89](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-aa1e5908a9b67557)；[blender::Array::Array · L103](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-b141be39084346f3)；[blender::Array::Array · L110](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-452e276f39e81a2a)；[blender::Array::Array · L123](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-646aa58152ec44f6)；[blender::Array::Array · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-0a9de4a549125f99)；[blender::Array::Array · L168](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-31f001eb92069e9d)；[blender::Array::Array · L176](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-cf8148f06fc6747a)；[blender::Array::Array · L178](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-2ddca2fb9dd964b3)。同名重载需按实参类型选择。
-- `NoInitialization` → [blender::NoInitialization](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-BLI_memory_utils-e249c3.md#t-3502e11e3a54)。
+- `face_indices.size` → [blender::MutableSpan::size · L499](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-1de6a66839c304a8)；[blender::gpu::shader::parser::MutableSpan::size · L87](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#f-5e684af6ee7990e9)。同名重载需按实参类型选择。
+- `bke::pbvh::leaf_needs_material_split` → [blender::bke::pbvh::leaf_needs_material_split · L132](../90-实现依赖专题/02-BKE几何与数据/intern/pbvh.cc.md#f-f86df6e34a2a5e9b)。
+- `Array<int>` → [blender::Array::Array · L78](../01-基础容器与现代CPP/07-Array构造与存储.md#f-001fd5eb3c658238)；[blender::Array::Array · L84](../01-基础容器与现代CPP/07-Array构造与存储.md#f-674e2f10361a462b)；[blender::Array::Array · L89](../01-基础容器与现代CPP/07-Array构造与存储.md#f-aa1e5908a9b67557)；[blender::Array::Array · L103](../01-基础容器与现代CPP/07-Array构造与存储.md#f-b141be39084346f3)；[blender::Array::Array · L110](../01-基础容器与现代CPP/07-Array构造与存储.md#f-452e276f39e81a2a)；[blender::Array::Array · L123](../01-基础容器与现代CPP/07-Array构造与存储.md#f-646aa58152ec44f6)；[blender::Array::Array · L135](../01-基础容器与现代CPP/07-Array构造与存储.md#f-0a9de4a549125f99)；[blender::Array::Array · L168](../01-基础容器与现代CPP/07-Array构造与存储.md#f-31f001eb92069e9d)；[blender::Array::Array · L176](../01-基础容器与现代CPP/07-Array构造与存储.md#f-cf8148f06fc6747a)；[blender::Array::Array · L178](../01-基础容器与现代CPP/07-Array构造与存储.md#f-2ddca2fb9dd964b3)。同名重载需按实参类型选择。
+- `NoInitialization` → [blender::NoInitialization](../90-实现依赖专题/01-BLI基础库/BLI_memory_utils.hh.md#t-3502e11e3a54)。
 - `std::copy` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `face_indices.begin` → [blender::MutableSpan::begin · L550](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-02a6b28889d59da1)；[blender::gpu::shader::parser::MutableSpan::begin · L97](%E4%BE%9D%E8%B5%96-utils-06433d.md#f-707ab8fcbd90899b)；[blender::gpu::shader::parser::MutableSpan::begin · L106](%E4%BE%9D%E8%B5%96-utils-06433d.md#f-24291c7b5f37860b)。同名重载需按实参类型选择。
-- `face_indices.end` → [blender::MutableSpan::end · L554](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-4bf60034b9ddbc44)；[blender::gpu::shader::parser::MutableSpan::end · L101](%E4%BE%9D%E8%B5%96-utils-06433d.md#f-21cd00bb95944779)；[blender::gpu::shader::parser::MutableSpan::end · L110](%E4%BE%9D%E8%B5%96-utils-06433d.md#f-b75205cae5a07f2c)。同名重载需按实参类型选择。
-- `groups[node_index].faces.begin` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L741。
-- `groups.size` → [blender::Vector::size · L780](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `groups.resize` → [blender::Vector::resize · L418](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-059312cabb8abe3a)；[blender::Vector::resize · L439](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-ab8f94924ebe2d12)。同名重载需按实参类型选择。
-- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-9225ddb5efb97fcc)。
-- `face_indices.index_range` → [blender::MutableSpan::index_range · L676](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-f9a9d59a69ca64b5)。
-- `negative_bounds` → [bke::negative_bounds · L714](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-3f6d98cb4546b669)。
-- `face_indices.slice` → [blender::MutableSpan::slice · L579](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-6808b4aefbf58808)；[blender::MutableSpan::slice · L587](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-c05b010821861e4f)。同名重载需按实参类型选择。
-- `math::min_max` → [blender::math::min_max · L331](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-d0ca25e982d9489c)；[blender::math::min_max · L99](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_base-0728eb.md#f-d076aca4030981e7)。同名重载需按实参类型选择。
-- `math::dominant_axis` → [blender::math::dominant_axis · L668](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-29bbd91a3e22182f)。
-- `bke::pbvh::partition_along_axis` → [blender::bke::pbvh::partition_along_axis · L62](%E4%BE%9D%E8%B5%96-pbvh-41a537.md#f-ae9fd987bee6a323)。
-- `math::midpoint` → [blender::math::midpoint · L647](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-383eeed0051cc8bd)；[blender::math::midpoint · L288](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_base-0728eb.md#f-1a01baa0be6c0b84)。同名重载需按实参类型选择。
-- `bke::pbvh::partition_material_indices` → [blender::bke::pbvh::partition_material_indices · L73](%E4%BE%9D%E8%B5%96-pbvh-41a537.md#f-a1add5883631ceb6)。
-- `partition_faces_recursively` → [bke::partition_faces_recursively · L728](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-9222cb7d5ca6b0e5)。
-- `face_indices.take_front` → [blender::MutableSpan::take_front · L635](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-0a0235d84ddc265d)。
-- `face_indices.drop_front` → [blender::MutableSpan::drop_front · L613](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-3ed1464d2e0d1608)。
+- `face_indices.begin` → [blender::MutableSpan::begin · L550](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-02a6b28889d59da1)；[blender::gpu::shader::parser::MutableSpan::begin · L97](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#f-707ab8fcbd90899b)；[blender::gpu::shader::parser::MutableSpan::begin · L106](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#f-24291c7b5f37860b)。同名重载需按实参类型选择。
+- `face_indices.end` → [blender::MutableSpan::end · L554](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-4bf60034b9ddbc44)；[blender::gpu::shader::parser::MutableSpan::end · L101](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#f-21cd00bb95944779)；[blender::gpu::shader::parser::MutableSpan::end · L110](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#f-b75205cae5a07f2c)。同名重载需按实参类型选择。
+- `groups[node_index].faces.begin` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L741。
+- `groups.size` → [blender::Vector::size · L780](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-714773731767349c)。
+- `groups.resize` → [blender::Vector::resize · L418](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-059312cabb8abe3a)；[blender::Vector::resize · L439](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-ab8f94924ebe2d12)。同名重载需按实参类型选择。
+- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph与并行任务系统/07-任务池与TBB接入.md#f-9225ddb5efb97fcc)。
+- `face_indices.index_range` → [blender::MutableSpan::index_range · L676](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-f9a9d59a69ca64b5)。
+- `negative_bounds` → [bke::negative_bounds · L714](03-MPoly迁移与兼容.md#f-3f6d98cb4546b669)。
+- `face_indices.slice` → [blender::MutableSpan::slice · L579](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-6808b4aefbf58808)；[blender::MutableSpan::slice · L587](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-c05b010821861e4f)。同名重载需按实参类型选择。
+- `math::min_max` → [blender::math::min_max · L331](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-d0ca25e982d9489c)；[blender::math::min_max · L99](../90-实现依赖专题/01-BLI基础库/BLI_math_base.hh.md#f-d076aca4030981e7)。同名重载需按实参类型选择。
+- `math::dominant_axis` → [blender::math::dominant_axis · L668](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-29bbd91a3e22182f)。
+- `bke::pbvh::partition_along_axis` → [blender::bke::pbvh::partition_along_axis · L62](../90-实现依赖专题/02-BKE几何与数据/intern/pbvh.cc.md#f-ae9fd987bee6a323)。
+- `math::midpoint` → [blender::math::midpoint · L647](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-383eeed0051cc8bd)；[blender::math::midpoint · L288](../90-实现依赖专题/01-BLI基础库/BLI_math_base.hh.md#f-1a01baa0be6c0b84)。同名重载需按实参类型选择。
+- `bke::pbvh::partition_material_indices` → [blender::bke::pbvh::partition_material_indices · L73](../90-实现依赖专题/02-BKE几何与数据/intern/pbvh.cc.md#f-a1add5883631ceb6)。
+- `partition_faces_recursively` → [bke::partition_faces_recursively · L728](03-MPoly迁移与兼容.md#f-9222cb7d5ca6b0e5)。
+- `face_indices.take_front` → [blender::MutableSpan::take_front · L635](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-0a0235d84ddc265d)。
+- `face_indices.drop_front` → [blender::MutableSpan::drop_front · L613](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-3ed1464d2e0d1608)。
 
 <!-- annotated:369a7053a77409 -->
 
@@ -3172,39 +3172,39 @@ static void build_vertex_groups_for_leaves(const int verts_num,
 
 **继续追踪实现**
 
-- `groups.index_range` → [blender::Vector::index_range · L1026](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-ac29cf36ef185ab9)。
-- `groups[i].faces.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L806。
-- `leaf_indices.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `leaf_indices.size` → [blender::Vector::size · L780](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `NoInitialization` → [blender::NoInitialization](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-BLI_memory_utils-e249c3.md#t-3502e11e3a54)。
-- `threading::parallel_for` → [blender::threading::parallel_for · L68](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-838294754c24426c)。
-- `leaf_indices.index_range` → [blender::Vector::index_range · L1026](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-ac29cf36ef185ab9)。
-- `verts.clear` → [blender::Set::clear · L570](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-ca1071f7960a58f0)。
-- `verts.add_multiple` → [blender::Set::add_multiple · L287](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-18a099a39b0fcf37)。
-- `corner_verts.slice` → [blender::Span::slice · L141](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
-- `face.size` → [blender::IndexRange::size · L156](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/04-IndexRange%E8%BF%9E%E7%BB%AD%E6%95%B4%E6%95%B0%E5%8C%BA%E9%97%B4.md#f-05f66c3ebb2fdfec)。
-- `verts.size` → [blender::Set::size · L606](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-4f8f88fffeb44b15)。
+- `groups.index_range` → [blender::Vector::index_range · L1026](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-ac29cf36ef185ab9)。
+- `groups[i].faces.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L806。
+- `leaf_indices.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `leaf_indices.size` → [blender::Vector::size · L780](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-714773731767349c)。
+- `NoInitialization` → [blender::NoInitialization](../90-实现依赖专题/01-BLI基础库/BLI_memory_utils.hh.md#t-3502e11e3a54)。
+- `threading::parallel_for` → [blender::threading::parallel_for · L68](../11-Depsgraph与并行任务系统/07-任务池与TBB接入.md#f-838294754c24426c)。
+- `leaf_indices.index_range` → [blender::Vector::index_range · L1026](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-ac29cf36ef185ab9)。
+- `verts.clear` → [blender::Set::clear · L570](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-ca1071f7960a58f0)。
+- `verts.add_multiple` → [blender::Set::add_multiple · L287](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-18a099a39b0fcf37)。
+- `corner_verts.slice` → [blender::Span::slice · L141](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
+- `face.size` → [blender::IndexRange::size · L156](../01-基础容器与现代CPP/04-IndexRange连续整数区间.md#f-05f66c3ebb2fdfec)。
+- `verts.size` → [blender::Set::size · L606](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-4f8f88fffeb44b15)。
 - `std::copy` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `verts.begin` → [blender::Set::begin · L499](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-2885cc115ca7486f)。
-- `verts.end` → [blender::Set::end · L509](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/08-Set%E4%B8%8E%E9%9B%86%E5%90%88%E8%AF%AD%E4%B9%89.md#f-553fc42e3d469eaa)。
-- `verts_per_leaf[i].begin` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L828。
+- `verts.begin` → [blender::Set::begin · L499](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-2885cc115ca7486f)。
+- `verts.end` → [blender::Set::end · L509](../02-哈希表与关联数据结构/08-Set与集合语义.md#f-553fc42e3d469eaa)。
+- `verts_per_leaf[i].begin` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L828。
 - `std::ranges::sort` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `owned_verts.clear` → [blender::Vector::clear · L468](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-d051bebff5275a43)。
-- `shared_verts.clear` → [blender::Vector::clear · L468](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-d051bebff5275a43)。
-- `shared_verts.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `vert_used[vert].set` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L849。
-- `owned_verts.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `owned_verts.is_empty` → [blender::Vector::is_empty · L792](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-937bbd9cb80bdcc8)。
-- `Array<int>` → [blender::Array::Array · L78](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-001fd5eb3c658238)；[blender::Array::Array · L84](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-674e2f10361a462b)；[blender::Array::Array · L89](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-aa1e5908a9b67557)；[blender::Array::Array · L103](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-b141be39084346f3)；[blender::Array::Array · L110](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-452e276f39e81a2a)；[blender::Array::Array · L123](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-646aa58152ec44f6)；[blender::Array::Array · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-0a9de4a549125f99)；[blender::Array::Array · L168](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-31f001eb92069e9d)；[blender::Array::Array · L176](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-cf8148f06fc6747a)；[blender::Array::Array · L178](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-2ddca2fb9dd964b3)。同名重载需按实参类型选择。
-- `owned_verts.size` → [blender::Vector::size · L780](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `owned_verts.begin` → [blender::Vector::begin · L967](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-64fb75a6663b953c)；[blender::Vector::begin · L976](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-7c6486a8b8e8f13f)。同名重载需按实参类型选择。
-- `owned_verts.end` → [blender::Vector::end · L971](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-8a6033745be8f712)；[blender::Vector::end · L980](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-ebb3ada259887677)。同名重载需按实参类型选择。
-- `group.unique_verts.begin` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L856。
-- `shared_verts.is_empty` → [blender::Vector::is_empty · L792](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-937bbd9cb80bdcc8)。
-- `shared_verts.size` → [blender::Vector::size · L780](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `shared_verts.begin` → [blender::Vector::begin · L967](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-64fb75a6663b953c)；[blender::Vector::begin · L976](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-7c6486a8b8e8f13f)。同名重载需按实参类型选择。
-- `shared_verts.end` → [blender::Vector::end · L971](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-8a6033745be8f712)；[blender::Vector::end · L980](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-ebb3ada259887677)。同名重载需按实参类型选择。
-- `group.shared_verts.begin` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L861。
+- `owned_verts.clear` → [blender::Vector::clear · L468](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-d051bebff5275a43)。
+- `shared_verts.clear` → [blender::Vector::clear · L468](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-d051bebff5275a43)。
+- `shared_verts.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `vert_used[vert].set` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L849。
+- `owned_verts.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `owned_verts.is_empty` → [blender::Vector::is_empty · L792](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-937bbd9cb80bdcc8)。
+- `Array<int>` → [blender::Array::Array · L78](../01-基础容器与现代CPP/07-Array构造与存储.md#f-001fd5eb3c658238)；[blender::Array::Array · L84](../01-基础容器与现代CPP/07-Array构造与存储.md#f-674e2f10361a462b)；[blender::Array::Array · L89](../01-基础容器与现代CPP/07-Array构造与存储.md#f-aa1e5908a9b67557)；[blender::Array::Array · L103](../01-基础容器与现代CPP/07-Array构造与存储.md#f-b141be39084346f3)；[blender::Array::Array · L110](../01-基础容器与现代CPP/07-Array构造与存储.md#f-452e276f39e81a2a)；[blender::Array::Array · L123](../01-基础容器与现代CPP/07-Array构造与存储.md#f-646aa58152ec44f6)；[blender::Array::Array · L135](../01-基础容器与现代CPP/07-Array构造与存储.md#f-0a9de4a549125f99)；[blender::Array::Array · L168](../01-基础容器与现代CPP/07-Array构造与存储.md#f-31f001eb92069e9d)；[blender::Array::Array · L176](../01-基础容器与现代CPP/07-Array构造与存储.md#f-cf8148f06fc6747a)；[blender::Array::Array · L178](../01-基础容器与现代CPP/07-Array构造与存储.md#f-2ddca2fb9dd964b3)。同名重载需按实参类型选择。
+- `owned_verts.size` → [blender::Vector::size · L780](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-714773731767349c)。
+- `owned_verts.begin` → [blender::Vector::begin · L967](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-64fb75a6663b953c)；[blender::Vector::begin · L976](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-7c6486a8b8e8f13f)。同名重载需按实参类型选择。
+- `owned_verts.end` → [blender::Vector::end · L971](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-8a6033745be8f712)；[blender::Vector::end · L980](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-ebb3ada259887677)。同名重载需按实参类型选择。
+- `group.unique_verts.begin` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L856。
+- `shared_verts.is_empty` → [blender::Vector::is_empty · L792](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-937bbd9cb80bdcc8)。
+- `shared_verts.size` → [blender::Vector::size · L780](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-714773731767349c)。
+- `shared_verts.begin` → [blender::Vector::begin · L967](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-64fb75a6663b953c)；[blender::Vector::begin · L976](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-7c6486a8b8e8f13f)。同名重载需按实参类型选择。
+- `shared_verts.end` → [blender::Vector::end · L971](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-8a6033745be8f712)；[blender::Vector::end · L980](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-ebb3ada259887677)。同名重载需按实参类型选择。
+- `group.shared_verts.begin` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L861。
 
 <!-- annotated:26f3809f232d19 -->
 
@@ -3359,24 +3359,24 @@ static Vector<NonContiguousGroup> compute_local_mesh_groups(Mesh &mesh)
 
 **继续追踪实现**
 
-- `mesh.vert_positions` → [Mesh::vert_positions · L1193](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae4177e5c5f2b371)。
-- `mesh.faces` → [Mesh::faces · L1217](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ea444760154e17b2)。
-- `mesh.corner_verts` → [Mesh::corner_verts · L1238](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a59c61f583b64bc4)。
-- `faces.is_empty` → [blender::offset_indices::OffsetIndices::is_empty · L72](02-OffsetIndices%E5%AE%8C%E6%95%B4%E6%8E%A5%E5%8F%A3.md#f-e348e19b62d50b3e)。
-- `faces.size` → [blender::offset_indices::OffsetIndices::size · L67](02-OffsetIndices%E5%AE%8C%E6%95%B4%E6%8E%A5%E5%8F%A3.md#f-e238abc62ed42abd)。
-- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-9225ddb5efb97fcc)。
-- `faces.index_range` → [blender::offset_indices::OffsetIndices::index_range · L77](02-OffsetIndices%E5%AE%8C%E6%95%B4%E6%8E%A5%E5%8F%A3.md#f-19b5ca1456de007d)。
-- `negative_bounds` → [bke::negative_bounds · L714](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-3f6d98cb4546b669)。
-- `bke::pbvh::calc_face_bounds` → [blender::bke::pbvh::calc_face_bounds · L351](%E4%BE%9D%E8%B5%96-BKE_paint_bvh-80f563.md#f-d81ecbaa32a5dce1)。
-- `corner_verts.slice` → [blender::Span::slice · L141](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
-- `bounds.center` → [blender::Bounds<T>::center · L538](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-7b998bf9d20cb6a5)。
-- `bounds::merge` → [blender::bounds::merge · L27](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-26dade32771df176)；[blender::bounds::merge · L32](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
-- `array_utils::fill_index_range<int>` → [blender::array_utils::fill_index_range · L434](07-%E5%88%86%E7%BB%84%E8%AE%BF%E9%97%AE%E4%B8%8E%E5%8F%8D%E5%90%91%E7%B4%A2%E5%BC%95.md#f-f8128b104d76df0f)；[blender::array_utils::fill_index_range · L439](07-%E5%88%86%E7%BB%84%E8%AE%BF%E9%97%AE%E4%B8%8E%E5%8F%8D%E5%90%91%E7%B4%A2%E5%BC%95.md#f-95ca84458bfc7e7e)；[blender::array_utils::fill_index_range · L445](07-%E5%88%86%E7%BB%84%E8%AE%BF%E9%97%AE%E4%B8%8E%E5%8F%8D%E5%90%91%E7%B4%A2%E5%BC%95.md#f-c11b114c213cd61a)。同名重载需按实参类型选择。
-- `groups.resize` → [blender::Vector::resize · L418](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-059312cabb8abe3a)；[blender::Vector::resize · L439](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-ab8f94924ebe2d12)。同名重载需按实参类型选择。
-- `mesh.attributes` → [Mesh::attributes · L1298](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-607bbfe3e57cfc7f)。
-- `attributes.lookup<int>` → [blender::bke::AttributeAccessor::lookup · L401](%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-4673351b7bb3b651)。
-- `partition_faces_recursively` → [bke::partition_faces_recursively · L728](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-9222cb7d5ca6b0e5)。
-- `build_vertex_groups_for_leaves` → [bke::build_vertex_groups_for_leaves · L799](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-4cfdb321d04541e5)。
+- `mesh.vert_positions` → [Mesh::vert_positions · L1193](03-MPoly迁移与兼容.md#f-ae4177e5c5f2b371)。
+- `mesh.faces` → [Mesh::faces · L1217](03-MPoly迁移与兼容.md#f-ea444760154e17b2)。
+- `mesh.corner_verts` → [Mesh::corner_verts · L1238](03-MPoly迁移与兼容.md#f-a59c61f583b64bc4)。
+- `faces.is_empty` → [blender::offset_indices::OffsetIndices::is_empty · L72](02-OffsetIndices完整接口.md#f-e348e19b62d50b3e)。
+- `faces.size` → [blender::offset_indices::OffsetIndices::size · L67](02-OffsetIndices完整接口.md#f-e238abc62ed42abd)。
+- `threading::parallel_reduce` → [blender::threading::parallel_reduce · L126](../11-Depsgraph与并行任务系统/07-任务池与TBB接入.md#f-9225ddb5efb97fcc)。
+- `faces.index_range` → [blender::offset_indices::OffsetIndices::index_range · L77](02-OffsetIndices完整接口.md#f-19b5ca1456de007d)。
+- `negative_bounds` → [bke::negative_bounds · L714](03-MPoly迁移与兼容.md#f-3f6d98cb4546b669)。
+- `bke::pbvh::calc_face_bounds` → [blender::bke::pbvh::calc_face_bounds · L351](../90-实现依赖专题/02-BKE几何与数据/BKE_paint_bvh.hh.md#f-d81ecbaa32a5dce1)。
+- `corner_verts.slice` → [blender::Span::slice · L141](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-380a0e8fdcbd53cc)；[blender::Span::slice · L149](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-9b9c15e78dd54eec)。同名重载需按实参类型选择。
+- `bounds.center` → [blender::Bounds<T>::center · L538](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-7b998bf9d20cb6a5)。
+- `bounds::merge` → [blender::bounds::merge · L27](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-26dade32771df176)；[blender::bounds::merge · L32](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-f539fea5d229191a)；[blender::bounds::merge · L48](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-34b53687690dd2a5)。同名重载需按实参类型选择。
+- `array_utils::fill_index_range<int>` → [blender::array_utils::fill_index_range · L434](07-分组访问与反向索引.md#f-f8128b104d76df0f)；[blender::array_utils::fill_index_range · L439](07-分组访问与反向索引.md#f-95ca84458bfc7e7e)；[blender::array_utils::fill_index_range · L445](07-分组访问与反向索引.md#f-c11b114c213cd61a)。同名重载需按实参类型选择。
+- `groups.resize` → [blender::Vector::resize · L418](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-059312cabb8abe3a)；[blender::Vector::resize · L439](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-ab8f94924ebe2d12)。同名重载需按实参类型选择。
+- `mesh.attributes` → [Mesh::attributes · L1298](03-MPoly迁移与兼容.md#f-607bbfe3e57cfc7f)。
+- `attributes.lookup<int>` → [blender::bke::AttributeAccessor::lookup · L401](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-4673351b7bb3b651)。
+- `partition_faces_recursively` → [bke::partition_faces_recursively · L728](03-MPoly迁移与兼容.md#f-9222cb7d5ca6b0e5)。
+- `build_vertex_groups_for_leaves` → [bke::build_vertex_groups_for_leaves · L799](03-MPoly迁移与兼容.md#f-4cfdb321d04541e5)。
 
 <!-- annotated:e3d4330ea9d82d -->
 
@@ -3810,50 +3810,50 @@ void mesh_apply_spatial_organization(Mesh &mesh)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `compute_local_mesh_groups` → [bke::compute_local_mesh_groups · L866](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-eb63c10d2aa8607b)。
-- `new_vert_order.reserve` → [blender::Vector::reserve · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)。
-- `new_face_order.reserve` → [blender::Vector::reserve · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)。
-- `group_unique_offsets.reserve` → [blender::Vector::reserve · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)。
-- `local_groups.size` → [blender::Vector::size · L780](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `group_unique_offsets.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `group_face_offsets.reserve` → [blender::Vector::reserve · L405](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/10-Vector%E6%89%A9%E5%AE%B9%E4%B8%8E%E5%A2%9E%E9%95%BF.md#f-4cf9c0f00e01102e)。
-- `group_face_offsets.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `local_groups.index_range` → [blender::Vector::index_range · L1026](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/12-Vector%E5%BC%82%E5%B8%B8%E5%AE%89%E5%85%A8%E4%B8%8E%E8%BE%B9%E7%95%8C.md#f-ac29cf36ef185ab9)。
-- `new_vert_order.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `added_verts[vert_idx].set` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L943。
-- `new_vert_order.size` → [blender::Vector::size · L780](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `new_face_order.append` → [blender::Vector::append · L498](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
-- `new_face_order.size` → [blender::Vector::size · L780](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `IndexRange` → [blender::IndexRange](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](%E4%BE%9D%E8%B5%96-utils-06433d.md#t-82d2bd4ea71c)；[blender::IndexRange](%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-0448cc889d39)。
-- `added_verts[vert].set` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L964。
-- `mesh.edges_for_write` → [Mesh::edges_for_write · L1211](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a4c919c44eeede7c)。
-- `mesh.corner_verts_for_write` → [Mesh::corner_verts_for_write · L1246](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-6dfaf316a81ba215)。
-- `corner_verts.size` → [blender::MutableSpan::size · L499](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-1de6a66839c304a8)；[blender::gpu::shader::parser::MutableSpan::size · L87](%E4%BE%9D%E8%B5%96-utils-06433d.md#f-5e684af6ee7990e9)。同名重载需按实参类型选择。
-- `mesh.faces` → [Mesh::faces · L1217](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ea444760154e17b2)。
-- `corner_verts.copy_from` → [blender::MutableSpan::copy_from · L745](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-e4f099b1497adddb)。
-- `mesh.attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ca7af2f1a15f0bc4)。
-- `attributes_for_write.foreach_attribute` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L994。
-- `attributes_for_write.lookup_for_write_span` → [blender::bke::MutableAttributeAccessor::lookup_for_write_span · L505](%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-eac5b5d8814ff900)。
-- `attribute_data.type` → [blender::GMutableSpan::type · L182](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-74385040046c86d5)。
-- `type.copy_construct` → [blender::CPPType::copy_construct · L594](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/09-CPPType%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D.md#f-cfda413a9784073e)。
-- `attribute_data.copy_from` → [blender::GMutableSpan::copy_from · L273](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-a171994cef44e883)。
-- `new_values.as_span` → [blender::GArray::as_span · L193](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-3f8b9fae52fa4eca)。
-- `attribute.finish` → [blender::bke::GSpanAttributeWriter::finish · L372](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-6e58c9c72c82f592)。
-- `attribute_data.size` → [blender::GMutableSpan::size · L198](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/11-GSpan%E4%B8%8EGArray.md#f-ecf8873167fb66c8)。
-- `gather_group_sizes` → [blender::offset_indices::gather_group_sizes · L87](05-%E9%82%BB%E6%8E%A5%E5%85%B3%E7%B3%BB%E4%B8%8E%E5%89%8D%E7%BC%80%E5%92%8C.md#f-19204b84ba6992bb)；[blender::offset_indices::gather_group_sizes · L96](05-%E9%82%BB%E6%8E%A5%E5%85%B3%E7%B3%BB%E4%B8%8E%E5%89%8D%E7%BC%80%E5%92%8C.md#f-4bb5520e88589c9b)。同名重载需按实参类型选择。
-- `mesh.face_offsets_for_write` → [Mesh::face_offsets_for_write · L1228](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-483f42747ab436a2)。
-- `face_offsets.take_front(face_sizes.size()).copy_from` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1048。
-- `face_offsets.take_front` → [blender::MutableSpan::take_front · L635](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-0a0235d84ddc265d)。
-- `face_sizes.size` → [blender::Vector::size · L780](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/11-Vector%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E4%B8%8E%E9%87%8D%E6%8E%92.md#f-714773731767349c)。
-- `offset_indices::accumulate_counts_to_offsets` → [blender::offset_indices::accumulate_counts_to_offsets · L24](05-%E9%82%BB%E6%8E%A5%E5%85%B3%E7%B3%BB%E4%B8%8E%E5%89%8D%E7%BC%80%E5%92%8C.md#f-cfa9fbd186afcdd5)。
-- `local_group.faces.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1071。
-- `local_group.shared_verts.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1080。
-- `Array<int>` → [blender::Array::Array · L78](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-001fd5eb3c658238)；[blender::Array::Array · L84](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-674e2f10361a462b)；[blender::Array::Array · L89](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-aa1e5908a9b67557)；[blender::Array::Array · L103](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-b141be39084346f3)；[blender::Array::Array · L110](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-452e276f39e81a2a)；[blender::Array::Array · L123](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-646aa58152ec44f6)；[blender::Array::Array · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-0a9de4a549125f99)；[blender::Array::Array · L168](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-31f001eb92069e9d)；[blender::Array::Array · L176](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-cf8148f06fc6747a)；[blender::Array::Array · L178](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/07-Array%E6%9E%84%E9%80%A0%E4%B8%8E%E5%AD%98%E5%82%A8.md#f-2ddca2fb9dd964b3)。同名重载需按实参类型选择。
-- `local_group.shared_verts.size` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1081。
-- `local_group.shared_verts.index_range` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1082。
-- `mesh.tag_positions_changed` → [blender::Mesh::tag_positions_changed · L407](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/10-%E5%B1%80%E9%83%A8%E6%9B%B4%E6%96%B0%E4%B8%8E%E5%A4%B1%E6%95%88%E4%BF%AE%E5%A4%8D.md#f-90e852663d44ad53)。
-- `mesh.tag_topology_changed` → [blender::Mesh::tag_topology_changed · L433](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/10-%E5%B1%80%E9%83%A8%E6%9B%B4%E6%96%B0%E4%B8%8E%E5%A4%B1%E6%95%88%E4%BF%AE%E5%A4%8D.md#f-fab19a295d0a1a6b)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `compute_local_mesh_groups` → [bke::compute_local_mesh_groups · L866](03-MPoly迁移与兼容.md#f-eb63c10d2aa8607b)。
+- `new_vert_order.reserve` → [blender::Vector::reserve · L405](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-4cf9c0f00e01102e)。
+- `new_face_order.reserve` → [blender::Vector::reserve · L405](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-4cf9c0f00e01102e)。
+- `group_unique_offsets.reserve` → [blender::Vector::reserve · L405](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-4cf9c0f00e01102e)。
+- `local_groups.size` → [blender::Vector::size · L780](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-714773731767349c)。
+- `group_unique_offsets.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `group_face_offsets.reserve` → [blender::Vector::reserve · L405](../01-基础容器与现代CPP/10-Vector扩容与增长.md#f-4cf9c0f00e01102e)。
+- `group_face_offsets.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `local_groups.index_range` → [blender::Vector::index_range · L1026](../01-基础容器与现代CPP/12-Vector异常安全与边界.md#f-ac29cf36ef185ab9)。
+- `new_vert_order.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `added_verts[vert_idx].set` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L943。
+- `new_vert_order.size` → [blender::Vector::size · L780](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-714773731767349c)。
+- `new_face_order.append` → [blender::Vector::append · L498](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-5bde268a69e443ec)；[blender::Vector::append · L502](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-591e0b15e6308532)。同名重载需按实参类型选择。
+- `new_face_order.size` → [blender::Vector::size · L780](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-714773731767349c)。
+- `IndexRange` → [blender::IndexRange](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-caa3466d6776)；[blender::gpu::shader::parser::IndexRange](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#t-82d2bd4ea71c)；[blender::IndexRange](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-0448cc889d39)。
+- `added_verts[vert].set` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L964。
+- `mesh.edges_for_write` → [Mesh::edges_for_write · L1211](03-MPoly迁移与兼容.md#f-a4c919c44eeede7c)。
+- `mesh.corner_verts_for_write` → [Mesh::corner_verts_for_write · L1246](03-MPoly迁移与兼容.md#f-6dfaf316a81ba215)。
+- `corner_verts.size` → [blender::MutableSpan::size · L499](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-1de6a66839c304a8)；[blender::gpu::shader::parser::MutableSpan::size · L87](../90-实现依赖专题/08-其他Blender模块/gpu/shader_tool/utils.hh.md#f-5e684af6ee7990e9)。同名重载需按实参类型选择。
+- `mesh.faces` → [Mesh::faces · L1217](03-MPoly迁移与兼容.md#f-ea444760154e17b2)。
+- `corner_verts.copy_from` → [blender::MutableSpan::copy_from · L745](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-e4f099b1497adddb)。
+- `mesh.attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly迁移与兼容.md#f-ca7af2f1a15f0bc4)。
+- `attributes_for_write.foreach_attribute` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L994。
+- `attributes_for_write.lookup_for_write_span` → [blender::bke::MutableAttributeAccessor::lookup_for_write_span · L505](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-eac5b5d8814ff900)。
+- `attribute_data.type` → [blender::GMutableSpan::type · L182](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-74385040046c86d5)。
+- `type.copy_construct` → [blender::CPPType::copy_construct · L594](../03-内存分配与运行时类型/09-CPPType复制移动重定位.md#f-cfda413a9784073e)。
+- `attribute_data.copy_from` → [blender::GMutableSpan::copy_from · L273](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-a171994cef44e883)。
+- `new_values.as_span` → [blender::GArray::as_span · L193](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-3f8b9fae52fa4eca)。
+- `attribute.finish` → [blender::bke::GSpanAttributeWriter::finish · L372](08-AttributeAccessor接口.md#f-6e58c9c72c82f592)。
+- `attribute_data.size` → [blender::GMutableSpan::size · L198](../03-内存分配与运行时类型/11-GSpan与GArray.md#f-ecf8873167fb66c8)。
+- `gather_group_sizes` → [blender::offset_indices::gather_group_sizes · L87](05-邻接关系与前缀和.md#f-19204b84ba6992bb)；[blender::offset_indices::gather_group_sizes · L96](05-邻接关系与前缀和.md#f-4bb5520e88589c9b)。同名重载需按实参类型选择。
+- `mesh.face_offsets_for_write` → [Mesh::face_offsets_for_write · L1228](03-MPoly迁移与兼容.md#f-483f42747ab436a2)。
+- `face_offsets.take_front(face_sizes.size()).copy_from` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1048。
+- `face_offsets.take_front` → [blender::MutableSpan::take_front · L635](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-0a0235d84ddc265d)。
+- `face_sizes.size` → [blender::Vector::size · L780](../01-基础容器与现代CPP/11-Vector插入删除与重排.md#f-714773731767349c)。
+- `offset_indices::accumulate_counts_to_offsets` → [blender::offset_indices::accumulate_counts_to_offsets · L24](05-邻接关系与前缀和.md#f-cfa9fbd186afcdd5)。
+- `local_group.faces.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1071。
+- `local_group.shared_verts.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1080。
+- `Array<int>` → [blender::Array::Array · L78](../01-基础容器与现代CPP/07-Array构造与存储.md#f-001fd5eb3c658238)；[blender::Array::Array · L84](../01-基础容器与现代CPP/07-Array构造与存储.md#f-674e2f10361a462b)；[blender::Array::Array · L89](../01-基础容器与现代CPP/07-Array构造与存储.md#f-aa1e5908a9b67557)；[blender::Array::Array · L103](../01-基础容器与现代CPP/07-Array构造与存储.md#f-b141be39084346f3)；[blender::Array::Array · L110](../01-基础容器与现代CPP/07-Array构造与存储.md#f-452e276f39e81a2a)；[blender::Array::Array · L123](../01-基础容器与现代CPP/07-Array构造与存储.md#f-646aa58152ec44f6)；[blender::Array::Array · L135](../01-基础容器与现代CPP/07-Array构造与存储.md#f-0a9de4a549125f99)；[blender::Array::Array · L168](../01-基础容器与现代CPP/07-Array构造与存储.md#f-31f001eb92069e9d)；[blender::Array::Array · L176](../01-基础容器与现代CPP/07-Array构造与存储.md#f-cf8148f06fc6747a)；[blender::Array::Array · L178](../01-基础容器与现代CPP/07-Array构造与存储.md#f-2ddca2fb9dd964b3)。同名重载需按实参类型选择。
+- `local_group.shared_verts.size` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1081。
+- `local_group.shared_verts.index_range` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1082。
+- `mesh.tag_positions_changed` → [blender::Mesh::tag_positions_changed · L407](../06-隐式共享与缓存系统/10-局部更新与失效修复.md#f-90e852663d44ad53)。
+- `mesh.tag_topology_changed` → [blender::Mesh::tag_topology_changed · L433](../06-隐式共享与缓存系统/10-局部更新与失效修复.md#f-fab19a295d0a1a6b)。
 - `std::make_unique<Array<MeshGroup>>` → [外部契约](https://eel.is/c++draft/unique.ptr.create)：创建独占拥有的对象，拥有关系可移动，get返回的借用指针不自动延长寿命。
 - `std::move` → [外部契约](https://eel.is/c++draft/utility.forward)：把表达式转换成可供移动重载选择的值类别；不保证真的移动，不结束源对象寿命，对const值可能选择复制。
 
@@ -3987,11 +3987,11 @@ static void mesh_clear_geometry(Mesh &mesh)
 
 **继续追踪实现**
 
-- `CustomData_free` → [blender::CustomData_free · L2501](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-af45329c2d7b60ae)。
-- `mesh.attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1115。
-- `bke::AttributeStorage` → [blender::bke::AttributeStorage::AttributeStorage · L148](%E4%BE%9D%E8%B5%96-attribute_storage-1cb73b.md#f-e5c702d5ffb065f8)；[blender::bke::AttributeStorage::AttributeStorage · L156](%E4%BE%9D%E8%B5%96-attribute_storage-1cb73b.md#f-bab78cd4e1ffd63e)；[blender::bke::AttributeStorage::AttributeStorage · L177](%E4%BE%9D%E8%B5%96-attribute_storage-1cb73b.md#f-3e357248d6c93d6d)。同名重载需按实参类型选择。
-- `implicit_sharing::free_shared_data` → [blender::implicit_sharing::free_shared_data · L287](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/02-ImplicitSharingInfo%E8%AE%A1%E6%95%B0.md#f-8e443cc043206969)。
-- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#m-eadb3bc5b902)。宏定义由构建条件选择。
+- `CustomData_free` → [blender::CustomData_free · L2501](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-af45329c2d7b60ae)。
+- `mesh.attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1115。
+- `bke::AttributeStorage` → [blender::bke::AttributeStorage::AttributeStorage · L148](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage.cc.md#f-e5c702d5ffb065f8)；[blender::bke::AttributeStorage::AttributeStorage · L156](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage.cc.md#f-bab78cd4e1ffd63e)；[blender::bke::AttributeStorage::AttributeStorage · L177](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage.cc.md#f-3e357248d6c93d6d)。同名重载需按实参类型选择。
+- `implicit_sharing::free_shared_data` → [blender::implicit_sharing::free_shared_data · L287](../06-隐式共享与缓存系统/02-ImplicitSharingInfo计数.md#f-8e443cc043206969)。
+- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#m-eadb3bc5b902)。宏定义由构建条件选择。
 
 <!-- annotated:44fca3302b4585 -->
 
@@ -4059,8 +4059,8 @@ static void clear_attribute_names(Mesh &mesh)
 
 **继续追踪实现**
 
-- `mesh.vertex_group_names.free_no_destruct` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1133。
-- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#m-eadb3bc5b902)。宏定义由构建条件选择。
+- `mesh.vertex_group_names.free_no_destruct` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1133。
+- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#m-eadb3bc5b902)。宏定义由构建条件选择。
 
 <!-- annotated:c515452eb77c04 -->
 
@@ -4118,8 +4118,8 @@ void BKE_mesh_clear_geometry(Mesh *mesh)
 
 **继续追踪实现**
 
-- `BKE_mesh_runtime_clear_cache` → [blender::BKE_mesh_runtime_clear_cache · L308](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/10-%E5%B1%80%E9%83%A8%E6%9B%B4%E6%96%B0%E4%B8%8E%E5%A4%B1%E6%95%88%E4%BF%AE%E5%A4%8D.md#f-de9b4245f2adf2e7)。
-- `mesh_clear_geometry` → [mesh_clear_geometry · L1108](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-d554ddea2a3a42a0)。
+- `BKE_mesh_runtime_clear_cache` → [blender::BKE_mesh_runtime_clear_cache · L308](../06-隐式共享与缓存系统/10-局部更新与失效修复.md#f-de9b4245f2adf2e7)。
+- `mesh_clear_geometry` → [mesh_clear_geometry · L1108](03-MPoly迁移与兼容.md#f-d554ddea2a3a42a0)。
 
 <!-- annotated:baca8eaf7653ac -->
 
@@ -4179,9 +4179,9 @@ void BKE_mesh_clear_geometry_and_metadata(Mesh *mesh)
 
 **继续追踪实现**
 
-- `BKE_mesh_runtime_clear_cache` → [blender::BKE_mesh_runtime_clear_cache · L308](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/10-%E5%B1%80%E9%83%A8%E6%9B%B4%E6%96%B0%E4%B8%8E%E5%A4%B1%E6%95%88%E4%BF%AE%E5%A4%8D.md#f-de9b4245f2adf2e7)。
-- `mesh_clear_geometry` → [mesh_clear_geometry · L1108](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-d554ddea2a3a42a0)。
-- `clear_attribute_names` → [clear_attribute_names · L1131](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-0bec14220ddbaa3d)。
+- `BKE_mesh_runtime_clear_cache` → [blender::BKE_mesh_runtime_clear_cache · L308](../06-隐式共享与缓存系统/10-局部更新与失效修复.md#f-de9b4245f2adf2e7)。
+- `mesh_clear_geometry` → [mesh_clear_geometry · L1108](03-MPoly迁移与兼容.md#f-d554ddea2a3a42a0)。
+- `clear_attribute_names` → [clear_attribute_names · L1131](03-MPoly迁移与兼容.md#f-0bec14220ddbaa3d)。
 
 <!-- annotated:d29483fa830328 -->
 
@@ -4256,8 +4256,8 @@ static void mesh_tessface_clear_intern(Mesh *mesh, int free_customdata)
 
 **继续追踪实现**
 
-- `CustomData_free` → [blender::CustomData_free · L2501](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-af45329c2d7b60ae)。
-- `CustomData_reset` → [blender::CustomData_reset · L2495](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-b5d2fd143bcd64b1)。
+- `CustomData_free` → [blender::CustomData_free · L2501](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-af45329c2d7b60ae)。
+- `CustomData_reset` → [blender::CustomData_reset · L2495](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-b5d2fd143bcd64b1)。
 
 <!-- annotated:fa34a76f25624d -->
 
@@ -4318,7 +4318,7 @@ Mesh *BKE_mesh_add(Main *bmain, const char *name)
 
 **继续追踪实现**
 
-- `BKE_id_new<Mesh>` → [blender::BKE_id_new · L1612](%E4%BE%9D%E8%B5%96-lib_id-d4e6bd.md#f-5335c97ce0a8fbc8)。
+- `BKE_id_new<Mesh>` → [blender::BKE_id_new · L1612](../90-实现依赖专题/02-BKE几何与数据/intern/lib_id.cc.md#f-5335c97ce0a8fbc8)。
 
 <!-- annotated:66e2896bf0d0d5 -->
 
@@ -4413,11 +4413,11 @@ void BKE_mesh_face_offsets_ensure_alloc(Mesh *mesh)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `MEM_new_array_uninitialized<int>` → [MEM_new_array_uninitialized · L608](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-b7103eae8eb57b05)；[MEM_new_array_uninitialized · L129](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-bf6ef4ddcfb6e5df)。同名重载需按实参类型选择。
-- `implicit_sharing::info_for_mem_free` → [blender::implicit_sharing::info_for_mem_free · L301](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/02-ImplicitSharingInfo%E8%AE%A1%E6%95%B0.md#f-7ad95caa930eb54d)。
-- `mesh->face_offsets_for_write().fill` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1186。
-- `mesh->face_offsets_for_write` → [Mesh::face_offsets_for_write · L1228](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-483f42747ab436a2)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `MEM_new_array_uninitialized<int>` → [MEM_new_array_uninitialized · L608](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-b7103eae8eb57b05)；[MEM_new_array_uninitialized · L129](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-bf6ef4ddcfb6e5df)。同名重载需按实参类型选择。
+- `implicit_sharing::info_for_mem_free` → [blender::implicit_sharing::info_for_mem_free · L301](../06-隐式共享与缓存系统/02-ImplicitSharingInfo计数.md#f-7ad95caa930eb54d)。
+- `mesh->face_offsets_for_write().fill` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1186。
+- `mesh->face_offsets_for_write` → [Mesh::face_offsets_for_write · L1228](03-MPoly迁移与兼容.md#f-483f42747ab436a2)。
 
 <!-- annotated:829f11d570e356 -->
 
@@ -4477,10 +4477,10 @@ Span<float3> Mesh::vert_positions() const
 
 **继续追踪实现**
 
-- `bke::get_span_attribute<float3>( this->attribute_storage.wrap(), bke::AttrDomain::Point, "position", this->verts_num) .value_or` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1195。
-- `bke::get_span_attribute<float3>` → [blender::bke::get_span_attribute · L69](%E4%BE%9D%E8%B5%96-attribute_storage_access-8d5498.md#f-31bf92bc55779d80)；[blender::bke::get_span_attribute · L167](%E4%BE%9D%E8%B5%96-attribute_storage_access-f9a095.md#f-043f0c9c1fd78c2f)。同名重载需按实参类型选择。
-- `this->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1196。
-- `Span<float3>` → [blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
+- `bke::get_span_attribute<float3>( this->attribute_storage.wrap(), bke::AttrDomain::Point, "position", this->verts_num) .value_or` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1195。
+- `bke::get_span_attribute<float3>` → [blender::bke::get_span_attribute · L69](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.hh.md#f-31bf92bc55779d80)；[blender::bke::get_span_attribute · L167](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.cc.md#f-043f0c9c1fd78c2f)。同名重载需按实参类型选择。
+- `this->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1196。
+- `Span<float3>` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
 
 <a id="f-ae8d77205112d843"></a>
 
@@ -4521,8 +4521,8 @@ MutableSpan<float3> Mesh::vert_positions_for_write()
 
 **继续追踪实现**
 
-- `bke::get_mutable_attribute<float3>` → [blender::bke::get_mutable_attribute · L90](%E4%BE%9D%E8%B5%96-attribute_storage_access-8d5498.md#f-94948323441578df)；[blender::bke::get_mutable_attribute · L188](%E4%BE%9D%E8%B5%96-attribute_storage_access-f9a095.md#f-1dc04fa7db8e0dd3)。同名重载需按实参类型选择。
-- `this->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1202。
+- `bke::get_mutable_attribute<float3>` → [blender::bke::get_mutable_attribute · L90](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.hh.md#f-94948323441578df)；[blender::bke::get_mutable_attribute · L188](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.cc.md#f-1dc04fa7db8e0dd3)。同名重载需按实参类型选择。
+- `this->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1202。
 
 <!-- annotated:557f3144ac4998 -->
 
@@ -4582,10 +4582,10 @@ Span<int2> Mesh::edges() const
 
 **继续追踪实现**
 
-- `bke::get_span_attribute<int2>( this->attribute_storage.wrap(), bke::AttrDomain::Edge, ".edge_verts", this->edges_num) .value_or` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1207。
-- `bke::get_span_attribute<int2>` → [blender::bke::get_span_attribute · L69](%E4%BE%9D%E8%B5%96-attribute_storage_access-8d5498.md#f-31bf92bc55779d80)；[blender::bke::get_span_attribute · L167](%E4%BE%9D%E8%B5%96-attribute_storage_access-f9a095.md#f-043f0c9c1fd78c2f)。同名重载需按实参类型选择。
-- `this->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1208。
-- `Span<int2>` → [blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
+- `bke::get_span_attribute<int2>( this->attribute_storage.wrap(), bke::AttrDomain::Edge, ".edge_verts", this->edges_num) .value_or` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1207。
+- `bke::get_span_attribute<int2>` → [blender::bke::get_span_attribute · L69](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.hh.md#f-31bf92bc55779d80)；[blender::bke::get_span_attribute · L167](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.cc.md#f-043f0c9c1fd78c2f)。同名重载需按实参类型选择。
+- `this->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1208。
+- `Span<int2>` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
 
 <a id="f-a4c919c44eeede7c"></a>
 
@@ -4626,8 +4626,8 @@ MutableSpan<int2> Mesh::edges_for_write()
 
 **继续追踪实现**
 
-- `bke::get_mutable_attribute<int2>` → [blender::bke::get_mutable_attribute · L90](%E4%BE%9D%E8%B5%96-attribute_storage_access-8d5498.md#f-94948323441578df)；[blender::bke::get_mutable_attribute · L188](%E4%BE%9D%E8%B5%96-attribute_storage_access-f9a095.md#f-1dc04fa7db8e0dd3)。同名重载需按实参类型选择。
-- `this->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1214。
+- `bke::get_mutable_attribute<int2>` → [blender::bke::get_mutable_attribute · L90](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.hh.md#f-94948323441578df)；[blender::bke::get_mutable_attribute · L188](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.cc.md#f-1dc04fa7db8e0dd3)。同名重载需按实参类型选择。
+- `this->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1214。
 
 <!-- annotated:1d3fe113c645a7 -->
 
@@ -4683,7 +4683,7 @@ OffsetIndices<int> Mesh::faces() const
 
 **继续追踪实现**
 
-- `Span` → [blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
+- `Span` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
 
 <a id="f-49a5e24b1b5e8989"></a>
 
@@ -4779,7 +4779,7 @@ MutableSpan<int> Mesh::face_offsets_for_write()
 
 **继续追踪实现**
 
-- `implicit_sharing::make_trivial_data_mutable` → [blender::implicit_sharing::make_trivial_data_mutable · L312](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/02-ImplicitSharingInfo%E8%AE%A1%E6%95%B0.md#f-b499c16ddcf078f7)。
+- `implicit_sharing::make_trivial_data_mutable` → [blender::implicit_sharing::make_trivial_data_mutable · L312](../06-隐式共享与缓存系统/02-ImplicitSharingInfo计数.md#f-b499c16ddcf078f7)。
 
 <!-- annotated:9c980bb1fbb503 -->
 
@@ -4843,10 +4843,10 @@ Span<int> Mesh::corner_verts() const
 
 **继续追踪实现**
 
-- `bke::get_span_attribute<int>(this->attribute_storage.wrap(), bke::AttrDomain::Corner, ".corner_vert", this->corners_num) .value_or` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1240。
-- `bke::get_span_attribute<int>` → [blender::bke::get_span_attribute · L69](%E4%BE%9D%E8%B5%96-attribute_storage_access-8d5498.md#f-31bf92bc55779d80)；[blender::bke::get_span_attribute · L167](%E4%BE%9D%E8%B5%96-attribute_storage_access-f9a095.md#f-043f0c9c1fd78c2f)。同名重载需按实参类型选择。
-- `this->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1240。
-- `Span<int>` → [blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
+- `bke::get_span_attribute<int>(this->attribute_storage.wrap(), bke::AttrDomain::Corner, ".corner_vert", this->corners_num) .value_or` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1240。
+- `bke::get_span_attribute<int>` → [blender::bke::get_span_attribute · L69](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.hh.md#f-31bf92bc55779d80)；[blender::bke::get_span_attribute · L167](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.cc.md#f-043f0c9c1fd78c2f)。同名重载需按实参类型选择。
+- `this->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1240。
+- `Span<int>` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
 
 <a id="f-6dfaf316a81ba215"></a>
 
@@ -4887,8 +4887,8 @@ MutableSpan<int> Mesh::corner_verts_for_write()
 
 **继续追踪实现**
 
-- `bke::get_mutable_attribute<int>` → [blender::bke::get_mutable_attribute · L90](%E4%BE%9D%E8%B5%96-attribute_storage_access-8d5498.md#f-94948323441578df)；[blender::bke::get_mutable_attribute · L188](%E4%BE%9D%E8%B5%96-attribute_storage_access-f9a095.md#f-1dc04fa7db8e0dd3)。同名重载需按实参类型选择。
-- `this->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1249。
+- `bke::get_mutable_attribute<int>` → [blender::bke::get_mutable_attribute · L90](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.hh.md#f-94948323441578df)；[blender::bke::get_mutable_attribute · L188](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.cc.md#f-1dc04fa7db8e0dd3)。同名重载需按实参类型选择。
+- `this->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1249。
 
 <!-- annotated:931e519d01f1df -->
 
@@ -4952,10 +4952,10 @@ Span<int> Mesh::corner_edges() const
 
 **继续追踪实现**
 
-- `bke::get_span_attribute<int>(this->attribute_storage.wrap(), bke::AttrDomain::Corner, ".corner_edge", this->corners_num) .value_or` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1254。
-- `bke::get_span_attribute<int>` → [blender::bke::get_span_attribute · L69](%E4%BE%9D%E8%B5%96-attribute_storage_access-8d5498.md#f-31bf92bc55779d80)；[blender::bke::get_span_attribute · L167](%E4%BE%9D%E8%B5%96-attribute_storage_access-f9a095.md#f-043f0c9c1fd78c2f)。同名重载需按实参类型选择。
-- `this->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1254。
-- `Span<int>` → [blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_span-6aa95f.md#t-8765a8e0c1d5)；[blender::Span](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_index_range-7d7cc5.md#t-86091874a1c0)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_pointcloud_types-cfb82c.md#t-112aa6ed842c)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_node_types-6708b9.md#t-49ec6fbb9b69)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-184fd48fb638)；[blender::Span](%E4%BE%9D%E8%B5%96-DNA_anim_types-39c5d9.md#t-d841071994c2)；[blender::Span](%E4%BE%9D%E8%B5%96-RNA_path_fwd-79c989.md#t-4dbb08969e41)。
+- `bke::get_span_attribute<int>(this->attribute_storage.wrap(), bke::AttrDomain::Corner, ".corner_edge", this->corners_num) .value_or` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1254。
+- `bke::get_span_attribute<int>` → [blender::bke::get_span_attribute · L69](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.hh.md#f-31bf92bc55779d80)；[blender::bke::get_span_attribute · L167](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.cc.md#f-043f0c9c1fd78c2f)。同名重载需按实参类型选择。
+- `this->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1254。
+- `Span<int>` → [blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_span.hh.md#t-8765a8e0c1d5)；[blender::Span](../90-实现依赖专题/01-BLI基础库/BLI_index_range.hh.md#t-86091874a1c0)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_pointcloud_types.h.md#t-112aa6ed842c)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_node_types.h.md#t-49ec6fbb9b69)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-184fd48fb638)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_anim_types.h.md#t-d841071994c2)；[blender::Span](../90-实现依赖专题/08-其他Blender模块/makesrna/RNA_path_fwd.hh.md#t-4dbb08969e41)。
 
 <a id="f-51e939a4353adb83"></a>
 
@@ -4996,8 +4996,8 @@ MutableSpan<int> Mesh::corner_edges_for_write()
 
 **继续追踪实现**
 
-- `bke::get_mutable_attribute<int>` → [blender::bke::get_mutable_attribute · L90](%E4%BE%9D%E8%B5%96-attribute_storage_access-8d5498.md#f-94948323441578df)；[blender::bke::get_mutable_attribute · L188](%E4%BE%9D%E8%B5%96-attribute_storage_access-f9a095.md#f-1dc04fa7db8e0dd3)。同名重载需按实参类型选择。
-- `this->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1263。
+- `bke::get_mutable_attribute<int>` → [blender::bke::get_mutable_attribute · L90](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.hh.md#f-94948323441578df)；[blender::bke::get_mutable_attribute · L188](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_storage_access.cc.md#f-1dc04fa7db8e0dd3)。同名重载需按实参类型选择。
+- `this->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1263。
 
 <!-- annotated:6418724e0f89d3 -->
 
@@ -5064,7 +5064,7 @@ Span<MDeformVert> Mesh::deform_verts() const
 
 **继续追踪实现**
 
-- `CustomData_get_layer` → [blender::CustomData_get_layer · L3308](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-add1273f3ef3e57b)。
+- `CustomData_get_layer` → [blender::CustomData_get_layer · L3308](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-add1273f3ef3e57b)。
 
 <a id="f-7f671db4897482dc"></a>
 
@@ -5118,8 +5118,8 @@ MutableSpan<MDeformVert> Mesh::deform_verts_for_write()
 
 **继续追踪实现**
 
-- `CustomData_get_layer_for_write` → [blender::CustomData_get_layer_for_write · L3318](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-6af158905e2c1274)。
-- `CustomData_add_layer` → [blender::CustomData_add_layer · L2851](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-4c7988e825541059)。
+- `CustomData_get_layer_for_write` → [blender::CustomData_get_layer_for_write · L3318](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-6af158905e2c1274)。
+- `CustomData_add_layer` → [blender::CustomData_add_layer · L2851](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-4c7988e825541059)。
 
 <!-- annotated:26d5005bd8e704 -->
 
@@ -5187,12 +5187,12 @@ void Mesh::count_memory(MemoryCounter &memory) const
 
 **继续追踪实现**
 
-- `memory.add_shared` → [blender::memory_counter::MemoryCounter::add_shared · L20](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-memory_counter-6403e6.md#f-0a7db687f64344cf)；[blender::memory_counter::MemoryCounter::add_shared · L38](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-memory_counter-6403e6.md#f-63a65a1c4c176990)。同名重载需按实参类型选择。
-- `this->face_offsets().size_in_bytes` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1290。
-- `this->face_offsets` → [Mesh::face_offsets · L1221](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-49a5e24b1b5e8989)。
-- `this->attribute_storage.wrap().count_memory` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1291。
-- `this->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1291。
-- `CustomData_count_memory` → [blender::CustomData_count_memory · L5087](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-586f99101fad9075)。
+- `memory.add_shared` → [blender::memory_counter::MemoryCounter::add_shared · L20](../90-实现依赖专题/01-BLI基础库/intern/memory_counter.cc.md#f-0a7db687f64344cf)；[blender::memory_counter::MemoryCounter::add_shared · L38](../90-实现依赖专题/01-BLI基础库/intern/memory_counter.cc.md#f-63a65a1c4c176990)。同名重载需按实参类型选择。
+- `this->face_offsets().size_in_bytes` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1290。
+- `this->face_offsets` → [Mesh::face_offsets · L1221](03-MPoly迁移与兼容.md#f-49a5e24b1b5e8989)。
+- `this->attribute_storage.wrap().count_memory` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1291。
+- `this->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1291。
+- `CustomData_count_memory` → [blender::CustomData_count_memory · L5087](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-586f99101fad9075)。
 
 <!-- annotated:1ae5f5c8305222 -->
 
@@ -5248,8 +5248,8 @@ bke::AttributeAccessor Mesh::attributes() const
 
 **继续追踪实现**
 
-- `bke::AttributeAccessor` → [blender::bke::AttributeAccessor::AttributeAccessor · L512](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-9d1f53e927223cec)。
-- `bke::mesh_attribute_accessor_functions` → [blender::bke::mesh_attribute_accessor_functions · L1018](%E4%BE%9D%E8%B5%96-mesh_attributes-dc90c4.md#f-29f5d8f40f81ca0e)。
+- `bke::AttributeAccessor` → [blender::bke::AttributeAccessor::AttributeAccessor · L512](08-AttributeAccessor接口.md#f-9d1f53e927223cec)。
+- `bke::mesh_attribute_accessor_functions` → [blender::bke::mesh_attribute_accessor_functions · L1018](../90-实现依赖专题/02-BKE几何与数据/intern/mesh_attributes.cc.md#f-29f5d8f40f81ca0e)。
 
 <!-- annotated:6abd3825d17e65 -->
 
@@ -5305,8 +5305,8 @@ bke::MutableAttributeAccessor Mesh::attributes_for_write()
 
 **继续追踪实现**
 
-- `bke::MutableAttributeAccessor` → [blender::bke::MutableAttributeAccessor::MutableAttributeAccessor · L709](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-22c329b6ae0e6946)。
-- `bke::mesh_attribute_accessor_functions` → [blender::bke::mesh_attribute_accessor_functions · L1018](%E4%BE%9D%E8%B5%96-mesh_attributes-dc90c4.md#f-29f5d8f40f81ca0e)。
+- `bke::MutableAttributeAccessor` → [blender::bke::MutableAttributeAccessor::MutableAttributeAccessor · L709](08-AttributeAccessor接口.md#f-22c329b6ae0e6946)。
+- `bke::mesh_attribute_accessor_functions` → [blender::bke::mesh_attribute_accessor_functions · L1018](../90-实现依赖专题/02-BKE几何与数据/intern/mesh_attributes.cc.md#f-29f5d8f40f81ca0e)。
 
 <!-- annotated:242845606f7dac -->
 
@@ -5375,10 +5375,10 @@ VectorSet<StringRefNull> Mesh::uv_map_names() const
 
 **继续追踪实现**
 
-- `this->attributes().foreach_attribute` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1311。
-- `this->attributes` → [Mesh::attributes · L1298](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-607bbfe3e57cfc7f)。
-- `bke::mesh::is_uv_map` → [bke::mesh::is_uv_map · L1390](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-d54e2b7387551a2a)；[bke::mesh::is_uv_map · L1395](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ccba85e25e6455e3)。同名重载需按实参类型选择。
-- `names.add_new` → [blender::VectorSet::add_new · L336](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-03989f7359a8636d)；[blender::VectorSet::add_new · L340](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-ef9174f041011a6b)。同名重载需按实参类型选择。
+- `this->attributes().foreach_attribute` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1311。
+- `this->attributes` → [Mesh::attributes · L1298](03-MPoly迁移与兼容.md#f-607bbfe3e57cfc7f)。
+- `bke::mesh::is_uv_map` → [bke::mesh::is_uv_map · L1390](03-MPoly迁移与兼容.md#f-d54e2b7387551a2a)；[bke::mesh::is_uv_map · L1395](03-MPoly迁移与兼容.md#f-ccba85e25e6455e3)。同名重载需按实参类型选择。
+- `names.add_new` → [blender::VectorSet::add_new · L336](../01-基础容器与现代CPP/14-VectorSet稳定索引与去重.md#f-03989f7359a8636d)；[blender::VectorSet::add_new · L340](../01-基础容器与现代CPP/14-VectorSet稳定索引与去重.md#f-ef9174f041011a6b)。同名重载需按实参类型选择。
 
 <!-- annotated:0aecfeb47db457 -->
 
@@ -5443,8 +5443,8 @@ StringRefNull Mesh::active_uv_map_name() const
 
 **继续追踪实现**
 
-- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
-- `CustomData_get_active_layer_name` → [blender::CustomData_get_active_layer_name · L2642](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-7270960aab2e3699)。
+- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
+- `CustomData_get_active_layer_name` → [blender::CustomData_get_active_layer_name · L2642](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-7270960aab2e3699)。
 
 <!-- annotated:afdacdb77fdb2f -->
 
@@ -5509,8 +5509,8 @@ StringRefNull Mesh::default_uv_map_name() const
 
 **继续追踪实现**
 
-- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
-- `CustomData_get_render_layer_name` → [blender::CustomData_get_render_layer_name · L2649](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-46837f7f30739924)。
+- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
+- `CustomData_get_render_layer_name` → [blender::CustomData_get_render_layer_name · L2649](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-46837f7f30739924)。
 
 <!-- annotated:0769929d53bd90 -->
 
@@ -5575,9 +5575,9 @@ StringRefNull Mesh::active_or_default_uv_map_name() const
 
 **继续追踪实现**
 
-- `this->active_uv_map_name` → [Mesh::active_uv_map_name · L1319](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-9b4762e851836e79)。
-- `active_name.is_empty` → [GraphicsInteropBuffer::is_empty · L30](%E4%BE%9D%E8%B5%96-display_driver-7f7844.md#f-b5ec16e52880859c)。
-- `this->default_uv_map_name` → [Mesh::default_uv_map_name · L1328](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-69e95ac159da434a)。
+- `this->active_uv_map_name` → [Mesh::active_uv_map_name · L1319](03-MPoly迁移与兼容.md#f-9b4762e851836e79)。
+- `active_name.is_empty` → [GraphicsInteropBuffer::is_empty · L30](../90-实现依赖专题/07-Intern运行时与平台/cycles/session/display_driver.cpp.md#f-b5ec16e52880859c)。
+- `this->default_uv_map_name` → [Mesh::default_uv_map_name · L1328](03-MPoly迁移与兼容.md#f-69e95ac159da434a)。
 
 <!-- annotated:3f96cd1612b40a -->
 
@@ -5658,15 +5658,15 @@ void Mesh::uv_maps_active_set(const StringRef name)
 
 **继续追踪实现**
 
-- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#m-eadb3bc5b902)。宏定义由构建条件选择。
-- `name.is_empty` → [GraphicsInteropBuffer::is_empty · L30](%E4%BE%9D%E8%B5%96-display_driver-7f7844.md#f-b5ec16e52880859c)。
-- `BLI_strdupn` → [blender::BLI_strdupn · L32](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-string-1d986f.md#f-65dc033cf6e67cff)。
-- `name.data` → [data · L201](%E4%BE%9D%E8%B5%96-array-0b4e3f.md#f-39af3495ae01b907)；[data · L206](%E4%BE%9D%E8%B5%96-array-0b4e3f.md#f-5d3c70b7e27b7334)。同名重载需按实参类型选择。
-- `name.size` → [size · L64](%E4%BE%9D%E8%B5%96-unique_ptr_vector-b13772.md#f-d3b2dd87c6f8a696)；[size · L196](%E4%BE%9D%E8%B5%96-array-0b4e3f.md#f-5c1d85869b1a39ff)；[AttributeRequestSet::size · L1350](%E4%BE%9D%E8%B5%96-attribute-dd7b4e.md#f-3bc2ce0e765ca68d)；[size · L1450](%E4%BE%9D%E8%B5%96-DRW_gpu_wrapper-c80c4f.md#f-82bf5ab482066826)；[SocketType::size · L30](%E4%BE%9D%E8%B5%96-node_type-7c58a3.md#f-07d22bce254c9492)。同名重载需按实参类型选择。
-- `BKE_editmesh_bmesh_get_for_write` → [blender::BKE_editmesh_bmesh_get_for_write · L79](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-fa556ba8fafc4b41)；[blender::BKE_editmesh_bmesh_get_for_write · L87](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-6137590869c86e48)。同名重载需按实参类型选择。
-- `CustomData_get_named_layer_index` → [blender::CustomData_get_named_layer_index · L2575](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-73565438765aba60)。
-- `CustomData_get_layer_index` → [blender::CustomData_get_layer_index · L2556](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-e6d99d20af929991)。
-- `CustomData_set_layer_active_index` → [blender::CustomData_set_layer_active_index · L2681](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-5889c81d2e3c8c55)。
+- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#m-eadb3bc5b902)。宏定义由构建条件选择。
+- `name.is_empty` → [GraphicsInteropBuffer::is_empty · L30](../90-实现依赖专题/07-Intern运行时与平台/cycles/session/display_driver.cpp.md#f-b5ec16e52880859c)。
+- `BLI_strdupn` → [blender::BLI_strdupn · L32](../90-实现依赖专题/01-BLI基础库/intern/string.cc.md#f-65dc033cf6e67cff)。
+- `name.data` → [data · L201](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/array.h.md#f-39af3495ae01b907)；[data · L206](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/array.h.md#f-5d3c70b7e27b7334)。同名重载需按实参类型选择。
+- `name.size` → [size · L64](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/unique_ptr_vector.h.md#f-d3b2dd87c6f8a696)；[size · L196](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/array.h.md#f-5c1d85869b1a39ff)；[AttributeRequestSet::size · L1350](../90-实现依赖专题/07-Intern运行时与平台/cycles/scene/attribute.cpp.md#f-3bc2ce0e765ca68d)；[size · L1450](../90-实现依赖专题/08-其他Blender模块/draw/intern/DRW_gpu_wrapper.hh.md#f-82bf5ab482066826)；[SocketType::size · L30](../90-实现依赖专题/07-Intern运行时与平台/cycles/graph/node_type.cpp.md#f-07d22bce254c9492)。同名重载需按实参类型选择。
+- `BKE_editmesh_bmesh_get_for_write` → [blender::BKE_editmesh_bmesh_get_for_write · L79](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-fa556ba8fafc4b41)；[blender::BKE_editmesh_bmesh_get_for_write · L87](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-6137590869c86e48)。同名重载需按实参类型选择。
+- `CustomData_get_named_layer_index` → [blender::CustomData_get_named_layer_index · L2575](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-73565438765aba60)。
+- `CustomData_get_layer_index` → [blender::CustomData_get_layer_index · L2556](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-e6d99d20af929991)。
+- `CustomData_set_layer_active_index` → [blender::CustomData_set_layer_active_index · L2681](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-5889c81d2e3c8c55)。
 
 <!-- annotated:b10d22f99f6bc1 -->
 
@@ -5747,15 +5747,15 @@ void Mesh::uv_maps_default_set(const StringRef name)
 
 **继续追踪实现**
 
-- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#m-eadb3bc5b902)。宏定义由构建条件选择。
-- `name.is_empty` → [GraphicsInteropBuffer::is_empty · L30](%E4%BE%9D%E8%B5%96-display_driver-7f7844.md#f-b5ec16e52880859c)。
-- `BLI_strdupn` → [blender::BLI_strdupn · L32](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-string-1d986f.md#f-65dc033cf6e67cff)。
-- `name.data` → [data · L201](%E4%BE%9D%E8%B5%96-array-0b4e3f.md#f-39af3495ae01b907)；[data · L206](%E4%BE%9D%E8%B5%96-array-0b4e3f.md#f-5d3c70b7e27b7334)。同名重载需按实参类型选择。
-- `name.size` → [size · L64](%E4%BE%9D%E8%B5%96-unique_ptr_vector-b13772.md#f-d3b2dd87c6f8a696)；[size · L196](%E4%BE%9D%E8%B5%96-array-0b4e3f.md#f-5c1d85869b1a39ff)；[AttributeRequestSet::size · L1350](%E4%BE%9D%E8%B5%96-attribute-dd7b4e.md#f-3bc2ce0e765ca68d)；[size · L1450](%E4%BE%9D%E8%B5%96-DRW_gpu_wrapper-c80c4f.md#f-82bf5ab482066826)；[SocketType::size · L30](%E4%BE%9D%E8%B5%96-node_type-7c58a3.md#f-07d22bce254c9492)。同名重载需按实参类型选择。
-- `BKE_editmesh_bmesh_get_for_write` → [blender::BKE_editmesh_bmesh_get_for_write · L79](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-fa556ba8fafc4b41)；[blender::BKE_editmesh_bmesh_get_for_write · L87](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-6137590869c86e48)。同名重载需按实参类型选择。
-- `CustomData_get_named_layer_index` → [blender::CustomData_get_named_layer_index · L2575](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-73565438765aba60)。
-- `CustomData_get_layer_index` → [blender::CustomData_get_layer_index · L2556](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-e6d99d20af929991)。
-- `CustomData_set_layer_render_index` → [blender::CustomData_set_layer_render_index · L2697](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-d31aca701132e82e)。
+- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#m-eadb3bc5b902)。宏定义由构建条件选择。
+- `name.is_empty` → [GraphicsInteropBuffer::is_empty · L30](../90-实现依赖专题/07-Intern运行时与平台/cycles/session/display_driver.cpp.md#f-b5ec16e52880859c)。
+- `BLI_strdupn` → [blender::BLI_strdupn · L32](../90-实现依赖专题/01-BLI基础库/intern/string.cc.md#f-65dc033cf6e67cff)。
+- `name.data` → [data · L201](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/array.h.md#f-39af3495ae01b907)；[data · L206](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/array.h.md#f-5d3c70b7e27b7334)。同名重载需按实参类型选择。
+- `name.size` → [size · L64](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/unique_ptr_vector.h.md#f-d3b2dd87c6f8a696)；[size · L196](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/array.h.md#f-5c1d85869b1a39ff)；[AttributeRequestSet::size · L1350](../90-实现依赖专题/07-Intern运行时与平台/cycles/scene/attribute.cpp.md#f-3bc2ce0e765ca68d)；[size · L1450](../90-实现依赖专题/08-其他Blender模块/draw/intern/DRW_gpu_wrapper.hh.md#f-82bf5ab482066826)；[SocketType::size · L30](../90-实现依赖专题/07-Intern运行时与平台/cycles/graph/node_type.cpp.md#f-07d22bce254c9492)。同名重载需按实参类型选择。
+- `BKE_editmesh_bmesh_get_for_write` → [blender::BKE_editmesh_bmesh_get_for_write · L79](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-fa556ba8fafc4b41)；[blender::BKE_editmesh_bmesh_get_for_write · L87](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-6137590869c86e48)。同名重载需按实参类型选择。
+- `CustomData_get_named_layer_index` → [blender::CustomData_get_named_layer_index · L2575](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-73565438765aba60)。
+- `CustomData_get_layer_index` → [blender::CustomData_get_layer_index · L2556](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-e6d99d20af929991)。
+- `CustomData_set_layer_render_index` → [blender::CustomData_set_layer_render_index · L2697](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-d31aca701132e82e)。
 
 <!-- annotated:c3f5784e5bd648 -->
 
@@ -5828,8 +5828,8 @@ Mesh *BKE_mesh_new_nomain(const int verts_num,
 
 **继续追踪实现**
 
-- `bke::mesh_new_no_attributes` → [bke::mesh_new_no_attributes · L1413](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-7e0ad807b58050cf)。
-- `bke::mesh_ensure_required_data_layers` → [bke::mesh_ensure_required_data_layers · L633](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-7c7ac295b149daf7)。
+- `bke::mesh_new_no_attributes` → [bke::mesh_new_no_attributes · L1413](03-MPoly迁移与兼容.md#f-7e0ad807b58050cf)。
+- `bke::mesh_ensure_required_data_layers` → [bke::mesh_ensure_required_data_layers · L633](03-MPoly迁移与兼容.md#f-7c7ac295b149daf7)。
 
 ### 类型布局、声明与编译条件 · mesh.cc L1385—L1389
 
@@ -5959,7 +5959,7 @@ bool is_uv_map(const std::optional<AttributeMetaData> &meta_data)
 
 **继续追踪实现**
 
-- `is_uv_map` → [bke::mesh::is_uv_map · L1390](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-d54e2b7387551a2a)；[bke::mesh::is_uv_map · L1395](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ccba85e25e6455e3)。同名重载需按实参类型选择。
+- `is_uv_map` → [bke::mesh::is_uv_map · L1390](03-MPoly迁移与兼容.md#f-d54e2b7387551a2a)；[bke::mesh::is_uv_map · L1395](03-MPoly迁移与兼容.md#f-ccba85e25e6455e3)。同名重载需按实参类型选择。
 
 <!-- annotated:49e279c96d321b -->
 
@@ -6021,7 +6021,7 @@ bool is_color_attribute(const bke::AttributeMetaData &meta_data)
 
 **继续追踪实现**
 
-- `ELEM` → [ELEM · L88](%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
 
 <!-- annotated:18a84fd4acf07a -->
 
@@ -6081,7 +6081,7 @@ bool is_color_attribute(const std::optional<bke::AttributeMetaData> &meta_data)
 
 **继续追踪实现**
 
-- `is_color_attribute` → [bke::mesh::is_color_attribute · L1400](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a46946697ca88d8b)；[bke::mesh::is_color_attribute · L1406](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a459162c156510fd)。同名重载需按实参类型选择。
+- `is_color_attribute` → [bke::mesh::is_color_attribute · L1400](03-MPoly迁移与兼容.md#f-a46946697ca88d8b)；[bke::mesh::is_color_attribute · L1406](03-MPoly迁移与兼容.md#f-a459162c156510fd)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · mesh.cc L1410—L1412
 
@@ -6185,10 +6185,10 @@ Mesh *mesh_new_no_attributes(const int verts_num,
 
 **继续追踪实现**
 
-- `BKE_libblock_alloc` → [blender::BKE_libblock_alloc · L1545](%E4%BE%9D%E8%B5%96-lib_id-d4e6bd.md#f-135c8eaf9ed20667)。
-- `BKE_idtype_idcode_to_name` → [blender::BKE_idtype_idcode_to_name · L261](%E4%BE%9D%E8%B5%96-idtype-cbba99.md#f-282fc9db6d5f0eb2)。
-- `BKE_libblock_init_empty` → [blender::BKE_libblock_init_empty · L1550](%E4%BE%9D%E8%B5%96-lib_id-d4e6bd.md#f-5036d15511807417)。
-- `BKE_mesh_face_offsets_ensure_alloc` → [BKE_mesh_face_offsets_ensure_alloc · L1172](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-84769033a40a5901)。
+- `BKE_libblock_alloc` → [blender::BKE_libblock_alloc · L1545](../90-实现依赖专题/02-BKE几何与数据/intern/lib_id.cc.md#f-135c8eaf9ed20667)。
+- `BKE_idtype_idcode_to_name` → [blender::BKE_idtype_idcode_to_name · L261](../90-实现依赖专题/02-BKE几何与数据/intern/idtype.cc.md#f-282fc9db6d5f0eb2)。
+- `BKE_libblock_init_empty` → [blender::BKE_libblock_init_empty · L1550](../90-实现依赖专题/02-BKE几何与数据/intern/lib_id.cc.md#f-5036d15511807417)。
+- `BKE_mesh_face_offsets_ensure_alloc` → [BKE_mesh_face_offsets_ensure_alloc · L1172](03-MPoly迁移与兼容.md#f-84769033a40a5901)。
 
 ### 类型布局、声明与编译条件 · mesh.cc L1431—L1433
 
@@ -6306,8 +6306,8 @@ static void copy_attribute_names(const Mesh &mesh_src, Mesh &mesh_dst)
 
 **继续追踪实现**
 
-- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#m-eadb3bc5b902)。宏定义由构建条件选择。
-- `BLI_strdup` → [blender::BLI_strdup · L43](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-string-1d986f.md#f-7e6d5c696c20c0e1)。
+- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#m-eadb3bc5b902)。宏定义由构建条件选择。
+- `BLI_strdup` → [blender::BLI_strdup · L43](../90-实现依赖专题/01-BLI基础库/intern/string.cc.md#f-7e6d5c696c20c0e1)。
 
 <!-- annotated:615dcc8c104f7d -->
 
@@ -6412,7 +6412,7 @@ void BKE_mesh_copy_parameters(Mesh *me_dst, const Mesh *me_src)
 
 **继续追踪实现**
 
-- `copy_v3_v3` → [copy_v3_v3 · L828](%E4%BE%9D%E8%B5%96-math_float3-eb3e6f.md#f-5c67e0fefe437332)。
+- `copy_v3_v3` → [copy_v3_v3 · L828](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/math_float3.h.md#f-5c67e0fefe437332)。
 
 <!-- annotated:30962b7b6d67dc -->
 
@@ -6511,14 +6511,14 @@ void BKE_mesh_copy_parameters_for_eval(Mesh *me_dst, const Mesh *me_src)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `STRNCPY` → [blender::STRNCPY · L690](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_string-b43058.md#f-6b2d861724026be6)。
-- `BKE_mesh_copy_parameters` → [BKE_mesh_copy_parameters · L1462](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ef5676005d694d8d)。
-- `copy_attribute_names` → [copy_attribute_names · L1434](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-be76c778e1f2cf54)。
-- `me_dst->vertex_group_names.is_empty` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1494。
-- `BKE_defgroup_copy_list` → [blender::BKE_defgroup_copy_list · L75](%E4%BE%9D%E8%B5%96-deform-6949f4.md#f-abb39694bedcca18)。
-- `MEM_delete` → [MEM_delete · L400](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-9049ffdd1682887c)。
-- `MEM_dupalloc` → [MEM_dupalloc · L627](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-78a72b71e3c57010)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `STRNCPY` → [blender::STRNCPY · L690](../90-实现依赖专题/01-BLI基础库/BLI_string.hh.md#f-6b2d861724026be6)。
+- `BKE_mesh_copy_parameters` → [BKE_mesh_copy_parameters · L1462](03-MPoly迁移与兼容.md#f-ef5676005d694d8d)。
+- `copy_attribute_names` → [copy_attribute_names · L1434](03-MPoly迁移与兼容.md#f-be76c778e1f2cf54)。
+- `me_dst->vertex_group_names.is_empty` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1494。
+- `BKE_defgroup_copy_list` → [blender::BKE_defgroup_copy_list · L75](../90-实现依赖专题/02-BKE几何与数据/intern/deform.cc.md#f-abb39694bedcca18)。
+- `MEM_delete` → [MEM_delete · L400](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-9049ffdd1682887c)。
+- `MEM_dupalloc` → [MEM_dupalloc · L627](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-78a72b71e3c57010)。
 
 <!-- annotated:0933632d90ebfa -->
 
@@ -6703,24 +6703,24 @@ Mesh *BKE_mesh_new_nomain_from_template_ex(const Mesh *me_src,
 
 **继续追踪实现**
 
-- `BKE_id_new_nomain<Mesh>` → [blender::BKE_id_new_nomain · L1617](%E4%BE%9D%E8%B5%96-lib_id-d4e6bd.md#f-b72d7abbfd8aeae3)。
-- `STRNCPY` → [blender::STRNCPY · L690](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_string-b43058.md#f-6b2d861724026be6)。
-- `MEM_dupalloc` → [MEM_dupalloc · L627](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-78a72b71e3c57010)。
-- `BKE_mesh_copy_parameters_for_eval` → [BKE_mesh_copy_parameters_for_eval · L1484](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-71bebe4e73fe4c13)。
-- `CustomData_init_layout_from` → [blender::CustomData_init_layout_from · L2462](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-eca3e47bb8d9590e)。
-- `mesh_tessface_clear_intern` → [mesh_tessface_clear_intern · L1155](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-572aa4b8a6355d9c)。
-- `bke::mesh_ensure_required_data_layers` → [bke::mesh_ensure_required_data_layers · L633](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-7c7ac295b149daf7)。
-- `BKE_mesh_face_offsets_ensure_alloc` → [BKE_mesh_face_offsets_ensure_alloc · L1172](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-84769033a40a5901)。
-- `CustomData_get_layer` → [blender::CustomData_get_layer · L3308](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-add1273f3ef3e57b)。
-- `CustomData_add_layer` → [blender::CustomData_add_layer · L2851](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-4c7988e825541059)。
-- `me_dst->attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ca7af2f1a15f0bc4)。
-- `me_src->attribute_storage.wrap` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1557。
-- `dst_attrs.contains` → [Pass::contains · L404](%E4%BE%9D%E8%B5%96-pass-d31598.md#f-b14b6e695646a066)。
-- `attr.name` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1558。
-- `dst_attrs.add` → [blender::bke::MutableAttributeAccessor::add · L769](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-5fa7f06d7e22891a)；[blender::bke::MutableAttributeAccessor::add · L785](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-42998ceb23ada8cc)。同名重载需按实参类型选择。
-- `attr.domain` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1561。
-- `attr.data_type` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1561。
-- `bke::AttributeInitDefaultValue` → [blender::bke::AttributeInitDefaultValue::AttributeInitDefaultValue · L111](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-7601b35c9f910252)。
+- `BKE_id_new_nomain<Mesh>` → [blender::BKE_id_new_nomain · L1617](../90-实现依赖专题/02-BKE几何与数据/intern/lib_id.cc.md#f-b72d7abbfd8aeae3)。
+- `STRNCPY` → [blender::STRNCPY · L690](../90-实现依赖专题/01-BLI基础库/BLI_string.hh.md#f-6b2d861724026be6)。
+- `MEM_dupalloc` → [MEM_dupalloc · L627](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-78a72b71e3c57010)。
+- `BKE_mesh_copy_parameters_for_eval` → [BKE_mesh_copy_parameters_for_eval · L1484](03-MPoly迁移与兼容.md#f-71bebe4e73fe4c13)。
+- `CustomData_init_layout_from` → [blender::CustomData_init_layout_from · L2462](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-eca3e47bb8d9590e)。
+- `mesh_tessface_clear_intern` → [mesh_tessface_clear_intern · L1155](03-MPoly迁移与兼容.md#f-572aa4b8a6355d9c)。
+- `bke::mesh_ensure_required_data_layers` → [bke::mesh_ensure_required_data_layers · L633](03-MPoly迁移与兼容.md#f-7c7ac295b149daf7)。
+- `BKE_mesh_face_offsets_ensure_alloc` → [BKE_mesh_face_offsets_ensure_alloc · L1172](03-MPoly迁移与兼容.md#f-84769033a40a5901)。
+- `CustomData_get_layer` → [blender::CustomData_get_layer · L3308](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-add1273f3ef3e57b)。
+- `CustomData_add_layer` → [blender::CustomData_add_layer · L2851](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-4c7988e825541059)。
+- `me_dst->attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly迁移与兼容.md#f-ca7af2f1a15f0bc4)。
+- `me_src->attribute_storage.wrap` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1557。
+- `dst_attrs.contains` → [Pass::contains · L404](../90-实现依赖专题/07-Intern运行时与平台/cycles/scene/pass.cpp.md#f-b14b6e695646a066)。
+- `attr.name` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1558。
+- `dst_attrs.add` → [blender::bke::MutableAttributeAccessor::add · L769](08-AttributeAccessor接口.md#f-5fa7f06d7e22891a)；[blender::bke::MutableAttributeAccessor::add · L785](08-AttributeAccessor接口.md#f-42998ceb23ada8cc)。同名重载需按实参类型选择。
+- `attr.domain` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1561。
+- `attr.data_type` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1561。
+- `bke::AttributeInitDefaultValue` → [blender::bke::AttributeInitDefaultValue::AttributeInitDefaultValue · L111](08-AttributeAccessor接口.md#f-7601b35c9f910252)。
 
 <!-- annotated:362138857c018b -->
 
@@ -6794,7 +6794,7 @@ Mesh *BKE_mesh_new_nomain_from_template(const Mesh *me_src,
 
 **继续追踪实现**
 
-- `BKE_mesh_new_nomain_from_template_ex` → [BKE_mesh_new_nomain_from_template_ex · L1507](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-3c31b7952495cb58)。
+- `BKE_mesh_new_nomain_from_template_ex` → [BKE_mesh_new_nomain_from_template_ex · L1507](03-MPoly迁移与兼容.md#f-3c31b7952495cb58)。
 
 <!-- annotated:4a631aa1f6a6ee -->
 
@@ -6856,7 +6856,7 @@ Mesh *BKE_mesh_copy_for_eval(const Mesh &source)
 
 **继续追踪实现**
 
-- `BKE_id_copy_ex` → [blender::BKE_id_copy_ex · L851](%E4%BE%9D%E8%B5%96-lib_id-d4e6bd.md#f-24272170c95f49fb)。
+- `BKE_id_copy_ex` → [blender::BKE_id_copy_ex · L851](../90-实现依赖专题/02-BKE几何与数据/intern/lib_id.cc.md#f-24272170c95f49fb)。
 
 <!-- annotated:34a76b55fffd43 -->
 
@@ -6932,9 +6932,9 @@ BMesh *BKE_mesh_to_bmesh_ex(const Mesh *mesh,
 
 **继续追踪实现**
 
-- `BMALLOC_TEMPLATE_FROM_ME` → [BMALLOC_TEMPLATE_FROM_ME · L206](%E4%BE%9D%E8%B5%96-bmesh_mesh-df20c7.md#m-5e1aa99d2227)。宏定义由构建条件选择。
-- `BM_mesh_create` → [blender::BM_mesh_create · L128](%E4%BE%9D%E8%B5%96-bmesh_mesh-283e2d.md#f-af852087bbdba512)。
-- `BM_mesh_bm_from_me` → [blender::BM_mesh_bm_from_me · L318](%E4%BE%9D%E8%B5%96-bmesh_mesh_convert-19b1b9.md#f-42cdcd301dcfbcd6)。
+- `BMALLOC_TEMPLATE_FROM_ME` → [BMALLOC_TEMPLATE_FROM_ME · L206](../90-实现依赖专题/08-其他Blender模块/bmesh/intern/bmesh_mesh.hh.md#m-5e1aa99d2227)。宏定义由构建条件选择。
+- `BM_mesh_create` → [blender::BM_mesh_create · L128](../90-实现依赖专题/08-其他Blender模块/bmesh/intern/bmesh_mesh.cc.md#f-af852087bbdba512)。
+- `BM_mesh_bm_from_me` → [blender::BM_mesh_bm_from_me · L318](../90-实现依赖专题/08-其他Blender模块/bmesh/intern/bmesh_mesh_convert.cc.md#f-42cdcd301dcfbcd6)。
 
 <!-- annotated:906e39e75ecc3c -->
 
@@ -7023,7 +7023,7 @@ BMesh *BKE_mesh_to_bmesh(Mesh *mesh,
 
 **继续追踪实现**
 
-- `BKE_mesh_to_bmesh_ex` → [BKE_mesh_to_bmesh_ex · L1583](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-dd2f413684da0188)。
+- `BKE_mesh_to_bmesh_ex` → [BKE_mesh_to_bmesh_ex · L1583](03-MPoly迁移与兼容.md#f-dd2f413684da0188)。
 
 <!-- annotated:a490ef610ad7bb -->
 
@@ -7097,10 +7097,10 @@ Mesh *BKE_mesh_from_bmesh_nomain(BMesh *bm,
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `BKE_id_new_nomain<Mesh>` → [blender::BKE_id_new_nomain · L1617](%E4%BE%9D%E8%B5%96-lib_id-d4e6bd.md#f-b72d7abbfd8aeae3)。
-- `BM_mesh_bm_to_me` → [blender::BM_mesh_bm_to_me · L1668](%E4%BE%9D%E8%B5%96-bmesh_mesh_convert-19b1b9.md#f-32502224f5928f98)。
-- `BKE_mesh_copy_parameters_for_eval` → [BKE_mesh_copy_parameters_for_eval · L1484](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-71bebe4e73fe4c13)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BKE_id_new_nomain<Mesh>` → [blender::BKE_id_new_nomain · L1617](../90-实现依赖专题/02-BKE几何与数据/intern/lib_id.cc.md#f-b72d7abbfd8aeae3)。
+- `BM_mesh_bm_to_me` → [blender::BM_mesh_bm_to_me · L1668](../90-实现依赖专题/08-其他Blender模块/bmesh/intern/bmesh_mesh_convert.cc.md#f-32502224f5928f98)。
+- `BKE_mesh_copy_parameters_for_eval` → [BKE_mesh_copy_parameters_for_eval · L1484](03-MPoly迁移与兼容.md#f-71bebe4e73fe4c13)。
 
 <!-- annotated:8d795ea847affb -->
 
@@ -7172,9 +7172,9 @@ Mesh *BKE_mesh_from_bmesh_for_eval_nomain(BMesh *bm,
 
 **继续追踪实现**
 
-- `BKE_id_new_nomain<Mesh>` → [blender::BKE_id_new_nomain · L1617](%E4%BE%9D%E8%B5%96-lib_id-d4e6bd.md#f-b72d7abbfd8aeae3)。
-- `BM_mesh_bm_to_me_for_eval` → [blender::BM_mesh_bm_to_me_for_eval · L2226](%E4%BE%9D%E8%B5%96-bmesh_mesh_convert-19b1b9.md#f-d52b5f348bb9a67d)。
-- `BKE_mesh_copy_parameters_for_eval` → [BKE_mesh_copy_parameters_for_eval · L1484](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-71bebe4e73fe4c13)。
+- `BKE_id_new_nomain<Mesh>` → [blender::BKE_id_new_nomain · L1617](../90-实现依赖专题/02-BKE几何与数据/intern/lib_id.cc.md#f-b72d7abbfd8aeae3)。
+- `BM_mesh_bm_to_me_for_eval` → [blender::BM_mesh_bm_to_me_for_eval · L2226](../90-实现依赖专题/08-其他Blender模块/bmesh/intern/bmesh_mesh_convert.cc.md#f-d52b5f348bb9a67d)。
+- `BKE_mesh_copy_parameters_for_eval` → [BKE_mesh_copy_parameters_for_eval · L1484](03-MPoly迁移与兼容.md#f-71bebe4e73fe4c13)。
 
 <!-- annotated:7fa6289f8a99f8 -->
 
@@ -7241,9 +7241,9 @@ static void ensure_orig_index_layer(CustomData &data, const int size)
 
 **继续追踪实现**
 
-- `CustomData_has_layer` → [blender::CustomData_has_layer · L3005](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-7333340531d48ea3)。
-- `CustomData_add_layer` → [blender::CustomData_add_layer · L2851](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-4c7988e825541059)。
-- `array_utils::fill_index_range<int>` → [blender::array_utils::fill_index_range · L434](07-%E5%88%86%E7%BB%84%E8%AE%BF%E9%97%AE%E4%B8%8E%E5%8F%8D%E5%90%91%E7%B4%A2%E5%BC%95.md#f-f8128b104d76df0f)；[blender::array_utils::fill_index_range · L439](07-%E5%88%86%E7%BB%84%E8%AE%BF%E9%97%AE%E4%B8%8E%E5%8F%8D%E5%90%91%E7%B4%A2%E5%BC%95.md#f-95ca84458bfc7e7e)；[blender::array_utils::fill_index_range · L445](07-%E5%88%86%E7%BB%84%E8%AE%BF%E9%97%AE%E4%B8%8E%E5%8F%8D%E5%90%91%E7%B4%A2%E5%BC%95.md#f-c11b114c213cd61a)。同名重载需按实参类型选择。
+- `CustomData_has_layer` → [blender::CustomData_has_layer · L3005](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-7333340531d48ea3)。
+- `CustomData_add_layer` → [blender::CustomData_add_layer · L2851](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-4c7988e825541059)。
+- `array_utils::fill_index_range<int>` → [blender::array_utils::fill_index_range · L434](07-分组访问与反向索引.md#f-f8128b104d76df0f)；[blender::array_utils::fill_index_range · L439](07-分组访问与反向索引.md#f-95ca84458bfc7e7e)；[blender::array_utils::fill_index_range · L445](07-分组访问与反向索引.md#f-c11b114c213cd61a)。同名重载需按实参类型选择。
 
 <!-- annotated:e17a1e3d3f4965 -->
 
@@ -7301,8 +7301,8 @@ void BKE_mesh_ensure_default_orig_index_customdata(Mesh *mesh)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `BKE_mesh_ensure_default_orig_index_customdata_no_check` → [BKE_mesh_ensure_default_orig_index_customdata_no_check · L1646](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-dc77a46e5a456b24)。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BKE_mesh_ensure_default_orig_index_customdata_no_check` → [BKE_mesh_ensure_default_orig_index_customdata_no_check · L1646](03-MPoly迁移与兼容.md#f-dc77a46e5a456b24)。
 
 <!-- annotated:d446368ce13293 -->
 
@@ -7362,7 +7362,7 @@ void BKE_mesh_ensure_default_orig_index_customdata_no_check(Mesh *mesh)
 
 **继续追踪实现**
 
-- `ensure_orig_index_layer` → [ensure_orig_index_layer · L1630](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a2d4744fe86ae45f)。
+- `ensure_orig_index_layer` → [ensure_orig_index_layer · L1630](03-MPoly迁移与兼容.md#f-a2d4744fe86ae45f)。
 
 <!-- annotated:8e3bd60d367332 -->
 
@@ -7482,12 +7482,12 @@ void BKE_mesh_texspace_calc(Mesh *mesh)
 
 **继续追踪实现**
 
-- `mesh->bounds_min_max().value_or` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1656。
-- `mesh->bounds_min_max` → [Mesh::bounds_min_max · L1942](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-1a7c466d855d52a6)。
-- `Bounds` → [blender::Bounds](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_bounds_types-fbc701.md#t-034e001bc6d9)；[blender::Bounds](%E4%BE%9D%E8%B5%96-usd_writer_abstract-2d4373.md#t-c611d2724544)；[blender::Bounds](%E4%BE%9D%E8%B5%96-DNA_mesh_types-81f02e.md#t-3124dc634817)；[blender::draw::overlay::Bounds](%E4%BE%9D%E8%B5%96-overlay_bounds-5e4545.md#t-1e10f8dc8848)。
-- `float3` → [float3 · L41](%E4%BE%9D%E8%B5%96-types_float3-48c65a.md#f-7da2e52c0fb766ec)；[float3 · L42](%E4%BE%9D%E8%B5%96-types_float3-48c65a.md#f-4c476b25be347939)；[float3 · L43](%E4%BE%9D%E8%B5%96-types_float3-48c65a.md#f-776e8df31bde8162)。同名重载需按实参类型选择。
-- `mid_v3_v3v3` → [blender::mid_v3_v3v3 · L183](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector-5f35fa.md#f-b748c1b0b472ad9b)。
-- `copy_v3_v3` → [copy_v3_v3 · L828](%E4%BE%9D%E8%B5%96-math_float3-eb3e6f.md#f-5c67e0fefe437332)。
+- `mesh->bounds_min_max().value_or` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1656。
+- `mesh->bounds_min_max` → [Mesh::bounds_min_max · L1942](03-MPoly迁移与兼容.md#f-1a7c466d855d52a6)。
+- `Bounds` → [blender::Bounds](../90-实现依赖专题/01-BLI基础库/BLI_bounds_types.hh.md#t-034e001bc6d9)；[blender::Bounds](../90-实现依赖专题/08-其他Blender模块/io/usd/intern/usd_writer_abstract.hh.md#t-c611d2724544)；[blender::Bounds](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_mesh_types.h.md#t-3124dc634817)；[blender::draw::overlay::Bounds](../90-实现依赖专题/08-其他Blender模块/draw/engines/overlay/overlay_bounds.hh.md#t-1e10f8dc8848)。
+- `float3` → [float3 · L41](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/types_float3.h.md#f-7da2e52c0fb766ec)；[float3 · L42](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/types_float3.h.md#f-4c476b25be347939)；[float3 · L43](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/types_float3.h.md#f-776e8df31bde8162)。同名重载需按实参类型选择。
+- `mid_v3_v3v3` → [blender::mid_v3_v3v3 · L183](../90-实现依赖专题/01-BLI基础库/intern/math_vector.cc.md#f-b748c1b0b472ad9b)。
+- `copy_v3_v3` → [copy_v3_v3 · L828](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/math_float3.h.md#f-5c67e0fefe437332)。
 
 <!-- annotated:364a0e5af1b3c1 -->
 
@@ -7551,7 +7551,7 @@ void BKE_mesh_texspace_ensure(Mesh *mesh)
 
 **继续追踪实现**
 
-- `BKE_mesh_texspace_calc` → [BKE_mesh_texspace_calc · L1653](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-6bc56fb8c90adbe6)。
+- `BKE_mesh_texspace_calc` → [BKE_mesh_texspace_calc · L1653](03-MPoly迁移与兼容.md#f-6bc56fb8c90adbe6)。
 
 <!-- annotated:74bceea3efed9c -->
 
@@ -7623,8 +7623,8 @@ void BKE_mesh_texspace_get(Mesh *mesh, float r_texspace_location[3], float r_tex
 
 **继续追踪实现**
 
-- `BKE_mesh_texspace_ensure` → [BKE_mesh_texspace_ensure · L1685](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a6adaa6cf1c082d5)。
-- `copy_v3_v3` → [copy_v3_v3 · L828](%E4%BE%9D%E8%B5%96-math_float3-eb3e6f.md#f-5c67e0fefe437332)。
+- `BKE_mesh_texspace_ensure` → [BKE_mesh_texspace_ensure · L1685](03-MPoly迁移与兼容.md#f-a6adaa6cf1c082d5)。
+- `copy_v3_v3` → [copy_v3_v3 · L828](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/math_float3.h.md#f-5c67e0fefe437332)。
 
 <!-- annotated:61afb3ff5fe350 -->
 
@@ -7709,7 +7709,7 @@ void BKE_mesh_texspace_get_reference(Mesh *mesh,
 
 **继续追踪实现**
 
-- `BKE_mesh_texspace_ensure` → [BKE_mesh_texspace_ensure · L1685](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a6adaa6cf1c082d5)。
+- `BKE_mesh_texspace_ensure` → [BKE_mesh_texspace_ensure · L1685](03-MPoly迁移与兼容.md#f-a6adaa6cf1c082d5)。
 
 <!-- annotated:1259fd653fdb42 -->
 
@@ -7787,15 +7787,15 @@ Array<float3> BKE_mesh_orco_verts_get(const Object *ob)
 
 **继续追踪实现**
 
-- `id_cast<const Mesh *>` → [blender::id_cast · L1417](%E4%BE%9D%E8%B5%96-DNA_ID-3eb091.md#f-6c8ac6412850ac5a)。
-- `tme->vert_positions` → [Mesh::vert_positions · L1193](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae4177e5c5f2b371)。
-- `result.as_mutable_span().take_front(positions.size()).copy_from` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1731。
-- `result.as_mutable_span().take_front` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1731。
-- `result.as_mutable_span` → [blender::Array::as_mutable_span · L259](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-4e91de9f1337c144)。
-- `positions.size` → [blender::Span::size · L256](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/05-Span%E5%8F%AA%E8%AF%BB%E8%BF%9E%E7%BB%AD%E8%A7%86%E5%9B%BE.md#f-5f80fa006089c998)。
-- `result.as_mutable_span().drop_front(positions.size()).fill` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1732。
-- `result.as_mutable_span().drop_front` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1732。
-- `float3` → [float3 · L41](%E4%BE%9D%E8%B5%96-types_float3-48c65a.md#f-7da2e52c0fb766ec)；[float3 · L42](%E4%BE%9D%E8%B5%96-types_float3-48c65a.md#f-4c476b25be347939)；[float3 · L43](%E4%BE%9D%E8%B5%96-types_float3-48c65a.md#f-776e8df31bde8162)。同名重载需按实参类型选择。
+- `id_cast<const Mesh *>` → [blender::id_cast · L1417](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_ID.h.md#f-6c8ac6412850ac5a)。
+- `tme->vert_positions` → [Mesh::vert_positions · L1193](03-MPoly迁移与兼容.md#f-ae4177e5c5f2b371)。
+- `result.as_mutable_span().take_front(positions.size()).copy_from` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1731。
+- `result.as_mutable_span().take_front` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1731。
+- `result.as_mutable_span` → [blender::Array::as_mutable_span · L259](../01-基础容器与现代CPP/08-Array复制移动与销毁.md#f-4e91de9f1337c144)。
+- `positions.size` → [blender::Span::size · L256](../01-基础容器与现代CPP/05-Span只读连续视图.md#f-5f80fa006089c998)。
+- `result.as_mutable_span().drop_front(positions.size()).fill` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1732。
+- `result.as_mutable_span().drop_front` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1732。
+- `float3` → [float3 · L41](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/types_float3.h.md#f-7da2e52c0fb766ec)；[float3 · L42](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/types_float3.h.md#f-4c476b25be347939)；[float3 · L43](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/types_float3.h.md#f-776e8df31bde8162)。同名重载需按实参类型选择。
 
 <!-- annotated:32592facc4dcb0 -->
 
@@ -7896,9 +7896,9 @@ void BKE_mesh_orco_verts_transform(Mesh *mesh, MutableSpan<float3> orco, const b
 
 **继续追踪实现**
 
-- `BKE_mesh_texspace_get` → [BKE_mesh_texspace_get · L1694](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-e04048b821aedff8)。
-- `orco.index_range` → [blender::MutableSpan::index_range · L676](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-f9a9d59a69ca64b5)。
-- `madd_v3_v3v3v3` → [blender::madd_v3_v3v3v3 · L521](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_vector_inline-0c8541.md#f-3da6245802b6dcfc)。
+- `BKE_mesh_texspace_get` → [BKE_mesh_texspace_get · L1694](03-MPoly迁移与兼容.md#f-e04048b821aedff8)。
+- `orco.index_range` → [blender::MutableSpan::index_range · L676](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-f9a9d59a69ca64b5)。
+- `madd_v3_v3v3v3` → [blender::madd_v3_v3v3v3 · L521](../90-实现依赖专题/01-BLI基础库/intern/math_vector_inline.cc.md#f-3da6245802b6dcfc)。
 
 <!-- annotated:7e2251522eff17 -->
 
@@ -7957,7 +7957,7 @@ void BKE_mesh_orco_verts_transform(Mesh *mesh, float (*orco)[3], int totvert, bo
 
 **继续追踪实现**
 
-- `BKE_mesh_orco_verts_transform` → [BKE_mesh_orco_verts_transform · L1737](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-0310af64073b6afe)；[BKE_mesh_orco_verts_transform · L1760](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-1e12235ffe4ed6d7)。同名重载需按实参类型选择。
+- `BKE_mesh_orco_verts_transform` → [BKE_mesh_orco_verts_transform · L1737](03-MPoly迁移与兼容.md#f-0310af64073b6afe)；[BKE_mesh_orco_verts_transform · L1760](03-MPoly迁移与兼容.md#f-1e12235ffe4ed6d7)。同名重载需按实参类型选择。
 
 <!-- annotated:57da7fe82ac4ac -->
 
@@ -8032,12 +8032,12 @@ void BKE_mesh_orco_ensure(Object *ob, Mesh *mesh)
 
 **继续追踪实现**
 
-- `CustomData_has_layer` → [blender::CustomData_has_layer · L3005](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-7333340531d48ea3)。
-- `BKE_mesh_orco_verts_get` → [BKE_mesh_orco_verts_get · L1724](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-bbe92d4086086176)。
-- `BKE_mesh_orco_verts_transform` → [BKE_mesh_orco_verts_transform · L1737](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-0310af64073b6afe)；[BKE_mesh_orco_verts_transform · L1760](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-1e12235ffe4ed6d7)。同名重载需按实参类型选择。
-- `CustomData_add_layer` → [blender::CustomData_add_layer · L2851](%E4%BE%9D%E8%B5%96-customdata-2eef81.md#f-4c7988e825541059)。
-- `MutableSpan(data, mesh->verts_num).copy_from` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1776。
-- `MutableSpan` → [blender::MutableSpan::MutableSpan · L462](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
+- `CustomData_has_layer` → [blender::CustomData_has_layer · L3005](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-7333340531d48ea3)。
+- `BKE_mesh_orco_verts_get` → [BKE_mesh_orco_verts_get · L1724](03-MPoly迁移与兼容.md#f-bbe92d4086086176)。
+- `BKE_mesh_orco_verts_transform` → [BKE_mesh_orco_verts_transform · L1737](03-MPoly迁移与兼容.md#f-0310af64073b6afe)；[BKE_mesh_orco_verts_transform · L1760](03-MPoly迁移与兼容.md#f-1e12235ffe4ed6d7)。同名重载需按实参类型选择。
+- `CustomData_add_layer` → [blender::CustomData_add_layer · L2851](../90-实现依赖专题/02-BKE几何与数据/intern/customdata.cc.md#f-4c7988e825541059)。
+- `MutableSpan(data, mesh->verts_num).copy_from` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1776。
+- `MutableSpan` → [blender::MutableSpan::MutableSpan · L462](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
 
 <!-- annotated:a43ae7d6ca00de -->
 
@@ -8112,7 +8112,7 @@ Mesh *BKE_mesh_from_object(Object *ob)
 
 **继续追踪实现**
 
-- `id_cast<Mesh *>` → [blender::id_cast · L1417](%E4%BE%9D%E8%B5%96-DNA_ID-3eb091.md#f-6c8ac6412850ac5a)。
+- `id_cast<Mesh *>` → [blender::id_cast · L1417](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_ID.h.md#f-6c8ac6412850ac5a)。
 
 <!-- annotated:1b41b41a244ee3 -->
 
@@ -8213,12 +8213,12 @@ void BKE_mesh_assign_object(Main *bmain, Object *ob, Mesh *mesh)
 
 **继续追踪实现**
 
-- `multires_force_sculpt_rebuild` → [blender::multires_force_sculpt_rebuild · L332](%E4%BE%9D%E8%B5%96-multires-7e6ba8.md#f-843eb01be1cd1dee)。
-- `id_us_min` → [blender::id_us_min · L441](%E4%BE%9D%E8%B5%96-lib_id-d4e6bd.md#f-c5e5246a79962257)。
-- `id_cast<ID *>` → [blender::id_cast · L1417](%E4%BE%9D%E8%B5%96-DNA_ID-3eb091.md#f-6c8ac6412850ac5a)。
-- `id_us_plus` → [blender::id_us_plus · L433](%E4%BE%9D%E8%B5%96-lib_id-d4e6bd.md#f-1b90ef7608c4f32e)。
-- `BKE_object_materials_sync_length` → [blender::BKE_object_materials_sync_length · L1060](%E4%BE%9D%E8%B5%96-material-aea8ec.md#f-b879972e7f061cb6)。
-- `BKE_modifiers_test_object` → [blender::BKE_modifiers_test_object · L889](%E4%BE%9D%E8%B5%96-modifier-ab0273.md#f-f6767bae7ea8b3f8)。
+- `multires_force_sculpt_rebuild` → [blender::multires_force_sculpt_rebuild · L332](../90-实现依赖专题/02-BKE几何与数据/intern/multires.cc.md#f-843eb01be1cd1dee)。
+- `id_us_min` → [blender::id_us_min · L441](../90-实现依赖专题/02-BKE几何与数据/intern/lib_id.cc.md#f-c5e5246a79962257)。
+- `id_cast<ID *>` → [blender::id_cast · L1417](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_ID.h.md#f-6c8ac6412850ac5a)。
+- `id_us_plus` → [blender::id_us_plus · L433](../90-实现依赖专题/02-BKE几何与数据/intern/lib_id.cc.md#f-1b90ef7608c4f32e)。
+- `BKE_object_materials_sync_length` → [blender::BKE_object_materials_sync_length · L1060](../90-实现依赖专题/02-BKE几何与数据/intern/material.cc.md#f-b879972e7f061cb6)。
+- `BKE_modifiers_test_object` → [blender::BKE_modifiers_test_object · L889](../90-实现依赖专题/02-BKE几何与数据/intern/modifier.cc.md#f-f6767bae7ea8b3f8)。
 
 <!-- annotated:f55dc7f9209e72 -->
 
@@ -8313,13 +8313,13 @@ void BKE_mesh_material_index_remove(Mesh *mesh, short index)
 
 **继续追踪实现**
 
-- `mesh->attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ca7af2f1a15f0bc4)。
-- `attributes.lookup_for_write<int>` → [blender::bke::MutableAttributeAccessor::lookup_for_write · L485](%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-626a06b469b879d0)。
-- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
-- `indices_span.index_range` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L1828。
-- `indices_span.save` → [blender::MutableVArraySpan::save · L1101](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/04-%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%B0%8F%E5%AF%B9%E8%B1%A1%E4%BC%98%E5%8C%96.md#f-f8d37593880473b7)。
-- `material_indices.finish` → [blender::bke::AttributeWriter::finish · L233](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-b6b3155626d94225)。
-- `BKE_mesh_tessface_clear` → [BKE_mesh_tessface_clear · L2108](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-6e1c9d5c6f446c2d)。
+- `mesh->attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly迁移与兼容.md#f-ca7af2f1a15f0bc4)。
+- `attributes.lookup_for_write<int>` → [blender::bke::MutableAttributeAccessor::lookup_for_write · L485](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-626a06b469b879d0)。
+- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
+- `indices_span.index_range` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L1828。
+- `indices_span.save` → [blender::MutableVArraySpan::save · L1101](../04-虚拟数组与索引选择/04-所有权与小对象优化.md#f-f8d37593880473b7)。
+- `material_indices.finish` → [blender::bke::AttributeWriter::finish · L233](08-AttributeAccessor接口.md#f-b6b3155626d94225)。
+- `BKE_mesh_tessface_clear` → [BKE_mesh_tessface_clear · L2108](03-MPoly迁移与兼容.md#f-6e1c9d5c6f446c2d)。
 
 <!-- annotated:5f41b9fbe20ee6 -->
 
@@ -8397,11 +8397,11 @@ bool BKE_mesh_material_index_used(Mesh *mesh, short index)
 
 **继续追踪实现**
 
-- `mesh->attributes` → [Mesh::attributes · L1298](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-607bbfe3e57cfc7f)。
-- `attributes.lookup_or_default<int>` → [blender::bke::AttributeAccessor::lookup_or_default · L415](%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-a0cc3e316f1da4bd)。
-- `material_indices.is_single` → [SocketValueVariant::is_single · L501](%E4%BE%9D%E8%B5%96-node_socket_value-841c72.md#f-305458280511ae60)。
-- `material_indices.get_internal_single` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L1846。
-- `indices_span.contains` → [Pass::contains · L404](%E4%BE%9D%E8%B5%96-pass-d31598.md#f-b14b6e695646a066)。
+- `mesh->attributes` → [Mesh::attributes · L1298](03-MPoly迁移与兼容.md#f-607bbfe3e57cfc7f)。
+- `attributes.lookup_or_default<int>` → [blender::bke::AttributeAccessor::lookup_or_default · L415](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-a0cc3e316f1da4bd)。
+- `material_indices.is_single` → [SocketValueVariant::is_single · L501](../90-实现依赖专题/02-BKE几何与数据/intern/node_socket_value.cc.md#f-305458280511ae60)。
+- `material_indices.get_internal_single` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L1846。
+- `indices_span.contains` → [Pass::contains · L404](../90-实现依赖专题/07-Intern运行时与平台/cycles/scene/pass.cpp.md#f-b14b6e695646a066)。
 
 <!-- annotated:7848dacb75db82 -->
 
@@ -8465,9 +8465,9 @@ void BKE_mesh_material_index_clear(Mesh *mesh)
 
 **继续追踪实现**
 
-- `mesh->attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ca7af2f1a15f0bc4)。
-- `attributes.remove` → [blender::bke::MutableAttributeAccessor::remove · L1007](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-70cc562b046f24be)。
-- `BKE_mesh_tessface_clear` → [BKE_mesh_tessface_clear · L2108](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-6e1c9d5c6f446c2d)。
+- `mesh->attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly迁移与兼容.md#f-ca7af2f1a15f0bc4)。
+- `attributes.remove` → [blender::bke::MutableAttributeAccessor::remove · L1007](08-AttributeAccessor接口.md#f-70cc562b046f24be)。
+- `BKE_mesh_tessface_clear` → [BKE_mesh_tessface_clear · L2108](03-MPoly迁移与兼容.md#f-6e1c9d5c6f446c2d)。
 
 <!-- annotated:f6689d703fc85a -->
 
@@ -8593,14 +8593,14 @@ void BKE_mesh_material_remap(Mesh *mesh, const uint *remap, uint remap_len)
 
 **继续追踪实现**
 
-- `BKE_editmesh_bmesh_get_for_write` → [blender::BKE_editmesh_bmesh_get_for_write · L79](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-fa556ba8fafc4b41)；[blender::BKE_editmesh_bmesh_get_for_write · L87](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-6137590869c86e48)。同名重载需按实参类型选择。
-- `BM_ITER_MESH` → [BM_ITER_MESH · L72](%E4%BE%9D%E8%B5%96-bmesh_iterators-13971c.md#m-cfc837c73218)。宏定义由构建条件选择。
-- `MAT_NR_REMAP` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L1878。
-- `mesh->attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ca7af2f1a15f0bc4)。
-- `attributes.lookup_or_add_for_write_span<int>` → [blender::bke::MutableAttributeAccessor::lookup_or_add_for_write_span · L533](%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-c533eff1b9a4973e)。
-- `material_indices.span.index_range` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1888。
-- `material_indices.span.save` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1891。
-- `material_indices.finish` → [blender::bke::SpanAttributeWriter::finish · L279](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-585970a3b1bd4da4)。
+- `BKE_editmesh_bmesh_get_for_write` → [blender::BKE_editmesh_bmesh_get_for_write · L79](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-fa556ba8fafc4b41)；[blender::BKE_editmesh_bmesh_get_for_write · L87](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-6137590869c86e48)。同名重载需按实参类型选择。
+- `BM_ITER_MESH` → [BM_ITER_MESH · L72](../90-实现依赖专题/08-其他Blender模块/bmesh/intern/bmesh_iterators.hh.md#m-cfc837c73218)。宏定义由构建条件选择。
+- `MAT_NR_REMAP` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：函数指针、局部可调用对象或未展开的宏；必须结合调用者环境。调用位置L1878。
+- `mesh->attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly迁移与兼容.md#f-ca7af2f1a15f0bc4)。
+- `attributes.lookup_or_add_for_write_span<int>` → [blender::bke::MutableAttributeAccessor::lookup_or_add_for_write_span · L533](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-c533eff1b9a4973e)。
+- `material_indices.span.index_range` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1888。
+- `material_indices.span.save` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1891。
+- `material_indices.finish` → [blender::bke::SpanAttributeWriter::finish · L279](08-AttributeAccessor接口.md#f-585970a3b1bd4da4)。
 
 ### 类型布局、声明与编译条件 · mesh.cc L1897—L1899
 
@@ -8678,10 +8678,10 @@ void mesh_smooth_set(Mesh &mesh, const bool use_smooth, const bool keep_sharp_ed
 
 **继续追踪实现**
 
-- `mesh.attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ca7af2f1a15f0bc4)。
-- `attributes.remove` → [blender::bke::MutableAttributeAccessor::remove · L1007](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-70cc562b046f24be)。
-- `attributes.add<bool>` → [blender::bke::MutableAttributeAccessor::add · L769](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-5fa7f06d7e22891a)；[blender::bke::MutableAttributeAccessor::add · L785](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-42998ceb23ada8cc)。同名重载需按实参类型选择。
-- `AttributeInitValue` → [blender::bke::AttributeInitValue::AttributeInitValue · L100](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-cd502d5742ad6d0f)；[blender::bke::AttributeInitValue::AttributeInitValue · L104](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-54b1dad08bff7914)。同名重载需按实参类型选择。
+- `mesh.attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly迁移与兼容.md#f-ca7af2f1a15f0bc4)。
+- `attributes.remove` → [blender::bke::MutableAttributeAccessor::remove · L1007](08-AttributeAccessor接口.md#f-70cc562b046f24be)。
+- `attributes.add<bool>` → [blender::bke::MutableAttributeAccessor::add · L769](08-AttributeAccessor接口.md#f-5fa7f06d7e22891a)；[blender::bke::MutableAttributeAccessor::add · L785](08-AttributeAccessor接口.md#f-42998ceb23ada8cc)。同名重载需按实参类型选择。
+- `AttributeInitValue` → [blender::bke::AttributeInitValue::AttributeInitValue · L100](08-AttributeAccessor接口.md#f-cd502d5742ad6d0f)；[blender::bke::AttributeInitValue::AttributeInitValue · L104](08-AttributeAccessor接口.md#f-54b1dad08bff7914)。同名重载需按实参类型选择。
 
 <!-- annotated:7222105594b376 -->
 
@@ -8785,18 +8785,18 @@ void mesh_sharp_edges_set_from_angle(Mesh &mesh, const float angle, const bool k
 
 **继续追踪实现**
 
-- `mesh.attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ca7af2f1a15f0bc4)。
-- `mesh_smooth_set` → [bke::mesh_smooth_set · L1900](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-61497df030106e04)。
-- `attributes.remove` → [blender::bke::MutableAttributeAccessor::remove · L1007](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-70cc562b046f24be)。
-- `attributes.lookup_or_add_for_write_span<bool>` → [blender::bke::MutableAttributeAccessor::lookup_or_add_for_write_span · L533](%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-c533eff1b9a4973e)。
-- `attributes.lookup<bool>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L1928。
-- `mesh::edges_sharp_from_angle_set` → [blender::bke::mesh::edges_sharp_from_angle_set · L903](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/08-%E6%B3%95%E7%BA%BF%E7%BC%93%E5%AD%98%E7%9A%84%E7%9C%9F%E5%AE%9E%E4%BE%9D%E8%B5%96.md#f-d05898a8e91b4b5f)。
-- `mesh.faces` → [Mesh::faces · L1217](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ea444760154e17b2)。
-- `mesh.corner_verts` → [Mesh::corner_verts · L1238](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-a59c61f583b64bc4)。
-- `mesh.corner_edges` → [Mesh::corner_edges · L1252](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-687b790868e7f257)。
-- `mesh.face_normals` → [blender::Mesh::face_normals · L415](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/08-%E6%B3%95%E7%BA%BF%E7%BC%93%E5%AD%98%E7%9A%84%E7%9C%9F%E5%AE%9E%E4%BE%9D%E8%B5%96.md#f-65ff7730b863cee0)。
-- `mesh.corner_to_face_map` → [blender::Mesh::corner_to_face_map · L101](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/10-%E5%B1%80%E9%83%A8%E6%9B%B4%E6%96%B0%E4%B8%8E%E5%A4%B1%E6%95%88%E4%BF%AE%E5%A4%8D.md#f-43907d9811e2baa7)。
-- `sharp_edges.finish` → [blender::bke::SpanAttributeWriter::finish · L279](08-AttributeAccessor%E6%8E%A5%E5%8F%A3.md#f-585970a3b1bd4da4)。
+- `mesh.attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly迁移与兼容.md#f-ca7af2f1a15f0bc4)。
+- `mesh_smooth_set` → [bke::mesh_smooth_set · L1900](03-MPoly迁移与兼容.md#f-61497df030106e04)。
+- `attributes.remove` → [blender::bke::MutableAttributeAccessor::remove · L1007](08-AttributeAccessor接口.md#f-70cc562b046f24be)。
+- `attributes.lookup_or_add_for_write_span<bool>` → [blender::bke::MutableAttributeAccessor::lookup_or_add_for_write_span · L533](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-c533eff1b9a4973e)。
+- `attributes.lookup<bool>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L1928。
+- `mesh::edges_sharp_from_angle_set` → [blender::bke::mesh::edges_sharp_from_angle_set · L903](../06-隐式共享与缓存系统/08-法线缓存的真实依赖.md#f-d05898a8e91b4b5f)。
+- `mesh.faces` → [Mesh::faces · L1217](03-MPoly迁移与兼容.md#f-ea444760154e17b2)。
+- `mesh.corner_verts` → [Mesh::corner_verts · L1238](03-MPoly迁移与兼容.md#f-a59c61f583b64bc4)。
+- `mesh.corner_edges` → [Mesh::corner_edges · L1252](03-MPoly迁移与兼容.md#f-687b790868e7f257)。
+- `mesh.face_normals` → [blender::Mesh::face_normals · L415](../06-隐式共享与缓存系统/08-法线缓存的真实依赖.md#f-65ff7730b863cee0)。
+- `mesh.corner_to_face_map` → [blender::Mesh::corner_to_face_map · L101](../06-隐式共享与缓存系统/10-局部更新与失效修复.md#f-43907d9811e2baa7)。
+- `sharp_edges.finish` → [blender::bke::SpanAttributeWriter::finish · L279](08-AttributeAccessor接口.md#f-585970a3b1bd4da4)。
 
 ### 类型布局、声明与编译条件 · mesh.cc L1939—L1941
 
@@ -8896,13 +8896,13 @@ std::optional<Bounds<float3>> Mesh::bounds_min_max() const
 
 **继续追踪实现**
 
-- `BKE_mesh_wrapper_vert_len` → [blender::BKE_mesh_wrapper_vert_len · L253](%E4%BE%9D%E8%B5%96-mesh_wrapper-33fdae.md#f-386380c15d2cf0cb)。
-- `this->runtime->bounds_cache.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1948。
-- `BKE_editmesh_cache_calc_minmax` → [blender::BKE_editmesh_cache_calc_minmax · L91](%E4%BE%9D%E8%B5%96-editmesh_cache-deec82.md#f-eabf52399317fe7a)。
-- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
-- `bounds::min_max` → [blender::bounds::min_max · L55](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-8ec8264a27aee526)；[blender::bounds::min_max · L142](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-54be182a0edebcb6)；[blender::bounds::min_max · L159](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-c05654b35c75b0ff)；[blender::bounds::min_max · L212](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-6c1add8352426e55)。同名重载需按实参类型选择。
-- `this->vert_positions` → [Mesh::vert_positions · L1193](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae4177e5c5f2b371)。
-- `this->runtime->bounds_cache.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1960。
+- `BKE_mesh_wrapper_vert_len` → [blender::BKE_mesh_wrapper_vert_len · L253](../90-实现依赖专题/02-BKE几何与数据/intern/mesh_wrapper.cc.md#f-386380c15d2cf0cb)。
+- `this->runtime->bounds_cache.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1948。
+- `BKE_editmesh_cache_calc_minmax` → [blender::BKE_editmesh_cache_calc_minmax · L91](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh_cache.cc.md#f-eabf52399317fe7a)。
+- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
+- `bounds::min_max` → [blender::bounds::min_max · L55](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-8ec8264a27aee526)；[blender::bounds::min_max · L142](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-54be182a0edebcb6)；[blender::bounds::min_max · L159](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-c05654b35c75b0ff)；[blender::bounds::min_max · L212](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-6c1add8352426e55)。同名重载需按实参类型选择。
+- `this->vert_positions` → [Mesh::vert_positions · L1193](03-MPoly迁移与兼容.md#f-ae4177e5c5f2b371)。
+- `this->runtime->bounds_cache.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1960。
 
 <!-- annotated:9d4ece94c483b6 -->
 
@@ -8958,7 +8958,7 @@ void Mesh::bounds_set_eager(const Bounds<float3> &bounds)
 
 **继续追踪实现**
 
-- `this->runtime->bounds_cache.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1965。
+- `this->runtime->bounds_cache.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1965。
 
 <!-- annotated:e951cacc1f751b -->
 
@@ -9018,7 +9018,7 @@ static bool use_bmesh_material_indices(const Mesh &mesh)
 
 **继续追踪实现**
 
-- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
+- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
 
 <!-- annotated:8fe2b5be38a60e -->
 
@@ -9135,17 +9135,17 @@ std::optional<int> Mesh::material_index_max() const
 
 **继续追踪实现**
 
-- `this->runtime->max_material_index.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1975。
-- `use_bmesh_material_indices` → [use_bmesh_material_indices · L1968](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ad2ddede29357dee)。
-- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
-- `BM_ITER_MESH` → [BM_ITER_MESH · L72](%E4%BE%9D%E8%B5%96-bmesh_iterators-13971c.md#m-cfc837c73218)。宏定义由构建条件选择。
+- `this->runtime->max_material_index.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1975。
+- `use_bmesh_material_indices` → [use_bmesh_material_indices · L1968](03-MPoly迁移与兼容.md#f-ad2ddede29357dee)。
+- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
+- `BM_ITER_MESH` → [BM_ITER_MESH · L72](../90-实现依赖专题/08-其他Blender模块/bmesh/intern/bmesh_iterators.hh.md#m-cfc837c73218)。宏定义由构建条件选择。
 - `std::max<int>` → [外部契约](https://eel.is/c++draft/alg.min.max)：按比较关系选取较大值。本讲解中的增长公式同时满足最低请求和几何增长；若保存返回引用，还需注意实参寿命。
-- `bounds::max<int>` → [blender::bounds::max · L268](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/07-Bounds%E4%B8%8EBVH%E5%AF%B9%E6%AF%94.md#f-407b28b5a068f9a0)。
-- `this->attributes().lookup_or_default<int>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1996。
-- `this->attributes` → [Mesh::attributes · L1298](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-607bbfe3e57cfc7f)。
+- `bounds::max<int>` → [blender::bounds::max · L268](../12-空间数据结构与几何算法/07-Bounds与BVH对比.md#f-407b28b5a068f9a0)。
+- `this->attributes().lookup_or_default<int>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L1996。
+- `this->attributes` → [Mesh::attributes · L1298](03-MPoly迁移与兼容.md#f-607bbfe3e57cfc7f)。
 - `value.has_value` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 - `std::clamp` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `this->runtime->max_material_index.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L2001。
+- `this->runtime->max_material_index.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L2001。
 
 <!-- annotated:edfb41defc7e85 -->
 
@@ -9291,23 +9291,23 @@ const VectorSet<int> &Mesh::material_indices_used() const
 
 **继续追踪实现**
 
-- `this->runtime->used_material_indices.ensure` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L2006。
-- `this->material_index_max` → [Mesh::material_index_max · L1973](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-fcaa1e6e793473e9)。
-- `r_data.clear` → [blender::VectorSet::clear · L670](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-e4faa0f2bc3037ea)。
+- `this->runtime->used_material_indices.ensure` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L2006。
+- `this->material_index_max` → [Mesh::material_index_max · L1973](03-MPoly迁移与兼容.md#f-fcaa1e6e793473e9)。
+- `r_data.clear` → [blender::VectorSet::clear · L670](../01-基础容器与现代CPP/14-VectorSet稳定索引与去重.md#f-e4faa0f2bc3037ea)。
 - `max_material_index_opt.has_value` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
 - `std::clamp<int>` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `use_bmesh_material_indices` → [use_bmesh_material_indices · L1968](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ad2ddede29357dee)。
-- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
-- `BM_ITER_MESH` → [BM_ITER_MESH · L72](%E4%BE%9D%E8%B5%96-bmesh_iterators-13971c.md#m-cfc837c73218)。宏定义由构建条件选择。
-- `clamp_material_index` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L2024。
-- `this->attributes().lookup_or_default<int>` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L2027。
-- `this->attributes` → [Mesh::attributes · L1298](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-607bbfe3e57cfc7f)。
-- `material_indices.get_if_single` → [blender::VArrayCommon::get_if_single · L649](../04-%E8%99%9A%E6%8B%9F%E6%95%B0%E7%BB%84%E4%B8%8E%E7%B4%A2%E5%BC%95%E9%80%89%E6%8B%A9/03-%E5%8D%95%E5%80%BC%E4%B8%8ESpan%E8%A1%A8%E7%A4%BA.md#f-779c11c4fd8e6ac3)。
-- `threading::parallel_for` → [blender::threading::parallel_for · L68](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-838294754c24426c)。
-- `material_indices_span.index_range` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：由接收对象具体类型或运行时策略提供实现。调用位置L2036。
-- `used_indices.index_range` → [blender::Array::index_range · L371](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/08-Array%E5%A4%8D%E5%88%B6%E7%A7%BB%E5%8A%A8%E4%B8%8E%E9%94%80%E6%AF%81.md#f-50a09e14742887a0)。
-- `r_data.add_new` → [blender::VectorSet::add_new · L336](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-03989f7359a8636d)；[blender::VectorSet::add_new · L340](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/14-VectorSet%E7%A8%B3%E5%AE%9A%E7%B4%A2%E5%BC%95%E4%B8%8E%E5%8E%BB%E9%87%8D.md#f-ef9174f041011a6b)。同名重载需按实参类型选择。
-- `this->runtime->used_material_indices.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L2049。
+- `use_bmesh_material_indices` → [use_bmesh_material_indices · L1968](03-MPoly迁移与兼容.md#f-ad2ddede29357dee)。
+- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
+- `BM_ITER_MESH` → [BM_ITER_MESH · L72](../90-实现依赖专题/08-其他Blender模块/bmesh/intern/bmesh_iterators.hh.md#m-cfc837c73218)。宏定义由构建条件选择。
+- `clamp_material_index` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：局部可调用对象，须结合其初始化与捕获环境。调用位置L2024。
+- `this->attributes().lookup_or_default<int>` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L2027。
+- `this->attributes` → [Mesh::attributes · L1298](03-MPoly迁移与兼容.md#f-607bbfe3e57cfc7f)。
+- `material_indices.get_if_single` → [blender::VArrayCommon::get_if_single · L649](../04-虚拟数组与索引选择/03-单值与Span表示.md#f-779c11c4fd8e6ac3)。
+- `threading::parallel_for` → [blender::threading::parallel_for · L68](../11-Depsgraph与并行任务系统/07-任务池与TBB接入.md#f-838294754c24426c)。
+- `material_indices_span.index_range` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：由接收对象具体类型或运行时策略提供实现。调用位置L2036。
+- `used_indices.index_range` → [blender::Array::index_range · L371](../01-基础容器与现代CPP/08-Array复制移动与销毁.md#f-50a09e14742887a0)。
+- `r_data.add_new` → [blender::VectorSet::add_new · L336](../01-基础容器与现代CPP/14-VectorSet稳定索引与去重.md#f-03989f7359a8636d)；[blender::VectorSet::add_new · L340](../01-基础容器与现代CPP/14-VectorSet稳定索引与去重.md#f-ef9174f041011a6b)。同名重载需按实参类型选择。
+- `this->runtime->used_material_indices.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L2049。
 
 ### 类型布局、声明与编译条件 · mesh.cc L2051—L2053
 
@@ -9384,9 +9384,9 @@ static void translate_positions(MutableSpan<float3> positions, const float3 &tra
 
 **继续追踪实现**
 
-- `threading::parallel_for` → [blender::threading::parallel_for · L68](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/07-%E4%BB%BB%E5%8A%A1%E6%B1%A0%E4%B8%8ETBB%E6%8E%A5%E5%85%A5.md#f-838294754c24426c)。
-- `positions.index_range` → [blender::MutableSpan::index_range · L676](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-f9a9d59a69ca64b5)。
-- `positions.slice` → [blender::MutableSpan::slice · L579](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-6808b4aefbf58808)；[blender::MutableSpan::slice · L587](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-c05b010821861e4f)。同名重载需按实参类型选择。
+- `threading::parallel_for` → [blender::threading::parallel_for · L68](../11-Depsgraph与并行任务系统/07-任务池与TBB接入.md#f-838294754c24426c)。
+- `positions.index_range` → [blender::MutableSpan::index_range · L676](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-f9a9d59a69ca64b5)。
+- `positions.slice` → [blender::MutableSpan::slice · L579](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-6808b4aefbf58808)；[blender::MutableSpan::slice · L587](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-c05b010821861e4f)。同名重载需按实参类型选择。
 
 <!-- annotated:0521db9c246fa1 -->
 
@@ -9496,13 +9496,13 @@ void mesh_translate(Mesh &mesh, const float3 &translation, const bool do_shape_k
 
 **继续追踪实现**
 
-- `math::is_zero` → [blender::math::is_zero · L784](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_vector-906a87.md#f-b05b3db842a9f17e)；[blender::math::is_zero · L108](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_quaternion-cf105d.md#f-b97bee3fbc328c0d)；[blender::math::is_zero · L593](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_matrix-b7b2b4.md#f-b879ac524126b464)；[blender::math::is_zero · L23](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-BLI_math_base-0728eb.md#f-6fdcc74ca7338838)。同名重载需按实参类型选择。
-- `mesh.runtime->bounds_cache.is_cached` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L2070。
-- `mesh.runtime->bounds_cache.data` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L2071。
-- `translate_positions` → [bke::translate_positions · L2054](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-31a55f799beb7d91)。
-- `mesh.vert_positions_for_write` → [Mesh::vert_positions_for_write · L1199](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae8d77205112d843)。
-- `mesh.tag_positions_changed_uniformly` → [blender::Mesh::tag_positions_changed_uniformly · L426](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/10-%E5%B1%80%E9%83%A8%E6%9B%B4%E6%96%B0%E4%B8%8E%E5%A4%B1%E6%95%88%E4%BF%AE%E5%A4%8D.md#f-8cd0155fb6d86941)。
-- `mesh.bounds_set_eager` → [Mesh::bounds_set_eager · L1963](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-6991ba836567c364)。
+- `math::is_zero` → [blender::math::is_zero · L784](../90-实现依赖专题/01-BLI基础库/BLI_math_vector.hh.md#f-b05b3db842a9f17e)；[blender::math::is_zero · L108](../90-实现依赖专题/01-BLI基础库/BLI_math_quaternion.hh.md#f-b97bee3fbc328c0d)；[blender::math::is_zero · L593](../90-实现依赖专题/01-BLI基础库/BLI_math_matrix.hh.md#f-b879ac524126b464)；[blender::math::is_zero · L23](../90-实现依赖专题/01-BLI基础库/BLI_math_base.hh.md#f-6fdcc74ca7338838)。同名重载需按实参类型选择。
+- `mesh.runtime->bounds_cache.is_cached` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L2070。
+- `mesh.runtime->bounds_cache.data` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L2071。
+- `translate_positions` → [bke::translate_positions · L2054](03-MPoly迁移与兼容.md#f-31a55f799beb7d91)。
+- `mesh.vert_positions_for_write` → [Mesh::vert_positions_for_write · L1199](03-MPoly迁移与兼容.md#f-ae8d77205112d843)。
+- `mesh.tag_positions_changed_uniformly` → [blender::Mesh::tag_positions_changed_uniformly · L426](../06-隐式共享与缓存系统/10-局部更新与失效修复.md#f-8cd0155fb6d86941)。
+- `mesh.bounds_set_eager` → [Mesh::bounds_set_eager · L1963](03-MPoly迁移与兼容.md#f-6991ba836567c364)。
 
 <!-- annotated:1150c6acf57dc7 -->
 
@@ -9580,12 +9580,12 @@ void mesh_transform(Mesh &mesh, const float4x4 &transform, bool do_shape_keys)
 
 **继续追踪实现**
 
-- `math::transform_points` → [blender::math::transform_points · L618](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_matrix-d7d8ee.md#f-fea7092a41505676)；[blender::math::transform_points · L646](../12-%E7%A9%BA%E9%97%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%A0%E4%BD%95%E7%AE%97%E6%B3%95/%E4%BE%9D%E8%B5%96-math_matrix-d7d8ee.md#f-f77b7d3852a0cac9)。同名重载需按实参类型选择。
-- `mesh.vert_positions_for_write` → [Mesh::vert_positions_for_write · L1199](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ae8d77205112d843)。
-- `MutableSpan` → [blender::MutableSpan::MutableSpan · L462](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/06-MutableSpan%E5%8F%AF%E5%86%99%E8%A7%86%E5%9B%BE.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
-- `mesh.attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ca7af2f1a15f0bc4)。
-- `transform_custom_normal_attribute` → [blender::bke::transform_custom_normal_attribute · L984](%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-173ededd9307850f)。
-- `mesh.tag_positions_changed` → [blender::Mesh::tag_positions_changed · L407](../06-%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB%E4%B8%8E%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F/10-%E5%B1%80%E9%83%A8%E6%9B%B4%E6%96%B0%E4%B8%8E%E5%A4%B1%E6%95%88%E4%BF%AE%E5%A4%8D.md#f-90e852663d44ad53)。
+- `math::transform_points` → [blender::math::transform_points · L618](../90-实现依赖专题/01-BLI基础库/intern/math_matrix.cc.md#f-fea7092a41505676)；[blender::math::transform_points · L646](../90-实现依赖专题/01-BLI基础库/intern/math_matrix.cc.md#f-f77b7d3852a0cac9)。同名重载需按实参类型选择。
+- `mesh.vert_positions_for_write` → [Mesh::vert_positions_for_write · L1199](03-MPoly迁移与兼容.md#f-ae8d77205112d843)。
+- `MutableSpan` → [blender::MutableSpan::MutableSpan · L462](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-0f07034aaffc3384)；[blender::MutableSpan::MutableSpan · L464](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-39977234ad0ce192)；[blender::MutableSpan::MutableSpan · L466](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-ee249b5042dd38aa)；[blender::MutableSpan::MutableSpan · L468](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-479c5f85921e531f)；[blender::MutableSpan::MutableSpan · L477](../01-基础容器与现代CPP/06-MutableSpan可写视图.md#f-afcce5325e6f19e0)。同名重载需按实参类型选择。
+- `mesh.attributes_for_write` → [Mesh::attributes_for_write · L1303](03-MPoly迁移与兼容.md#f-ca7af2f1a15f0bc4)。
+- `transform_custom_normal_attribute` → [blender::bke::transform_custom_normal_attribute · L984](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-173ededd9307850f)。
+- `mesh.tag_positions_changed` → [blender::Mesh::tag_positions_changed · L407](../06-隐式共享与缓存系统/10-局部更新与失效修复.md#f-90e852663d44ad53)。
 
 ### 类型布局、声明与编译条件 · mesh.cc L2105—L2107
 
@@ -9647,7 +9647,7 @@ void BKE_mesh_tessface_clear(Mesh *mesh)
 
 **继续追踪实现**
 
-- `mesh_tessface_clear_intern` → [mesh_tessface_clear_intern · L1155](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-572aa4b8a6355d9c)。
+- `mesh_tessface_clear_intern` → [mesh_tessface_clear_intern · L1155](03-MPoly迁移与兼容.md#f-572aa4b8a6355d9c)。
 
 ### 类型布局、声明与编译条件 · mesh.cc L2112—L2115
 
@@ -9717,7 +9717,7 @@ void BKE_mesh_mselect_clear(Mesh *mesh)
 
 **继续追踪实现**
 
-- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#m-eadb3bc5b902)。宏定义由构建条件选择。
+- `MEM_SAFE_DELETE` → [MEM_SAFE_DELETE · L436](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#m-eadb3bc5b902)。宏定义由构建条件选择。
 
 <!-- annotated:df9b8dbb9b4e07 -->
 
@@ -9909,12 +9909,12 @@ void BKE_mesh_mselect_validate(Mesh *mesh)
 
 **继续追踪实现**
 
-- `MEM_new_array_uninitialized<MSelect>` → [MEM_new_array_uninitialized · L608](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-b7103eae8eb57b05)；[MEM_new_array_uninitialized · L129](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-mallocn-afdcd4.md#f-bf6ef4ddcfb6e5df)。同名重载需按实参类型选择。
-- `mesh->attributes` → [Mesh::attributes · L1298](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-607bbfe3e57cfc7f)。
-- `attributes.lookup_or_default<bool>` → [blender::bke::AttributeAccessor::lookup_or_default · L415](%E4%BE%9D%E8%B5%96-attribute_access-bceef3.md#f-a0cc3e316f1da4bd)。
-- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
-- `MEM_delete` → [MEM_delete · L400](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#f-9049ffdd1682887c)。
-- `MEM_realloc_uninitialized` → [MEM_realloc_uninitialized · L118](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#m-813b7cd3fcff)。宏定义由构建条件选择。
+- `MEM_new_array_uninitialized<MSelect>` → [MEM_new_array_uninitialized · L608](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-b7103eae8eb57b05)；[MEM_new_array_uninitialized · L129](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/intern/mallocn.cc.md#f-bf6ef4ddcfb6e5df)。同名重载需按实参类型选择。
+- `mesh->attributes` → [Mesh::attributes · L1298](03-MPoly迁移与兼容.md#f-607bbfe3e57cfc7f)。
+- `attributes.lookup_or_default<bool>` → [blender::bke::AttributeAccessor::lookup_or_default · L415](../90-实现依赖专题/02-BKE几何与数据/intern/attribute_access.cc.md#f-a0cc3e316f1da4bd)。
+- `BLI_assert_unreachable` → [BLI_assert_unreachable · L77](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-7a2d91a67d8e)。宏定义由构建条件选择。
+- `MEM_delete` → [MEM_delete · L400](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#f-9049ffdd1682887c)。
+- `MEM_realloc_uninitialized` → [MEM_realloc_uninitialized · L118](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#m-813b7cd3fcff)。宏定义由构建条件选择。
 
 <!-- annotated:73b48dd66d3049 -->
 
@@ -9993,8 +9993,8 @@ int BKE_mesh_mselect_find(const Mesh *mesh, int index, eMSelect_Type type)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `ELEM` → [ELEM · L88](%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
 
 <!-- annotated:9d7707af937b7a -->
 
@@ -10070,8 +10070,8 @@ int BKE_mesh_mselect_active_get(const Mesh *mesh, eMSelect_Type type)
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `ELEM` → [ELEM · L88](%E4%BE%9D%E8%B5%96-GHOST_utildefines-34b996.md#m-d28724a15928)；[ELEM · L135](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_utildefines-293a0a.md#m-d6572de7cae0)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `ELEM` → [ELEM · L88](../90-实现依赖专题/07-Intern运行时与平台/ghost/intern/GHOST_utildefines.hh.md#m-d28724a15928)；[ELEM · L135](../90-实现依赖专题/01-BLI基础库/BLI_utildefines.hh.md#m-d6572de7cae0)。宏定义由构建条件选择。
 
 <!-- annotated:a4a6d0b29cd946 -->
 
@@ -10167,11 +10167,11 @@ void BKE_mesh_mselect_active_set(Mesh *mesh, int index, eMSelect_Type type)
 
 **继续追踪实现**
 
-- `BKE_mesh_mselect_find` → [BKE_mesh_mselect_find · L2190](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-ec3ef7cc45e15dec)。
-- `MEM_realloc_uninitialized` → [MEM_realloc_uninitialized · L118](../03-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B/%E4%BE%9D%E8%B5%96-MEM_guardedalloc-b54eca.md#m-813b7cd3fcff)。宏定义由构建条件选择。
-- `eMSelect_Type` → [blender::eMSelect_Type](%E4%BE%9D%E8%B5%96-BKE_mesh-59f808.md#t-b18bf0b29ee4)；[blender::eMSelect_Type](%E4%BE%9D%E8%B5%96-DNA_meshdata_types-2b29ad.md#t-b3603d4ae6aa)。
+- `BKE_mesh_mselect_find` → [BKE_mesh_mselect_find · L2190](03-MPoly迁移与兼容.md#f-ec3ef7cc45e15dec)。
+- `MEM_realloc_uninitialized` → [MEM_realloc_uninitialized · L118](../90-实现依赖专题/07-Intern运行时与平台/guardedalloc/MEM_guardedalloc.h.md#m-813b7cd3fcff)。宏定义由构建条件选择。
+- `eMSelect_Type` → [blender::eMSelect_Type](../90-实现依赖专题/02-BKE几何与数据/BKE_mesh.h.md#t-b18bf0b29ee4)；[blender::eMSelect_Type](../90-实现依赖专题/08-其他Blender模块/makesdna/DNA_meshdata_types.h.md#t-b3603d4ae6aa)。
 - `std::swap` → [外部契约](https://eel.is/c++draft/)：这个边界按实际表达式及所属类型核对参数、返回值、寿命与失败行为。这里提供接口入口，不声称已解释该第三方版本的内部实现。
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:735bd36a7fa432 -->
 
@@ -10247,7 +10247,7 @@ void BKE_mesh_count_selected_items(const Mesh *mesh, int r_count[3])
 
 **继续追踪实现**
 
-- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](%E4%BE%9D%E8%B5%96-editmesh-1ee56f.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
+- `BKE_editmesh_bmesh_get` → [blender::BKE_editmesh_bmesh_get · L65](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-2afdd2773d3f0d88)；[blender::BKE_editmesh_bmesh_get · L71](../90-实现依赖专题/02-BKE几何与数据/intern/editmesh.cc.md#f-80631d704a7e9947)。同名重载需按实参类型选择。
 
 ### 类型布局、声明与编译条件 · mesh.cc L2246—L2248
 
@@ -10347,12 +10347,12 @@ void BKE_mesh_eval_geometry(Depsgraph *depsgraph, Mesh *mesh)
 
 **继续追踪实现**
 
-- `DEG_debug_print_eval` → [blender::DEG_debug_print_eval · L240](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/%E4%BE%9D%E8%B5%96-depsgraph_debug-f95ade.md#f-f2c4ea506dd14a2f)。
-- `BKE_mesh_texspace_calc` → [BKE_mesh_texspace_calc · L1653](03-MPoly%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9.md#f-6bc56fb8c90adbe6)。
-- `BKE_id_free` → [blender::BKE_id_free · L224](%E4%BE%9D%E8%B5%96-lib_id_delete-0cb33f.md#f-28ed02c41d0f2d5b)。
-- `DEG_is_active` → [blender::DEG_is_active · L324](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/%E4%BE%9D%E8%B5%96-depsgraph-177fcb.md#f-d561ff15ce03c64a)。
-- `DEG_get_original` → [blender::DEG_get_original · L128](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/%E4%BE%9D%E8%B5%96-DEG_depsgraph_query-db0d31.md#f-79782eab82a92d86)；[blender::DEG_get_original · L134](../11-Depsgraph%E4%B8%8E%E5%B9%B6%E8%A1%8C%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F/%E4%BE%9D%E8%B5%96-DEG_depsgraph_query-db0d31.md#f-c032f06e9ef8f0cb)。同名重载需按实参类型选择。
-- `copy_v3_v3` → [copy_v3_v3 · L828](%E4%BE%9D%E8%B5%96-math_float3-eb3e6f.md#f-5c67e0fefe437332)。
+- `DEG_debug_print_eval` → [blender::DEG_debug_print_eval · L240](../90-实现依赖专题/06-Depsgraph依赖图/intern/depsgraph_debug.cc.md#f-f2c4ea506dd14a2f)。
+- `BKE_mesh_texspace_calc` → [BKE_mesh_texspace_calc · L1653](03-MPoly迁移与兼容.md#f-6bc56fb8c90adbe6)。
+- `BKE_id_free` → [blender::BKE_id_free · L224](../90-实现依赖专题/02-BKE几何与数据/intern/lib_id_delete.cc.md#f-28ed02c41d0f2d5b)。
+- `DEG_is_active` → [blender::DEG_is_active · L324](../90-实现依赖专题/06-Depsgraph依赖图/intern/depsgraph.cc.md#f-d561ff15ce03c64a)。
+- `DEG_get_original` → [blender::DEG_get_original · L128](../90-实现依赖专题/06-Depsgraph依赖图/DEG_depsgraph_query.hh.md#f-79782eab82a92d86)；[blender::DEG_get_original · L134](../90-实现依赖专题/06-Depsgraph依赖图/DEG_depsgraph_query.hh.md#f-c032f06e9ef8f0cb)。同名重载需按实参类型选择。
+- `copy_v3_v3` → [copy_v3_v3 · L828](../90-实现依赖专题/07-Intern运行时与平台/cycles/util/math_float3.h.md#f-5c67e0fefe437332)。
 
 ### 类型布局、声明与编译条件 · mesh.cc L2269—L2270
 
@@ -10479,4 +10479,4 @@ sizeof给出对象表示大小，不是其引用的所有堆内存总量。sizeo
 
 把偏移数组与vector<vector<int>>、CSR邻接表示作比较：前者集中存储，后者方便独立增长；是否稳定修改比容器名字更影响选型。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

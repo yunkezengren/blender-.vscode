@@ -1,6 +1,6 @@
 # 06-03 Mixin与共享指针封装
 
-[方向导航](README.md) · [总目录](../README.md) · [实现索引](../%E7%AC%A6%E5%8F%B7%E4%BE%9D%E8%B5%96%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%B4%A2%E5%BC%95.md)
+[方向导航](README.md) · [总目录](../README.md) · [实现索引](../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
 
 ## 从问题到实现
 
@@ -377,7 +377,7 @@ template<typename T = ImplicitSharingInfo, bool IsStrong = true> class ImplicitS
 
 **继续追踪实现**
 
-- `this->add_user` → [blender::ImplicitSharingPtr::add_user · L174](03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-6894ff5a333e0ce0)。
+- `this->add_user` → [blender::ImplicitSharingPtr::add_user · L174](03-Mixin与共享指针封装.md#f-6894ff5a333e0ce0)。
 
 <!-- annotated:e75546cd8852be -->
 
@@ -499,7 +499,7 @@ template<typename T = ImplicitSharingInfo, bool IsStrong = true> class ImplicitS
 
 **继续追踪实现**
 
-- `this->add_user` → [blender::ImplicitSharingPtr::add_user · L174](03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-6894ff5a333e0ce0)。
+- `this->add_user` → [blender::ImplicitSharingPtr::add_user · L174](03-Mixin与共享指针封装.md#f-6894ff5a333e0ce0)。
 
 <!-- annotated:099ab3b368ef18 -->
 
@@ -617,7 +617,7 @@ template<typename T = ImplicitSharingInfo, bool IsStrong = true> class ImplicitS
 
 **继续追踪实现**
 
-- `this->remove_user_and_delete_if_last` → [blender::ImplicitSharingPtr::remove_user_and_delete_if_last · L186](03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-8cd6c11e50fef966)。
+- `this->remove_user_and_delete_if_last` → [blender::ImplicitSharingPtr::remove_user_and_delete_if_last · L186](03-Mixin与共享指针封装.md#f-8cd6c11e50fef966)。
 
 <!-- annotated:95e5d26bf542bf -->
 
@@ -695,8 +695,8 @@ template<typename T = ImplicitSharingInfo, bool IsStrong = true> class ImplicitS
 
 **继续追踪实现**
 
-- `this->remove_user_and_delete_if_last` → [blender::ImplicitSharingPtr::remove_user_and_delete_if_last · L186](03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-8cd6c11e50fef966)。
-- `this->add_user` → [blender::ImplicitSharingPtr::add_user · L174](03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-6894ff5a333e0ce0)。
+- `this->remove_user_and_delete_if_last` → [blender::ImplicitSharingPtr::remove_user_and_delete_if_last · L186](03-Mixin与共享指针封装.md#f-8cd6c11e50fef966)。
+- `this->add_user` → [blender::ImplicitSharingPtr::add_user · L174](03-Mixin与共享指针封装.md#f-6894ff5a333e0ce0)。
 
 <!-- annotated:731aa25a8a44c6 -->
 
@@ -775,7 +775,7 @@ template<typename T = ImplicitSharingInfo, bool IsStrong = true> class ImplicitS
 
 **继续追踪实现**
 
-- `this->remove_user_and_delete_if_last` → [blender::ImplicitSharingPtr::remove_user_and_delete_if_last · L186](03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-8cd6c11e50fef966)。
+- `this->remove_user_and_delete_if_last` → [blender::ImplicitSharingPtr::remove_user_and_delete_if_last · L186](03-Mixin与共享指针封装.md#f-8cd6c11e50fef966)。
 
 <!-- annotated:805482af9412b6 -->
 
@@ -833,7 +833,7 @@ template<typename T = ImplicitSharingInfo, bool IsStrong = true> class ImplicitS
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:872658e044cc63 -->
 
@@ -891,7 +891,7 @@ template<typename T = ImplicitSharingInfo, bool IsStrong = true> class ImplicitS
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
 
 <!-- annotated:a2aa3ab5502c79 -->
 
@@ -1125,7 +1125,7 @@ template<typename T = ImplicitSharingInfo, bool IsStrong = true> class ImplicitS
 
 **继续追踪实现**
 
-- `this->remove_user_and_delete_if_last` → [blender::ImplicitSharingPtr::remove_user_and_delete_if_last · L186](03-Mixin%E4%B8%8E%E5%85%B1%E4%BA%AB%E6%8C%87%E9%92%88%E5%B0%81%E8%A3%85.md#f-8cd6c11e50fef966)。
+- `this->remove_user_and_delete_if_last` → [blender::ImplicitSharingPtr::remove_user_and_delete_if_last · L186](03-Mixin与共享指针封装.md#f-8cd6c11e50fef966)。
 
 <!-- annotated:18babe7952dbe5 -->
 
@@ -1237,7 +1237,7 @@ template<typename T = ImplicitSharingInfo, bool IsStrong = true> class ImplicitS
 
 **继续追踪实现**
 
-- `get_default_hash` → [blender::get_default_hash · L251](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/01-%E5%93%88%E5%B8%8C%E4%B8%8E%E7%9B%B8%E7%AD%89%E5%A5%91%E7%BA%A6.md#f-5f2c246aedf3dc0a)。
+- `get_default_hash` → [blender::get_default_hash · L251](../02-哈希表与关联数据结构/01-哈希与相等契约.md#f-5f2c246aedf3dc0a)。
 
 ### 类型布局、声明与编译条件 · BLI_implicit_sharing_ptr.hh L138—L143
 
@@ -1319,10 +1319,10 @@ template<typename T = ImplicitSharingInfo, bool IsStrong = true> class ImplicitS
 
 **继续追踪实现**
 
-- `BLI_assert` → [BLI_assert · L48](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-57a88495704d)；[BLI_assert · L63](../01-%E5%9F%BA%E7%A1%80%E5%AE%B9%E5%99%A8%E4%B8%8E%E7%8E%B0%E4%BB%A3CPP/%E4%BE%9D%E8%B5%96-BLI_assert-cc98e8.md#m-d07050020cb5)。宏定义由构建条件选择。
-- `data_->is_mutable` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：T模板参数提供的操作协议。调用位置L147。
-- `data_->copy` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：T模板参数提供的操作协议。调用位置L149。
-- `data_->tag_ensured_mutable` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：T模板参数提供的操作协议。调用位置L152。
+- `BLI_assert` → [BLI_assert · L48](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-57a88495704d)；[BLI_assert · L63](../90-实现依赖专题/01-BLI基础库/BLI_assert.hh.md#m-d07050020cb5)。宏定义由构建条件选择。
+- `data_->is_mutable` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：T模板参数提供的操作协议。调用位置L147。
+- `data_->copy` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：T模板参数提供的操作协议。调用位置L149。
+- `data_->tag_ensured_mutable` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：T模板参数提供的操作协议。调用位置L152。
 
 <!-- annotated:ecb9f29a4f21d6 -->
 
@@ -1382,7 +1382,7 @@ template<typename T = ImplicitSharingInfo, bool IsStrong = true> class ImplicitS
 
 **继续追踪实现**
 
-- `get_default_hash` → [blender::get_default_hash · L251](../02-%E5%93%88%E5%B8%8C%E8%A1%A8%E4%B8%8E%E5%85%B3%E8%81%94%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/01-%E5%93%88%E5%B8%8C%E4%B8%8E%E7%9B%B8%E7%AD%89%E5%A5%91%E7%BA%A6.md#f-5f2c246aedf3dc0a)。
+- `get_default_hash` → [blender::get_default_hash · L251](../02-哈希表与关联数据结构/01-哈希与相等契约.md#f-5f2c246aedf3dc0a)。
 
 ### 类型布局、声明与编译条件 · BLI_implicit_sharing_ptr.hh L160—L162
 
@@ -1584,8 +1584,8 @@ template<typename T = ImplicitSharingInfo, bool IsStrong = true> class ImplicitS
 
 **继续追踪实现**
 
-- `data->add_user` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：T模板参数提供的操作协议。调用位置L178。
-- `data->add_weak_user` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：T模板参数提供的操作协议。调用位置L181。
+- `data->add_user` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：T模板参数提供的操作协议。调用位置L178。
+- `data->add_weak_user` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：T模板参数提供的操作协议。调用位置L181。
 
 <!-- annotated:8ac32e80284770 -->
 
@@ -1655,8 +1655,8 @@ template<typename T = ImplicitSharingInfo, bool IsStrong = true> class ImplicitS
 
 **继续追踪实现**
 
-- `data->remove_user_and_delete_if_last` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：T模板参数提供的操作协议。调用位置L190。
-- `data->remove_weak_user_and_delete_if_last` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：T模板参数提供的操作协议。调用位置L193。
+- `data->remove_user_and_delete_if_last` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：T模板参数提供的操作协议。调用位置L190。
+- `data->remove_weak_user_and_delete_if_last` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：T模板参数提供的操作协议。调用位置L193。
 
 ### 类型布局、声明与编译条件 · BLI_implicit_sharing_ptr.hh L197—L213
 
@@ -2143,7 +2143,7 @@ class ImplicitSharingPtrAndData {
 
 **继续追踪实现**
 
-- `this->sharing_info.has_value` → [调用协议](../%E6%A8%A1%E6%9D%BF%E5%AE%8F%E4%B8%8E%E5%8A%A8%E6%80%81%E5%88%86%E6%B4%BE%E5%8D%8F%E8%AE%AE.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L254。
+- `this->sharing_info.has_value` → [调用协议](../00-课程指南/01-路线与规范/模板宏与动态分派协议.md)：接收对象类型依赖auto、返回值或模板实例；不按同名猜测目标。调用位置L254。
 
 ### 类型布局、声明与编译条件 · BLI_implicit_sharing_ptr.hh L256—L262
 
@@ -2274,4 +2274,4 @@ shared_ptr让控制块跟踪共享寿命，不自动使被指向对象的读写�
 
 与shared_ptr比较寿命管理，与写时复制容器比较写边界，与普通memoization比较键的等价性；SharedCache把等价对象的派生结果放在共同控制对象中。
 
-[历史提交索引](../%E5%8E%86%E5%8F%B2%E6%8F%90%E4%BA%A4%E4%B8%8E%E8%AE%BE%E8%AE%A1%E6%BC%94%E5%8C%96%E7%B4%A2%E5%BC%95.md) · [源码基准](../%E6%BA%90%E7%A0%81%E7%89%88%E6%9C%AC%E4%B8%8E%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95.md) · [验收报告](../%E9%AA%8C%E6%94%B6%E6%8A%A5%E5%91%8A.md)
+[历史提交索引](../00-课程指南/02-源码与提交索引/历史提交与设计演化索引.md) · [源码基准](../00-课程指南/02-源码与提交索引/源码版本与覆盖索引.md) · [验收报告](../00-课程指南/03-验收报告/验收报告.md)

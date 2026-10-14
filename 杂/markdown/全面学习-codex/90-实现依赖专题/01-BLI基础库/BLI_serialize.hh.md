@@ -1,0 +1,273 @@
+# 实现依赖专题：source/blender/blenlib/BLI_serialize.hh
+
+[实现依赖导航](../README.md) · [符号索引](../../00-课程指南/02-源码与提交索引/符号依赖与实现索引.md)
+
+本专题从正文实际调用进入，集中保存共享实现。函数有稳定锚点，可从调用处直接跳到对应完整函数；递归与互相调用通过回链组织。
+
+## 本文件的实现关系
+
+```mermaid
+flowchart LR
+  S["BLI_serialize.hh"]:::abstraction
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
+
+```mermaid
+flowchart TB
+  C["调用者提供参数与有效对象"]:::input
+  F["BLI_serialize.hh实现"]:::compute
+  R["结果与被修改状态"]:::result
+  C -->|"进入"| F
+  F -->|"返回或提交"| R
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
+
+```mermaid
+flowchart TB
+  T["具体类型与模板实参"]:::abstraction
+  B["分支与构建条件"]:::data
+  I["匹配的实现"]:::compute
+  E["标准库或系统契约边界"]:::result
+  T -->|"静态选择"| I
+  B -->|"配置选择"| I
+  I -->|"到达外部接口"| E
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
+
+```mermaid
+flowchart TB
+  S["完整源码单元"]:::input
+  A["教学注释与推导"]:::abstraction
+  D["被调用实现专题"]:::compute
+  V["原文与token一致性检查"]:::result
+  S -->|"就近阅读"| A
+  A -->|"继续深入"| D
+  A -->|"核对"| V
+  classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px;
+  classDef data fill:#CFFAFE,stroke:#0891B2,color:#164E63,stroke-width:2px;
+  classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
+  classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+```
+
+## 相关类型布局与成员入口
+
+<a id="t-68cc6c9eb2b6"></a>
+
+### `blender::io::serialize::Value`
+
+原始声明：[source/blender/blenlib/BLI_serialize.hh](../../../../../../source/blender/blenlib/BLI_serialize.hh) · L86—L86。
+
+成员布局：
+
+- `eValueType type_`
+- `StringValue as_string_value`
+- `IntValue as_int_value`
+- `DoubleValue as_double_value`
+- `BooleanValue as_boolean_value`
+- `EnumValue as_enum_value`
+- `ArrayValue as_array_value`
+- `DictionaryValue as_dictionary_value`
+
+以下保留类的数据声明与编译条件，成员函数实现通过后面的精确链接阅读。
+
+<!-- annotated:2f69e672734b8c -->
+
+```cpp
+class Value;
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_serialize.hh · L86—L86</summary>
+
+<!-- original:2f69e672734b8c:source/blender/blenlib/BLI_serialize.hh:86:86 -->
+
+```cpp
+class Value;
+```
+
+</details>
+
+
+<a id="t-6338b3e5fd60"></a>
+
+### `blender::io::serialize::Value`
+
+原始声明：[source/blender/blenlib/BLI_serialize.hh](../../../../../../source/blender/blenlib/BLI_serialize.hh) · L112—L168。
+
+成员布局：
+
+- `eValueType type_`
+- `StringValue as_string_value`
+- `IntValue as_int_value`
+- `DoubleValue as_double_value`
+- `BooleanValue as_boolean_value`
+- `EnumValue as_enum_value`
+- `ArrayValue as_array_value`
+- `DictionaryValue as_dictionary_value`
+
+以下保留类的数据声明与编译条件，成员函数实现通过后面的精确链接阅读。
+
+<!-- annotated:6dd11280156f4e -->
+
+```cpp
+class Value {
+ private:
+  eValueType type_;
+
+ protected:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_serialize.hh · L112—L116</summary>
+
+<!-- original:6dd11280156f4e:source/blender/blenlib/BLI_serialize.hh:112:116 -->
+
+```cpp
+class Value {
+ private:
+  eValueType type_;
+
+ protected:
+```
+
+</details>
+
+<!-- annotated:4d7a82df166cd5 -->
+
+```cpp
+
+ public:
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_serialize.hh · L118—L119</summary>
+
+<!-- original:4d7a82df166cd5:source/blender/blenlib/BLI_serialize.hh:118:119 -->
+
+```cpp
+
+ public:
+```
+
+</details>
+
+<!-- annotated:c4b0117580c731 -->
+
+```cpp
+
+  /**
+   * Casts to a StringValue.
+   * Will return nullptr when it is a different type.
+   */
+  const StringValue *as_string_value() const;
+
+  /**
+   * Casts to an IntValue.
+   * Will return nullptr when it is a different type.
+   */
+  const IntValue *as_int_value() const;
+
+  /**
+   * Casts to a DoubleValue.
+   * Will return nullptr when it is a different type.
+   */
+  const DoubleValue *as_double_value() const;
+
+  /**
+   * Casts to a BooleanValue.
+   * Will return nullptr when it is a different type.
+   */
+  const BooleanValue *as_boolean_value() const;
+
+  /**
+   * Casts to a EnumValue.
+   * Will return nullptr when it is a different type.
+   */
+  const EnumValue *as_enum_value() const;
+
+  /**
+   * Casts to an ArrayValue.
+   * Will return nullptr when it is a different type.
+   */
+  const ArrayValue *as_array_value() const;
+
+  /**
+   * Casts to an DictionaryValue.
+   * Will return nullptr when it is a different type.
+   */
+  const DictionaryValue *as_dictionary_value() const;
+};
+```
+
+<details>
+<summary>核对原始源码：source/blender/blenlib/BLI_serialize.hh · L126—L168</summary>
+
+<!-- original:c4b0117580c731:source/blender/blenlib/BLI_serialize.hh:126:168 -->
+
+```cpp
+
+  /**
+   * Casts to a StringValue.
+   * Will return nullptr when it is a different type.
+   */
+  const StringValue *as_string_value() const;
+
+  /**
+   * Casts to an IntValue.
+   * Will return nullptr when it is a different type.
+   */
+  const IntValue *as_int_value() const;
+
+  /**
+   * Casts to a DoubleValue.
+   * Will return nullptr when it is a different type.
+   */
+  const DoubleValue *as_double_value() const;
+
+  /**
+   * Casts to a BooleanValue.
+   * Will return nullptr when it is a different type.
+   */
+  const BooleanValue *as_boolean_value() const;
+
+  /**
+   * Casts to a EnumValue.
+   * Will return nullptr when it is a different type.
+   */
+  const EnumValue *as_enum_value() const;
+
+  /**
+   * Casts to an ArrayValue.
+   * Will return nullptr when it is a different type.
+   */
+  const ArrayValue *as_array_value() const;
+
+  /**
+   * Casts to an DictionaryValue.
+   * Will return nullptr when it is a different type.
+   */
+  const DictionaryValue *as_dictionary_value() const;
+};
+```
+
+</details>
+
+
+## 完整成员与函数实现
