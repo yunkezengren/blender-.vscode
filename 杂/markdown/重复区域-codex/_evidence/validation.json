@@ -1,0 +1,102 @@
+{
+  "time_asia_shanghai": "2026-10-16T12:18:41.580236+08:00",
+  "passed": true,
+  "main_chapters": 14,
+  "markdown_files": 27,
+  "main_total_lines": 19513,
+  "main_nonblank_noncode_lines": 3349,
+  "source_excerpt_lines_including_reuse": 12680,
+  "unique_source_files": 28,
+  "source_excerpts": 61,
+  "local_links_checked": 338,
+  "mermaid_blocks": 15,
+  "mermaid_rendered": false,
+  "python_syntax_checked": 6,
+  "chapters": [
+    {
+      "path": "01-语义与编辑表示/01-重复区域全景与状态递推.md",
+      "lines": 1357,
+      "nonblank_noncode_lines": 236,
+      "characters": 44872
+    },
+    {
+      "path": "01-语义与编辑表示/02-DNA存储配对与动态插槽.md",
+      "lines": 1330,
+      "nonblank_noncode_lines": 244,
+      "characters": 36861
+    },
+    {
+      "path": "01-语义与编辑表示/03-区域发现嵌套关系与跨界连线.md",
+      "lines": 1291,
+      "nonblank_noncode_lines": 230,
+      "characters": 33897
+    },
+    {
+      "path": "02-构图与按需执行/04-循环体提取与Zone接口协议.md",
+      "lines": 1286,
+      "nonblank_noncode_lines": 237,
+      "characters": 36260
+    },
+    {
+      "path": "02-构图与按需执行/05-按轮数展开执行图与零轮分支.md",
+      "lines": 1611,
+      "nonblank_noncode_lines": 230,
+      "characters": 43782
+    },
+    {
+      "path": "02-构图与按需执行/06-需求传播跨界输入与参数重映射.md",
+      "lines": 1566,
+      "nonblank_noncode_lines": 237,
+      "characters": 46989
+    },
+    {
+      "path": "03-值寿命与观察机制/07-状态值Field引用与内存寿命.md",
+      "lines": 1604,
+      "nonblank_noncode_lines": 237,
+      "characters": 45024
+    },
+    {
+      "path": "03-值寿命与观察机制/08-轮次上下文日志Viewer与副作用.md",
+      "lines": 1551,
+      "nonblank_noncode_lines": 244,
+      "characters": 42934
+    },
+    {
+      "path": "01-语义与编辑表示/09-编辑操作RNA与Python构建.md",
+      "lines": 1321,
+      "nonblank_noncode_lines": 251,
+      "characters": 36268
+    },
+    {
+      "path": "03-值寿命与观察机制/10-复制保存加载与版本边界.md",
+      "lines": 1452,
+      "nonblank_noncode_lines": 244,
+      "characters": 40208
+    },
+    {
+      "path": "04-实战后端与验收/11-性能模型并行边界与调试方法.md",
+      "lines": 1460,
+      "nonblank_noncode_lines": 244,
+      "characters": 43265
+    },
+    {
+      "path": "04-实战后端与验收/12-数值几何与嵌套算法实战.md",
+      "lines": 1243,
+      "nonblank_noncode_lines": 230,
+      "characters": 37558
+    },
+    {
+      "path": "04-实战后端与验收/13-合成器与GPU重复区域实现.md",
+      "lines": 1202,
+      "nonblank_noncode_lines": 257,
+      "characters": 36272
+    },
+    {
+      "path": "04-实战后端与验收/14-故障诊断回归与独立实现训练.md",
+      "lines": 1239,
+      "nonblank_noncode_lines": 228,
+      "characters": 37354
+    }
+  ],
+  "issues": []
+}

@@ -1,0 +1,107 @@
+{
+  "scope": "independent semantic model, not Blender integration",
+  "passed": 33,
+  "checks": [
+    "count/-8",
+    "trace/-8",
+    "count/-1",
+    "trace/-1",
+    "count/0",
+    "trace/0",
+    "count/1",
+    "trace/1",
+    "count/2",
+    "trace/2",
+    "count/3",
+    "trace/3",
+    "count/10",
+    "trace/10",
+    "zero_identity",
+    "affine/3",
+    "fibonacci/5",
+    "index_sum/3",
+    "index_sum/5",
+    "sqrt_newton/5",
+    "accumulation/0",
+    "accumulation/3",
+    "nested/2x3",
+    "nested/empty_outer",
+    "nested/empty_inner",
+    "border/or",
+    "border/none",
+    "border/zero",
+    "side_effect/filter",
+    "side_effect/zero",
+    "mapping/2x1",
+    "counterexample/broken_chain",
+    "counterexample/sequential_update"
+  ],
+  "examples": {
+    "affine": [
+      15,
+      [
+        1,
+        3,
+        7,
+        15
+      ]
+    ],
+    "fibonacci": [
+      [
+        5,
+        8
+      ],
+      [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          5,
+          8
+        ]
+      ]
+    ],
+    "nested": [
+      36,
+      [
+        0,
+        3,
+        36
+      ]
+    ],
+    "parameter_maps": {
+      "inputs": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "outputs": [
+        0,
+        1,
+        3,
+        4,
+        5
+      ],
+      "iteration_usage_index": 2
+    }
+  }
+}

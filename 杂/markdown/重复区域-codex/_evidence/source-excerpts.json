@@ -1,0 +1,493 @@
+{
+  "revision": "e2e58a974edb3a5e949aa273d7ff940b5c5797c8",
+  "excerpts": [
+    {
+      "document": "01-语义与编辑表示/01-重复区域全景与状态递推.md",
+      "key": "repeat",
+      "path": "source/blender/nodes/intern/geometry_nodes_repeat_zone.cc",
+      "start": 1,
+      "end": 432,
+      "sha256": "269953f0d8faf39449009afe88f599b025df2d3c89a29a489ee5608ce193d64b"
+    },
+    {
+      "document": "01-语义与编辑表示/01-重复区域全景与状态递推.md",
+      "key": "node",
+      "path": "source/blender/nodes/geometry/nodes/node_geo_repeat.cc",
+      "start": 60,
+      "end": 245,
+      "sha256": "e3984416e3fe624503235b54c525443449b7b9fe0cc1e4ebdf8f07ee31f835d0"
+    },
+    {
+      "document": "01-语义与编辑表示/01-重复区域全景与状态递推.md",
+      "key": "buildh",
+      "path": "source/blender/nodes/NOD_geometry_nodes_lazy_function.hh",
+      "start": 591,
+      "end": 677,
+      "sha256": "2050af971ef9ab9be4546d423ee73f3ed7ff54c8175bddc9c89330b24561b6c1"
+    },
+    {
+      "document": "01-语义与编辑表示/01-重复区域全景与状态递推.md",
+      "key": "builder",
+      "path": "source/blender/nodes/intern/geometry_nodes_lazy_function.cc",
+      "start": 2243,
+      "end": 2411,
+      "sha256": "28f744e665608be8d326853f759fed4c20816eaf2f8e64b605bc8a2a6594c746"
+    },
+    {
+      "document": "01-语义与编辑表示/02-DNA存储配对与动态插槽.md",
+      "key": "dna",
+      "path": "source/blender/makesdna/DNA_node_types.h",
+      "start": 3543,
+      "end": 3578,
+      "sha256": "666cf7403b540ccdcc187d8ba8a4e19f2ebea70114be84d9db0a057ebffd58b1"
+    },
+    {
+      "document": "01-语义与编辑表示/02-DNA存储配对与动态插槽.md",
+      "key": "access",
+      "path": "source/blender/nodes/geometry/include/NOD_geo_repeat.hh",
+      "start": 1,
+      "end": 89,
+      "sha256": "6f08c3b3f86fe3fd3b73144d67984c3767a06fa20634cbc7179d3d27369ddbba"
+    },
+    {
+      "document": "01-语义与编辑表示/02-DNA存储配对与动态插槽.md",
+      "key": "node",
+      "path": "source/blender/nodes/geometry/nodes/node_geo_repeat.cc",
+      "start": 1,
+      "end": 372,
+      "sha256": "e3984416e3fe624503235b54c525443449b7b9fe0cc1e4ebdf8f07ee31f835d0"
+    },
+    {
+      "document": "01-语义与编辑表示/02-DNA存储配对与动态插槽.md",
+      "key": "items",
+      "path": "source/blender/nodes/NOD_socket_items.hh",
+      "start": 1,
+      "end": 270,
+      "sha256": "4786f64908e415769708aa18be4781117107bc7b2c5d1774644f0dc03494e225"
+    },
+    {
+      "document": "01-语义与编辑表示/02-DNA存储配对与动态插槽.md",
+      "key": "builder",
+      "path": "source/blender/nodes/intern/geometry_nodes_lazy_function.cc",
+      "start": 1692,
+      "end": 1756,
+      "sha256": "28f744e665608be8d326853f759fed4c20816eaf2f8e64b605bc8a2a6594c746"
+    },
+    {
+      "document": "01-语义与编辑表示/03-区域发现嵌套关系与跨界连线.md",
+      "key": "zoneh",
+      "path": "source/blender/blenkernel/BKE_node_tree_zones.hh",
+      "start": 1,
+      "end": 122,
+      "sha256": "ee44147a7ca35a048956bf3b9dd5b69c2f4f0cf3ea25fd2148ba8f1b6e0a12fd"
+    },
+    {
+      "document": "01-语义与编辑表示/03-区域发现嵌套关系与跨界连线.md",
+      "key": "zones",
+      "path": "source/blender/blenkernel/intern/node_tree_zones.cc",
+      "start": 1,
+      "end": 653,
+      "sha256": "383793a4405ac77226f60107e2252e94c3eeb191f2b251f074a9f8009162a3b7"
+    },
+    {
+      "document": "01-语义与编辑表示/03-区域发现嵌套关系与跨界连线.md",
+      "key": "builder",
+      "path": "source/blender/nodes/intern/geometry_nodes_lazy_function.cc",
+      "start": 2063,
+      "end": 2110,
+      "sha256": "28f744e665608be8d326853f759fed4c20816eaf2f8e64b605bc8a2a6594c746"
+    },
+    {
+      "document": "02-构图与按需执行/04-循环体提取与Zone接口协议.md",
+      "key": "builder",
+      "path": "source/blender/nodes/intern/geometry_nodes_lazy_function.cc",
+      "start": 1692,
+      "end": 1810,
+      "sha256": "28f744e665608be8d326853f759fed4c20816eaf2f8e64b605bc8a2a6594c746"
+    },
+    {
+      "document": "02-构图与按需执行/04-循环体提取与Zone接口协议.md",
+      "key": "builder",
+      "path": "source/blender/nodes/intern/geometry_nodes_lazy_function.cc",
+      "start": 2243,
+      "end": 2490,
+      "sha256": "28f744e665608be8d326853f759fed4c20816eaf2f8e64b605bc8a2a6594c746"
+    },
+    {
+      "document": "02-构图与按需执行/04-循环体提取与Zone接口协议.md",
+      "key": "buildh",
+      "path": "source/blender/nodes/NOD_geometry_nodes_lazy_function.hh",
+      "start": 591,
+      "end": 677,
+      "sha256": "2050af971ef9ab9be4546d423ee73f3ed7ff54c8175bddc9c89330b24561b6c1"
+    },
+    {
+      "document": "02-构图与按需执行/04-循环体提取与Zone接口协议.md",
+      "key": "graph",
+      "path": "source/blender/functions/FN_lazy_function_graph.hh",
+      "start": 1,
+      "end": 350,
+      "sha256": "48e154958221afc7452bc9256048f2562a07b41cc6600b94b5b7b26105dcc69c"
+    },
+    {
+      "document": "02-构图与按需执行/05-按轮数展开执行图与零轮分支.md",
+      "key": "repeat",
+      "path": "source/blender/nodes/intern/geometry_nodes_repeat_zone.cc",
+      "start": 1,
+      "end": 432,
+      "sha256": "269953f0d8faf39449009afe88f599b025df2d3c89a29a489ee5608ce193d64b"
+    },
+    {
+      "document": "02-构图与按需执行/05-按轮数展开执行图与零轮分支.md",
+      "key": "graph",
+      "path": "source/blender/functions/FN_lazy_function_graph.hh",
+      "start": 1,
+      "end": 554,
+      "sha256": "48e154958221afc7452bc9256048f2562a07b41cc6600b94b5b7b26105dcc69c"
+    },
+    {
+      "document": "02-构图与按需执行/05-按轮数展开执行图与零轮分支.md",
+      "key": "executor",
+      "path": "source/blender/functions/FN_lazy_function_graph_executor.hh",
+      "start": 1,
+      "end": 155,
+      "sha256": "0518b91c27b666082d0038876b44015c1e53f804060bf838ebae028c4ab826b1"
+    },
+    {
+      "document": "02-构图与按需执行/06-需求传播跨界输入与参数重映射.md",
+      "key": "repeat",
+      "path": "source/blender/nodes/intern/geometry_nodes_repeat_zone.cc",
+      "start": 110,
+      "end": 410,
+      "sha256": "269953f0d8faf39449009afe88f599b025df2d3c89a29a489ee5608ce193d64b"
+    },
+    {
+      "document": "02-构图与按需执行/06-需求传播跨界输入与参数重映射.md",
+      "key": "params",
+      "path": "source/blender/functions/FN_lazy_function_execute.hh",
+      "start": 1,
+      "end": 158,
+      "sha256": "ed53f9dd899fdc764e02c4f00e0fa78a8c34a44517791170ba9c87771f95c142"
+    },
+    {
+      "document": "02-构图与按需执行/06-需求传播跨界输入与参数重映射.md",
+      "key": "paramsimpl",
+      "path": "source/blender/functions/intern/lazy_function_execute.cc",
+      "start": 1,
+      "end": 144,
+      "sha256": "31a407fd451e8a290c056ea08227bafadbe48893c950105e11f67d90186b9c9a"
+    },
+    {
+      "document": "02-构图与按需执行/06-需求传播跨界输入与参数重映射.md",
+      "key": "lf",
+      "path": "source/blender/functions/FN_lazy_function.hh",
+      "start": 1,
+      "end": 479,
+      "sha256": "e9d3118bf1a4e17ce7ba95bb38f545c7288277b9b378378ed80291a2011dae5e"
+    },
+    {
+      "document": "03-值寿命与观察机制/07-状态值Field引用与内存寿命.md",
+      "key": "value",
+      "path": "source/blender/blenkernel/BKE_node_socket_value.hh",
+      "start": 1,
+      "end": 434,
+      "sha256": "c4c5aec380f39afd08eebc2f0aca3cdea55735d5f5a81e6d1f268360da424396"
+    },
+    {
+      "document": "03-值寿命与观察机制/07-状态值Field引用与内存寿命.md",
+      "key": "repeat",
+      "path": "source/blender/nodes/intern/geometry_nodes_repeat_zone.cc",
+      "start": 98,
+      "end": 195,
+      "sha256": "269953f0d8faf39449009afe88f599b025df2d3c89a29a489ee5608ce193d64b"
+    },
+    {
+      "document": "03-值寿命与观察机制/07-状态值Field引用与内存寿命.md",
+      "key": "builder",
+      "path": "source/blender/nodes/intern/geometry_nodes_lazy_function.cc",
+      "start": 2380,
+      "end": 2490,
+      "sha256": "28f744e665608be8d326853f759fed4c20816eaf2f8e64b605bc8a2a6594c746"
+    },
+    {
+      "document": "03-值寿命与观察机制/07-状态值Field引用与内存寿命.md",
+      "key": "lf",
+      "path": "source/blender/functions/FN_lazy_function.hh",
+      "start": 1,
+      "end": 479,
+      "sha256": "e9d3118bf1a4e17ce7ba95bb38f545c7288277b9b378378ed80291a2011dae5e"
+    },
+    {
+      "document": "03-值寿命与观察机制/08-轮次上下文日志Viewer与副作用.md",
+      "key": "repeat",
+      "path": "source/blender/nodes/intern/geometry_nodes_repeat_zone.cc",
+      "start": 1,
+      "end": 110,
+      "sha256": "269953f0d8faf39449009afe88f599b025df2d3c89a29a489ee5608ce193d64b"
+    },
+    {
+      "document": "03-值寿命与观察机制/08-轮次上下文日志Viewer与副作用.md",
+      "key": "context",
+      "path": "source/blender/blenkernel/BKE_compute_contexts.hh",
+      "start": 1,
+      "end": 283,
+      "sha256": "8d7606e7708894bd13f71d193af16e18439fa90b795ff155682daf8d109e608a"
+    },
+    {
+      "document": "03-值寿命与观察机制/08-轮次上下文日志Viewer与副作用.md",
+      "key": "contextimpl",
+      "path": "source/blender/blenkernel/intern/compute_contexts.cc",
+      "start": 1,
+      "end": 430,
+      "sha256": "cba6f2df2ec12bb96af74609c1e0cf53107d86f17429912f6250e36eb6cbcf16"
+    },
+    {
+      "document": "03-值寿命与观察机制/08-轮次上下文日志Viewer与副作用.md",
+      "key": "buildh",
+      "path": "source/blender/nodes/NOD_geometry_nodes_lazy_function.hh",
+      "start": 149,
+      "end": 330,
+      "sha256": "2050af971ef9ab9be4546d423ee73f3ed7ff54c8175bddc9c89330b24561b6c1"
+    },
+    {
+      "document": "03-值寿命与观察机制/08-轮次上下文日志Viewer与副作用.md",
+      "key": "rna",
+      "path": "source/blender/makesrna/intern/rna_nodetree.cc",
+      "start": 8054,
+      "end": 8100,
+      "sha256": "fa06e9d505c6e74b51ef54464c18e75a81025ad3b35ea4a00cd16066cc1ef2cb"
+    },
+    {
+      "document": "01-语义与编辑表示/09-编辑操作RNA与Python构建.md",
+      "key": "ops",
+      "path": "source/blender/nodes/NOD_socket_items_ops.hh",
+      "start": 1,
+      "end": 456,
+      "sha256": "7c585576e889ffdc62e09fb7707c05b70a76f220ae5065af2a4be6b39dd5adf8"
+    },
+    {
+      "document": "01-语义与编辑表示/09-编辑操作RNA与Python构建.md",
+      "key": "ui",
+      "path": "source/blender/nodes/NOD_socket_items_ui.hh",
+      "start": 1,
+      "end": 140,
+      "sha256": "036c5daf927c34eec01c81888376174a981e9f811f39552672a834752013a1e3"
+    },
+    {
+      "document": "01-语义与编辑表示/09-编辑操作RNA与Python构建.md",
+      "key": "access",
+      "path": "source/blender/nodes/geometry/include/NOD_geo_repeat.hh",
+      "start": 1,
+      "end": 89,
+      "sha256": "6f08c3b3f86fe3fd3b73144d67984c3767a06fa20634cbc7179d3d27369ddbba"
+    },
+    {
+      "document": "01-语义与编辑表示/09-编辑操作RNA与Python构建.md",
+      "key": "rna",
+      "path": "source/blender/makesrna/intern/rna_nodetree.cc",
+      "start": 8033,
+      "end": 8100,
+      "sha256": "fa06e9d505c6e74b51ef54464c18e75a81025ad3b35ea4a00cd16066cc1ef2cb"
+    },
+    {
+      "document": "01-语义与编辑表示/09-编辑操作RNA与Python构建.md",
+      "key": "python",
+      "path": "scripts/startup/bl_operators/node.py",
+      "start": 855,
+      "end": 895,
+      "sha256": "c3d0826e9d53127b8364f9f8091cf686b1298b545bdb356ead76938407b3755c"
+    },
+    {
+      "document": "01-语义与编辑表示/09-编辑操作RNA与Python构建.md",
+      "key": "python",
+      "path": "scripts/startup/bl_operators/node.py",
+      "start": 1080,
+      "end": 1093,
+      "sha256": "c3d0826e9d53127b8364f9f8091cf686b1298b545bdb356ead76938407b3755c"
+    },
+    {
+      "document": "03-值寿命与观察机制/10-复制保存加载与版本边界.md",
+      "key": "node",
+      "path": "source/blender/nodes/geometry/nodes/node_geo_repeat.cc",
+      "start": 1,
+      "end": 372,
+      "sha256": "e3984416e3fe624503235b54c525443449b7b9fe0cc1e4ebdf8f07ee31f835d0"
+    },
+    {
+      "document": "03-值寿命与观察机制/10-复制保存加载与版本边界.md",
+      "key": "items",
+      "path": "source/blender/nodes/NOD_socket_items.hh",
+      "start": 1,
+      "end": 419,
+      "sha256": "4786f64908e415769708aa18be4781117107bc7b2c5d1774644f0dc03494e225"
+    },
+    {
+      "document": "03-值寿命与观察机制/10-复制保存加载与版本边界.md",
+      "key": "blend",
+      "path": "source/blender/nodes/NOD_socket_items_blend.hh",
+      "start": 1,
+      "end": 38,
+      "sha256": "82cd1e3f757f5198bd51eddd93f52622a9eb6169a05f4fe294407672db2d9616"
+    },
+    {
+      "document": "03-值寿命与观察机制/10-复制保存加载与版本边界.md",
+      "key": "access",
+      "path": "source/blender/nodes/geometry/include/NOD_geo_repeat.hh",
+      "start": 1,
+      "end": 89,
+      "sha256": "6f08c3b3f86fe3fd3b73144d67984c3767a06fa20634cbc7179d3d27369ddbba"
+    },
+    {
+      "document": "03-值寿命与观察机制/10-复制保存加载与版本边界.md",
+      "key": "dna",
+      "path": "source/blender/makesdna/DNA_node_types.h",
+      "start": 3543,
+      "end": 3578,
+      "sha256": "666cf7403b540ccdcc187d8ba8a4e19f2ebea70114be84d9db0a057ebffd58b1"
+    },
+    {
+      "document": "04-实战后端与验收/11-性能模型并行边界与调试方法.md",
+      "key": "repeat",
+      "path": "source/blender/nodes/intern/geometry_nodes_repeat_zone.cc",
+      "start": 190,
+      "end": 432,
+      "sha256": "269953f0d8faf39449009afe88f599b025df2d3c89a29a489ee5608ce193d64b"
+    },
+    {
+      "document": "04-实战后端与验收/11-性能模型并行边界与调试方法.md",
+      "key": "executor",
+      "path": "source/blender/functions/FN_lazy_function_graph_executor.hh",
+      "start": 1,
+      "end": 155,
+      "sha256": "0518b91c27b666082d0038876b44015c1e53f804060bf838ebae028c4ab826b1"
+    },
+    {
+      "document": "04-实战后端与验收/11-性能模型并行边界与调试方法.md",
+      "key": "execimpl",
+      "path": "source/blender/functions/intern/lazy_function_graph_executor.cc",
+      "start": 1,
+      "end": 145,
+      "sha256": "0f02dca335f5e00a40999760991e7494c997a09541285e2b49c12eeb14cc93a0"
+    },
+    {
+      "document": "04-实战后端与验收/11-性能模型并行边界与调试方法.md",
+      "key": "params",
+      "path": "source/blender/functions/FN_lazy_function_execute.hh",
+      "start": 1,
+      "end": 158,
+      "sha256": "ed53f9dd899fdc764e02c4f00e0fa78a8c34a44517791170ba9c87771f95c142"
+    },
+    {
+      "document": "04-实战后端与验收/11-性能模型并行边界与调试方法.md",
+      "key": "graph",
+      "path": "source/blender/functions/FN_lazy_function_graph.hh",
+      "start": 1,
+      "end": 260,
+      "sha256": "48e154958221afc7452bc9256048f2562a07b41cc6600b94b5b7b26105dcc69c"
+    },
+    {
+      "document": "04-实战后端与验收/12-数值几何与嵌套算法实战.md",
+      "key": "repeat",
+      "path": "source/blender/nodes/intern/geometry_nodes_repeat_zone.cc",
+      "start": 1,
+      "end": 432,
+      "sha256": "269953f0d8faf39449009afe88f599b025df2d3c89a29a489ee5608ce193d64b"
+    },
+    {
+      "document": "04-实战后端与验收/12-数值几何与嵌套算法实战.md",
+      "key": "tests",
+      "path": "source/blender/functions/tests/FN_lazy_function_test.cc",
+      "start": 1,
+      "end": 185,
+      "sha256": "009cebe68791c4309a3ab81ce5d225b786408982ff971b31d44f954a2bf40cee"
+    },
+    {
+      "document": "04-实战后端与验收/12-数值几何与嵌套算法实战.md",
+      "key": "params",
+      "path": "source/blender/functions/FN_lazy_function_execute.hh",
+      "start": 1,
+      "end": 158,
+      "sha256": "ed53f9dd899fdc764e02c4f00e0fa78a8c34a44517791170ba9c87771f95c142"
+    },
+    {
+      "document": "04-实战后端与验收/13-合成器与GPU重复区域实现.md",
+      "key": "compositor",
+      "path": "source/blender/compositor/intern/repeat_zone_operation.cc",
+      "start": 1,
+      "end": 184,
+      "sha256": "6e1fd64174a99e3119c1943fa3375ad7e1d72da0f0fdeb2d79bac1a372d97c66"
+    },
+    {
+      "document": "04-实战后端与验收/13-合成器与GPU重复区域实现.md",
+      "key": "comph",
+      "path": "source/blender/compositor/COM_repeat_zone_operation.hh",
+      "start": 1,
+      "end": 58,
+      "sha256": "6cb714b06cea316975e97ebcdc0ecb8004fa240702412c8a4f5c065693993032"
+    },
+    {
+      "document": "04-实战后端与验收/13-合成器与GPU重复区域实现.md",
+      "key": "comptree",
+      "path": "source/blender/compositor/intern/zone_tree_operation.cc",
+      "start": 1,
+      "end": 100,
+      "sha256": "c13c1ef092cc544abf6f21a1b75e365a170c2649410e61896e4b468ed191c05d"
+    },
+    {
+      "document": "04-实战后端与验收/13-合成器与GPU重复区域实现.md",
+      "key": "gpu",
+      "path": "source/blender/gpu/shaders/material/gpu_shader_material_repeat_zone.bsl.hh",
+      "start": 1,
+      "end": 30,
+      "sha256": "c936c2e8a97004b9bb3d05c21bc5533a236537e1133357fe1e94dd9a3767a0ec"
+    },
+    {
+      "document": "04-实战后端与验收/13-合成器与GPU重复区域实现.md",
+      "key": "node",
+      "path": "source/blender/nodes/geometry/nodes/node_geo_repeat.cc",
+      "start": 139,
+      "end": 168,
+      "sha256": "e3984416e3fe624503235b54c525443449b7b9fe0cc1e4ebdf8f07ee31f835d0"
+    },
+    {
+      "document": "04-实战后端与验收/13-合成器与GPU重复区域实现.md",
+      "key": "node",
+      "path": "source/blender/nodes/geometry/nodes/node_geo_repeat.cc",
+      "start": 309,
+      "end": 340,
+      "sha256": "e3984416e3fe624503235b54c525443449b7b9fe0cc1e4ebdf8f07ee31f835d0"
+    },
+    {
+      "document": "04-实战后端与验收/13-合成器与GPU重复区域实现.md",
+      "key": "repeat",
+      "path": "source/blender/nodes/intern/geometry_nodes_repeat_zone.cc",
+      "start": 190,
+      "end": 432,
+      "sha256": "269953f0d8faf39449009afe88f599b025df2d3c89a29a489ee5608ce193d64b"
+    },
+    {
+      "document": "04-实战后端与验收/14-故障诊断回归与独立实现训练.md",
+      "key": "tests",
+      "path": "source/blender/functions/tests/FN_lazy_function_test.cc",
+      "start": 1,
+      "end": 185,
+      "sha256": "009cebe68791c4309a3ab81ce5d225b786408982ff971b31d44f954a2bf40cee"
+    },
+    {
+      "document": "04-实战后端与验收/14-故障诊断回归与独立实现训练.md",
+      "key": "repeat",
+      "path": "source/blender/nodes/intern/geometry_nodes_repeat_zone.cc",
+      "start": 1,
+      "end": 432,
+      "sha256": "269953f0d8faf39449009afe88f599b025df2d3c89a29a489ee5608ce193d64b"
+    },
+    {
+      "document": "04-实战后端与验收/14-故障诊断回归与独立实现训练.md",
+      "key": "params",
+      "path": "source/blender/functions/FN_lazy_function_execute.hh",
+      "start": 1,
+      "end": 158,
+      "sha256": "ed53f9dd899fdc764e02c4f00e0fa78a8c34a44517791170ba9c87771f95c142"
+    }
+  ]
+}

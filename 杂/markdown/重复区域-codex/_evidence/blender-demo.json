@@ -1,0 +1,43 @@
+{
+  "time_asia_shanghai": "2026-10-16T12:17:54.781383+08:00",
+  "scope": "installed Blender affine Repeat node example; not a build of the documented checkout",
+  "executable": "D:\\software\\blender-5.2\\blender.EXE",
+  "version": "Blender 5.2.0 LTS (hash fbe6228777e7 built 2026-07-14 01:35:40)",
+  "command": [
+    "D:\\software\\blender-5.2\\blender.EXE",
+    "--background",
+    "--factory-startup",
+    "--python-exit-code",
+    "1",
+    "--python",
+    "D:\\Repository\\blender-git\\blender\\.vscode\\杂\\markdown\\重复区域-codex\\示例\\build_repeat_demo.py"
+  ],
+  "exit_code": 0,
+  "passed": true,
+  "observations": [
+    [
+      {
+        "iterations": 0,
+        "actual": 1.0,
+        "expected": 1.0
+      },
+      {
+        "iterations": 1,
+        "actual": 3.0,
+        "expected": 3.0
+      },
+      {
+        "iterations": 2,
+        "actual": 7.0,
+        "expected": 7.0
+      },
+      {
+        "iterations": 3,
+        "actual": 15.0,
+        "expected": 15.0
+      }
+    ]
+  ],
+  "stdout": "RZ_DEMO_RESULT [{\"iterations\": 0, \"actual\": 1.0, \"expected\": 1.0}, {\"iterations\": 1, \"actual\": 3.0, \"expected\": 3.0}, {\"iterations\": 2, \"actual\": 7.0, \"expected\": 7.0}, {\"iterations\": 3, \"actual\": 15.0, \"expected\": 15.0}]\nBlender 5.2.0 LTS (hash fbe6228777e7 built 2026-07-14 01:35:40)\n\nBlender quit\n",
+  "stderr": ""
+}
