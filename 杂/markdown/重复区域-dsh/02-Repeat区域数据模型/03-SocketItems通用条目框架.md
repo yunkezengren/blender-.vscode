@@ -1,16 +1,25 @@
 # 03 - SocketItems 通用条目框架：访问器驱动的动态 socket 条目
 
-[02-Repeat区域数据模型](README.md) · [上一篇：DNA存储与NodeRepeatItem](02-DNA存储与NodeRepeatItem.md) · [下一章：03-几何节点执行架构](../03-几何节点执行架构/README.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 02-Repeat区域数据模型</a>
+<a href="./02-DNA存储与NodeRepeatItem.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ DNA存储与NodeRepeatItem</a>
+</div>
 
-> **基准说明**：本文所有行号与代码摘录基于当前工作区中的 Blender 源码：
->
-> - 主角：[`source/blender/nodes/NOD_socket_items.hh`](../../../source/blender/nodes/NOD_socket_items.hh)（全文 419 行，已完整通读）
-> - 伴生：[`NOD_socket_items_blend.hh`](../../../source/blender/nodes/NOD_socket_items_blend.hh)（38 行）、[`NOD_socket_items_ops.hh`](../../../source/blender/nodes/NOD_socket_items_ops.hh)（456 行）、[`NOD_socket_items_ui.hh`](../../../source/blender/nodes/NOD_socket_items_ui.hh)（140 行）
-> - Repeat 实例：[`source/blender/nodes/geometry/include/NOD_geo_repeat.hh`](../../../source/blender/nodes/geometry/include/NOD_geo_repeat.hh)（全文 89 行，已完整通读）
->
-> 源码链接相对路径前缀为 `../../../../`，从本文所在目录回溯到仓库根目录。
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
 
----
+**基准说明**：本文所有行号与代码摘录基于当前工作区中的 Blender 源码：
+
+- 主角：[`source/blender/nodes/NOD_socket_items.hh`](../../../source/blender/nodes/NOD_socket_items.hh)（全文 419 行，已完整通读）
+- 伴生：[`NOD_socket_items_blend.hh`](../../../source/blender/nodes/NOD_socket_items_blend.hh)（38 行）、[`NOD_socket_items_ops.hh`](../../../source/blender/nodes/NOD_socket_items_ops.hh)（456 行）、[`NOD_socket_items_ui.hh`](../../../source/blender/nodes/NOD_socket_items_ui.hh)（140 行）
+- Repeat 实例：[`source/blender/nodes/geometry/include/NOD_geo_repeat.hh`](../../../source/blender/nodes/geometry/include/NOD_geo_repeat.hh)（全文 89 行，已完整通读）
+
+源码链接相对路径前缀为 `../../../../`，从本文所在目录回溯到仓库根目录。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 先回答一个具体问题
 
@@ -46,7 +55,7 @@
 3. 从 extend socket（虚拟 socket）拖一条线出来时，条目是如何被"顺手"创建的？
 4. Simulation、Index Switch、Bake、Closure……这些节点如何复用同一套逻辑？差异在哪里？
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 框架总览
 
@@ -67,6 +76,7 @@
 ### 图 1：Accessor 协议调用关系
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   subgraph OPS["UI / 操作符层"]
     BTN["+ 按钮 / uiList / 快捷键"]
@@ -129,7 +139,7 @@ flowchart TB
 
 图中实线是"调用"，虚线是"通过访问器间接查询/读写"。注意一个关键形状：**核心模板从不直接碰 `node.storage`**，所有对存储的访问都要先经过 `Accessor::get_items_from_node(node)` 拿到 `SocketItemsRef`。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 1. 设计动机：逻辑共享、存储各异
 
@@ -194,7 +204,7 @@ flowchart TB
 > [!NOTE]
 > `has_type` 和 `has_name` 虽然没有出现在 `SocketItemsAccessorDefaults` 里，但它们是协议的一部分——默认值没有给出，因此**每个访问器必须显式写**（你可以回去看 `RepeatItemsAccessor` L22-L23，这两个开关总是显式的）。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 2. SocketItemsAccessorDefaults：一页"默认配置表"
 
@@ -245,7 +255,7 @@ struct SocketItemsAccessorDefaults {
 > [!TIP]
 > 读任何一个新节点的 Accessor，先扫这六个开关 + `has_type`/`has_name`，节点的"性格"就掌握了七成。剩下的都是存储布局细节。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 3. SocketItemsRef&lt;T&gt;：能 resize 的"数组引用"
 
@@ -306,7 +316,7 @@ static socket_items::SocketItemsRef<NodeRepeatItem> get_items_from_node(bNode &n
 
 就是一次 `static_cast` + 花括号初始化三元组。注意它返回的是**指向 storage 成员的指针**，所以只要节点活着，这个 ref 就一直有效；但如果你之后对数组做了 resize，之前从 `*ref.items` 读出来的裸指针就失效了——框架代码里每一处都小心地在 resize 后重新解引用。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 4. RepeatItemsAccessor 全文精读
 
@@ -438,7 +448,7 @@ Repeat 的策略是"宽口径"：**只要当前节点树类型（几何节点树
 - `find_item_by_identifier` 的查找键（UI 或执行期拿一个 socket identifier 反查条目）；
 - `.blend` 里链接（`bNodeLink` 存的是两端 socket 的 identifier 字符串）赖以跨保存/加载存活的东西。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 5. 核心模板函数逐个精讲
 
@@ -908,6 +918,7 @@ template<typename Accessor> inline typename Accessor::ItemT &add_item_to_array(b
 #### 图 2：add_item_to_array 的数据迁移
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   OLD["旧数组 old_items（n 个条目，name 指向堆字符串）"]:::data
   NEW["新数组 new_items（n+1 个条目）"]:::data
@@ -1378,6 +1389,7 @@ template<typename Accessor>
 #### 图 3：extend socket 插入流程
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   DROP["用户把链接拖到<br/>extend socket 上松手"]:::input
   CHK{"link 连着 extend_socket？"}:::compute
@@ -1505,7 +1517,7 @@ template<typename Accessor>
 
 注意返回值的语义有讲究：**"链接与本节点无关"和"链接碰到普通 socket"都返回 `true`**（链接照常保留），只有"确实想为它建条目但建不成"才返回 `false`（删链）。返回 `true` 不代表"添加了条目"，只代表"别删这条链接"。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 6. 三个伴生头文件：blend / ops / ui
 
@@ -1681,7 +1693,7 @@ template<typename Accessor> inline void blend_read_data(BlendDataReader *reader,
 
 至此闭环成形：**UI 的每个按钮 → ops 层的操作符 → 核心模板函数 → 访问器 → storage**。四层各自只依赖下一层，而"下一层"对核心模板而言就是访问器这张配置表。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 7. 全家福：仓库里的所有 Accessor 对比
 
@@ -1718,10 +1730,11 @@ template<typename Accessor> inline void blend_read_data(BlendDataReader *reader,
 2. **开关组合是离散的**。`has_type/has_name` 的四种组合里出现了三种（全有 / 只有名 / 全无），唯一没出现的"只有类型没有名字"也恰好对应框架里 `add_item_with_socket_type_and_name` 需要名字兜底的路径。
 3. **越"名字有语义"的节点，开关越多**。Repeat 的名字是纯标签，零定制；bundle 字段名进 attribute 路径、format string 名字进占位符、file output 名字进文件路径——三个都要 `has_name_validation`，file output 还要允许空名和向量维度。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 8. 用小数据走一遍
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#0891B2;background:#ECFEFF;border:1px solid #A5F3FC;border-radius:999px">教学推演 · 手算中间值，逐轮核对</div>
 下面手工模拟对 Repeat Output 节点做三个操作：**add 两次 → 删除中间一个**，追踪数组与 identifier 的每一步变化。设初始 storage 为：
 
 ```text
@@ -1783,10 +1796,11 @@ items_num = 2, active_index = 1, next_identifier = 3（不回退）
 - `next_identifier` 不回退。下一个新条目拿 `identifier = 3` → socket `Item_3`，与历史 identifier 永不冲突——即使 `Item_1` 的位置空出来了也**不会**被复用。
 - 名字去重只看"当前数组里活着的条目"：删除 "Frame.001" 后，再添加一个叫 "Frame" 的条目会得到 "Frame.001"（与 "Frame" 冲突）而不是 "Frame.002"——历史名字不会被记账。这是可接受的：identifier 才是稳定身份，名字只是标签。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 9. 反例与边界
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px">边界情形 · 每条断言都可回到源码验证</div>
 **反例 1：手写 `items_num` 而不重建数组。** 有人想"加条目不就是 `items_num++` 吗"。看 `NodeGeometryRepeatOutput` 的 DNA：`items` 是手动分配的 C 数组，`MEM_new_array(items_num+1)` 才是它的存储契约。直接 `items_num++` 等于让 RNA/blend 层按更大的数量去读一块越界内存——崩溃或数据污染。同理，把 `items_num` 改小而释放数组会让 `MEM_SAFE_DELETE` 在 free 回调里拿到错误的容量信息。
 
 **反例 2：`copy_item` 忘记 strdup。** `dst = src` 之后直接用，两个节点的条目共享同一个 `name` 指针。删除任一节点的该条目时 `destruct_item` free 掉字符串，另一个节点的条目 `name` 变悬空指针；保存文件时 `blend_write_item` 读悬空指针直接崩溃。凡是 ItemT 新增堆字段（如 FileOutput 条目的 `format`），`copy_item`/`destruct_item`/`blend_*_item` 四处必须同步——这是本框架最重要的维护纪律。
@@ -1799,7 +1813,7 @@ items_num = 2, active_index = 1, next_identifier = 3（不回退）
 
 **反例 6（边界）：`active_index` 未判空。** `SocketItemsRef` 允许 `active_index = nullptr`（IndexSwitch 就这么用）。任何"直接 `*ref.active_index = ...`"的新代码都要先想清楚这个访问器是不是给了空指针。框架内所有触碰 `active_index` 的地方（`clear`、`add_item_to_array`、ops 的 remove/move）都判了空；模仿框架写新泛型代码时必须保持这个习惯。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 10. 继续阅读
 
@@ -1813,6 +1827,12 @@ items_num = 2, active_index = 1, next_identifier = 3（不回退）
   - 下一篇（本章内）：Repeat 节点的 RNA 注册如何用 `rna_names` 把 `repeat_items` 暴露给 UI（见本章 README 的阅读顺序）。
 - 下一篇章：[03-几何节点执行架构](../03-几何节点执行架构/README.md)——Repeat Zone 在求值期如何被展开。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 *本文基于工作区源码 `NOD_socket_items.hh`(419 行)/`NOD_geo_repeat.hh`(89 行) 逐行核对写成；行号引用以当前检出为准。*
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
+<a href="./02-DNA存储与NodeRepeatItem.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ DNA存储与NodeRepeatItem</a>
+<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
+</div>

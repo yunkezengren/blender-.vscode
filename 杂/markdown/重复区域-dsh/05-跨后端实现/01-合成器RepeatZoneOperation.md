@@ -1,12 +1,21 @@
 # CN-01 合成器 RepeatZoneOperation：逐轮求值一棵子树
 
-[总入口](../README.md) · [本章导航](README.md) · [课程指南](../00-课程指南/README.md) · [下一篇：GPU着色器与GPU_stack_link_zone](02-GPU着色器与GPU_stack_link_zone.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 05-跨后端实现</a>
+<a href="./02-GPU着色器与GPU_stack_link_zone.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">GPU着色器与GPU_stack_link_zone ›</a>
+</div>
 
-> 基准：Blender `5.4.0-alpha`，本地工作树 `D:\Repository\blender-git\blender`。
-> 本篇所有源码引用均为相对链接（从 `05-跨后端实现/` 回到仓库根需要 `../../../../`），
-> 行号以当前工作树为准；图配色遵循系列约定的六个 classDef。
-> 阅读前置：建议先读 04-02《ComputeContext与迭代身份》，本篇反复用到"每一轮迭代
-> 拥有独立上下文身份"这一结论，但不再展开它的 hash 构造细节。
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
+
+基准：Blender `5.4.0-alpha`，本地工作树 `D:\Repository\blender-git\blender`。
+本篇所有源码引用均为相对链接（从 `05-跨后端实现/` 回到仓库根需要 `../../../../`），
+行号以当前工作树为准；图配色遵循系列约定的六个 classDef。
+阅读前置：建议先读 04-02《ComputeContext与迭代身份》，本篇反复用到"每一轮迭代
+拥有独立上下文身份"这一结论，但不再展开它的 hash 构造细节。
+
+</div>
 
 本篇回答第五章的第一个问题：**同一份 Repeat Zone 语义，合成器后端是怎么实现的？**
 核心文件只有三个：
@@ -22,7 +31,7 @@
 里的 zone 操作创建点，以及 [BKE_compute_context_cache.hh](../../../source/blender/blenkernel/BKE_compute_context_cache.hh)
 里的 `for_repeat_zone` 缓存入口。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 先回答一个具体问题
 
@@ -51,11 +60,11 @@ for (const int64_t i : iterations_range) {
 1. **结果域是像素缓冲，不是单值。** 几何节点的 socket 值是 `GVoidPointer`
    级别的轻量句柄（几何分量本身就是隐式共享的），复制 N 份连线的开销只是
    句柄传递。合成器的 `Result` 持有整张 GPU 纹理或 CPU 缓冲（见
-   [COM_result.hh · L100-L124](../../../source/blender/compositor/COM_result.hh#L100-L124)），
+   [COM_result.hh · L100-L124](../../../source/blender/compositor/COM_result.hh#L100)），
    "复制 N 份节点"意味着调度器要一次性把 N 轮的缓冲需求都摊开——而
    合成器的调度器（`compute_schedule`）是**按当前树 + 当前上下文**做启发式
    内存估计的（见
-   [COM_scheduler.hh · L47-L61](../../../source/blender/compositor/COM_scheduler.hh#L47-L61)
+   [COM_scheduler.hh · L47-L61](../../../source/blender/compositor/COM_scheduler.hh#L47)
    的注释："post-order depth first traversal ... informed order of traversal of
    dependencies based on a heuristic estimation of the number of needed buffers"）。
    把 N 轮全部展开，这个估计就失去了意义。
@@ -76,9 +85,9 @@ for (const int64_t i : iterations_range) {
 这个上下文哈希下——和几何节点共享同一个语义（这就是 04-02 讲的机制在合成器
 里的复用），但实现上没有经过任何 wrapper 注入，因为每轮子树的
 `NodeTreeEvaluator` 拿到的 `compute_context` 参数本身就是第 i 轮的上下文
-（[repeat_zone_operation.cc · L44-L48](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L44-L48)）。
+（[repeat_zone_operation.cc · L44-L48](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L44)）。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## ZoneOperation 家族
 
@@ -104,6 +113,7 @@ for (const int64_t i : iterations_range) {
   镜像（见下文类注释精读），由 `RepeatZoneOperation` 每轮构造一次。
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   OP["Operation<br/>COM_operation.hh L52<br/>纯虚 execute()"]:::abstraction
   ZOP["ZoneOperation : public Operation<br/>COM_zone_operation.hh L29<br/>zone_ + compute_context_"]:::abstraction
@@ -128,7 +138,7 @@ flowchart TB
 
 ### ZoneOperation 的构造函数做了什么
 
-[zone_operation.cc · L24-L67](../../../source/blender/compositor/intern/zone_operation.cc#L24-L67)
+[zone_operation.cc · L24-L67](../../../source/blender/compositor/intern/zone_operation.cc#L24)
 在构造期就把 `RepeatZoneOperation` 的全部接口声明完毕。接口由三部分组成：
 
 **第一部分：zone 输入节点的每个输入 socket → 本操作的一个输入**
@@ -140,7 +150,7 @@ flowchart TB
 （L40-L57）。identifier 由
 `ZoneTreeOperation::get_external_input_identifier(*output)` 生成，格式是
 `"External Input: " + 节点名 + ":" + socket标识符`（
-[zone_tree_operation.cc · L95-L98](../../../source/blender/compositor/intern/zone_tree_operation.cc#L95-L98)）。
+[zone_tree_operation.cc · L95-L98](../../../source/blender/compositor/intern/zone_tree_operation.cc#L95)）。
 `outputs_already_considered` 这个 `Set` 是去重的关键：zone 外的同一个输出
 socket 可能通过多条 border link 连到 zone 内的多个输入，操作只需要**一个**
 输入接口、每轮共享**一个** `Result`。这段去重逻辑在
@@ -163,7 +173,7 @@ socket 可能通过多条 border link 连到 zone 内的多个输入，操作只
 
 ### ZoneTreeOperation：镜像接口
 
-[COM_zone_tree_operation.hh · L23-L31](../../../source/blender/compositor/COM_zone_tree_operation.hh#L23-L31)
+[COM_zone_tree_operation.hh · L23-L31](../../../source/blender/compositor/COM_zone_tree_operation.hh#L23)
 的类注释值得逐句读（已翻译）：
 
 > Zone Tree Operation 表示并求值一个 zone 的内部节点树。它的**输出**与 zone
@@ -185,13 +195,13 @@ socket 可能通过多条 border link 连到 zone 内的多个输入，操作只
 子树操作的输出**。Repeat Input/Output 两个节点在子树求值时不产生任何计算，
 它们只是让 `ZoneTreeOperation::execute` 里的
 `get_zone_result_for_socket`（
-[zone_tree_operation.cc · L67-L78](../../../source/blender/compositor/intern/zone_tree_operation.cc#L67-L78)）
+[zone_tree_operation.cc · L67-L78](../../../source/blender/compositor/intern/zone_tree_operation.cc#L67)）
 能静态回答"这个 socket 的 Result 在哪"——是 `operation.get_input(...)` 还是
 `operation.get_result(...)`。
 
 ### ZoneTreeOperation::execute：每轮怎么跑一棵子树
 
-[zone_tree_operation.cc · L80-L93](../../../source/blender/compositor/intern/zone_tree_operation.cc#L80-L93)：
+[zone_tree_operation.cc · L80-L93](../../../source/blender/compositor/intern/zone_tree_operation.cc#L80)：
 
 ```cpp
 void ZoneTreeOperation::execute()
@@ -253,14 +263,14 @@ std::string ZoneTreeOperation::get_external_input_identifier(const bNodeSocket &
 来源：[zone_tree_operation.cc](../../../source/blender/compositor/intern/zone_tree_operation.cc)。
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 调度侧：合成器如何走到 RepeatZoneOperation
 
 调用链从调度器开始。合成器对整棵树做一次
 `NodeTreeEvaluator::evaluate()`（根调度），循环体内节点**不会**出现在根调度
 里——调度器遇到 zone 时只调度 zone 的输出节点。看
-[node_tree_evaluator.cc · L53-L82](../../../source/blender/compositor/intern/node_tree_evaluator.cc#L53-L82)
+[node_tree_evaluator.cc · L53-L82](../../../source/blender/compositor/intern/node_tree_evaluator.cc#L53)
 的调度循环里这段分支：
 
 ```cpp
@@ -353,11 +363,11 @@ include 位置在 [L31](../../../source/blender/compositor/intern/node_tree_eval
 构造函数声明那些 `External Input: ...` 输入的原因之一：子树调度求值循环体
 节点时，evaluator 用这个 identifier 把外部结果递给内部节点。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## ComputeContextCache::for_repeat_zone：每轮上下文从缓存取
 
-[repeat_zone_operation.cc · L44-L46](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L44-L46)：
+[repeat_zone_operation.cc · L44-L46](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L44)：
 
 ```cpp
 const bke::RepeatZoneComputeContext &compute_context =
@@ -370,8 +380,8 @@ const bke::RepeatZoneComputeContext &compute_context =
 返回 `RepeatZoneComputeContext` 的 **const 引用**，不是值。
 
 为什么要经缓存拿引用？两个原因，写在
-[BKE_compute_context_cache.hh · L83-L88](../../../source/blender/blenkernel/BKE_compute_context_cache.hh#L83-L88)
-和 [compute_contexts.cc · L387-L405](../../../source/blender/blenkernel/intern/compute_contexts.cc#L387-L405)：
+[BKE_compute_context_cache.hh · L83-L88](../../../source/blender/blenkernel/BKE_compute_context_cache.hh#L83)
+和 [compute_contexts.cc · L387-L405](../../../source/blender/blenkernel/intern/compute_contexts.cc#L387)：
 
 1. **指针身份一致性（pointer identity）**。`RepeatZoneComputeContext` 构造时
    会把 `(parent指针, output_node_id, iteration)` 混进自己的 hash；而日志、
@@ -382,7 +392,7 @@ const bke::RepeatZoneComputeContext &compute_context =
    对应一个存活对象。04-02 已经用几何节点的例子讲过这一点，合成器完全复用
    同一个缓存与同一个类。
 2. **与 usage/观察端一致**。Viewer 想看循环体第 k 轮的值时，
-   [compositor.cc · L724-L757](../../../source/blender/blenkernel/intern/compositor.cc#L724-L757)
+   [compositor.cc · L724-L757](../../../source/blender/blenkernel/intern/compositor.cc#L724)
    的 `get_zone_viewer_compute_context` 用**同一个**缓存函数
    （L743-L744 传的是 `inspection_index`）构造观察上下文。求值端与观察端
    从同一缓存取同一对象，"看哪一轮"和"算哪一轮"才能对上号。
@@ -414,8 +424,8 @@ const RepeatZoneComputeContext &ComputeContextCache::for_repeat_zone(const Compu
 ```
 
 来源：[compute_contexts.cc](../../../source/blender/blenkernel/intern/compute_contexts.cc)。
-头文件声明在 [BKE_compute_context_cache.hh L83-L88](../../../source/blender/blenkernel/BKE_compute_context_cache.hh#L83-L88)，
-类本体在 [BKE_compute_contexts.hh L162-L169](../../../source/blender/blenkernel/BKE_compute_contexts.hh#L162-L169)。
+头文件声明在 [BKE_compute_context_cache.hh L83-L88](../../../source/blender/blenkernel/BKE_compute_context_cache.hh#L83)，
+类本体在 [BKE_compute_contexts.hh L162-L169](../../../source/blender/blenkernel/BKE_compute_contexts.hh#L162)。
 </details>
 
 顺带一提轮次编号从 0 开始：`IndexRange(iterations_count)` 的 `i` 直接作为
@@ -423,11 +433,11 @@ const RepeatZoneComputeContext &ComputeContextCache::for_repeat_zone(const Compu
 几何节点侧 `RepeatZoneComputeContext` 的语义一致，Viewer 两个后端可以共用
 同一套"轮次"心智模型。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## execute() 逐段精读
 
-现在进入主角。[repeat_zone_operation.cc · L22-L73](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L22-L73)
+现在进入主角。[repeat_zone_operation.cc · L22-L73](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L22)
 总共 52 行，切成四段讲。
 
 ### 第一段：读迭代数，0 轮直通
@@ -443,7 +453,7 @@ void RepeatZoneOperation::execute()
 ```
 
 `get_single_value_default<int>()` 定义在
-[COM_result.hh · L538-L544](../../../source/blender/compositor/COM_result.hh#L538-L544)：
+[COM_result.hh · L538-L544](../../../source/blender/compositor/COM_result.hh#L538)：
 如果结果是单值就直接取，否则返回 `int` 类型的默认值（0）。合成器的单值传播
 模型下，`Iterations` 上游通常是一个值节点或数学节点，结果就是单值；即便上游
 异常地没产出单值，这里也不崩溃，而是当 0 轮处理。
@@ -457,6 +467,7 @@ void RepeatZoneOperation::execute()
 为 0，直通分支也**不**为它共享数据，避免无谓地把输入缓冲"钉住"一份用户。
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   START["execute() 入口"]:::compute
   ITER["读 Iterations<br/>get_single_value_default&lt;int&gt;"]:::data
@@ -689,11 +700,11 @@ class RepeatZoneOperation : public ZoneOperation {
 来源：[COM_repeat_zone_operation.hh](../../../source/blender/compositor/COM_repeat_zone_operation.hh)。
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## set_reference_counts：只给最后一轮发"通行证"
 
-[repeat_zone_operation.cc · L75-L86](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L75-L86)：
+[repeat_zone_operation.cc · L75-L86](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L75)：
 
 ```cpp
 void RepeatZoneOperation::set_reference_counts(ZoneTreeOperation &zone_tree_operation)
@@ -717,9 +728,9 @@ void RepeatZoneOperation::set_reference_counts(ZoneTreeOperation &zone_tree_oper
    socket"为 identifier，两者 identifier 相同，所以能对上）和本 zone 操作的
    同名输出。
 2. **`repeat_zone_result.should_compute()`** 是本操作输出的引用计数是否非零
-   （[COM_result.hh · L365-L368](../../../source/blender/compositor/COM_result.hh#L365-L368)）。
+   （[COM_result.hh · L365-L368](../../../source/blender/compositor/COM_result.hh#L365)）。
    这个计数在 `evaluate_zone` → `compute_results_reference_counts` 阶段就
-   算好了（[zone_operation.cc · L69-L79](../../../source/blender/compositor/intern/zone_operation.cc#L69-L79)）。
+   算好了（[zone_operation.cc · L69-L79](../../../source/blender/compositor/intern/zone_operation.cc#L69)）。
 3. **把 1 或 0 直接 `set_reference_count` 到子树结果上**。置 1 表示"最后一轮
    真的要算这个输出"；置 0 表示"下游没人用，子树调度可以直接跳过整条产线"。
    这就是合成器按需执行在循环里的落点：如果 zone 的某个输出从未被 zone 外
@@ -753,11 +764,11 @@ void RepeatZoneOperation::set_reference_counts(ZoneTreeOperation &zone_tree_oper
 来源：[repeat_zone_operation.cc](../../../source/blender/compositor/intern/repeat_zone_operation.cc)。
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## map_inputs：轮间接线的两种形态
 
-[repeat_zone_operation.cc · L88-L123](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L88-L123)。
+[repeat_zone_operation.cc · L88-L123](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L88)。
 方法签名的第二个参数 `ZoneTreeOperation *last_zone_tree_operation` 是**可为
 空的指针**——空表示第一轮。方法体因此分成两个对称分支。
 
@@ -788,7 +799,7 @@ if (last_zone_tree_operation) {
 - `temporary_input`：新建的临时 Result，类型/精度抄 `last_result`。
   `context().create_result(...)` 只造"空壳"，不分配数据。
 - `temporary_input->share_data(last_result)`：关键一行。`share_data` 的语义
-  在 [COM_result.hh · L320-L323](../../../source/blender/compositor/COM_result.hh#L320-L323)：
+  在 [COM_result.hh · L320-L323](../../../source/blender/compositor/COM_result.hh#L320)：
   "Share the data of the given source result. This is done by simply adding a
   new user to the sharing info of the result."——**不拷贝像素**，只给源数据的
   隐式共享信息加一个用户。所以"第 i 轮的输入"和"第 i-1 轮的输出"此刻指向
@@ -799,7 +810,7 @@ if (last_zone_tree_operation) {
 
 为什么要中间垫一层临时 Result，而不是直接把 `&last_result` 映射给本轮？
 因为 `map_input_to_result` 存的是**裸指针** `Result *`（
-[COM_operation.hh · L66-L71](../../../source/blender/compositor/COM_operation.hh#L66-L71)），
+[COM_operation.hh · L66-L71](../../../source/blender/compositor/COM_operation.hh#L66)），
 而上一轮的 `ZoneTreeOperation` 在本轮结束时就要被 `last_operation.reset`
 析构——直接映射等于悬挂指针。垫一层 `unique_ptr<Result>` 持有的、数据共享
 的临时 Result，就把"数据的寿命"（隐式共享，大家都活着）与"Result 壳的寿命"
@@ -878,11 +889,11 @@ Vector<std::unique_ptr<Result>> RepeatZoneOperation::map_inputs(
 来源：[repeat_zone_operation.cc](../../../source/blender/compositor/intern/repeat_zone_operation.cc)。
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## map_external_inputs：border link 的去重与注入
 
-[repeat_zone_operation.cc · L125-L150](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L125-L150)：
+[repeat_zone_operation.cc · L125-L150](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L125)：
 
 ```cpp
 Vector<std::unique_ptr<Result>> temporary_inputs;
@@ -923,7 +934,7 @@ for (const bNodeLink *link : this->zone().border_links) {
 3. **identifier 带前缀 `External Input: `**：外部输入与 zone 输入输出用不同
    命名空间，避免与 zone 输入节点的输出 socket identifier 撞名。
 4. **数据源是 `this->get_input(input_identifier)`**：本 zone 操作在构造期
-   （[zone_operation.cc · L40-L57](../../../source/blender/compositor/intern/zone_operation.cc#L40-L57)）
+   （[zone_operation.cc · L40-L57](../../../source/blender/compositor/intern/zone_operation.cc#L40)）
    就声明了同名输入，`NodeTreeEvaluator::map_zone_operation_inputs_to_their_results`
    已经把 zone 外的上游结果映射上来了。也就是说 border link 数据是**从
    zone 外一次性拿进来的**，之后每轮子树都拿到共享同一块数据的临时 Result。
@@ -969,11 +980,11 @@ Vector<std::unique_ptr<Result>> RepeatZoneOperation::map_external_inputs(
 来源：[repeat_zone_operation.cc](../../../source/blender/compositor/intern/repeat_zone_operation.cc)。
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## write_outputs：只收最后一轮的果实
 
-[repeat_zone_operation.cc · L152-L166](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L152-L166)：
+[repeat_zone_operation.cc · L152-L166](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L152)：
 
 ```cpp
 void RepeatZoneOperation::write_outputs(ZoneTreeOperation &zone_tree_operation)
@@ -1000,7 +1011,7 @@ void RepeatZoneOperation::write_outputs(ZoneTreeOperation &zone_tree_operation)
   本 zone 操作的输出 Result。这之后 zone 外的下游节点读到的就是最后一轮的
   产出。
 - `zone_tree_result.release()`：把子树结果自己那份用户退掉（
-  [COM_result.hh · L358-L359](../../../source/blender/compositor/COM_result.hh#L358-L359)：
+  [COM_result.hh · L358-L359](../../../source/blender/compositor/COM_result.hh#L358)：
   "Decrement the reference count of the result and free its data if it reaches
   zero"）。注释里说的 "sharing its data **and freeing** the results" 就是
   这个动作——数据没死（zone 输出还持有一个用户），只是子树 Result 这个
@@ -1034,11 +1045,11 @@ void RepeatZoneOperation::write_outputs(ZoneTreeOperation &zone_tree_operation)
 来源：[repeat_zone_operation.cc](../../../source/blender/compositor/intern/repeat_zone_operation.cc)。
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## cancel_evaluation：取消后的"干净失败"
 
-[repeat_zone_operation.cc · L168-L182](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L168-L182)：
+[repeat_zone_operation.cc · L168-L182](../../../source/blender/compositor/intern/repeat_zone_operation.cc#L168)：
 
 ```cpp
 void RepeatZoneOperation::cancel_evaluation(ZoneTreeOperation &last_zone_tree_operation)
@@ -1066,7 +1077,7 @@ void RepeatZoneOperation::cancel_evaluation(ZoneTreeOperation &last_zone_tree_op
    把本操作所有 `should_compute()` 但尚未分配数据的输出补成默认值。**取消后
    zone 的输出是默认值，不是已完成若干轮的"部分结果"**——这与几何节点取消
    时的行为对齐（整体求值作废），也与合成器根评估器的 `cancel_evaluation`
-   （[node_tree_evaluator.cc · L58-L61](../../../source/blender/compositor/intern/node_tree_evaluator.cc#L58-L61)）
+   （[node_tree_evaluator.cc · L58-L61](../../../source/blender/compositor/intern/node_tree_evaluator.cc#L58)）
    的整体语义一致：取消是整棵树的失败，不是某个中间快照。
 2. 遍历最后一轮子树的输出，对 `should_compute()` 的结果 `release()`。这一步
    是**释放资源**而不是转移：子树算出来的部分数据（最后一轮已经写出的那些
@@ -1079,6 +1090,7 @@ void RepeatZoneOperation::cancel_evaluation(ZoneTreeOperation &last_zone_tree_op
 只在轮边界做粗检查。这意味着一轮很长时，取消响应延迟以单轮为下限。
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   EVALD["zone_tree_operation->evaluate()<br/>第 i 轮子树求值完成"]:::compute
   CHK{"context().is_canceled() ?"}:::error
@@ -1124,12 +1136,12 @@ void RepeatZoneOperation::cancel_evaluation(ZoneTreeOperation &last_zone_tree_op
 来源：[repeat_zone_operation.cc](../../../source/blender/compositor/intern/repeat_zone_operation.cc)。
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## Result 共享与寿命：一张所有权网
 
 现在把散在各方法里的 `share_data` / `release` / `unique_ptr` 拼成一张网。
-先复习 `Result` 的两套计数（[COM_result.hh · L147-L160](../../../source/blender/compositor/COM_result.hh#L147-L160)）：
+先复习 `Result` 的两套计数（[COM_result.hh · L147-L160](../../../source/blender/compositor/COM_result.hh#L147)）：
 
 - **`sharing_info_`（数据用户数）**：隐式共享信息持有数据本身；`share_data`
   加用户，`free` 减用户，归零时数据释放。**数据寿命由它管。**
@@ -1155,13 +1167,14 @@ Repeat Zone 执行期间出现的 Result 分四类，寿命各不相同：
 - `cancel_evaluation`：造默认值 + 丢弃子树数据（release）。
 
 `release()` 与 `free()` 的分工也值得一句：`release()`（
-[COM_result.hh · L358-L359](../../../source/blender/compositor/COM_result.hh#L358-L359)）
+[COM_result.hh · L358-L359](../../../source/blender/compositor/COM_result.hh#L358)）
 减 `reference_count_`，归零时调 `free()`；`free()`（L361-L363）只减数据用户
 （`sharing_info_`），未分配则什么都不做。所以 `write_outputs` 里
 `share_data` + `release` 的组合效果是：数据用户数不变（zone 输出顶了子树
 结果的缺），`reference_count_` 归零、壳失效，而数据继续活着。
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart LR
   subgraph ZONE["RepeatZoneOperation（活到整树求值结束）"]
     IN["zone 输入 Result"]:::input
@@ -1194,7 +1207,7 @@ flowchart LR
 （图 3：轮间数据流与所有权。实线是映射/共享方向；`OUT` 对 `ZR` 的箭头
 发生在最后一轮，之后 `ZR` 壳可安全析构。）
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 与几何节点实现的对照表
 
@@ -1216,6 +1229,7 @@ flowchart LR
 | border link | 构建期识别为 border 参数，直接进 body 函数签名 | 每轮 `map_external_inputs` 去重映射，数据来自 zone 操作的 `External Input: ...` 输入，值整个循环期间冻结 |
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   subgraph GN["几何节点后端"]
     direction TB
@@ -1256,10 +1270,11 @@ flowchart TB
 在运行期重复求值一棵子树。注意两边的"轮间连线"性质完全不同——图边是静态
 的执行图结构，`share_data` 是运行期的数据共享。）
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 用小数据走一遍
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#0891B2;background:#ECFEFF;border:1px solid #A5F3FC;border-radius:999px">教学推演 · 手算中间值，逐轮核对</div>
 设定：Repeat Zone，2 轮迭代，1 个 item（zone 输入/输出各有一个 `Value`
 float 插槽 + 固定的 `Iteration` int）。外部有一个 border link 给循环体喂
 一个常量 `Mask`。zone 的 `Value` 输出下游有人用；`Iterations` 输入为 2。
@@ -1324,13 +1339,19 @@ float 插槽 + 固定的 `Iteration` int）。外部有一个 border link 给循
 | R1（第 1 轮输出） | Z1（last_operation） | γ | zone 输出 | `share_data` + `release` 后壳随 last_operation 析构，数据归 zone 输出 |
 | zone 输出 Value | zone 操作 | γ | 下游消费者 | 正常 release 链 |
 
-一句话总结这组数据流：**数据 α → β → γ 三次"产出"（每轮一次），其余全部
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:16px 0 20px;padding:12px 16px;background:#F0FDF4;border-left:4px solid #16A34A;border-radius:10px">
+<div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#15803D;margin-bottom:6px">一句话记住</div>
+
+这组数据流：**数据 α → β → γ 三次"产出"（每轮一次），其余全部
 动作都是零拷贝共享。**
 
----
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 反例与边界
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px">边界情形 · 每条断言都可回到源码验证</div>
 1. **误以为 border link 每轮重读外部值——它每轮 share 同一个结果。**
    `map_external_inputs` 虽然每轮都执行，但数据源永远是 `this->get_input(...)`
    的同一个 Result（进入 zone 前就算好的那一份），每轮只是再造一个共享壳。
@@ -1341,7 +1362,7 @@ float 插槽 + 固定的 `Iteration` int）。外部有一个 border link 给循
    值。想要"最后一轮可用值"的语义在合成器里不存在。
 3. **误以为迭代数必须是"单值"才行——不单值时静默按 0 处理。**
    `get_single_value_default<int>()` 在非单值时返回默认值 0（
-   [COM_result.hh · L538-L544](../../../source/blender/compositor/COM_result.hh#L538-L544)），
+   [COM_result.hh · L538-L544](../../../source/blender/compositor/COM_result.hh#L538)），
    走直通分支。正常节点图里 `Iterations` 上游都是单值，但如果你在脚本化
    场景造出非常规输入，行为是"0 次直通"而不是报错。
 4. **误以为每轮的 `outputs_already_considered` 去重跨轮生效——它每轮重新
@@ -1371,7 +1392,7 @@ float 插槽 + 固定的 `Iteration` int）。外部有一个 border link 给循
    造单值 Result），协议成立；改这段代码时必须维持"窗口内不抛"或改成
    unique_ptr 先接管。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 继续阅读
 
@@ -1384,3 +1405,9 @@ float 插槽 + 固定的 `Iteration` int）。外部有一个 border link 给循
   几何节点的图展开细节，见
   [03-03 执行图按迭代展开](../03-几何节点执行架构/03-执行图按迭代展开.md)。
 - 本章导航：[05-跨后端实现 README](../README.md)。
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
+<a href="./02-GPU着色器与GPU_stack_link_zone.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">GPU着色器与GPU_stack_link_zone ›</a>
+<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
+</div>

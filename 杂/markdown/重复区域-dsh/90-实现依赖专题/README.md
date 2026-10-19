@@ -1,13 +1,22 @@
 # 实现依赖专题：geometry_nodes_repeat_zone.cc 全文教学
 
-[总入口](../README.md) · [验收报告](../91-验收报告.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="../06-实战与性能/README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ 06-实战与性能</a>
+<a href="../91-验收报告.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">验收报告 ›</a>
+</div>
 
-> **基准说明**：本文所有行号、代码与结论均基于 Blender **5.4.0-alpha** 工作树
-> （仓库：`D:\Repository\blender-git\blender`）。
-> 主文件：[source/blender/nodes/intern/geometry_nodes_repeat_zone.cc](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc)（共 432 行）。
-> 本文是该文件的**全文教学版**：432 行源码按逻辑单元切成 9 个小节，每一行可执行代码都会出现在"[讲解] 注释版"代码块中，并在每个小节末尾折叠保留原始源码供逐行核对。核心类名（`LazyFunctionForRepeatZone`、`RepeatEvalStorage`、`RepeatBodyNodeExecuteWrapper` 等）在全文中含义一致，可放心交叉引用。
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
 
----
+**基准说明**：本文所有行号、代码与结论均基于 Blender **5.4.0-alpha** 工作树
+（仓库：`D:\Repository\blender-git\blender`）。
+主文件：[source/blender/nodes/intern/geometry_nodes_repeat_zone.cc](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc)（共 432 行）。
+本文是该文件的**全文教学版**：432 行源码按逻辑单元切成 9 个小节，每一行可执行代码都会出现在"[讲解] 注释版"代码块中，并在每个小节末尾折叠保留原始源码供逐行核对。核心类名（`LazyFunctionForRepeatZone`、`RepeatEvalStorage`、`RepeatBodyNodeExecuteWrapper` 等）在全文中含义一致，可放心交叉引用。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 如何使用本专题
 
@@ -18,7 +27,7 @@
 5. **读完后自测**。文末"反例与边界"列出 6 个容易误判的行为，如果你能独立解释每一条为什么会这样，说明本专题读懂了。
 6. **前置知识**：建议先掌握系列正篇中的重复区域概念（Iteration/Zone/Border Link），并至少扫过一遍 FN lazy-function 的 `Graph`/`GraphExecutor`/`Params` 概念。本专题不重复讲 lazy-function 通用机制本身。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 文件覆盖总表
 
@@ -32,6 +41,7 @@
 **主题结构图**：本专题从"几何节点后端"这一个文件的全文出发，向上追到它依赖的 zone 基础设施，横向对比合成器与 GPU 两个后端对"重复"这一语义的实现方式：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
     A["geometry_nodes_repeat_zone.cc<br/>（本文 §1–§9 全文教学）"]:::result
     B["geometry_nodes_lazy_function.cc<br/>zone 基础设施（§10 速览）"]:::data
@@ -52,7 +62,7 @@ flowchart TB
     classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## §1 RepeatBodyNodeExecuteWrapper（L35–L65）：循环体执行的上下文注入
 
@@ -193,7 +203,7 @@ class RepeatBodyNodeExecuteWrapper : public lf::GraphExecutorNodeExecuteWrapper 
 3. **零对象开销的日志正确性**。对比"每迭代一个 LazyFunction"的方案：本方案对象数量与迭代数无关，只是每次执行多一次哈希计算与两次小结构拷贝，这正是文件头注释强调的取舍。
 4. **`const_cast` 的出现位置值得留意**。`index_of_try` 的参数类型要求非 const 指针，而回调给的是 const 引用；这里只是为了查表，并不真的修改节点。这是 Blender 源码里 `const_cast` 用法中较安全的一类（查键、不改值）。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## §2 RepeatZoneSideEffectProvider（L67–L96）：副作用迭代清单
 
@@ -301,7 +311,7 @@ class RepeatZoneSideEffectProvider : public lf::GraphExecutorSideEffectProvider 
 2. **越界防御放在消费端而非生产端**。注册表的登记时机与展开图的构建时机解耦（可能跨帧、跨求值），所以迭代号是否有效只能在 provider 里现查现判。`i >= 0` 一并挡住了 `-1` 这类哨兵值。
 3. **与 §1 的字段类型差异是刻意为之**：wrapper 持 `VectorSet *`（需要 `index_of_try` 反查），provider 持 `Span`（只需按下标取）。各自的成员类型精确匹配自己的访问模式，没有多余耦合。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## §3 RepeatEvalStorage（L98–L111）：一次求值的全部状态
 
@@ -398,6 +408,7 @@ struct RepeatEvalStorage {
 ### storage 生命周期图
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
     A["init_storage(allocator)<br/>construct&lt;RepeatEvalStorage&gt;"]:::input
     B["execute_impl 首次调用<br/>initialize_execution_graph"]:::compute
@@ -418,7 +429,7 @@ flowchart TB
     classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## §4 LazyFunctionForRepeatZone：构造与 storage 管理（L113–L151）
 
@@ -578,7 +589,7 @@ class LazyFunctionForRepeatZone : public LazyFunction {
 2. **析构顺序不可换**：`graph_executor_storage` 归还执行器 → `std::destroy_at`。若反过来，`graph_executor` 的 optional 先析构，归还指针就变成悬空调用。C++ 的成员自动析构帮不上忙，因为 `void *` 不携带类型信息。
 3. **五个只读成员全是引用**：区域函数是"装配期产物"，其生命周期由外层 `ResourceScope`（§9 的工厂）管理，绑定的是当次节点树运行的 runtime 数据，不存在中途换树的问题。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## §5 execute_impl（L153–L185）：每次调用的执行入口
 
@@ -595,6 +606,7 @@ class LazyFunctionForRepeatZone : public LazyFunction {
 ### execute_impl 流程图
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
     S["execute_impl(params, context)"]:::input
     T1["ScopedNodeTimer 计时<br/>挂在 Repeat Output 节点上"]:::compute
@@ -729,7 +741,7 @@ flowchart TB
 3. **Usage 应答先行**：`set_output(iterations_usage_index, true)` 必须在展开/执行前完成——它是对上游"迭代数要不算"询问的承诺，晚了上游可能已经被判为无用而跳过求值。
 4. **`multi_threading_enabled` 是外层到内层的调度决策传递**，不是本函数自己决定的（它在别处被设置到 storage 上），体现了"嵌套执行器逐层收紧并行度"的设计：区域内部的并行由区域外部的并行预算决定。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## §6 initialize_execution_graph · 前半：读取与展开准备（L195–L272）
 
@@ -972,7 +984,7 @@ flowchart TB
 3. **索引值预计算的守门条件**（`use_index_values`）避免了"Index 无人使用时白造一个 N 长数组"；`static_unused_index`（§7）则覆盖了无人使用时的占位场景——两个分支合起来把 Index 的成本压到按需。
 4. **警告级别是 Info 而非 Error**：检查项越界只影响调试视图，不影响几何结果，这符合 Blender 对 warning 分级的一贯处理（Error 会阻断求值并红显）。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## §7 initialize_execution_graph · 中半：逐节点与逐对连接（L274–L317）
 
@@ -987,6 +999,7 @@ flowchart TB
 ### 展开图连接分组图
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
     subgraph SG1["① 逐体节点循环（每个 iter_i）"]
         A1["index_values[iter_i]<br/>→ 体节点 Index 输入（默认值）"]:::data
@@ -1159,7 +1172,7 @@ flowchart TB
 3. **`set_default_value` 与 `add_link` 的分工**是读这段代码的钥匙：常量（Index 值、true、false）走默认值指针——零求值开销；真正的数据流（主输出、边界链接、引用集）才连线。
 4. **`static_unused_index` / `static_true` 的 `static` 存储期**：这些是进程级共享常量，`set_default_value` 只存指针。体节点执行期间只读，天然线程安全。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## §8 initialize_execution_graph · 后半：首尾连接、0 迭代分支、索引映射、装配（L319–L410）
 
@@ -1419,6 +1432,7 @@ flowchart TB
 以"2 个重复项、1 条边界链接、Iterations 用法输出在下标 3"为例（示意数字，实际下标由 `initialize_zone_wrapper` 的登记顺序决定）：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart LR
     subgraph OUTER["区域函数参数空间（外层）"]
         O0["in 0: Iterations"]:::error
@@ -1450,7 +1464,7 @@ flowchart LR
 3. **`update_node_indices` 是图从"可编辑"到"可执行"的分界**。之后唯一还会动图的是调试日志的 `to_dot()`（只读）。执行器、wrapper、provider 持有的一切节点指针都依赖这次重编号后的布局。
 4. **调试图的 first-wins 语义**：`lookup_or_add_cb` 保证多次求值不互相覆盖，代价是只反映首次展开的拓扑。想看"迭代数变化后的图"，需要清空 `logged_zone_graphs` 或重启求值会话。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## §9 build_repeat_zone_lazy_function 工厂（L423–L430）
 
@@ -1501,13 +1515,13 @@ LazyFunction &build_repeat_zone_lazy_function(ResourceScope &scope,
 2. **命名空间级自由函数而非静态成员**：这是 geometry nodes 各区域（repeat/foreach/closure/simulation）统一遵循的注册模式，`geometry_nodes_lazy_function.cc` 里的 `build_*_zone_lazy_function` 家族逐一对应，便于按区域类型拆文件维护。
 3. **`ResourceScope` 集中管理函数对象**，与 storage 的按求值生命周期（§3）正交：前者随装配会话消亡，后者随单次求值消亡。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## §10 外围依赖速览：geometry_nodes_lazy_function.cc 的 zone 基础设施
 
 本文件（4411 行）是几何节点 lazy-function 装配的总装车间，重复区域只是它装配的众多区域类型之一。以下 4 处是 `geometry_nodes_repeat_zone.cc` 直接依赖或对照理解必需的基础设施，每项只给速览，细节请点链接进源文件。
 
-### 10.1 `initialize_zone_wrapper`（[L1704–L1756](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L1704-L1756)）
+### 10.1 `initialize_zone_wrapper`（[L1704–L1756](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L1704)）
 
 区域函数参数表的**统一生成器**，§4 构造函数的第一行就调用它。逻辑分五步：
 
@@ -1519,7 +1533,7 @@ LazyFunction &build_repeat_zone_lazy_function(ResourceScope &scope,
 
 所有下标同时写进 `zone_info.indices` 的八个桶（main / border_links / output_usages / input_usages / border_link_usages / reference_sets 的输入与输出两侧）——§6–§8 出现的每一个 `zone_info_.indices.inputs.main[i + 1]` 都源于这里的登记顺序。`ignore_zone_bsocket`（L1692）负责过滤不可用 socket 与扩展 socket。**repeat 与 closure 的差异只在一个布尔参数**：closure 传 `false`，不暴露全部引用集。
 
-### 10.2 `build_zone_body_function`（[L2280–L2370 左右](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L2280-L2370)）
+### 10.2 `build_zone_body_function`（[L2280–L2370 左右](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L2280)）
 
 把"区域内所有节点"编译成**一份**可复制调用的体函数。要点：
 
@@ -1530,7 +1544,7 @@ LazyFunction &build_repeat_zone_lazy_function(ResourceScope &scope,
 
 产物 `ZoneBodyFunction` 携带 `function`（lazy-function 指针）与 `indices`（体函数参数下标表）——正是 `LazyFunctionForRepeatZone` 构造函数的最后两个参数。**同一份体函数被复制 N 次挂进展开图**（§6 的 `add_function(*body_fn_.function)`），这是"编译一次、执行 N 次"的根基。
 
-### 10.3 `build_repeat_zone_function`（[L2243–L2252](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L2243-L2252)）
+### 10.3 `build_repeat_zone_function`（[L2243–L2252](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L2243)）
 
 区域装配的分发入口，仅 9 行，但揭示了两阶段流程：
 
@@ -1549,13 +1563,14 @@ void build_repeat_zone_function(const bNodeTreeZone &zone)
 
 先造体函数（名字 "Repeat Body"，配一个体级的副作用 provider），再调本文 §9 的工厂把它包成区域函数，最后把指针挂到 `zone_info.lazy_function` 供父图引用。同文件里 `build_foreach_geometry_element_zone_function`（L2254）、`build_closure_zone_function`（L2266）、`build_simulation_zone_function`（L2220 附近的 `LazyFunctionForSimulationZone`）结构完全同构——**四种区域，一套骨架，差异只在包装函数**。
 
-### 10.4 `insert_child_zone_node`（[L2810–L2850+](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L2810-L2850)）
+### 10.4 `insert_child_zone_node`（[L2810–L2850+](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L2810)）
 
 当重复区域**嵌套在另一个区域/父图内部**时，父图装配器用这个函数把子区域当作一个普通函数节点接入：取 `child_zone_info.lazy_function` 加进父图，然后逐组把父图的 socket 映射到子区域函数的参数上——主输入接主输入、`Usage` 输出注册进 `usage_by_bsocket`、输出侧的 Usage 输入注册进 `socket_usage_inputs`（供 `fix_link_cycles` 在打断依赖环时替换为常量 true，见 L1680–L1687 的注释）。**嵌套重复区域**（repeat 套 repeat）能工作，靠的就是这段通用代码：外层展开图的体函数里自然包含内层区域函数节点，§1 的上下文注入会自动叠加两层 `RepeatZoneComputeContext`。
 
 ### 依赖关系图
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
     LF["geometry_nodes_lazy_function.cc<br/>（总装车间）"]:::data
     BR["build_repeat_zone_function<br/>L2243"]:::compute
@@ -1579,7 +1594,7 @@ flowchart TB
     classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## §11 外围依赖速览：合成器与 GPU 依赖
 
@@ -1611,6 +1626,7 @@ GPU 侧的"重复区域"收敛为两个着色器宏，是三个后端里最薄�
 ### 三后端依赖图
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
     SEM["重复区域语义<br/>迭代 N 次 · 输出接输入 · 边界链接 · Index"]:::input
     GN["几何节点后端<br/>geometry_nodes_repeat_zone.cc (432 行)"]:::result
@@ -1639,10 +1655,11 @@ flowchart TB
 
 **对比一句话**：几何节点"图展开 + 通用执行器"（最重、最灵活），合成器"单图 + 运行期循环重映射"（中庸），GPU"编译期内联 + plain loop"（最薄）。行数比 432 : 58 : 30 大致反映了三种策略的实现成本。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 反例与边界
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px">边界情形 · 每条断言都可回到源码验证</div>
 以下 6 条都是"直觉容易答错"的行为，答案均可在本文引用的源码中直接核对。
 
 1. **"迭代数 = 0 时区域函数什么都不做"——错**。0 迭代照样走一遍 `initialize_execution_graph`（§5 的惰性判定只看 `graph_executor` 是否存在，不看迭代数），建一张"输入直连输出"的恒等图并执行。区别只是没有体节点、边界链接使用输出恒 false（§8 的 else 分支）。所以 0 迭代不是零成本，只是低成本的常规路径。
@@ -1657,7 +1674,7 @@ flowchart TB
 
 6. **"日志里看到的迭代哈希可以长期持有"——不能**。`RepeatZoneComputeContext` 是 `execute_node` 里的**栈上局部变量**（§1），其哈希值（值类型，可拷贝）可以存，但任何指向该 context 的指针在 `execute_node` 返回后即悬空。`body_user_data.compute_context = &body_compute_context` 的有效性边界就是那一次 `fn.execute`。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 继续阅读
 
@@ -1669,3 +1686,10 @@ flowchart TB
 - **合成器实现**：[COM_repeat_zone_operation.hh](../../../source/blender/compositor/COM_repeat_zone_operation.hh) + 同名 `.cc` —— §11.1 五个私有方法的实现细节（`map_inputs` 的 Result 共享技巧值得细读）。
 - **GPU 宏的消费者**：在 `source/blender/gpu/shaders/` 下搜索 `REPEAT_BEGIN` 可以找到材质生成器如何把重复区域编译进着色器代码。
 - **同族区域实现对照**：[geometry_nodes_foreach_geometry_element_zone.cc](../../../source/blender/nodes/intern/geometry_nodes_foreach_geometry_element_zone.cc)、geometry_nodes_closure_zone.cc、geometry_nodes_simulation_zone.cc —— 与本文同构的"体函数 + 包装函数"结构，读完本文后再看这三个文件会非常快。
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
+<a href="../06-实战与性能/README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ 06-实战与性能</a>
+<a href="../91-验收报告.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">验收报告 ›</a>
+<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
+</div>

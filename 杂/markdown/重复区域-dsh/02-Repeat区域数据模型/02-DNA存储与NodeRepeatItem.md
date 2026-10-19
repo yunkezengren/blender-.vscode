@@ -1,10 +1,22 @@
 # 02 - DNA 存储与 NodeRepeatItem
 
-> **导航行**：[总入口](../README.md) · [本章 README](README.md) · [上一篇](01-Repeat节点注册与UI.md) · [下一篇](03-SocketItems通用条目框架.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 02-Repeat区域数据模型</a>
+<a href="./01-Repeat节点注册与UI.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ Repeat节点注册与UI</a>
+<a href="./03-SocketItems通用条目框架.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">SocketItems通用条目框架 ›</a>
+</div>
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
+
+**导航行**：[总入口](../README.md) · [本章 README](README.md) · [上一篇](01-Repeat节点注册与UI.md) · [下一篇](03-SocketItems通用条目框架.md)
+
+</div>
 
 > **基准说明**：本文所有源码引用基于本仓库（`D:\Repository\blender-git\blender`）当前工作副本，行号以该副本为准。阅读时建议把源码文件与本文并排打开。文中所有源码链接均以 `../../../` 为前缀，从本文所在目录直接跳到仓库根目录。若你的工作副本与本文行号有少量偏移，请以文件名 + 符号名（如 `NodeRepeatItem`、`RepeatItemsAccessor::init_with_socket_type_and_name`）为锚重新定位。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 先回答一个具体问题
 
@@ -28,7 +40,7 @@
    这个 `identifier` 存在 DNA 里、随 `.blend` 文件持久化，**与 item 在数组中的下标无关，也与 item 的名字无关**。改名改的是 `name`（`char *`），排序改的是数组顺序，都不会碰 `identifier`。
 
 2. **socket 层：socket 的 `identifier` 由 item 的 `identifier` 派生。**
-   节点声明动态 socket 时，不是用"第 N 个 socket"这种位置信息，而是用 [NOD_geo_repeat.hh#L83-L86](../../../source/blender/nodes/geometry/include/NOD_geo_repeat.hh#L83-L86)：
+   节点声明动态 socket 时，不是用"第 N 个 socket"这种位置信息，而是用 [NOD_geo_repeat.hh#L83](../../../source/blender/nodes/geometry/include/NOD_geo_repeat.hh#L83)：
 
    ```cpp
    static std::string socket_identifier_for_item(const NodeRepeatItem &item)
@@ -39,18 +51,23 @@
 
    也就是说 socket 的标识是 `Item_0`、`Item_3`、`Item_7` 这种字符串。`bNodeLink` 记录的是两端的 socket 标识（而不是 socket 指针或下标）。只要 `identifier` 不变，重算节点声明（`node_declare`）时按同样的 `Item_X` 重建 socket，link 重定位就能命中同一个 socket。
 
-   改名时唯一变化的是 socket 的**显示名**（`name`），通过 `socket_name_ptr`（见 [node_geo_repeat.cc#L93-L94](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L93-L94)）直接指向 DNA 里 item 的 `name` 字段，socket 显示名跟着 DNA 实时变，但标识不变，所以连接不断。
+   改名时唯一变化的是 socket 的**显示名**（`name`），通过 `socket_name_ptr`（见 [node_geo_repeat.cc#L93](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L93)）直接指向 DNA 里 item 的 `name` 字段，socket 显示名跟着 DNA 实时变，但标识不变，所以连接不断。
 
 3. **为什么删除后再加新 item 不会"顶替"旧连接？**
    因为 `next_identifier` 只增不减。删除 identifier 为 3 的 item 后再新建 item，新 item 拿到的是 `next_identifier` 给出的下一个数（比如 8），而不是复用 3。旧的 `Item_3` socket 不再被任何 item 派生出来，其上的连接由节点更新系统按"socket 消失"正常清理，绝不会出现"新 item 意外继承旧 item 连接"的事故。
 
-一句话总结：**"名字给人看，identifier 给机器用"。** UI 显示层（name）可以随便改，数据层（identifier）一旦分配就冻结，这就是 Repeat 区域（以及整个 socket items 框架家族）保持连接稳定的全部秘密。
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:16px 0 20px;padding:12px 16px;background:#F0FDF4;border-left:4px solid #16A34A;border-radius:10px">
+<div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#15803D;margin-bottom:6px">一句话记住</div>
 
----
+**"名字给人看，identifier 给机器用"。** UI 显示层（name）可以随便改，数据层（identifier）一旦分配就冻结，这就是 Repeat 区域（以及整个 socket items 框架家族）保持连接稳定的全部秘密。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 相关结构与字段总览
 
-三个结构体都定义在 [DNA_node_types.h](../../../source/blender/makesdna/DNA_node_types.h#L3543-L3575)。先给逐字段表，再分节精读。
+三个结构体都定义在 [DNA_node_types.h](../../../source/blender/makesdna/DNA_node_types.h#L3543)。先给逐字段表，再分节精读。
 
 ### 表 1：`NodeRepeatItem`（单个重复项）
 
@@ -59,15 +76,15 @@
 | `NodeRepeatItem` | `name` | `char *` | item 的显示名，堆上分配（`BLI_strdup`），随 `.blend` 以字符串形式写盘；socket 显示名直接引用它 |
 | `NodeRepeatItem` | `socket_type` | `eNodeSocketDatatype` | 该 item 对应的 socket 数据类型（`SOCK_GEOMETRY`、`SOCK_FLOAT`、`SOCK_VECTOR`……） |
 | `NodeRepeatItem` | `_pad` | `char[2]` | DNA 对齐填充，保证结构体大小按 4 字节对齐；无语义 |
-| `NodeRepeatItem` | `identifier` | `int` | 稳定唯一标识。源码注释原文：*"Generated unique identifier for sockets which stays the same even when the item order or names change."*（[DNA_node_types.h#L3547-L3551](../../../source/blender/makesdna/DNA_node_types.h#L3547-L3551)） |
+| `NodeRepeatItem` | `identifier` | `int` | 稳定唯一标识。源码注释原文：*"Generated unique identifier for sockets which stays the same even when the item order or names change."*（[DNA_node_types.h#L3547](../../../source/blender/makesdna/DNA_node_types.h#L3547)） |
 
 ### 表 2：`NodeGeometryRepeatInput`（Repeat Input 节点存储）
 
 | 结构 | 字段 | 类型 | 语义 |
 | --- | --- | --- | --- |
-| `NodeGeometryRepeatInput` | `output_node_id` | `int32_t` | 指向同树内对应 Repeat **Output** 节点的 `bNode.identifier`。源码注释：*"bNode.identifier of the corresponding output node."*（[DNA_node_types.h#L3557-L3558](../../../source/blender/makesdna/DNA_node_types.h#L3557-L3558)） |
+| `NodeGeometryRepeatInput` | `output_node_id` | `int32_t` | 指向同树内对应 Repeat **Output** 节点的 `bNode.identifier`。源码注释：*"bNode.identifier of the corresponding output node."*（[DNA_node_types.h#L3557](../../../source/blender/makesdna/DNA_node_types.h#L3557)） |
 
-注意：**input 节点自己不存任何 item**。它的动态 socket 完全是"镜像"——`node_declare` 时顺着 `output_node_id` 找到 output 节点，遍历它的 `items` 数组逐个生成对齐的输入/输出 socket（[node_geo_repeat.cc#L80-L104](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L80-L104)）。这是"单一数据源"设计：item 定义只存在于 output 节点一处。
+注意：**input 节点自己不存任何 item**。它的动态 socket 完全是"镜像"——`node_declare` 时顺着 `output_node_id` 找到 output 节点，遍历它的 `items` 数组逐个生成对齐的输入/输出 socket（[node_geo_repeat.cc#L80](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L80)）。这是"单一数据源"设计：item 定义只存在于 output 节点一处。
 
 ### 表 3：`NodeGeometryRepeatOutput`（Repeat Output 节点存储，唯一的数据持有者）
 
@@ -78,11 +95,12 @@
 | `NodeGeometryRepeatOutput` | `active_index` | `int` | UI 侧栏中当前选中的 item 下标（仅编辑状态，不参与执行） |
 | `NodeGeometryRepeatOutput` | `next_identifier` | `int` | 下一个分配给新 item 的 identifier（单调递增计数器）。源码注释：*"Identifier to give to the next repeat item."* |
 | `NodeGeometryRepeatOutput` | `inspection_index` | `int` | 检查器/Viewer 想查看的迭代轮次下标（专节详解） |
-| `NodeGeometryRepeatOutput` | `items_span()` | `Span<NodeRepeatItem>` / `MutableSpan` | C++ 便捷方法，把裸指针 + 数量包装成 `Span`（[DNA_node_types.h#L3571-L3574](../../../source/blender/makesdna/DNA_node_types.h#L3571-L3574)，实现见 [node_geo_repeat.cc#L362-L370](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L362-L370)） |
+| `NodeGeometryRepeatOutput` | `items_span()` | `Span<NodeRepeatItem>` / `MutableSpan` | C++ 便捷方法，把裸指针 + 数量包装成 `Span`（[DNA_node_types.h#L3571](../../../source/blender/makesdna/DNA_node_types.h#L3571)，实现见 [node_geo_repeat.cc#L362](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L362)） |
 
 ### 存储结构图
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
     subgraph TREE["bNodeTree（几何节点树）"]
         subgraph IN["bNode: GeometryNodeRepeatInput"]
@@ -111,11 +129,16 @@ flowchart TB
     ITEMS --> ARR
     NUM -. 数量 .-> ARR
 ```
-*图 1：Repeat 区域的 DNA 存储结构。数据只有一份，在 Output 节点；Input 节点只存一个引用 id。*
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:-4px 0 24px;padding:8px 14px;background:#F8FAFC;border-left:3px solid #BFDBFE;border-radius:0 8px 8px 0;font-size:13px;color:#64748B">
+
+图 1：Repeat 区域的 DNA 存储结构。数据只有一份，在 Output 节点；Input 节点只存一个引用 id。
+
+</div>
 
 配色约定（本文所有 mermaid 图统一）：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart LR
     A[input 样式示例]:::input
     B[data 样式示例]:::data
@@ -130,15 +153,19 @@ flowchart LR
     classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
     classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
-*图 2：图例。`input` = 用户/UI 入口；`data` = DNA/持久化数据；`abstraction` = 抽象层（Accessor/框架模板）；`compute` = 计算/执行路径；`result` = 成功结果；`error` = 警告与错误。*
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:-4px 0 24px;padding:8px 14px;background:#F8FAFC;border-left:3px solid #BFDBFE;border-radius:0 8px 8px 0;font-size:13px;color:#64748B">
 
----
+图 2：图例。`input` = 用户/UI 入口；`data` = DNA/持久化数据；`abstraction` = 抽象层（Accessor/框架模板）；`compute` = 计算/执行路径；`result` = 成功结果；`error` = 警告与错误。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 分节详解
 
 ### 1. `NodeRepeatItem`：最小可能的 item
 
-先看完整定义（[DNA_node_types.h#L3543-L3552](../../../source/blender/makesdna/DNA_node_types.h#L3543-L3552)）：
+先看完整定义（[DNA_node_types.h#L3543](../../../source/blender/makesdna/DNA_node_types.h#L3543)）：
 
 <details>
 <summary>原始源码：NodeRepeatItem（点击展开）</summary>
@@ -197,7 +224,7 @@ struct NodeRepeatItem {
 
 几个值得咀嚼的细节：
 
-- **`_pad` 为什么要手写？** DNA 工具（`makesdna`）解析结构体布局生成 SDNA 表，手写填充消除编译器差异。同文件里 `NodeForeachGeometryElementInputItem`（[DNA_node_types.h#L3584-L3590](../../../source/blender/makesdna/DNA_node_types.h#L3584-L3590)）有一模一样的 `char _pad[2]`——这组 item 结构体是同一个模板刻出来的。
+- **`_pad` 为什么要手写？** DNA 工具（`makesdna`）解析结构体布局生成 SDNA 表，手写填充消除编译器差异。同文件里 `NodeForeachGeometryElementInputItem`（[DNA_node_types.h#L3584](../../../source/blender/makesdna/DNA_node_types.h#L3584)）有一模一样的 `char _pad[2]`——这组 item 结构体是同一个模板刻出来的。
 - **没有默认值字段。** 对比 `NodeGeometryViewerItem` 之类的结构，有些 item 带 flag；Repeat item 连 flag 都没有，它是该家族里最精简的形态。
 - **`identifier` 是 `int` 不是 `int32_t`。** 语义相同，风格统一即可；而 `NodeGeometryRepeatInput::output_node_id` 用了 `int32_t`，因为它是跨结构的"外键"，作者想显式表达位宽契约。
 
@@ -215,7 +242,7 @@ struct NodeRepeatItem {
 // 逐个镜像成自己的 socket 对（每个 item 生成一对：zone 输入 + zone 输出）。
 ```
 
-镜像逻辑在 [node_geo_repeat.cc#L80-L104](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L80-L104)（Input 节点）与 [node_geo_repeat.cc#L180-L200](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L180-L200)（Output 节点），两边对每个 item 都调用同一个：
+镜像逻辑在 [node_geo_repeat.cc#L80](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L80)（Input 节点）与 [node_geo_repeat.cc#L180](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L180)（Output 节点），两边对每个 item 都调用同一个：
 
 ```cpp
 const UString identifier(RepeatItemsAccessor::socket_identifier_for_item(item));
@@ -244,7 +271,7 @@ auto &input_decl = b.add_input(socket_type, name, identifier)
 
 ### 4. 与 Foreach 的存储设计对比
 
-Foreach 区域的结构体在同文件紧随其后（[DNA_node_types.h#L3577-L3656](../../../source/blender/makesdna/DNA_node_types.h#L3577-L3656)）。先看原始定义：
+Foreach 区域的结构体在同文件紧随其后（[DNA_node_types.h#L3577](../../../source/blender/makesdna/DNA_node_types.h#L3577)）。先看原始定义：
 
 <details>
 <summary>原始源码：Foreach 区域存储结构（点击展开）</summary>
@@ -348,13 +375,14 @@ struct NodeGeometryForeachGeometryElementOutput {
 
 **设计异同要点：**
 
-1. **同**：两者都遵守"Output 是唯一物主、Input 只存 `output_node_id` 外键、item 带永不复用的 `identifier`"三件套。注释几乎逐字相同——这是整个 zone 家族刻意统一的约定，后来者（Closure、Bundle 等，见 [DNA_node_types.h#L3658 起](../../../source/blender/makesdna/DNA_node_types.h#L3658-L3708)）也延续了这个模式。
+1. **同**：两者都遵守"Output 是唯一物主、Input 只存 `output_node_id` 外键、item 带永不复用的 `identifier`"三件套。注释几乎逐字相同——这是整个 zone 家族刻意统一的约定，后来者（Closure、Bundle 等，见 [DNA_node_types.h#L3658 起](../../../source/blender/makesdna/DNA_node_types.h#L3658)）也延续了这个模式。
 2. **异（结构形态）**：Repeat 把数组字段平铺在存储顶层（只有一组 socket 集）；Foreach 有三组动态 socket，于是把每组抽成嵌套结构体。嵌套结构体本质只是"给一组 (items, items_num, active_index, next_identifier) 起个名字"，没有运行时开销。
 3. **异（item 复杂度）**：Foreach 的 Generation item 多一个 `domain`（`#AttrDomain`），因为 generation 输出是"按域逐元素生成的属性"，必须记录在哪个域上。这提示我们：**item 结构体按 zone 的语义需求增删字段，但 `identifier` 这个字段永不变。**
 
 ### 对比图
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
     subgraph R["Repeat Output 存储"]
         RI["items: NodeRepeatItem*\nitems_num / active_index\nnext_identifier / inspection_index"]:::data
@@ -369,15 +397,19 @@ flowchart TB
     R --- SAME
     FE --- SAME
 ```
-*图 3：Repeat 与 Foreach 存储形态对比。Repeat 一组 items 平铺；Foreach 三组嵌套；共同约定一致。*
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:-4px 0 24px;padding:8px 14px;background:#F8FAFC;border-left:3px solid #BFDBFE;border-radius:0 8px 8px 0;font-size:13px;color:#64748B">
 
----
+图 3：Repeat 与 Foreach 存储形态对比。Repeat 一组 items 平铺；Foreach 三组嵌套；共同约定一致。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 持久化路径：blend write/read 全链路
 
 ### 4.1 节点侧的注册：回调挂在哪里
 
-[node_geo_repeat.cc#L299-L307](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L299-L307)：
+[node_geo_repeat.cc#L299](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L299)：
 
 <details>
 <summary>原始源码：node_blend_write / node_blend_read（点击展开）</summary>
@@ -408,7 +440,7 @@ static void node_blend_read(bNodeTree & /*tree*/, bNode &node, BlendDataReader &
 
 ### 4.2 谁来调用这两个回调：BKE 层
 
-写盘侧 [node.cc#L1322-L1329](../../../source/blender/blenkernel/intern/node.cc#L1322-L1329)：
+写盘侧 [node.cc#L1322](../../../source/blender/blenkernel/intern/node.cc#L1322)：
 
 ```cpp
 // [讲解] BKE 层的通用节点写盘逻辑：
@@ -420,7 +452,7 @@ static void node_blend_read(bNodeTree & /*tree*/, bNode &node, BlendDataReader &
 // 两步合起来才是完整的存储。缺了第二步，items 指针读回来就是野指针。
 ```
 
-读盘侧 [node.cc#L1998-L2010](../../../source/blender/blenkernel/intern/node.cc#L1998-L2010)：
+读盘侧 [node.cc#L1998](../../../source/blender/blenkernel/intern/node.cc#L1998)：
 
 ```cpp
 // [讲解] 读盘对称：
@@ -433,7 +465,7 @@ static void node_blend_read(bNodeTree & /*tree*/, bNode &node, BlendDataReader &
 
 ### 4.3 框架层：socket_items::blend_write / blend_read_data
 
-[NOD_socket_items_blend.hh](../../../source/blender/nodes/NOD_socket_items_blend.hh#L17-L36) 全文只有 38 行，是"模板 + Accessor"威力的最佳展品：
+[NOD_socket_items_blend.hh](../../../source/blender/nodes/NOD_socket_items_blend.hh#L17) 全文只有 38 行，是"模板 + Accessor"威力的最佳展品：
 
 <details>
 <summary>原始源码：socket_items::blend_write / blend_read_data（点击展开）</summary>
@@ -484,7 +516,7 @@ template<typename Accessor> inline void blend_read_data(BlendDataReader *reader,
 
 ### 4.4 item 层钩子：blend_write_item / blend_read_data_item
 
-[node_geo_repeat.cc#L350-L358](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L350-L358)：
+[node_geo_repeat.cc#L350](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L350)：
 
 <details>
 <summary>原始源码：RepeatItemsAccessor::blend_write_item / blend_read_data_item（点击展开）</summary>
@@ -516,6 +548,7 @@ void RepeatItemsAccessor::blend_read_data_item(BlendDataReader *reader, ItemT &i
 ### 4.5 全链路时序图
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 sequenceDiagram
     participant W as 保存(.blend 写盘)
     participant BK as BKE node.cc
@@ -535,13 +568,17 @@ sequenceDiagram
         AC->>AC: writer->write_string(item.name)
     end
 ```
-*图 4：blend 写盘时序。三层各司其职：BKE 写头、框架写数组、Accessor 写字符串。*
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:-4px 0 24px;padding:8px 14px;background:#F8FAFC;border-left:3px solid #BFDBFE;border-radius:0 8px 8px 0;font-size:13px;color:#64748B">
+
+图 4：blend 写盘时序。三层各司其职：BKE 写头、框架写数组、Accessor 写字符串。
+
+</div>
 
 读盘对称（方向反过来，`blend_read_data` 用 `BLO_read_array_and_validate_size` 重定位 `items` 指针，`BLO_read_string` 重建 `name`），不再重复画。
 
 ### 4.6 内存管理三兄弟：free / copy / init
 
-[node_geo_repeat.cc#L209-L239](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L209-L239)：
+[node_geo_repeat.cc#L209](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L209)：
 
 <details>
 <summary>原始源码：node_init / node_free_storage / node_copy_storage（Output 节点，点击展开）</summary>
@@ -662,7 +699,7 @@ inline void remove_index(
 //    用 std::max(0, ...) 防止数组删空后 active_index 变负。
 ```
 
-而 `dna::shallow_copy` 的准确定义在 [DNA_defs.h#L136-L150](../../../source/blender/makesdna/DNA_defs.h#L136-L150)：
+而 `dna::shallow_copy` 的准确定义在 [DNA_defs.h#L136](../../../source/blender/makesdna/DNA_defs.h#L136)：
 
 ```cpp
 // [讲解] dna::shallow_copy(other) 返回一个包装器，赋值时走
@@ -681,7 +718,7 @@ inline void remove_index(
 
 ### 4.8 add_item 的数组扩容
 
-添加 item 的底层是 [NOD_socket_items.hh#L194-L215](../../../source/blender/nodes/NOD_socket_items.hh#L194-L215) 的 `detail::add_item_to_array`：
+添加 item 的底层是 [NOD_socket_items.hh#L194](../../../source/blender/nodes/NOD_socket_items.hh#L194) 的 `detail::add_item_to_array`：
 
 ```cpp
 // [讲解] 与 remove_index 同样的"新数组 + 拷贝"策略，方向相反：
@@ -692,7 +729,7 @@ inline void remove_index(
 // identifier 就在这一步由 next_identifier++ 发放（见下一节）。
 ```
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## identifier 生命周期
 
@@ -700,7 +737,7 @@ inline void remove_index(
 
 ### 5.1 分配：`init_with_socket_type_and_name`
 
-[NOD_geo_repeat.hh#L72-L81](../../../source/blender/nodes/geometry/include/NOD_geo_repeat.hh#L72-L81)：
+[NOD_geo_repeat.hh#L72](../../../source/blender/nodes/geometry/include/NOD_geo_repeat.hh#L72)：
 
 <details>
 <summary>原始源码：init_with_socket_type_and_name（点击展开）</summary>
@@ -731,7 +768,7 @@ static void init_with_socket_type_and_name(bNode &node,
 //    根本不需要查重。
 ```
 
-`set_item_name_and_make_unique` 的内部值得一提（[NOD_socket_items.hh#L149-L190](../../../source/blender/nodes/NOD_socket_items.hh#L149-L190)）：空名字回退为类型标签（如 `Geometry`），随后 `BLI_uniquename_cb` 扫描同数组其他 item 查重，最后 `MEM_SAFE_DELETE(*item_name); *item_name = BLI_strdup(...)` 换掉堆字符串。**整个过程不碰 identifier**。
+`set_item_name_and_make_unique` 的内部值得一提（[NOD_socket_items.hh#L149](../../../source/blender/nodes/NOD_socket_items.hh#L149)）：空名字回退为类型标签（如 `Geometry`），随后 `BLI_uniquename_cb` 扫描同数组其他 item 查重，最后 `MEM_SAFE_DELETE(*item_name); *item_name = BLI_strdup(...)` 换掉堆字符串。**整个过程不碰 identifier**。
 
 ### 5.2 消费：`socket_identifier_for_item`
 
@@ -763,11 +800,12 @@ static void init_with_socket_type_and_name(bNode &node,
 ### 5.4 生命周期图
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
     CREATE(["用户添加 item / 拖线到 __extend__"]):::input
     ALLOC["next_identifier++\nitem.identifier = 旧值"]:::data
     NAME["set_item_name_and_make_unique\n(名字查重, identifier 不动)"]:::data
-    SOCK["node_declare 重建\nsocket identifier = \"Item_\" + id"]:::compute
+    SOCK["node_declare 重建\nsocket identifier = #quot;Item_#quot; + id"]:::compute
     LINKS["已有连线按 Item_X 命中\n(改名/排序不受影响)"]:::result
     RENAME(["用户改名 / 拖动排序"]):::input
     KEEP["identifier 保持不变\nnext_identifier 不变"]:::data
@@ -779,17 +817,21 @@ flowchart TB
 
     CREATE --> ALLOC --> NAME --> SOCK --> LINKS
     RENAME --> KEEP
-    KEEP -. 随 .blend 持久化 .-> LINKS
+    KEEP -. "随 .blend 持久化" .-> LINKS
     REMOVE --> GONE --> COUNTER
     COUNTER --> NEW --> NEWID
 ```
-*图 5：identifier 生命周期。出生即发号、一生不改、死后号不作废。*
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:-4px 0 24px;padding:8px 14px;background:#F8FAFC;border-left:3px solid #BFDBFE;border-radius:0 8px 8px 0;font-size:13px;color:#64748B">
+
+图 5：identifier 生命周期。出生即发号、一生不改、死后号不作废。
+
+</div>
 
 ### 5.5 版本兼容：旧文件如何回填 identifier
 
 `next_identifier` 的存在还有一层"考古"意义：老版本 Blender 的存储结构里没有 identifier 字段或计数器，加载旧文件时必须**回填**。仓库里能看到标准做法：
 
-**范例 1**：[versioning_402.cc#L1243-L1268](../../../source/blender/blenloader/intern/versioning_402.cc#L1243-L1268)（Capture Attribute 节点，模式与 Repeat 同源）：
+**范例 1**：[versioning_402.cc#L1243](../../../source/blender/blenloader/intern/versioning_402.cc#L1243)（Capture Attribute 节点，模式与 Repeat 同源）：
 
 ```cpp
 // [讲解] 版本化代码的标准姿势：
@@ -804,7 +846,7 @@ flowchart TB
 // 判断新旧 + 重新发号"的范式适用于所有 socket items 节点。
 ```
 
-**范例 2**：[versioning_500.cc#L2399-L2428](../../../source/blender/blenloader/intern/versioning_500.cc#L2399-L2428)（Viewer 节点 item 重建，结尾显式 `storage->next_identifier = 2;`）：
+**范例 2**：[versioning_500.cc#L2399](../../../source/blender/blenloader/intern/versioning_500.cc#L2399)（Viewer 节点 item 重建，结尾显式 `storage->next_identifier = 2;`）：
 
 ```cpp
 // [讲解] 另一种形态：直接重建固定两个 item，identifier 硬编码 0 和 1，
@@ -812,7 +854,7 @@ flowchart TB
 // 否则下一个新 item 会与既有 item 撞号。这是手写版本化代码时最容易漏的一行。
 ```
 
-**范例 3**：Repeat 自身在版本化里的存在感——[versioning_500.cc#L4445-L4473](../../../source/blender/blenloader/intern/versioning_500.cc#L4445-L4473)：
+**范例 3**：Repeat 自身在版本化里的存在感——[versioning_500.cc#L4445](../../../source/blender/blenloader/intern/versioning_500.cc#L4445)：
 
 ```cpp
 // [讲解] 5.1.4 版本化把 GeometryNodeRepeatInput/Output 列入 no_muting_nodes，
@@ -823,7 +865,7 @@ flowchart TB
 // 版本化处理的是"结构性/合法性"问题，而不是业务数据。
 ```
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## inspection_index 专节
 
@@ -831,7 +873,7 @@ flowchart TB
 
 `NodeGeometryRepeatOutput::inspection_index`（[DNA_node_types.h#L3569](../../../source/blender/makesdna/DNA_node_types.h#L3569)）是一个 `int`，语义为：**"当用户用 Viewer 节点或 socket 检查器观察 Repeat 区域内部时，显示第几轮迭代的结果。"** 迭代从 0 计数；`0` 是默认值，表示"看第 0 轮"。
 
-RNA 定义在 [rna_nodetree.cc#L8087-L8093](../../../source/blender/makesrna/intern/rna_nodetree.cc#L8087-L8093)：
+RNA 定义在 [rna_nodetree.cc#L8087](../../../source/blender/makesrna/intern/rna_nodetree.cc#L8087)：
 
 ```cpp
 // [讲解] UI 文案原文："Iteration index that is used by inspection features
@@ -847,14 +889,14 @@ RNA 定义在 [rna_nodetree.cc#L8087-L8093](../../../source/blender/makesrna/int
 | [DNA_node_types.h#L3569](../../../source/blender/makesdna/DNA_node_types.h#L3569) / [L3652](../../../source/blender/makesdna/DNA_node_types.h#L3652) | Repeat 与 Foreach 各存一份 |
 | [node_geo_repeat.cc#L65](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L65) | UI 暴露：`layout.prop(&output_node_ptr, "inspection_index", ...)`，画在 Repeat Input/Output 节点侧栏 |
 | [node_geo_foreach_geometry_element.cc#L101](../../../source/blender/nodes/geometry/nodes/node_geo_foreach_geometry_element.cc#L101) | Foreach 同款 UI |
-| [geometry_nodes_repeat_zone.cc#L216-L227](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc#L216-L227) | 执行时越界警告 |
-| [space_node.cc#L462-L466](../../../source/blender/editors/space_node/space_node.cc#L462-L466) | 节点编辑器构造 zone 的 ComputeContext 时把 inspection_index 编入上下文 |
-| [compositor.cc#L740-L744](../../../source/blender/blenkernel/intern/compositor.cc#L740-L744) | 合成器后端同理，为 Repeat 区域内 viewer 构造带 inspection_index 的上下文 |
+| [geometry_nodes_repeat_zone.cc#L216](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc#L216) | 执行时越界警告 |
+| [space_node.cc#L462](../../../source/blender/editors/space_node/space_node.cc#L462) | 节点编辑器构造 zone 的 ComputeContext 时把 inspection_index 编入上下文 |
+| [compositor.cc#L740](../../../source/blender/blenkernel/intern/compositor.cc#L740) | 合成器后端同理，为 Repeat 区域内 viewer 构造带 inspection_index 的上下文 |
 | [rna_nodetree.cc#L8087](../../../source/blender/makesrna/intern/rna_nodetree.cc#L8087) / [L8321](../../../source/blender/makesrna/intern/rna_nodetree.cc#L8321) | Repeat 与 Foreach 的 RNA 属性定义 |
 
 ### 6.3 越界警告
 
-[geometry_nodes_repeat_zone.cc#L210-L227](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc#L210-L227)：
+[geometry_nodes_repeat_zone.cc#L210](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc#L210)：
 
 <details>
 <summary>原始源码：Inspection index is out of range（点击展开）</summary>
@@ -897,7 +939,7 @@ RNA 定义在 [rna_nodetree.cc#L8087-L8093](../../../source/blender/makesrna/int
 
 ### 6.4 为什么 inspection_index 要参与 ComputeContext
 
-[space_node.cc#L462-L466](../../../source/blender/editors/space_node/space_node.cc#L462-L466)：
+[space_node.cc#L462](../../../source/blender/editors/space_node/space_node.cc#L462)：
 
 ```cpp
 // [讲解] 每个逻辑执行上下文（同一 zone 的第几轮迭代）都有自己的
@@ -911,6 +953,7 @@ RNA 定义在 [rna_nodetree.cc#L8087-L8093](../../../source/blender/makesrna/int
 ### inspection 数据流图
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart LR
     UI["节点侧栏\ninspection_index 属性"]:::input
     STORE["NodeGeometryRepeatOutput\n.inspection_index (DNA)"]:::data
@@ -929,12 +972,17 @@ flowchart LR
     EXEC --> WARN
     EXEC --> VIEW
 ```
-*图 6：inspection_index 从 UI 到缓存与警告的完整数据流。*
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:-4px 0 24px;padding:8px 14px;background:#F8FAFC;border-left:3px solid #BFDBFE;border-radius:0 8px 8px 0;font-size:13px;color:#64748B">
 
----
+图 6：inspection_index 从 UI 到缓存与警告的完整数据流。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 用小数据走一遍：一次保存 / 加载 cycle
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#0891B2;background:#ECFEFF;border:1px solid #A5F3FC;border-radius:999px">教学推演 · 手算中间值，逐轮核对</div>
 设一棵几何节点树，Repeat 区域的 Output 节点（`bNode.identifier = 42`）上有两个 item：
 
 | 下标 | name | socket_type | identifier |
@@ -948,7 +996,7 @@ flowchart LR
 
 1. `node_declare` 在 Output 节点上生成 socket：`Item_0`（Geometry）、`Item_1`（Float），以及 `__extend__` 虚 socket；Input 节点顺着 `output_node_id = 42` 镜像出对齐的两对 socket。
 2. 用户把 `Value` 改名为 `Radius`：`set_item_name_and_make_unique` 换掉 `items[1].name` 指向的字符串；`socket_name_ptr` 绑定使 socket 显示名即时变化；socket 标识仍是 `Item_1`，连线纹丝不动。
-3. 用户把 `Geometry` 拖到 `Radius` 后面：`dna::array::move_index` 移动数组元素（[DNA_array_utils.hh#L99-L127](../../../source/blender/makesdna/DNA_array_utils.hh#L99-L127)），identifier 跟着 item 一起搬，`Item_1` 依旧属于 `Radius`。
+3. 用户把 `Geometry` 拖到 `Radius` 后面：`dna::array::move_index` 移动数组元素（[DNA_array_utils.hh#L99](../../../source/blender/makesdna/DNA_array_utils.hh#L99)），identifier 跟着 item 一起搬，`Item_1` 依旧属于 `Radius`。
 4. 用户删掉 `Geometry`：`destruct_item` 释放其 name，数组缩为 1；`Item_0` socket 消失。此时 `next_identifier` 仍是 2。
 
 **保存（blend write）：**
@@ -969,6 +1017,7 @@ flowchart LR
 **加载后立刻添加新 item：** `next_identifier` 从盘上读回仍是 2，新 item 拿到 2（`Item_2`）——绝不与死掉的 `Item_0` 撞号，也绝不顶替 `Item_1`。整个 cycle 闭环。
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
     A["编辑: 改名/排序/删除\nidentifier 不动"]:::input
     B["保存: 写头(标量) → 写数组(标量字段)\n→ 逐 item write_string(name)"]:::data
@@ -979,15 +1028,20 @@ flowchart TB
 
     A --> B --> C --> D --> E --> F
 ```
-*图 7：一次保存/加载 cycle 的宏观流程。identifier 全程穿越文件边界。*
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:-4px 0 24px;padding:8px 14px;background:#F8FAFC;border-left:3px solid #BFDBFE;border-radius:0 8px 8px 0;font-size:13px;color:#64748B">
 
----
+图 7：一次保存/加载 cycle 的宏观流程。identifier 全程穿越文件边界。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 反例与边界
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px">边界情形 · 每条断言都可回到源码验证</div>
 ### 反例 1：把 `identifier` 当下标用
 
-错误写法：`output_storage.items[socket.identifier.back()]` 之类"从 `Item_3` 拆出 3 当数组下标"。identifier 只保证唯一，**不保证连续**：删除 item 后数组是 `[Item_1, Item_5, Item_9]`，`items[5]` 直接越界。正确做法是 `find_item_by_identifier`（[NOD_socket_items.hh#L75-L87](../../../source/blender/nodes/NOD_socket_items.hh#L75-L87)）线性比对 `socket_identifier_for_item`。
+错误写法：`output_storage.items[socket.identifier.back()]` 之类"从 `Item_3` 拆出 3 当数组下标"。identifier 只保证唯一，**不保证连续**：删除 item 后数组是 `[Item_1, Item_5, Item_9]`，`items[5]` 直接越界。正确做法是 `find_item_by_identifier`（[NOD_socket_items.hh#L75](../../../source/blender/nodes/NOD_socket_items.hh#L75)）线性比对 `socket_identifier_for_item`。
 
 ### 反例 2：在 item 复制后手动"修正" identifier
 
@@ -1007,9 +1061,9 @@ flowchart TB
 
 ### 边界 6：非几何节点树里的 Repeat Output
 
-`node_init` 里 `if (tree->type == NTREE_GEOMETRY)` 才建默认 Geometry item（[node_geo_repeat.cc#L215-L221](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L215-L221)）。其他支持 zone 的树类型下 Output 节点出生时 `items = nullptr, items_num = 0`，`next_identifier = 0`。所有遍历 items 的代码必须容受 `items_num == 0`（框架代码全部走 `IndexRange(items_num)`，天然安全）；`items_span()` 对空数组返回空 `Span`。
+`node_init` 里 `if (tree->type == NTREE_GEOMETRY)` 才建默认 Geometry item（[node_geo_repeat.cc#L215](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L215)）。其他支持 zone 的树类型下 Output 节点出生时 `items = nullptr, items_num = 0`，`next_identifier = 0`。所有遍历 items 的代码必须容受 `items_num == 0`（框架代码全部走 `IndexRange(items_num)`，天然安全）；`items_span()` 对空数组返回空 `Span`。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 继续阅读
 
@@ -1018,10 +1072,17 @@ flowchart TB
 - [NOD_socket_items.hh](../../../source/blender/nodes/NOD_socket_items.hh)：框架本体（419 行，值得通读）。
 - [NOD_socket_items_blend.hh](../../../source/blender/nodes/NOD_socket_items_blend.hh)：持久化模板（38 行，本文 4.3 节）。
 - [DNA_array_utils.hh](../../../source/blender/makesdna/DNA_array_utils.hh)：DNA 数组的增删移动原语。
-- [DNA_defs.h](../../../source/blender/makesdna/DNA_defs.h#L110-L170)：`DNA_DEFINE_CXX_METHODS` 与 `dna::shallow_copy` 的准确语义。
+- [DNA_defs.h](../../../source/blender/makesdna/DNA_defs.h#L110)：`DNA_DEFINE_CXX_METHODS` 与 `dna::shallow_copy` 的准确语义。
 - [geometry_nodes_repeat_zone.cc](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc)：Repeat 区域的执行器（下一章前的预热：`initialize_execution_graph` 如何把 body 复制 N 次）。
 - 同系列姊妹篇（Foreach 区域）：[node_geo_foreach_geometry_element.cc](../../../source/blender/nodes/geometry/nodes/node_geo_foreach_geometry_element.cc)。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 *本章完。下一篇进入 socket_items 框架的模板机制与 Accessor 设计。*
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
+<a href="./01-Repeat节点注册与UI.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ Repeat节点注册与UI</a>
+<a href="./03-SocketItems通用条目框架.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">SocketItems通用条目框架 ›</a>
+<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
+</div>

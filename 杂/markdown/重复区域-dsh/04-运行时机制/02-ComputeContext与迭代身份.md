@@ -1,6 +1,12 @@
 # RN-02 ComputeContext 与迭代身份
 
-[总入口](../README.md) · [本章导航](README.md) · [上一篇](01-RepeatEvalStorage与一次求值.md) · [下一篇](03-副作用迭代与按需执行.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 04-运行时机制</a>
+<a href="./01-RepeatEvalStorage与一次求值.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ RepeatEvalStorage与一次求值</a>
+<a href="./03-副作用迭代与按需执行.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">副作用迭代与按需执行 ›</a>
+</div>
 
 基准：Blender `5.4.0-alpha`，本地工作树。本篇回答一个贯穿日志、Viewer、副作用、
 值追踪的核心问题：**同一个循环体节点被执行 N 次，系统如何区分"这是第几轮"**。
@@ -22,7 +28,7 @@ node editor 里看到第 0、1、2 轮各自不同的值。可是 Viewer 记录�
 
 - **`ComputeContext`（基类）**：链条节点，持有 `parent_` 指针，纯虚
   `compute_hash()`。定义：
-  [BKE_compute_context.hh](../../../source/blender/blenkernel/BKE_compute_context.hh)。
+  [BLI_compute_context.hh](../../../source/blender/blenlib/BLI_compute_context.hh)。
 - **`RepeatZoneComputeContext`**：Repeat 区域的链节点，附加
   `output_node_id_` 与 `iteration_`。定义：
   [BKE_compute_contexts.hh · L162](../../../source/blender/blenkernel/BKE_compute_contexts.hh#L162)。
@@ -34,6 +40,7 @@ node editor 里看到第 0、1、2 轮各自不同的值。可是 Viewer 记录�
   字段是当前执行位置的上下文指针——wrapper 修改的就是它。
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   M["GeometryNodesModifierComputeContext"]:::input
   G0["GroupNodeComputeContext(group A)"]:::abstraction
@@ -124,7 +131,7 @@ void RepeatZoneComputeContext::print_current_in_line(std::ostream &stream) const
 ### ComputeContextHash::from 的语义
 
 `ComputeContextHash` 是固定长度的字节数组（实现见
-[BKE_compute_context.hh](../../../source/blender/blenkernel/BKE_compute_context.hh)）。
+[BLI_compute_context.hh](../../../source/blender/blenlib/BLI_compute_context.hh)）。
 `from(parent, args...)` 的约定：
 
 - `parent == nullptr` ⇒ 从零哈希起步（链条根）；
@@ -236,6 +243,7 @@ GraphExecutor 在执行每个 FunctionNode 前调用 wrapper 的 `execute_node`�
 等于给"节点级执行"插了一个拦截器。三个参与者：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart LR
   E["lf::GraphExecutor(内层图)"]:::compute
   W["RepeatBodyNodeExecuteWrapper"]:::abstraction
@@ -408,11 +416,13 @@ body_user_data.verbose_log = should_log_verbose_in_context(user_data,
 
 ## 用小数据走一遍
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#0891B2;background:#ECFEFF;border:1px solid #A5F3FC;border-radius:999px">教学推演 · 手算中间值，逐轮核对</div>
 设置：几何节点修改器 → group "Loop" 内一个 Repeat 区域（Output 节点
 identifier = 42），2 轮迭代，循环体内一个 Value 节点（identifier = 7）挂
 Viewer，查看第 1 轮。
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart LR
   S0["viewer path: modifier → group(Loop) → repeat(42, iter=1) → node 7"]:::input
   S1["MOD_nodes 解析路径逐层建上下文"]:::compute
@@ -447,6 +457,7 @@ flowchart LR
 
 ## 反例与边界
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px">边界情形 · 每条断言都可回到源码验证</div>
 - **反例 1：只用节点 identifier 记日志。** 同一 body 函数执行 3 次，日志
   三次全落在 (7, 外层hash) 一个桶里，轮次信息丢失。正确做法必须含
   上下文哈希。源码注释（geometry_nodes_repeat_zone.cc 头部 L29-L34）正是
@@ -498,7 +509,7 @@ zone 输出又是其他上下文载体"的新类型，仍只需新增 Map 字段
 - [RA-03 执行图按迭代展开](../03-几何节点执行架构/03-执行图按迭代展开.md)
 - [课程指南·术语表](../00-课程指南/02-图表配色与阅读约定.md)
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 深读篇：ComputeContext 基础设施全解
 
@@ -702,6 +713,7 @@ A：继承 ComputeContext、实现两个纯虚、（可选）在 ComputeContextC
 ### 本篇总复习图
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart LR
   A["编辑世界: 树+节点id+轮次"]:::input
   B["上下文链: parent 单链表"]:::abstraction
@@ -742,7 +754,7 @@ Repeat 的特殊之处只是坐标里多了一个"轮次"维度。
 | trace_values Repeat 分支 | trace_values.cc | L255-L275 |
 | verbose log 过滤 | geometry_nodes_repeat_zone.cc | L58-L59 |
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 深读篇二：一次"查看第 1 轮 Viewer 值"的全程身份走查
 
@@ -1000,3 +1012,10 @@ Repeat Zone 的独特贡献是把"第几轮"变成身份的一等公民——从
    的共享 Map 失效。
 
 清单到此。祝 review 顺利。
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
+<a href="./01-RepeatEvalStorage与一次求值.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ RepeatEvalStorage与一次求值</a>
+<a href="./03-副作用迭代与按需执行.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">副作用迭代与按需执行 ›</a>
+<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
+</div>

@@ -1,6 +1,11 @@
 # RN-01 RepeatEvalStorage 与一次求值
 
-[总入口](../README.md) · [本章导航](README.md) · [上一篇](README.md) · [下一篇](02-ComputeContext与迭代身份.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 04-运行时机制</a>
+<a href="./02-ComputeContext与迭代身份.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">ComputeContext与迭代身份 ›</a>
+</div>
 
 基准：Blender `5.4.0-alpha`，本地工作树。本篇逐行讲解
 [source/blender/nodes/intern/geometry_nodes_repeat_zone.cc](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc)
@@ -24,6 +29,7 @@
 - **`lf::GraphExecutor`**：内层执行图（N 份循环体拼成）的求值器，作为 storage 的一个字段持有。
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   T0["RepeatEvalStorage"]:::abstraction
   T1["LinearAllocator allocator"]:::data
@@ -318,6 +324,7 @@ void execute_impl(lf::Params &params, const lf::Context &context) const override
 ## execute_impl 的执行时序
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   P0["外层调度器调用 LazyFunctionForRepeatZone"]:::input
   P1["ScopedNodeTimer 开始计时"]:::compute
@@ -392,6 +399,7 @@ flowchart TB
 
 ## 反例与边界
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px">边界情形 · 每条断言都可回到源码验证</div>
 - **误解**：storage 是函数对象（`LazyFunctionForRepeatZone`）的成员，整个求值共用一份。
   **纠正**：storage 属于每次调用（`lf::Context::storage`），嵌套外层每轮都会
   走一次完整的 init/execute/destruct 生命周期。
@@ -409,9 +417,11 @@ flowchart TB
 
 ## 用小数据走一遍
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#0891B2;background:#ECFEFF;border:1px solid #A5F3FC;border-radius:999px">教学推演 · 手算中间值，逐轮核对</div>
 输入：Iterations = 2，1 个 Geometry item，输出被使用，Iteration 输出直连。
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart LR
   S0["storage: 空 optional"]:::input
   S1["execute_impl 首次进入"]:::compute
@@ -442,7 +452,7 @@ usage 通道 = 2（item usage + iterations usage，后者在映射中跳过）�
 
 Repeat Zone 的 storage 化执行方式与 Simulation Zone 共享同一套模式
 （`SimulationZoneEvalStorage` 见
-[geometry_nodes_simulation_zone.cc](../../../source/blender/nodes/intern/geometry_nodes_simulation_zone.cc)）。
+[geometry_nodes_simulation_zone.cc](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc)）。
 阅读提交历史时，先找"把 zone 状态从函数对象移到 storage"的不变量变化，
 再看新增的 `optional` 字段如何与析构顺序配套。教学时不要把历史签名与当前
 源码混用。
@@ -471,7 +481,7 @@ Repeat Zone 的 storage 化执行方式与 Simulation Zone 共享同一套模式
 - [RN-03 副作用迭代与按需执行](03-副作用迭代与按需执行.md)
 - [RA-03 执行图按迭代展开](../03-几何节点执行架构/03-执行图按迭代展开.md)
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 深读篇：从 LazyFunction 框架视角看 storage
 
@@ -521,6 +531,7 @@ lf 框架的核心契约（见
 ### 双层 storage 的完整生命周期时序
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 sequenceDiagram
   participant F as lf框架
   participant W as LazyFunctionForRepeatZone
@@ -793,7 +804,7 @@ A：init_storage 拿不到输入值；预建还需要跨调用保存 storage—�
 违背 lf 框架契约。源码注释的"per-iteration-count 缓存"设想是在框架外
 加缓存表，作者评估后认为构建成本足够低，不值得。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 深读篇二：zone 家族的 storage 对照与扩展指南
 
@@ -816,7 +827,7 @@ Blender 的 zone 家族目前有四个成员：Repeat、Simulation、Foreach、C
 对照入口：
 
 - Simulation：
-  [geometry_nodes_simulation_zone.cc](../../../source/blender/nodes/intern/geometry_nodes_simulation_zone.cc)
+  [geometry_nodes_simulation_zone.cc](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc)
   中的 `SimulationZoneEvalStorage`；
 - Foreach：
   [geometry_nodes_foreach_geometry_element_zone.cc](../../../source/blender/nodes/intern/geometry_nodes_foreach_geometry_element_zone.cc)
@@ -1003,3 +1014,9 @@ BLI 全局处理）。但 storage 的析构路径仍值得审视：
    一轮用到 border link。）
 5. 嵌套外层 Repeat 3 轮、内层 2 轮，内层图被构建几次？（3 次——每次
    外层轮都是独立调用、独立 storage、独立构建。）
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
+<a href="./02-ComputeContext与迭代身份.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">ComputeContext与迭代身份 ›</a>
+<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
+</div>

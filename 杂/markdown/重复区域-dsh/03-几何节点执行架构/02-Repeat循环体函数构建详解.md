@@ -2,15 +2,19 @@
 
 # Repeat 循环体函数构建详解（build_zone_body_function）
 
-> 本篇是 **03 几何节点执行架构** 章的第 2 篇。上一篇我们认识了 `ZoneBodyFunction` 与 `ZoneBuildInfo` 这两个数据结构，本篇深入解剖它们的"出生地"——`build_zone_body_function()`，看看 Blender 是如何把 Repeat 区域内部的一坨节点，编译成一个独立的惰性函数图（LF 图）的。
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 03-几何节点执行架构</a>
+<a href="./01-ZoneBodyFunction与ZoneBuildInfo.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ ZoneBodyFunction与ZoneBuildInfo</a>
+<a href="./03-执行图按迭代展开.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">执行图按迭代展开 ›</a>
+</div>
 
-**导航**：
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
 
-- 系列总入口：[../README.md](../README.md)
-- 本章导航：[README.md](README.md)
-- 上一篇：[01-ZoneBodyFunction与ZoneBuildInfo.md](01-ZoneBodyFunction与ZoneBuildInfo.md)
-- 下一篇：[03-执行图按迭代展开.md](03-执行图按迭代展开.md)
-- 跨章延伸：[../04-运行时机制/01-RepeatEvalStorage与一次求值.md](../04-运行时机制/01-RepeatEvalStorage与一次求值.md)
+本篇是 **03 几何节点执行架构** 章的第 2 篇。上一篇我们认识了 `ZoneBodyFunction` 与 `ZoneBuildInfo` 这两个数据结构，本篇深入解剖它们的"出生地"——`build_zone_body_function()`，看看 Blender 是如何把 Repeat 区域内部的一坨节点，编译成一个独立的惰性函数图（LF 图）的。
+
+</div>
 
 **基准版本**：Blender 5.4.0-alpha（主分支源码）。文中所有行号均以该版本为准，若你在更新的版本中阅读，行号可能有少量漂移，但函数名与结构基本稳定。
 
@@ -21,7 +25,7 @@
 - [geometry_nodes_lazy_function.cc · L1941](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L1941) —— `GeometryNodesLazyFunctionSideEffectProvider`
 - [NOD_geometry_nodes_lazy_function.hh · L591](../../../source/blender/nodes/NOD_geometry_nodes_lazy_function.hh#L591) —— `ZoneFunctionIndices` / `ZoneBuildInfo` / `ZoneBodyFunction` 定义
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 先回答一个具体问题
 
@@ -50,7 +54,7 @@
 
 下面按 `build_zone_body_function()` 的真实构建顺序，逐段精读源码。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 0. 入口：谁调用了 body 构建？
 
@@ -124,7 +128,7 @@ void build_repeat_zone_function(const bNodeTreeZone &zone)
 
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 1. 第一步：主输入与成对的 "Usage: " 输出
 
@@ -307,7 +311,7 @@ static bool ignore_zone_bsocket(const bNodeSocket &bsocket)
 
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 2. 第二步：穿越连线（border link）的值输入与 usage 输出
 
@@ -421,7 +425,7 @@ void build_zone_border_link_input_usages(const bNodeTreeZone &zone,
 
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 3. 第三步：区域输出插口 → body 输出 + usage 输入
 
@@ -476,6 +480,7 @@ for (const bNodeSocket *bsocket : zone.output_node()->input_sockets()) {
 此时 body 图的**完整输入输出清单**（以"1 个 Geometry 条目 + 1 条穿越连线"为例）已经齐了一半，先看全貌：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart LR
     subgraph BODY["Repeat Body（lf_body_graph）"]
         direction TB
@@ -546,7 +551,7 @@ flowchart LR
 
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 4. 第四步：把区域内的节点搬进图（含嵌套 zone）
 
@@ -662,7 +667,7 @@ void insert_nodes_and_zones(const Span<const bNode *> bnodes,
 
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 5. 第五步：usage 的生成与回填
 
@@ -854,7 +859,7 @@ void build_output_socket_usages(const bNode &bnode, BuildGraphParams &graph_para
 
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 6. 第六步：数据连线与穿越连线的落地
 
@@ -1064,6 +1069,7 @@ Vector<lf::InputSocket *> find_link_targets(const bNodeLink &link,
 画一张穿越连线在 body 内的连接图：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart LR
     subgraph OUTSIDE["区域外（根图）"]
         SRC["Position 节点"]
@@ -1085,7 +1091,7 @@ flowchart LR
     classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
     class SRC,BL input;
     class TGT data;
-    class UOR, BUO abstraction;
+    class UOR,BUO abstraction;
 ```
 
 <details>
@@ -1176,7 +1182,7 @@ flowchart LR
 
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 7. 第七步：默认值与隐式输入
 
@@ -1251,7 +1257,7 @@ void add_default_input(const bNodeSocket &input_bsocket,
 
 对 body 图而言这一步同样必要：区域内的节点也会有未连接的输入（用户填的数值、未连的矢量等），它们不因为进了循环体就失去默认值语义。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 8. 第八步：Reference Set 通道（匿名属性生命周期）
 
@@ -1463,6 +1469,7 @@ this->fix_link_cycles(lf_body_graph, graph_params.socket_usage_inputs);
 画一张 reference set 提取与分发的图：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
     subgraph SRC["reference set 的三种来源"]
         A["GroupOutputData /<br/>GroupInputReferenceSet<br/>→ 直接开图输入"]
@@ -1597,7 +1604,7 @@ flowchart TB
 
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 9. 第九步：`fix_link_cycles`——usage 信号带来的环
 
@@ -1717,7 +1724,7 @@ void fix_link_cycles(lf::Graph &lf_graph, const Set<lf::InputSocket *> &socket_u
 
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 10. 收尾：索引刷新、日志器、GraphExecutor 与调试注册
 
@@ -1785,7 +1792,7 @@ lf_graph_info_->debug_zone_body_graphs.add(zone.output_node()->identifier, &lf_b
 
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 11. 三个索引组专节
 
@@ -1801,6 +1808,7 @@ lf_graph_info_->debug_zone_body_graphs.add(zone.output_node()->identifier, &lf_b
   - 最后一次迭代：`outputs.main[i]` 直通区域输出。
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart LR
     subgraph WRAP["Repeat Zone 包装图（按迭代展开，详见下一篇）"]
         IN0["图输入 Index"]
@@ -1853,7 +1861,7 @@ flowchart LR
 | `outputs.input_usages` | `Vector<int>` | 体内 usage OR 线 | 是 | 包装函数 / 区域输入 usage |
 | `outputs.border_link_usages` | `Vector<int>` | tosock 的 usage 线 | 是（OR 汇总） | 区域输出 usage |
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 12. 副作用提供器：`GeometryNodesLazyFunctionSideEffectProvider`
 
@@ -1985,13 +1993,14 @@ class GeometryNodesLazyFunctionSideEffectProvider : public lf::GraphExecutor::Si
 
 </details>
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 13. 构建顺序总览
 
 把本篇全部步骤串成一张流程图，方便对照调试：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
     START["build_repeat_zone_function<br/>（入口）"] --> BODY["build_zone_body_function<br/>图名 = Repeat Body"]
     BODY --> S1["① 主输入 + Usage: X 输出<br/>indices.inputs.main / outputs.input_usages"]
@@ -2023,10 +2032,11 @@ flowchart TB
     class S14,S15,WRAP result;
 ```
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 14. 用小数据走一遍
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#0891B2;background:#ECFEFF;border:1px solid #A5F3FC;border-radius:999px">教学推演 · 手算中间值，逐轮核对</div>
 **场景**：一个 Repeat 区域，条目面板里只加了一个 **Geometry** 条目；区域外有一个 `Position` 节点，其输出被一条线直接穿过区域边界，接到区域内一个 `Set Position` 的输入上；区域内还把条目 Geometry 接到 Set Position，最终连到 Repeat Output 的 Geometry 输出。用户在区域外连接了 Repeat Output 的 Geometry 到 Group Output。Index 输出没有连给任何节点。
 
 调用 `build_repeat_zone_function` 后，`body_fn.indices` 的完整内容如下（图输入/输出下标按添加顺序）：
@@ -2058,10 +2068,11 @@ flowchart TB
 
 **交给包装函数后（简述，详见下一篇）**：`initialize_execution_graph` 会按迭代次数把 `body_fn.function` 实例化 N 次；每次迭代的 `inputs.main[1]`（Geometry）接力；`Link from Position` 三根（每迭代一根）全连到同一根区域输入；三份 `Usage: Link from Position` 进 OR 节点汇成区域输出；`Usage: Geometry` 只对最后一次迭代生效。注意 `outputs.main` 在图输出里的下标是 2 而不是 0——消费者全部走索引，物理顺序无关紧要，这正是 indices 机制的价值。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 15. 反例与边界
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px">边界情形 · 每条断言都可回到源码验证</div>
 **反例 1：以为 body 图输入顺序 = 面板插口顺序。**
 图输入顺序是 `main → border_links → output_usages → reference_sets`；图输出顺序是 `input_usages → border_link_usages → main`（main 输出最后创建，见第 3 步在 border link 之后才执行）。任何"按位置猜下标"的代码都会错，必须走 `indices`。外包/插件作者如果想用 `to_dot()` 调试 zone 图，也应以插口 `debug_name` 为准而不是位置。
 
@@ -2080,7 +2091,7 @@ body 编译与 body 执行是两回事。编译出的 body_fn 永远存在；但
 **反例 6：忽略 `ignore_zone_bsocket` 导致计数错位。**
 自研工具若按"第 n 个 bsocket"对齐 usage 通道，遇到 unavailable 插口或 extend 插口就会错位。源码里所有对齐都靠 `valid_socket_i` 这种"过滤后计数器"，别用 `bsocket->index()`。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 16. 继续阅读
 
@@ -2101,6 +2112,13 @@ body 编译与 body 执行是两回事。编译出的 body_fn 永远存在；但
   - [ZoneFunctionIndices 定义 · NOD_geometry_nodes_lazy_function.hh L591](../../../source/blender/nodes/NOD_geometry_nodes_lazy_function.hh#L591)
   - [LazyFunctionForRepeatZone · geometry_nodes_repeat_zone.cc L113](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc#L113)
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 *本篇基于 Blender 5.4.0-alpha 源码精读整理；行号以调研当日主分支为准。*
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
+<a href="./01-ZoneBodyFunction与ZoneBuildInfo.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ ZoneBodyFunction与ZoneBuildInfo</a>
+<a href="./03-执行图按迭代展开.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">执行图按迭代展开 ›</a>
+<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
+</div>

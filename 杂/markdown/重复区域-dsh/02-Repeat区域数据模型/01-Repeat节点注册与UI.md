@@ -1,13 +1,22 @@
 # 01 · Repeat 节点注册与 UI —— 精读 `node_geo_repeat.cc`
 
-[总入口](../README.md) · [本章 README](README.md) · 下一篇：[02-DNA存储与NodeRepeatItem.md](02-DNA存储与NodeRepeatItem.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 02-Repeat区域数据模型</a>
+<a href="./02-DNA存储与NodeRepeatItem.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">DNA存储与NodeRepeatItem ›</a>
+</div>
 
-> **基准版本**：Blender 5.4.0-alpha。
-> 本文所有行号、代码摘录均对照仓库内
-> [source/blender/nodes/geometry/nodes/node_geo_repeat.cc](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc)
-> （全文共 **372 行**，本文通读全文后写成）。
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
 
----
+**基准版本**：Blender 5.4.0-alpha。
+本文所有行号、代码摘录均对照仓库内
+[source/blender/nodes/geometry/nodes/node_geo_repeat.cc](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc)
+（全文共 **372 行**，本文通读全文后写成）。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 先回答一个具体问题
 
@@ -23,7 +32,7 @@
 
 沿着这个问题读下去，本篇把 372 行逐段讲透。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 文件地图
 
@@ -57,6 +66,7 @@
 先给一张全景图，说明一对 Repeat 节点之间的"指针 + 数据"关系，也是全文反复出现的背景：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart LR
     subgraph NT["bNodeTree（几何节点树）"]
         IN["GeometryNodeRepeatInput<br/>storage: output_node_id = 42"]
@@ -73,7 +83,7 @@ flowchart LR
     class IN abstraction;
 ```
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 1 · 共享 UI 面板：`node_layout_ex`（L34–L66）
 
@@ -202,6 +212,7 @@ static void node_layout_ex(ui::Layout &layout, bContext *C, PointerRNA *current_
 `node_layout_ex` 的防御性很强，连续四个早退：`zones` 为空、`zone` 找不到、`output_node_id == 0`、面板折叠。把这条链画出来：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TD
     A["用户选中 Input 或 Output 节点<br/>侧栏触发 draw_buttons_ex"] --> B{"ntree.zones() 非空?"}
     B -->|否| X1["返回：zone 缓存未构建/树无效"]
@@ -229,7 +240,7 @@ flowchart TD
 - `RNA_pointer_create_discrete(owner_id, RNA_Node, &output_node)` 的 owner 用的是 `current_node_ptr->owner_id`——因为 Input 和 Output 在同一棵树里，owner 必然相同。
 - `inspection_index` 在 `NodeGeometryRepeatOutput`（[DNA_node_types.h L3569](../../../source/blender/makesdna/DNA_node_types.h)）上，所以 prop 绑定的是 `output_node_ptr`，而不是当前节点。如果你选中 Input，这个属性的修改其实落在 Output 身上——UI 的"跨节点写数据"就是靠这个 PointerRNA 完成的。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 2 · `repeat_input_node` 命名空间
 
@@ -623,6 +634,7 @@ NOD_REGISTER_NODE(node_register)
 **注册时序全景图**：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TD
     A["blender 启动<br/>注册 geometry nodes 模块"] --> B["NOD_REGISTER_NODE(node_register)<br/>（Input 与 Output 各一个）"]
     B --> C["common_node_type_base<br/>填 idname / type / 基础标志"]
@@ -644,7 +656,7 @@ flowchart TD
     class G,H result;
 ```
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 3 · `repeat_output_node` 命名空间
 
@@ -898,6 +910,7 @@ static void node_gather_link_searches(GatherLinkSearchOpParams &params)
 两个搜索项的差异一图流：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TD
     A["用户拖出一条线<br/>弹出链接搜索菜单"] --> B{"other_socket 类型<br/>被几何树支持?"}
     B -->|否| Z["不显示任何 Repeat 项"]
@@ -987,7 +1000,7 @@ NOD_REGISTER_NODE(node_register)
 | `node_type_storage` 回调 | standard | 自定义 free/copy | Output storage 含堆指针（3.3） |
 | `labelfunc` | 自有 `node_label` | **复用 Input 的** | 两节点同显 "Repeat"（2.3） |
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 4 · 文件尾部：`RepeatItemsAccessor` 的读写盘与 `items_span`
 
@@ -1032,7 +1045,7 @@ MutableSpan<NodeRepeatItem> NodeGeometryRepeatOutput::items_span()
 
 为什么值得单列一节？因为它是 **DNA 结构体上长出 C++ 接口**的样板：storage 归 DNA 管（可序列化、可 C 代码访问），而现代 C++ 调用方（几何执行器、socket_items 工具、zone 求值）通过 `items_span()` 拿到带边界检查语义的范围类型，不再手写 `items[i]` + `items_num` 循环。类似的模式也出现在 Simulation Zone 的 `NodeSimulationItems::items_span()`（同一文件 L3538）。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 5 · `NODE_STORAGE_FUNCS` 宏语义（收束）
 
@@ -1044,10 +1057,11 @@ MutableSpan<NodeRepeatItem> NodeGeometryRepeatOutput::items_span()
 
 这解释了本文件里所有的 `node_storage(...)` 调用：L83（Input declare 读自己）、L131（Input insert_link）、L145（Input shader_fn）、L183（Output declare 读自己）、L234（Output copy_storage）。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 用小数据走一遍
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#0891B2;background:#ECFEFF;border:1px solid #A5F3FC;border-radius:999px">教学推演 · 手算中间值，逐轮核对</div>
 **场景**：几何节点树上已有节点 A（Float 输出，socket 名 "Scale"）。用户从 A 的输出拖线，在空白处搜索 "Repeat"。
 
 1. **搜索菜单构建**：`node_gather_link_searches` 被调用，`other_socket` = A 的 Float 输出。`supports_socket_type(SOCK_FLOAT, NTREE_GEOMETRY)` → true。`other_socket.in_out == SOCK_OUT`（A 的输出）→ 同时注册两项，但用户选择第二项 **"Repeat"**。
@@ -1067,10 +1081,11 @@ MutableSpan<NodeRepeatItem> NodeGeometryRepeatOutput::items_span()
 
 **执行视角（材质树/GPU）**：Input `gpu_fn` 发 `REPEAT_BEGIN(zone_id=output_node_id, false, 1, 1)`，Output 发 `REPEAT_END(zone_id=node.identifier, true, 0, 0)`；两端号相等 → 后端把中间数据流包进 `for (int iter_i = 0; iter_i < Iterations; iter_i++) { iter = iter_i; ... }`。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 反例与边界
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px">边界情形 · 每条断言都可回到源码验证</div>
 1. **Input 未配对（`output_node_id == 0` 或指向已删除节点）**：`node_declare` 的 `node_by_id` 返回 null → 不生成任何 item socket；`node_insert_link` 直接放行连线不加 item；`node_layout_ex` 走不到画列表的分支（zone 反查失败或 `zone->output_node_id == 0`）→ 侧栏只有空壳。节点不崩，但"像个摆设"——必须通过 Output 侧或搜索菜单配对后才有内容。
 2. **在非几何树里新建 Repeat Output**：`node_init` 的 `tree->type == NTREE_GEOMETRY` 不成立 → `items_num = 0`，没有默认 Geometry item。用户在材质树里得到一个空 zone，所有数据通道要手动加。这是刻意行为，不是漏写。
 3. **手写 identifier 复用 / 直接 memcpy 拷贝 Output storage**：如果谁绕过 `node_copy_storage` 直接浅拷贝（或 copy-on-write 时忘了调 `copy_array`），`items` 指针会在两个节点间共享，一个删除 item 就 double free。同理，若把 `next_identifier` 回退/重置，新 item 可能拿到已存在的 `Item_N`，与旧 socket 标识符冲突，`connect_available_socket_by_identifier` 会接错线。这也是为什么 free/copy 必须走访问器的深拷贝、identifier 只增不减。
@@ -1079,7 +1094,7 @@ MutableSpan<NodeRepeatItem> NodeGeometryRepeatOutput::items_span()
 6. **`node_label` 的 UTF-8 截断**：若用普通 `BLI_strncpy` 在多字节边界截断翻译字符串，会画出乱码。这里用 `BLI_strncpy_utf8` 规避——凡是"翻译文本进定长 buffer"的场合都要注意同类问题。
 7. **UI 在 Input 上改的属性其实落在 Output**：`inspection_index`、item 列表、`socket_type` 下拉框的 RNA 写入目标是 Output 节点/其 item。若某段代码假设"当前节点的 storage 持有这些字段"，在 Input 上就会读错对象——共享 UI 函数的一切属性绑定必须盯住 `output_node_ptr`。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 继续阅读
 
@@ -1087,3 +1102,9 @@ MutableSpan<NodeRepeatItem> NodeGeometryRepeatOutput::items_span()
 - 相关头文件：[NOD_geo_repeat.hh](../../../source/blender/nodes/geometry/include/NOD_geo_repeat.hh)（`RepeatItemsAccessor` 完整定义）、[GPU_material.hh L681](../../../source/blender/gpu/GPU_material.hh)（`GPU_stack_link_zone` 签名）、[BKE_node.hh L1353](../../../source/blender/blenkernel/BKE_node.hh)（`NODE_STORAGE_FUNCS` 宏）；
 - GPU shader 模板：[gpu_shader_material_repeat_zone.bsl.hh](../../../source/blender/gpu/shaders/material/gpu_shader_material_repeat_zone.bsl.hh)（`REPEAT_BEGIN`/`REPEAT_END` 宏与依赖反射占位）；
 - 本章 README：[README.md](README.md) · 系列总入口：[../README.md](../README.md)。
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
+<a href="./02-DNA存储与NodeRepeatItem.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">DNA存储与NodeRepeatItem ›</a>
+<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
+</div>

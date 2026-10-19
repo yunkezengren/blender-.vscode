@@ -1,5 +1,22 @@
 # Blender Project Knowledge
 
+## Markdown Mermaid 配色约定
+
+2026-10-17：本项目 VS Code Markdown 预览中，用户确认以下调整后颜色正常显示：将 Mermaid 的 `classDef` + `class` 绑定改为对每个节点直接使用 `style`。这是当前项目已验证可用的写法；未确定原先不显示颜色的插件或渲染器根因，不应推断所有 VS Code 都不支持 `classDef`。
+
+后续编写项目 Markdown 图时优先使用直接节点样式，例如：
+
+```mermaid
+flowchart LR
+    A["输入"] --> B["处理"] --> C["结果"]
+    style A fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A,stroke-width:2px
+    style B fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px
+    style C fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px
+    linkStyle default stroke:#64748B,stroke-width:2px
+```
+
+配色：蓝色表示入口/输入，金色表示计算/核心步骤，紫色表示构建/后续阅读，绿色表示完成/结果，灰色虚线表示可选内容。节点同时设置 `fill`、`stroke`、`color`，保证文字对比度。说明参考 `.markdown/重复区域-源码阅读/重复区域-源码阅读路径.md`。这是一项文档编写约定，无需添加不存在的 VS Code 配置项到 `settings.json`。
+
 ## What This Is
 Blender — the free/open-source 3D creation suite (modeling, rigging, animation, simulation, rendering, compositing, motion tracking, video editing). Licensed GPL-2.0-or-later. Written in C, C++, and Python. Built with CMake. C++20 standard.
 

@@ -1,14 +1,23 @@
 # 01-01 NodeTreeZone 区域表示与配对
 
-[总入口](../README.md) · [本章README](README.md) · [下一篇：02-Zone输入输出与bundle迁移语义](02-Zone输入输出与bundle迁移语义.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 01-Zone系统基础</a>
+<a href="./02-Zone输入输出与bundle迁移语义.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">Zone输入输出与bundle迁移语义 ›</a>
+</div>
 
-> 基准源码：Blender `5.4.0-alpha` 工作树（`D:\Repository\blender-git\blender`）。
-> 本文所有行号均为当前工作树实际内容，核心文件：
-> [BKE_node_tree_zones.hh](../../../source/blender/blenkernel/BKE_node_tree_zones.hh)（122 行）与
-> [node_tree_zones.cc](../../../source/blender/blenkernel/intern/node_tree_zones.cc)（653 行）。
-> 图表配色遵循 [全系列配色约定](../00-课程指南/02-图表配色与阅读约定.md)。
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
 
----
+基准源码：Blender `5.4.0-alpha` 工作树（`D:\Repository\blender-git\blender`）。
+本文所有行号均为当前工作树实际内容，核心文件：
+[BKE_node_tree_zones.hh](../../../source/blender/blenkernel/BKE_node_tree_zones.hh)（122 行）与
+[node_tree_zones.cc](../../../source/blender/blenkernel/intern/node_tree_zones.cc)（653 行）。
+图表配色遵循 [全系列配色约定](../00-课程指南/02-图表配色与阅读约定.md)。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 0. 本章在系列中的位置
 
@@ -28,6 +37,7 @@ Blender 内部**没有**任何"背景框"、"区域矩形"之类的持久数据�
 三种节点树共享——因为 Simulation、Repeat、Foreach、Closure 四种区域全都走同一套代码。
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   A["两个边界节点 + storage 配对指针"]:::data
   B["discover_tree_zones() 纯算法推导"]:::compute
@@ -42,10 +52,15 @@ flowchart TB
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-一句话总结：**区域 = 推导结果，不是存储事实**。理解了这一点，后面所有"为什么改了节点
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:16px 0 20px;padding:12px 16px;background:#F0FDF4;border-left:4px solid #16A34A;border-radius:10px">
+<div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#15803D;margin-bottom:6px">一句话记住</div>
+
+**区域 = 推导结果，不是存储事实**。理解了这一点，后面所有"为什么改了节点
 区域就变了"、"为什么孤立 Output 节点会导致整棵树没有区域"的问题都会豁然开朗。
 
----
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 1. 先回答一个具体问题
 
@@ -62,7 +77,7 @@ flowchart TB
 
 **第一层：持久化的单向指针（DNA 存储层）。**
 Repeat Input 的 storage 是一个只有单个字段的小结构
-[NodeGeometryRepeatInput](../../../source/blender/makesdna/DNA_node_types.h#L3554-L3559)：
+[NodeGeometryRepeatInput](../../../source/blender/makesdna/DNA_node_types.h#L3554)：
 
 ```cpp
 struct NodeGeometryRepeatInput {
@@ -77,7 +92,7 @@ struct NodeGeometryRepeatInput {
 Repeat Output 的 storage（`NodeGeometryRepeatOutput`）存的是条目列表（items），**不反指**
 Input。这个指针是在用户创建节点对的那一刻写进去的——比如从 Add 菜单搜索连线时，
 [NodeGeometryRepeatInput 类型
-](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L252-L297)的
+](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L252)的
 `node_gather_link_searches` 会同时创建两个节点并手动写入：
 
 ```cpp
@@ -86,7 +101,7 @@ input_storage.output_node_id = output_node.identifier;
 ```
 
 **第二层：类型系统层面的"配对协议"（注册层）。**
-每种区域在 [node_register.cc](../../../source/blender/nodes/intern/node_register.cc#L74-L90)
+每种区域在 [node_register.cc](../../../source/blender/nodes/intern/node_register.cc#L74)
 里注册成一个 `bNodeZoneType`，其中最关键的是一个虚函数
 `get_corresponding_output_id(const bNode &input_bnode)`：它告诉通用算法
 "给定一个 input 边界节点，去哪里读出它对应 output 节点的 identifier"。Repeat 的实现就是
@@ -101,7 +116,7 @@ const int &get_corresponding_output_id(const bNode &input_bnode) const override
 ```
 
 **第三层：运行时的配对算法（推导层）。**
-[node_tree_zones.cc](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L34-L72)
+[node_tree_zones.cc](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L34)
 的 `find_zone_nodes()` 先把树上**所有** zone 类型的 Output 节点收上来，每个 Output 节点
 先创建一个 `bNodeTreeZone`（此时只有 output 半边），然后遍历所有 Input 节点，通过
 `zone_type->get_corresponding_output(tree, *input_node)` 反查 Output 节点，查到且该
@@ -110,6 +125,7 @@ Output 已经属于某个 zone，就把 input 半边填进去。**配对的主�
 更不是连线。**
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   S1["NodeGeometryRepeatInput.storage.output_node_id<br/>(DNA 持久化整数)"]:::data
   S2["RepeatZoneType::get_corresponding_output_id()<br/>读 storage 返回 identifier 引用"]:::abstraction
@@ -125,13 +141,13 @@ flowchart TB
 ```
 
 还有一条**兜底规则**值得现在就说：配对是"全部成立或全部不成立"的。
-[find_zone_nodes 结尾](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L64-L70)
+[find_zone_nodes 结尾](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L64)
 检查每个 zone 必须同时有 input 半边和 output 半边，任何一个 zone 残缺，
 **整个树的 zones 直接返回空**——不是"忽略那个坏区域继续用别的"，而是整树放弃。
 这就是为什么你删掉一个 Repeat Input 而留着 Repeat Output 时，依赖 zones 的所有
 下游机制（构图、执行、trace）都拿不到区域信息。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 2. 相关类与数据的职责
 
@@ -140,13 +156,13 @@ flowchart TB
 
 ### 2.1 `bke::bNodeTreeZone` —— 一个推导出的区域
 
-声明于 [BKE_node_tree_zones.hh L23-L55](../../../source/blender/blenkernel/BKE_node_tree_zones.hh#L23-L55)。
+声明于 [BKE_node_tree_zones.hh L23-L55](../../../source/blender/blenkernel/BKE_node_tree_zones.hh#L23)。
 
 | 字段 | 类型 | 含义 | 备注 |
 | --- | --- | --- | --- |
-| `owner` | `bNodeTreeZones *` | 所属集合的反向指针 | zone 通过它访问 `owner->tree`，见 [input_node() 实现](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L585-L591) |
+| `owner` | `bNodeTreeZones *` | 所属集合的反向指针 | zone 通过它访问 `owner->tree`，见 [input_node() 实现](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L585) |
 | `index` | `int` | 在全树 zones 数组中的下标 | 构建顺序即"遇到 Output 节点的顺序"，见 L49 |
-| `depth` | `int` | 嵌套深度 | 顶层为 0，由 [update_zone_depths](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L21-L32) 递归得出；初始 -1 表示"未算" |
+| `depth` | `int` | 嵌套深度 | 顶层为 0，由 [update_zone_depths](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L21) 递归得出；初始 -1 表示"未算" |
 | `input_node_id` | `std::optional<int>` | 区域输入节点的 `bNode.identifier` | optional：推导过程中可能只有半边 |
 | `output_node_id` | `std::optional<int>` | 区域输出节点的 identifier | 同上 |
 | `parent_zone` | `bNodeTreeZone *` | 直接父区域 | 空指针 = 顶层区域 |
@@ -156,34 +172,34 @@ flowchart TB
 
 三个便捷方法把 id 转回真实对象：
 
-- [input_node() / output_node()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L585-L599)：
+- [input_node() / output_node()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L585)：
   `owner->tree->node_by_id(...)`，optional 为空时返回 `nullptr`；
-- [child_nodes()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L610-L613)：
+- [child_nodes()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L610)：
   把 `child_node_ids` 批量转成 `Vector<const bNode *>`；
-- [contains_node_recursively()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L392-L405) /
-  [contains_zone_recursively()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L407-L415)：
+- [contains_node_recursively()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L392) /
+  [contains_zone_recursively()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L407)：
   沿 `parent_zone` 链向上走判断递归包含关系——注意它们**不遍历** `child_zones`，
   而是从被查询者往上爬，这是"只存直接关系、递归关系现算"的典型设计。
 
 ### 2.2 `bke::bNodeTreeZones` —— 一棵树所有区域的集合
 
-声明于 [BKE_node_tree_zones.hh L57-L111](../../../source/blender/blenkernel/BKE_node_tree_zones.hh#L57-L111)。
+声明于 [BKE_node_tree_zones.hh L57-L111](../../../source/blender/blenkernel/BKE_node_tree_zones.hh#L57)。
 
 | 字段/方法 | 含义 |
 | --- | --- |
 | `tree` | 所属节点树 |
 | `zones_ptrs` | `Vector<std::unique_ptr<bNodeTreeZone>>`，zone 的**拥有者**（内存归它管） |
 | `zones` | `zones_ptrs` 的裸指针视图，"通常更容易迭代"，见头文件 L62 注释 |
-| `root_zones` | 所有 `depth == 0` 的顶层区域，见 [填充代码 L330-L334](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L330-L334) |
+| `root_zones` | 所有 `depth == 0` 的顶层区域，见 [填充代码 L330-L334](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L330) |
 | `node_ids_outside_zones` | 不属于任何区域的节点 identifier 列表 |
 | `zone_by_node_id` | `Map<int, int>`：节点 identifier → zone index；**边界节点也映射到它们创建的 zone**（头文件 L65-L68 注释明确说了这点） |
-| `nodes_outside_zones()` | 把上面的 id 列表转成节点指针，[实现 L615-L618](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L615-L618) |
+| `nodes_outside_zones()` | 把上面的 id 列表转成节点指针，[实现 L615-L618](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L615) |
 
 查询接口按"精度"分两档，这个区别是本章最重要的细节之一：
 
-- **[get_zone_by_node(node_id)](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L437-L444)**：
+- **[get_zone_by_node(node_id)](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L437)**：
   查 `zone_by_node_id` 表，返回节点所在的**最深** zone。边界节点算"在 zone 里"。
-- **[get_zone_by_socket(socket)](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L417-L435)**：
+- **[get_zone_by_socket(socket)](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L417)**：
   先查节点，再做** socket 侧修正**——如果节点是某个 zone 的 Input 节点，则它的
   **输入 socket 属于 `parent_zone`**（也就是区域外）；如果节点是 Output 节点，则它的
   **输出 socket 属于 `parent_zone`**。换句话说：*Repeat Input 的入线端在区域外，
@@ -192,21 +208,21 @@ flowchart TB
 
 再往上是四个"合法性/导航"接口，执行图构建时会大量用到（03 章的主角）：
 
-- [link_between_zones_is_allowed()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L446-L462)：
+- [link_between_zones_is_allowed()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L446)：
   同 zone 允许；从根（null）出发允许；到根（null）**不允许**（值不能逃出区域）；
   否则要求 `from_zone->contains_zone_recursively(*to_zone)`——**只能进不能出**。
-- [link_between_sockets_is_allowed()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L464-L472)：
+- [link_between_sockets_is_allowed()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L464)：
   先把两个 socket 各自解析成 zone（注意用的是 `get_zone_by_socket` 而非 node 版），
   再套上一条。
-- [get_zones_to_enter()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L474-L484)：
+- [get_zones_to_enter()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L474)：
   从 inner 沿 `parent_zone` 爬到 outer，收集路径后 `std::reverse`，
   得到"从外到内依次要进入的 zone 列表"。
-- [get_zones_to_enter_from_root()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L486-L490)：
+- [get_zones_to_enter_from_root()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L486)：
   上一个接口的 `outer_zone = nullptr` 特化。
 
 ### 2.3 入口：`bNodeTree::zones()` 与缓存
 
-[BKE_node_tree_zones.hh L113-L120](../../../source/blender/blenkernel/BKE_node_tree_zones.hh#L117-L120)
+[BKE_node_tree_zones.hh L113-L120](../../../source/blender/blenkernel/BKE_node_tree_zones.hh#L117)
 提供了一个 inline 便捷入口：
 
 ```cpp
@@ -216,7 +232,7 @@ inline const bke::bNodeTreeZones *bNodeTree::zones() const
 }
 ```
 
-[get_tree_zones()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L380-L390)
+[get_tree_zones()](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L380)
 的实现值得逐行看：
 
 ```cpp
@@ -247,15 +263,15 @@ const bNodeTreeZones *get_tree_zones(const bNodeTree &tree)
 普通节点就是 [DNA_node_types.h](../../../source/blender/makesdna/DNA_node_types.h)
 里的 `bNode`。对 zone 而言真正特殊的只有两个 storage 结构：
 
-- [NodeGeometryRepeatInput（L3554-L3559）](../../../source/blender/makesdna/DNA_node_types.h#L3554-L3559)：
+- [NodeGeometryRepeatInput（L3554-L3559）](../../../source/blender/makesdna/DNA_node_types.h#L3554)：
   单字段 `output_node_id`，配对主键的存放地；
-- [NodeGeometryRepeatOutput（L3561-L3572）](../../../source/blender/makesdna/DNA_node_types.h#L3561-L3572)：
+- [NodeGeometryRepeatOutput（L3561-L3572）](../../../source/blender/makesdna/DNA_node_types.h#L3561)：
   `items/items_num/active_index/next_identifier/inspection_index`，
   是"重复条目"（Item_X socket）的存放地——第 02 章的主角，本章只关心它**不含**
   任何指向 Input 的字段（单向指针设计的证据）。
 
 Repeat Input 节点创建时把这个字段初始化为 0
-（[node_geo_repeat.cc L113-L119](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L113-L119)，
+（[node_geo_repeat.cc L113-L119](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L113)，
 注释原话是 "Needs to be initialized for the node to work."）。0 意味着"找不到
 identifier 为 0 的节点"，于是 `get_corresponding_output` 返回 `nullptr`，
 这个 Input 暂时不成对——直到用户把它和某个 Output 配上（编辑操作会写这个字段，
@@ -263,7 +279,7 @@ identifier 为 0 的节点"，于是 `get_corresponding_output` 返回 `nullptr`
 
 ### 2.5 `bke::bNodeZoneType` —— 区域类型的"配对协议"
 
-声明于 [BKE_node.hh L1304-L1332](../../../source/blender/blenkernel/BKE_node.hh#L1304-L1332)。
+声明于 [BKE_node.hh L1304-L1332](../../../source/blender/blenkernel/BKE_node.hh#L1304)。
 
 ```cpp
 class bNodeZoneType {
@@ -283,8 +299,8 @@ class bNodeZoneType {
 **让所有区域相关代码对"区域种类"无感**——新增一种 zone（比如当年的 Closure）只需要
 注册一个新的 `bNodeZoneType` 子类，`node_tree_zones.cc` 一行不用改。
 
-配套的自由函数（[BKE_node.hh L1334-L1340](../../../source/blender/blenkernel/BKE_node.hh#L1334-L1340)，
-[实现 node_tree_zones.cc L522-L583](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L522-L583)）：
+配套的自由函数（[BKE_node.hh L1334-L1340](../../../source/blender/blenkernel/BKE_node.hh#L1334)，
+[实现 node_tree_zones.cc L522-L583](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L522)）：
 
 - `register_node_zone_type()`：把类型对象挂进全局 vector；
 - `all_zone_types()`：全部注册的区域类型；
@@ -297,7 +313,7 @@ class bNodeZoneType {
 ### 2.6 `bNodeLink` 与 border_links 的过滤条件
 
 `border_links` 的元素类型是 `const bNodeLink *`。过滤条件直接写在
-[update_zone_border_links](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L199-L224)：
+[update_zone_border_links](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L199)：
 
 - `!link->is_available()` 跳过（socket 被禁用时的不可用连线）；
 - `link->is_muted()` 跳过（静音连线）；
@@ -311,6 +327,7 @@ and carry information"——**border_links 是"携带信息的跨界连线"，�
 ### 2.7 职责总览图
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   subgraph DNA["DNA 持久层（.blend 里真正存的东西）"]
     N1["bNode (Repeat Input)<br/>storage: NodeGeometryRepeatInput"]:::data
@@ -344,14 +361,15 @@ flowchart TB
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 3. 区域推导总流程：`discover_tree_zones()`
 
-[discover_tree_zones（node_tree_zones.cc L226-L378）](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L226-L378)
+[discover_tree_zones（node_tree_zones.cc L226-L378）](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L226)
 是整个机制的主函数，约 150 行，做了 8 件事。先看流程图，再逐段拆。
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   A["0. 前置检查<br/>ensure_topology_cache + 无环检查"]:::compute
   B["1. find_zone_nodes<br/>收集 Output 半边 → 配对 Input 半边 → 残缺即放弃"]:::compute
@@ -382,7 +400,7 @@ flowchart TB
 
 ### 3.1 第 1 步：`find_zone_nodes()` —— 先有 Output，再有 Input
 
-[完整源码 L34-L72](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L34-L72)。
+[完整源码 L34-L72](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L34)。
 
 **[讲解] 版本（注释版）：**
 
@@ -493,15 +511,15 @@ static Vector<std::unique_ptr<bNodeTreeZone>> find_zone_nodes(
 
 1. **Output 节点存条目（items）**。对 Repeat 来说，socket 列表（Item_0, Item_1…）
    长在 Output 上（`NodeGeometryRepeatOutput::items`），Input 的动态 socket 是**借**
-   Output 的条目生成的（[node_geo_repeat.cc L82-L103](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L82-L103)
+   Output 的条目生成的（[node_geo_repeat.cc L82-L103](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L82)
    中 Input 的 declare 是先查 `storage.output_node_id` 找到 Output 再遍历它的 items）。
    所以"Output 是信息更完整的那一端"。
 2. **反查成本低**。Input → Output 是一次 `Map`/`node_by_id` 查表；若反过来
    Output → Input 则需要遍历所有 Input 节点比对 storage（`get_corresponding_input`
-   就是这么做的，见 [L492-L502](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L492-L502)，
+   就是这么做的，见 [L492-L502](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L492)，
    复杂度 O(输入节点数)）。以 Output 为锚，每个 Input 只需一次查表。
 
-`get_corresponding_output` 的实现也顺带看一下（[L504-L508](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L504-L508)）：
+`get_corresponding_output` 的实现也顺带看一下（[L504-L508](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L504)）：
 
 ```cpp
 const bNode *bNodeZoneType::get_corresponding_output(const bNodeTree &tree,
@@ -520,7 +538,7 @@ const bNode *bNodeZoneType::get_corresponding_output(const bNodeTree &tree,
 数据依赖判断的。** 一个节点"属于"某个 zone，当且仅当它的数据来自这个 zone 的
 Input 节点、且还没经过 Output 节点。
 
-为此 [discover_tree_zones L248-L252](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L248-L252)
+为此 [discover_tree_zones L248-L252](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L248)
 建立了两张位表：
 
 ```cpp
@@ -554,7 +572,7 @@ BitGroupVector<> depend_on_output_flag_array(nodes_num, zones_num, false);
 第 3 条里的"隐式连接"值得展开：Repeat Output 内部并没有一根真实的连线连回 Repeat
 Input，但**语义上** Output 的入口值就是 Input 的出口值（上一轮的结果或首轮的外部
 输入）。算法用 "Output 节点继承 Input 节点的位" 来显式建模这条隐式边
-（[L280-L292](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L280-L292)）。
+（[L280-L292](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L280)）。
 
 **[讲解] 版本（核心传播循环，有删节，只保留主干）：**
 
@@ -655,7 +673,7 @@ for (const bNode *node : sorted_nodes) {
 
 zone 之间的嵌套关系**同样**从位表里来：zone B 的 **Output 节点**如果
 `depend_on_input` 里带着 zone A 的位，说明 B 的输出依赖 A 的输入 → B 在 A 里面。
-[实现 L86-L142](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L86-L142)。
+[实现 L86-L142](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L86)。
 
 算法分三小步：
 
@@ -770,7 +788,7 @@ static std::optional<Vector<ZoneRelation>> get_direct_zone_relations(
 
 ### 3.4 第 4-5 步：挂树、算深度、定归属
 
-拿到直接关系后（[L307-L334](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L307-L334)）：
+拿到直接关系后（[L307-L334](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L307)）：
 
 ```cpp
 /* Set parent and child pointers in zones. */
@@ -784,12 +802,12 @@ for (const ZoneRelation &relation : *zone_relations) {
 注意那个 `BLI_assert`：如果某个 child 出现两次（两个父亲），release 下会静默覆盖、
 debug 下直接断言失败。去传递步骤保证了正常情况不会发生。
 
-随后做了第二次环检测（[L314-L323](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L314-L323)）：
+随后做了第二次环检测（[L314-L323](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L314)）：
 对每个 zone 沿 `parent_zone` 走到头，用 `Set` 记录访问过的 zone，重复出现即循环
 父子关系 → 失败。这与第 3 步的环检测互补：第 3 步查"关系集合"层面的环，
 这里查"挂完指针"之后的实际链。
 
-[update_zone_depths](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L21-L32)
+[update_zone_depths](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L21)
 是标准的记忆化递归：
 
 ```cpp
@@ -810,7 +828,7 @@ static void update_zone_depths(bNodeTreeZone &zone)
 `depth` 的消费方在 03 章：构图器按深度**降序**处理，先构建内层 zone 的 body 函数，
 外层才能引用它。
 
-接着 [update_zone_per_node（L144-L197）](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L144-L197)
+接着 [update_zone_per_node（L144-L197）](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L144)
 回答"每个普通节点属于哪个 zone"：对每个节点，枚举它 `depend_on_input` 位表中所有
 为 1 的 zone，用两条"沿 parent 链爬"的循环挑出**最深**的那个作为归属；如果发现
 两个 zone 互不为祖先/后代（不相交却都含此节点）→ `found_node_in_multiple_zones`
@@ -821,18 +839,18 @@ zone->output_node())` 显式跳过，最后统一由
 
 ### 3.5 第 6-7 步：禁区与 child_node_ids
 
-[L347-L359](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L347-L359)：
+[L347-L359](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L347)：
 Group Output、材质/灯光/世界 Output、AOV Output 这些"树级输出节点"**不允许在任何
 zone 内**——值流出到树级出口必须先通过 zone 的 Output 节点。这条检查是 per-tree
 的最终否决。
 
-[L361-L372](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L361-L372)
+[L361-L372](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L361)
 填 `child_node_ids`：遍历所有节点，查 `zone_by_node_id`，属于某 zone 且**不是**该
 zone 的 Input/Output 节点本身者，追加到该 zone 的直接孩子列表。
 
 ### 3.6 第 8 步：`update_zone_border_links()`
 
-[完整源码 L199-L224](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L199-L224)。
+[完整源码 L199-L224](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L199)。
 
 **[讲解] 版本：**
 
@@ -925,7 +943,7 @@ static void update_zone_border_links(const bNodeTree &tree, bNodeTreeZones &tree
 ### 3.7 配对协议的注册端：`node_register.cc`
 
 第 1 节说过协议，这里把注册全景补齐。
-[node_register.cc L147-L158](../../../source/blender/nodes/intern/node_register.cc#L147-L158)：
+[node_register.cc L147-L158](../../../source/blender/nodes/intern/node_register.cc#L147)：
 
 ```cpp
 static void register_zone_types()
@@ -943,7 +961,7 @@ static void register_zone_types()
 }
 ```
 
-`register_nodes()`（[L161 起](../../../source/blender/nodes/intern/node_register.cc#L161-L183)）
+`register_nodes()`（[L161 起](../../../source/blender/nodes/intern/node_register.cc#L161)）
 最先调用 `register_zone_types()`，保证任何节点类型注册之前区域协议表已就绪。
 
 **[讲解] 版本（RepeatZoneType，L74-L90）：**
@@ -1011,11 +1029,11 @@ Input 节点上读出一个 int identifier，放哪里都行**——storage 是�
 `custom3` 是就地取材。`bNodeZoneType` 抽象掉了这一切差异。
 
 顺便补一句用户视角的配对来源：除了编辑器菜单创建节点对时写入 storage
-（`node_gather_link_searches`，[L252-L297](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L252-L297)），
+（`node_gather_link_searches`，[L252-L297](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L252)），
 Python API / 版本升级脚本也可能直接写 `input_node.storage.output_node_id`。
 推导层完全不在乎是谁写的，只在乎"读出来能不能在树上查到节点"。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 4. zone 树长什么样：嵌套示例
 
@@ -1036,6 +1054,7 @@ Group Input ──→ Repeat Input(2) ─┐
 （示意而已，实际连线见下文小节。）推导完成后的 zone 树：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   ROOT["根层（zone_by_node_id 不含的节点）<br/>Group Input · Group Output"]:::input
   ZA["zone A (index 0, depth 0)<br/>Input: Repeat Input(2)<br/>Output: Repeat Output(5)"]:::abstraction
@@ -1065,11 +1084,12 @@ flowchart TB
 关系集合里会同时出现 (A,B) 与 (B,A)，环检测触发，**整树 zones 为空**。
 这就是"zone 不能互相嵌套成环"在算法上的落点。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 5. 配对流程全景（时序视角）
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 sequenceDiagram
   participant U as 用户操作(创建/配对/删线)
   participant DNA as DNA存储(.blend)
@@ -1097,15 +1117,16 @@ sequenceDiagram
 图里值得盯住的一条线是 `P-->>F`：协议函数返回的是 `const int &`（**引用**），而
 `find_zone_nodes` 只用它的值去查表。引用在这里不是为了省一次拷贝——一个 int 的
 拷贝毫无成本——而是为了配对**写入端**：`bNodeZoneType` 的非 const 重载
-（[BKE_node.hh L1321-L1325](../../../source/blender/blenkernel/BKE_node.hh#L1321-L1325)）
+（[BKE_node.hh L1321-L1325](../../../source/blender/blenkernel/BKE_node.hh#L1321)）
 就是靠这个引用实现"通过协议写 storage"的。读路径与写路径共用同一个协议函数，
 保证读到的和写的永远是同一个字段。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 6. border_links 图示
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart LR
   subgraph OUT["根层（zone 外）"]
     GI["Group Input"]:::input
@@ -1147,10 +1168,11 @@ link。它的语义是"区域的外部输入"，由 Output 节点条目与 Input
 （02 章）处理，不走 border_links 通道。**border_links 只收"绕过 Input 节点直接扎进
 区域内部"的连线。**
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 7. 用小数据走一遍：Repeat zone 里套一个 Switch
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#0891B2;background:#ECFEFF;border:1px solid #A5F3FC;border-radius:999px">教学推演 · 手算中间值，逐轮核对</div>
 构造一棵具体的最小树，手工执行整个推导。这是本章的"考试"，请先自己推再对照。
 
 ### 7.1 输入数据
@@ -1178,7 +1200,7 @@ link。它的语义是"区域的外部输入"，由 Output 节点条目与 Input
 | L6 | Switch.Output | Repeat Output.Item_0 | 区域内 |
 | L7 | Repeat Output.Result | Group Output.Geometry | 区域后 |
 
-（Repeat Input 的 Iteration 输出在 [node_geo_repeat.cc L76-L78](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L76-L78)
+（Repeat Input 的 Iteration 输出在 [node_geo_repeat.cc L76-L78](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L76)
 声明；`Iterations` 是它的输入。）
 
 ### 7.2 第 1 步：配对
@@ -1264,6 +1286,7 @@ bNodeTreeZones {
 body 内部改接这个额外输入；循环体每轮迭代都会收到同一个 Factor 值。
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
   subgraph 推导结果["手推结果一览"]
     Z0["zone0: in=2 out=5 depth=0"]:::abstraction
@@ -1279,10 +1302,11 @@ flowchart TB
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 8. 反例与边界
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px">边界情形 · 每条断言都可回到源码验证</div>
 以下每条都对应一个真实存在的误读，判定依据全部来自上面实读的源码。
 
 ### 反例 1："Input/Output 靠名字或顺序配对"
@@ -1313,7 +1337,7 @@ flowchart TB
 ### 反例 4："zone Output 的输出 socket 还在 zone 里"
 
 错。`get_zone_by_socket` 对 Output 节点的**输出 socket** 返回 `parent_zone`
-（[L429-L433](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L429-L433)）。
+（[L429-L433](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L429)）。
 这正是 L5→Group Output 不算 border link 的原因。对称地，Input 节点的**输入 socket**
 也在 parent zone。边界节点像一扇门：门框两边分属两个世界，节点 id 归属（
 `get_zone_by_node` 返回 zone 本身）与 socket 归属（`get_zone_by_socket` 按侧别
@@ -1321,7 +1345,7 @@ flowchart TB
 
 ### 反例 5："残缺的 zone 会被跳过，其余区域照常工作"
 
-错。`find_zone_nodes` 的完整性检查是**整树否决**（[L64-L70](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L64-L70)）：
+错。`find_zone_nodes` 的完整性检查是**整树否决**（[L64-L70](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L64)）：
 任何 zone 缺半边，整棵树的 zones 返回空。下游所有 `tree.zones()` 的调用方拿到
 `nullptr`，必须走各自的降级路径。和"0 次迭代"要严格区分：`Iterations = 0` 的
 **完整**区域是完全合法的，zones 照常推导成功（运行时才走空迭代路径）。
@@ -1344,16 +1368,16 @@ flowchart TB
 反了。Repeat 的配对指针在 **Input** 的 storage 里（`NodeGeometryRepeatInput::
 output_node_id`）；Output 的 storage 存的是 items。唯一例外般的对照是查找方向：
 `get_corresponding_input`（Output 找 Input）要遍历全部 Input 节点比对
-（[L492-L502](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L492-L502)），
+（[L492-L502](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L492)），
 而 `get_corresponding_output`（Input 找 Output）一次查表——方向不对称正是存储
 不对称的直接后果。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 9. 调试小抄
 
 - 打印整个 zones 树：`node_tree_zones.cc` 里留有现成的流输出
-  （[operator<< L620-L651](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L620-L651)），
+  （[operator<< L620-L651](../../../source/blender/blenkernel/intern/node_tree_zones.cc#L620)），
   输出格式为 `index: Parent index: N; Input: 名字, Output: 名字; Border Links: {...}`。
   L376 有一个被注释掉的 `// std::cout << *tree_zones << std::endl;`，
   在 `discover_tree_zones` 返回前放开它即可看到推导结果。
@@ -1362,7 +1386,7 @@ output_node_id`）；Output 的 storage 存的是 items。唯一例外般的对�
   可用来对比"上次合法时的样子"。
 - 怀疑归属错了：先分清问的是 node 还是 socket（§4 反例 4），再用 §7 的表格手推。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 10. 继续阅读
 
@@ -1378,7 +1402,7 @@ output_node_id`）；Output 的 storage 存的是 items。唯一例外般的对�
 - [00-课程指南/03-符号与源码索引](../00-课程指南/03-符号与源码索引.md) —— 全部
   关键类型的定位表。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 附：本章源码核对清单
 
@@ -1390,3 +1414,9 @@ output_node_id`）；Output 的 storage 存的是 items。唯一例外般的对�
 | source/blender/nodes/intern/node_register.cc | L40-L186 | 五种区域类型注册与配对协议 |
 | source/blender/makesdna/DNA_node_types.h | L3548-L3572 | Repeat Input/Output storage |
 | source/blender/nodes/geometry/nodes/node_geo_repeat.cc | L60-L140, L240-L349 | declare/init/insert_link/gather_link_searches/注册 |
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
+<a href="./02-Zone输入输出与bundle迁移语义.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">Zone输入输出与bundle迁移语义 ›</a>
+<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
+</div>

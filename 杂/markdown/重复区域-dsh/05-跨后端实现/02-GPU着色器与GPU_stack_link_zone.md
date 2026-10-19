@@ -1,10 +1,19 @@
 # 02 - GPU 着色器与 GPU_stack_link_zone
 
-> [总入口](../README.md) · [本章 README](README.md) · [上一篇：合成器 RepeatZoneOperation](01-合成器RepeatZoneOperation.md) · [下一篇：06 实战与性能](../06-实战与性能/README.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 05-跨后端实现</a>
+<a href="./01-合成器RepeatZoneOperation.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ 合成器RepeatZoneOperation</a>
+</div>
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
+
+</div>
 
 **基准说明**：本文基于当前工作区源码快照（`D:\Repository\blender-git\blender`，Blender 4.5/5.0 开发主线，Repeat Zone 于 2023 年引入、GPU zone 机制于 2025 年扩展）。文中所有行号均为调研时的快照行号，上游提交后可能漂移；请以链接指向的源文件为最终依据。所有"教学示意代码"均明确标注，不是编译器真实产物。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 先回答一个具体问题
 
@@ -28,13 +37,14 @@
 | [node_geo_repeat.cc](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc) 中两个 `node_shader_fn`（Input L139—L147、Output L309—L317） | 把节点转成带 zone 标记的 GPUNode |
 | [gpu_node_graph.cc](../../../source/blender/gpu/intern/gpu_node_graph.cc) 的 `GPU_stack_link_zone`（L1076—L1121）与 [gpu_codegen.cc](../../../source/blender/gpu/intern/gpu_codegen.cc) 的序列化/配对逻辑 | 打标、共享 id、生成循环文本 |
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 三种后端总览
 
 Repeat Zone 是一个"跨后端"的节点结构：同一对 Input/Output 节点，在不同的执行后端里有完全不同的循环实现。Blender 目前有三种：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TD
     TZ["Repeat Zone 节点对<br/>(Input + Output)"]:::abstraction
 
@@ -74,7 +84,7 @@ flowchart TD
 
 GPU 端这套 zone 机制也不是 Repeat Zone 专用的：着色器节点里还有一对内部节点 `LIGHT_ITER_INTERNAL_INPUT/OUTPUT`（[node_shader_light_iter_internal.cc](../../../source/blender/nodes/shader/nodes/node_shader_light_iter_internal.cc)）用完全相同的 `GPU_stack_link_zone` 机制生成 `LIGHT_ITER_BEGIN/END` 循环，用来遍历灯光。学完本章，这对节点你也顺带懂了。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## REPEAT_BEGIN/END 宏
 
@@ -193,15 +203,15 @@ for (int tmp7_i = 0; tmp7_i < u_iterations; tmp7_i++) {
 
 （上面是宏语义演示，节点名/变量名是示意；真实生成的 `count` 与 `var` 实参来自 `REPEAT_BEGIN` 这个 GPUNode 的常规输入与常规输出，见下文。）
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## node_shader_fn 与 GPU_stack_link_zone
 
 ### 两个打标函数
 
-Repeat Input/Output 两个节点的 GPU 路径入口是各自的 `node_shader_fn`（注册为 `ntype.gpu_fn`）。当材质/节点树被编译成 GPU 节点图时（`ntreeExecGPUNodes` 逐节点调用 `gpu_fn`，见 [node_shader_util.cc L510—L557](../../../source/blender/nodes/shader/node_shader_util.cc#L510-L557)），这两个函数被调用。
+Repeat Input/Output 两个节点的 GPU 路径入口是各自的 `node_shader_fn`（注册为 `ntype.gpu_fn`）。当材质/节点树被编译成 GPU 节点图时（`ntreeExecGPUNodes` 逐节点调用 `gpu_fn`，见 [node_shader_util.cc L510—L557](../../../source/blender/nodes/shader/node_shader_util.cc#L510)），这两个函数被调用。
 
-**Input 节点**（[node_geo_repeat.cc L139—L147](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L139-L147)）：
+**Input 节点**（[node_geo_repeat.cc L139—L147](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L139)）：
 
 ```cpp
 // [讲解] Repeat Input 的 GPU 打标函数
@@ -219,7 +229,7 @@ static int node_shader_fn(GPUMaterial *mat,
 }
 ```
 
-**Output 节点**（[node_geo_repeat.cc L309—L317](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L309-L317)）：
+**Output 节点**（[node_geo_repeat.cc L309—L317](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L309)）：
 
 ```cpp
 // [讲解] Repeat Output 的 GPU 打标函数
@@ -247,6 +257,7 @@ static int node_shader_fn(GPUMaterial *mat,
 于是两端的 `zone_id` 最终都等于 **Output 节点的 identifier** 这个整数。配对逻辑是"Output 是锚点，Input 存锚点的地址"：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TD
     IN["Repeat Input 节点"]:::input
     OUT["Repeat Output 节点"]:::input
@@ -275,7 +286,7 @@ flowchart TD
 
 ### GPU_stack_link_zone 的签名与参数
 
-声明在 [GPU_material.hh L681—L689](../../../source/blender/gpu/GPU_material.hh#L681-L689)：
+声明在 [GPU_material.hh L681—L689](../../../source/blender/gpu/GPU_material.hh#L681)：
 
 ```cpp
 bool GPU_stack_link_zone(GPUMaterial *material,
@@ -311,7 +322,7 @@ bool GPU_stack_link_zone(GPUMaterial *material,
 
 ### [讲解] 实现逐段拆解
 
-实现只有 46 行（[gpu_node_graph.cc L1076—L1121](../../../source/blender/gpu/intern/gpu_node_graph.cc#L1076-L1121)），做了四件事：建节点、打两个标记、搬 socket、划分常规/zone 边界。
+实现只有 46 行（[gpu_node_graph.cc L1076—L1121](../../../source/blender/gpu/intern/gpu_node_graph.cc#L1076)），做了四件事：建节点、打两个标记、搬 socket、划分常规/zone 边界。
 
 ```cpp
 // [讲解] GPU_stack_link_zone 的核心逻辑（示意重排，保留原语义）
@@ -368,7 +379,7 @@ bool GPU_stack_link_zone(GPUMaterial *material, const bNode *bnode, const char *
 
 值得强调的三个细节：
 
-1. **没有函数库校验**。对比普通路径 `GPU_link`/`GPU_stack_link`（[gpu_node_graph.cc L953—L1074](../../../source/blender/gpu/intern/gpu_node_graph.cc#L953-L1074)），它们第一步就是 `gpu_material_library_get_function(name)` 查反射元数据、按元数据逐参数建输入；`GPU_stack_link_zone` **完全跳过这一步**，直接按 socket 栈建输入输出。所以 zone 节点的"函数签名"只存在于两处：宏定义（真实语义）和 `[[node]]` 占位（仅供反射系统收录，无实际约束）。函数库查找被推迟到代码生成阶段（`node_serialize` → `gpu_material_library_use_function`，用于把宏所在的 .bsl.hh 加进依赖），那里才有一个 `BLI_assert_msg(function != nullptr, "Requested function not in the function library")`（[gpu_shader_dependency.cc L638—L643](../../../source/blender/gpu/intern/gpu_shader_dependency.cc#L638-L643)）兜底。
+1. **没有函数库校验**。对比普通路径 `GPU_link`/`GPU_stack_link`（[gpu_node_graph.cc L953—L1074](../../../source/blender/gpu/intern/gpu_node_graph.cc#L953)），它们第一步就是 `gpu_material_library_get_function(name)` 查反射元数据、按元数据逐参数建输入；`GPU_stack_link_zone` **完全跳过这一步**，直接按 socket 栈建输入输出。所以 zone 节点的"函数签名"只存在于两处：宏定义（真实语义）和 `[[node]]` 占位（仅供反射系统收录，无实际约束）。函数库查找被推迟到代码生成阶段（`node_serialize` → `gpu_material_library_use_function`，用于把宏所在的 .bsl.hh 加进依赖），那里才有一个 `BLI_assert_msg(function != nullptr, "Requested function not in the function library")`（[gpu_shader_dependency.cc L638—L643](../../../source/blender/gpu/intern/gpu_shader_dependency.cc#L638)）兜底。
 2. **`is_zone_io` 是"生成策略开关"**。代码生成器见到 `is_zone_io` 的输入/输出就不再按"函数实参"处理（`node_serialize` 的实参循环遇到第一个 zone IO 就 `break`），改按"共享 zone 变量"处理。
 3. **`is_duplicate` 是"声明去重"**。同一个 `zone<id>` 变量会被开始端声明一次；结束端的同名输入如果再声明就重复定义了，所以结束端输入标 `is_duplicate`，生成时跳过类型、只生成赋值（或什么都不生成）。这与 UBO 字段命名的去重是同一套路（`u<id>` vs `u<id>b`，见 [gpu_codegen.cc L313](../../../source/blender/gpu/intern/gpu_codegen.cc#L313)）。
 
@@ -472,7 +483,7 @@ static int node_shader_fn(GPUMaterial *mat,
 | `GPUInput` | `bool is_duplicate` | 变量与别处共享、无需重复声明（注释原文：*This variable is shared with other socket/s and doesn't need to be declared.*） |
 | `GPUOutput`（L133—L136） | 同上两个字段 | 同上 |
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 着色器生成结果
 
@@ -480,7 +491,7 @@ static int node_shader_fn(GPUMaterial *mat,
 
 ### 机制一：线性序列化 + 半截宏 = 循环体
 
-`GPUCodegen::graph_serialize`（[gpu_codegen.cc L491—L527](../../../source/blender/gpu/intern/gpu_codegen.cc#L491-L527)）按 `graph.nodes` 列表顺序逐个调 `node_serialize`。源码注释明确说明顺序来源：
+`GPUCodegen::graph_serialize`（[gpu_codegen.cc L491—L527](../../../source/blender/gpu/intern/gpu_codegen.cc#L491)）按 `graph.nodes` 列表顺序逐个调 `node_serialize`。源码注释明确说明顺序来源：
 
 > NOTE: The node order is already top to bottom (or left to right in node editor) because of the evaluation order inside ntreeExecGPUNodes().
 
@@ -488,7 +499,7 @@ static int node_shader_fn(GPUMaterial *mat,
 
 ### 机制二：set_unique_ids 让两端共享同一个 zone 变量
 
-zone item 要在"循环外进入 → 循环体内读写 → 循环外流出"，就必须是**同一个变量**。这由 `GPUCodegen::set_unique_ids()`（[gpu_codegen.cc L608—L655](../../../source/blender/gpu/intern/gpu_codegen.cc#L608-L655)）完成：
+zone item 要在"循环外进入 → 循环体内读写 → 循环外流出"，就必须是**同一个变量**。这由 `GPUCodegen::set_unique_ids()`（[gpu_codegen.cc L608—L655](../../../source/blender/gpu/intern/gpu_codegen.cc#L608)）完成：
 
 ```cpp
 // [讲解] set_unique_ids 的 zone 配对部分（示意重排）
@@ -604,7 +615,7 @@ void GPUCodegen::set_unique_ids()
 
 ### 机制三：node_serialize 里的 zone 变量生成规则
 
-`GPUCodegen::node_serialize`（[gpu_codegen.cc L339—L478](../../../source/blender/gpu/intern/gpu_codegen.cc#L339-L478)）为每个节点生成三段文本：变量声明、函数调用、（zone 场景下的）写回。zone 相关规则浓缩如下（均已核对原文）：
+`GPUCodegen::node_serialize`（[gpu_codegen.cc L339—L478](../../../source/blender/gpu/intern/gpu_codegen.cc#L339)）为每个节点生成三段文本：变量声明、函数调用、（zone 场景下的）写回。zone 相关规则浓缩如下（均已核对原文）：
 
 1. **变量命名**：`operator<<(GPUInput*)`/`operator<<(GPUOutput*)`（L44—L79）按 `is_zone_io` 选前缀——zone IO 输出 `zone<id>`，普通临时量输出 `tmp<id>`（常量是 `cons<id>`、结构是 `strct<id>`）。**`zone<id>` 就是跨循环边界的那个变量。**
 2. **实参截断**：生成函数调用 `name(args...)` 时，输入实参循环遇到第一个 `is_zone_io` 输入就 `break`（L436—L438），输出实参同理（L456—L458）。所以 `REPEAT_BEGIN` 生成的调用只带 `Iterations`（count）和 `Iteration`（var）两个实参；`REPEAT_END` 一个实参都不带。
@@ -663,6 +674,7 @@ float result = zone2;              /* 3 轮后 = 16.0，见"用小数据走一�
 循环体的生成结构一图流：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TD
     A["外部 Value In<br/>(tmp_in_value)"]:::input --> B["REPEAT_BEGIN 节点序列化<br/>float zone2 = tmp_in_value;<br/>REPEAT_BEGIN(u3, tmp5);"]:::compute
 
@@ -810,13 +822,13 @@ static std::ostream &operator<<(std::ostream &stream, const GPUOutput *output)
 
 ### 机制四（补）：未使用节点裁剪时的隐式连通
 
-`gpu_nodes_tag`（[gpu_node_graph.cc L1197—L1236](../../../source/blender/gpu/intern/gpu_node_graph.cc#L1197-L1236)）从最终输出反向标记存活节点。zone 有一个特殊处理，源码注释原文：
+`gpu_nodes_tag`（[gpu_node_graph.cc L1197—L1236](../../../source/blender/gpu/intern/gpu_node_graph.cc#L1197)）从最终输出反向标记存活节点。zone 有一个特殊处理，源码注释原文：
 
 > Zone input nodes are implicitly linked to their corresponding zone output nodes, even if there is no GPUNodeLink between them.
 
 实现：遇到 `is_zone_end` 节点时，遍历全图把**同 `zone_index` 且非 end** 的节点（即区域开始端）一并打标，并把开始端的上游压进专用 `zone_stack` 继续回溯。为什么需要它？因为**Output 节点的 item 输出在区域外可能没有任何 GPUNodeLink 消费者仍然连着 Input**——数据靠共享 `zone<id>` 变量传递，链接层面是断的；如果不做这个隐式连通，整个循环体可能被当作死代码裁掉。用一个独立的 `zone_stack` 而不是直接往主栈里压，保证了从 zone 内部上游继续回溯时优先处理完整个区域相关子图。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 约束与限制
 
@@ -824,18 +836,18 @@ GPU 版 Repeat 区域的"能与不能"，几乎全部由三个层面的白名单
 
 ### 1. 节点函数参数类型白名单（反射期）
 
-`[[node]]` 函数的参数类型必须是：`float1—float4`、`int1—int4`、`bool1`、`float3x3`、`float4x4`、`sampler1DArray/2D/2DArray/3D`、`Closure`、`KernelGlobals`、`ShadingData`（[processor.cc L1285—L1310](../../../source/blender/gpu/shader_tool/processor.cc#L1285-L1310) 的显式 switch 白名单）。不在这个列表里的类型（比如任何自定义 struct、几何类型）在**构建期反射**直接 `report_error("Invalid type for node function ...")`。这就是"结构类型必须 single/标量类"约束的源头：GPU 端没有几何、没有字段（field）、没有匿名属性的表示。
+`[[node]]` 函数的参数类型必须是：`float1—float4`、`int1—int4`、`bool1`、`float3x3`、`float4x4`、`sampler1DArray/2D/2DArray/3D`、`Closure`、`KernelGlobals`、`ShadingData`（[processor.cc L1285—L1310](../../../source/blender/gpu/shader_tool/processor.cc#L1285) 的显式 switch 白名单）。不在这个列表里的类型（比如任何自定义 struct、几何类型）在**构建期反射**直接 `report_error("Invalid type for node function ...")`。这就是"结构类型必须 single/标量类"约束的源头：GPU 端没有几何、没有字段（field）、没有匿名属性的表示。
 
 ### 2. 函数形态约束（反射期）
 
 - 返回类型必须是 `void`，否则报错（`"Expected void return type for node function"`）；
 - 必须至少有一个参数，否则报错（`"Expected at least one argument for node function"`）——占位函数特意塞了个 `dummy` 参数就是为了满足这条；
 - 不支持数组参数（`"Array arguments are not supported in node functions."`）；
-- 函数名上限 `MAX_FUNCTION_NAME = 64`，参数上限 `MAX_PARAMETER = 39`（[gpu_material_library.hh L18—L19](../../../source/blender/gpu/intern/gpu_material_library.hh#L18-L19)）。zone item 数量多时，`REPEAT_BEGIN/END` 节点的 socket 数随之膨胀，会先在节点系统层面受 `MAX_SOCKET` 限制，再在反射层面受 `MAX_PARAMETER` 约束。
+- 函数名上限 `MAX_FUNCTION_NAME = 64`，参数上限 `MAX_PARAMETER = 39`（[gpu_material_library.hh L18—L19](../../../source/blender/gpu/intern/gpu_material_library.hh#L18)）。zone item 数量多时，`REPEAT_BEGIN/END` 节点的 socket 数随之膨胀，会先在节点系统层面受 `MAX_SOCKET` 限制，再在反射层面受 `MAX_PARAMETER` 约束。
 
 ### 3. zone 端口类型约束（节点声明期）
 
-Repeat 的 item 端口在声明时是 `.structure_type(StructureType::Dynamic)`（[node_geo_repeat.cc L92—L101](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L92-L101)），这是给几何/合成器后端用的；GPU 端真正能跨 zone 边界的，只有能落进 `GPUInput`/`GPUOutput` 并能被 `zone<id>` 变量承载的类型——标量、向量、矩阵、颜色等"值类型"。几何 socket、field 依赖、匿名属性（`Attributes`）在 GPU 材质图里根本没有对应物，自然也就不可能循环携带。
+Repeat 的 item 端口在声明时是 `.structure_type(StructureType::Dynamic)`（[node_geo_repeat.cc L92—L101](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L92)），这是给几何/合成器后端用的；GPU 端真正能跨 zone 边界的，只有能落进 `GPUInput`/`GPUOutput` 并能被 `zone<id>` 变量承载的类型——标量、向量、矩阵、颜色等"值类型"。几何 socket、field 依赖、匿名属性（`Attributes`）在 GPU 材质图里根本没有对应物，自然也就不可能循环携带。
 
 ### 4. 与几何节点后端的功能差异清单
 
@@ -854,18 +866,19 @@ grep 全链路后，zone 相关的错误处理分布如下（按发生时机排�
 
 | 时机 | 位置 | 形式 |
 | --- | --- | --- |
-| 构建期反射 | [processor.cc L1144—L1153、L1253—L1260、L1266—L1310](../../../source/blender/gpu/shader_tool/processor.cc#L1250-L1310) | `report_error` + 抛 `ParserException`：非 void 返回、无参数、非法参数类型、数组参数 |
+| 构建期反射 | [processor.cc L1144—L1153、L1253—L1260、L1266—L1310](../../../source/blender/gpu/shader_tool/processor.cc#L1250) | `report_error` + 抛 `ParserException`：非 void 返回、无参数、非法参数类型、数组参数 |
 | 编译期函数查找（代码生成） | [gpu_shader_dependency.cc L641](../../../source/blender/gpu/intern/gpu_shader_dependency.cc#L641) | `BLI_assert_msg(function != nullptr, "Requested function not in the function library")` —— 若 .bsl.hh 没进构建（CMake 漏登记），debug 断言失败 |
-| 普通节点编译（非 zone 路径） | [gpu_node_graph.cc L964、L1004](../../../source/blender/gpu/intern/gpu_node_graph.cc#L953-L1006) | `fprintf(stderr, "GPU failed to find function %s\n", name)` + 返回 false |
-| 运行期变量命名 | [gpu_codegen.cc L71](../../../source/blender/gpu/intern/gpu_codegen.cc#L44-L74) | `BLI_assert(0)`：未知的输入 source 类型 |
-| 引用计数 | [gpu_node_graph.cc L147](../../../source/blender/gpu/intern/gpu_node_graph.cc#L142-L156) | `fprintf(stderr, "gpu_node_link_free: negative refcount\n")` |
+| 普通节点编译（非 zone 路径） | [gpu_node_graph.cc L964、L1004](../../../source/blender/gpu/intern/gpu_node_graph.cc#L953) | `fprintf(stderr, "GPU failed to find function %s\n", name)` + 返回 false |
+| 运行期变量命名 | [gpu_codegen.cc L71](../../../source/blender/gpu/intern/gpu_codegen.cc#L44) | `BLI_assert(0)`：未知的输入 source 类型 |
+| 引用计数 | [gpu_node_graph.cc L147](../../../source/blender/gpu/intern/gpu_node_graph.cc#L142) | `fprintf(stderr, "gpu_node_link_free: negative refcount\n")` |
 
 值得注意的"静默退化"路径（依据代码推断，非断言保证）：`set_unique_ids` 里 `zone_starts.lookup(end->zone_index)` 查不到开始端时返回 `nullptr`，`find_zone_io(nullptr)` 返回 `nullptr`，后面的同步循环直接不执行——**不会崩溃也不会报错**，但 zone 变量将拿不到共享 id，生成的着色器大概率因为引用不存在的变量而让驱动报编译错误。也就是说：GPU 端 zone 的 begin/end 配对**没有专门的配对断言**，正确性靠 `zone_id` 两端取值约定（见"反例与边界"）。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 用小数据走一遍
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#0891B2;background:#ECFEFF;border:1px solid #A5F3FC;border-radius:999px">教学推演 · 手算中间值，逐轮核对</div>
 沿用上一节的例子：`Value In = 10.0`，区域内 `Add(Value, 2.0)`，`Iterations = 3`，区域外读 "Value"。
 
 初始：`zone2 = 10.0`（REPEAT_BEGIN 序列化时装入），`cons1 = 2.0`，`tmp5_i` 未创建。
@@ -885,10 +898,11 @@ grep 全链路后，zone 相关的错误处理分布如下（按发生时机排�
 
 把 `Iterations` 换成 0 会怎样？for 循环条件 `0 < 0` 不成立，循环体一次都不执行，`zone2` 保持装入值 10.0——区域等价于直通。这也是几何节点端 `Iterations` 默认值为 1（而非 0）在 GPU 端的行为对应物。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 反例与边界
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px">边界情形 · 每条断言都可回到源码验证</div>
 **反例 1："GPU 端支持任意几何操作"。** 有同学会在 Repeat 区域里放网格布尔、实例化，然后期待 EEVEE/GPU 合成器里循环生效。事实上 GPU 材质图里根本没有 Geometry 数据类型：item 端口类型白名单只覆盖值类型，几何 socket 的连接在 GPU 编译路径上无法表达（没有对应的 `GPUType` 与变量表示）。Repeat Zone 的"每轮产出新几何"只在几何节点后端成立；GPU 端它是**着色器数值循环**。
 
 **反例 2："zone_id 两端取值相同来源"。** Input 端是 `node_storage(*node).output_node_id`，Output 端是 `node->identifier`——来源不同，只是值恰好转相同。理解这一点才能解释两个现象：(a) 为什么配对锚点是 Output（item 列表存在 Output 的 storage 里，Input 只存引用）；(b) 为什么"Input 存的 id 指向一个已删除的 Output"理论上会产生失配——两端 `zone_index` 对不上，`zone_starts`/`zone_ends` 查表落空，按上文分析会静默跳过 id 共享，最终着色器编译报变量未定义。实际使用中 UI 层会维护这个引用，但你写自动化脚本批量改节点时要知道这层脆弱性。
@@ -899,9 +913,9 @@ grep 全链路后，zone 相关的错误处理分布如下（按发生时机排�
 
 **反例 5："区域内部节点真的被圈进了某个循环体结构"。** GPU 节点图（`GPUNodeGraph`）是**扁平链表**，`GPUNode` 上没有"我属于哪个循环体"的父指针（只有 `zone_index`/`is_zone_end` 两个平标记）。"循环体"纯粹是序列化文本顺序的副产品：BEGIN 的文本先写、内部节点依次写、END 的文本最后写，预处理器再把半截宏拼成完整的 for。这个设计成立的前提是 `ntreeExecGPUNodes` 给出的求值顺序严格保证 BEGIN 在所有内部节点之前、END 在之后——这是几何/合成器端不存在、GPU 端独有的隐式契约。
 
-**反例 6："REPEAT_BEGIN/END 之间可以像普通函数一样校验参数个数"。** 普通 `GPU_link` 路径按反射元数据逐参数校验并返回 `false` 表示失败；`GPU_stack_link_zone` 不查函数库、永远返回 `true`（[gpu_node_graph.cc L1120](../../../source/blender/gpu/intern/gpu_node_graph.cc#L1076-L1121)），参数合法性完全不在这层把关。唯一兜底是代码生成阶段 `gpu_material_library_use_function` 的 assert——而那只检查"函数存在于库中"，不检查实参匹配。所以 zone 节点的 `in_argument_count`/`out_argument_count` 写错（比如把 Input 的 1,1 写成 0,0）不会在打标时报错，而是生成出语义错误的着色器（Iteration 不再被赋轮次值、item 变量边界错乱），问题会推迟到驱动编译 GLSL 时才暴露。
+**反例 6："REPEAT_BEGIN/END 之间可以像普通函数一样校验参数个数"。** 普通 `GPU_link` 路径按反射元数据逐参数校验并返回 `false` 表示失败；`GPU_stack_link_zone` 不查函数库、永远返回 `true`（[gpu_node_graph.cc L1120](../../../source/blender/gpu/intern/gpu_node_graph.cc#L1076)），参数合法性完全不在这层把关。唯一兜底是代码生成阶段 `gpu_material_library_use_function` 的 assert——而那只检查"函数存在于库中"，不检查实参匹配。所以 zone 节点的 `in_argument_count`/`out_argument_count` 写错（比如把 Input 的 1,1 写成 0,0）不会在打标时报错，而是生成出语义错误的着色器（Iteration 不再被赋轮次值、item 变量边界错乱），问题会推迟到驱动编译 GLSL 时才暴露。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 深挖：同机制的另一个用户——LIGHT_ITER 内部节点
 
@@ -925,7 +939,7 @@ grep 全链路后，zone 相关的错误处理分布如下（按发生时机排�
 
 1. **zone_id 的"存储位置"可以各选各的**。Repeat 用 storage 里的 `output_node_id`（节点间引用），Light Iter 用 `custom3`（bNode 的通用自定义整数字段）。机制只要求"两端最终得到同一个整数"，不关心你从哪儿拿到它。END 端两个用户都用 `node->identifier`，这暗示了惯例：**Output/END 端是配对锚点**。
 2. **常规参数数量由语义决定**。`LIGHT_ITER_BEGIN` 的 `0, 1` 意味着它有 0 个输入实参、1 个输出实参（`LightIndex`），宏签名是 `LIGHT_ITER_BEGIN(light_index)`——只有轮次变量、没有 count，因为循环范围由引擎的灯光列表在运行期决定，宏体在 EEVEE 库里展开成对每盏灯的迭代。Repeat 是 `1, 1`，因为多一个 `Iterations` 实参。
-3. **占位函数的参数是"签名形状"不是语义**。Repeat 的占位是 `(int dummy)` / `(float dummy)`，Light Iter 的占位是 `(float &light_index)` / `(Closure shader, Closure &r_shader)`——后者用真实形状的参数让反射器推断出 in/out 限定（引用且非 const 即 out，见 [processor.cc L1273—L1278](../../../source/blender/gpu/shader_tool/processor.cc#L1273-L1278)）。Repeat 的注释直言"we don't really rely on the reflection data"，因为 `GPU_stack_link_zone` 路径不消费这些元数据。
+3. **占位函数的参数是"签名形状"不是语义**。Repeat 的占位是 `(int dummy)` / `(float dummy)`，Light Iter 的占位是 `(float &light_index)` / `(Closure shader, Closure &r_shader)`——后者用真实形状的参数让反射器推断出 in/out 限定（引用且非 const 即 out，见 [processor.cc L1273—L1278](../../../source/blender/gpu/shader_tool/processor.cc#L1273)）。Repeat 的注释直言"we don't really rely on the reflection data"，因为 `GPU_stack_link_zone` 路径不消费这些元数据。
 
 <details>
 <summary>核对原始源码：node_shader_light_iter_internal.cc · L22—L46（两个 node_shader_fn）</summary>
@@ -993,6 +1007,7 @@ void LIGHT_ITER_END(Closure shader, Closure &r_shader)
 把本章出现过的所有环节串成一条时间线，方便你回头定位"某一步发生在哪个文件"：
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TD
     A["用户编辑材质节点树<br/>含 Repeat Zone"]:::input
     A --> B["ntreeExecGPUNodes<br/>node_shader_util.cc L510-557<br/>按求值顺序逐节点调用 gpu_fn"]:::compute
@@ -1082,6 +1097,7 @@ void gpu_nodes_tag(GPUNodeGraph *graph, GPUNodeLink *link_start, GPUNodeTag tag)
 
 ## 用小数据走一遍（扩展：逐节点状态快照）
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#0891B2;background:#ECFEFF;border:1px solid #A5F3FC;border-radius:999px">教学推演 · 手算中间值，逐轮核对</div>
 上一节按"轮"看了循环行为。这里再按"节点序列化顺序"走一遍同一例子（`Value In=10.0`、`Iterations=3`、区域内 `Add(Value, 2.0)`），把每个节点被 `node_serialize` 处理时产出的文本逐行对上源码规则。教学示意，非真实产物。
 
 序列化前提：`graph.nodes` 已按求值顺序排列（BEGIN → Add → END），`set_unique_ids` 已把 item 相关槽位统一为 id=2（`zone2`），Add 的输出 id=6（`tmp6`），Iteration 输出 id=5（`tmp5`）。
@@ -1094,7 +1110,7 @@ void gpu_nodes_tag(GPUNodeGraph *graph, GPUNodeLink *link_start, GPUNodeTag tag)
 
 逐条对应源码锚点：
 
-- 序 1 的声明来自 [gpu_codegen.cc L401—L407](../../../source/blender/gpu/intern/gpu_codegen.cc#L401-L407)：`GPU_SOURCE_OUTPUT` 且 `is_zone_io` → `type() + " zone" + id + " = " + 来源;`。此刻 `is_duplicate=false`（BEGIN 端），`type()` 返回 `float`；
+- 序 1 的声明来自 [gpu_codegen.cc L401—L407](../../../source/blender/gpu/intern/gpu_codegen.cc#L401)：`GPU_SOURCE_OUTPUT` 且 `is_zone_io` → `type() + " zone" + id + " = " + 来源;`。此刻 `is_duplicate=false`（BEGIN 端），`type()` 返回 `float`；
 - 序 1 的调用实参截断来自 L436—L438 与 L456—L458；
 - 序 3 的无类型赋值来自同一处声明逻辑，但 `is_duplicate=true` 使 `type()` 返回空串 → `zone2 = tmp8;`；
 - 序 3 的零实参调用：输入实参循环第一个就是 zone IO（`in_argument_count=0`）直接 break，输出同理。
@@ -1120,16 +1136,22 @@ void gpu_nodes_tag(GPUNodeGraph *graph, GPUNodeLink *link_start, GPUNodeTag tag)
 
 因为 END 节点的所有 socket 都是 zone IO：输入是"区域内结果的汇入端"（写回 zone 变量），输出是"区域外消费者的来源"（读同一个 zone 变量）。它生成的"调用" `REPEAT_END()` 零实参——宏体也确实不需要实参，就是一个 `}`。这个 `0, 0` 与 Input 端的 `1, 1` 是理解"常规参数 vs zone IO 划界"的最小对照样本。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 继续阅读
 
 - 下一篇：[06 实战与性能](../06-实战与性能/README.md) —— 用完整案例把三种后端串起来，并讨论循环规模对编译与运行性能的影响。
 - 上一篇：[01 合成器 RepeatZoneOperation](01-合成器RepeatZoneOperation.md) —— CPU 合成器如何逐轮求值子树、管理 Result 生命周期。
 - 同机制参照物：[node_shader_light_iter_internal.cc](../../../source/blender/nodes/shader/nodes/node_shader_light_iter_internal.cc) 与 [gpu_shader_material_light_iter_internal.bsl.hh](../../../source/blender/gpu/shaders/material/gpu_shader_material_light_iter_internal.bsl.hh) —— 灯光遍历内部节点复用了同一套 `GPU_stack_link_zone` + 半截宏机制（其真正的宏体在 [eevee_nodetree_lib.bsl.hh](../../../source/blender/draw/engines/eevee/shaders/eevee_nodetree_lib.bsl.hh) 中按引擎上下文定义，比 Repeat 版复杂）。
-- 延伸源码：[gpu_codegen.cc](../../../source/blender/gpu/intern/gpu_codegen.cc)（序列化主逻辑）、[gpu_node_graph.hh](../../../source/blender/gpu/intern/gpu_node_graph.hh)（标记字段定义）、[node_shader_util.cc L510—L557](../../../source/blender/nodes/shader/node_shader_util.cc#L510-L557)（`ntreeExecGPUNodes` 求值顺序的来源）。
+- 延伸源码：[gpu_codegen.cc](../../../source/blender/gpu/intern/gpu_codegen.cc)（序列化主逻辑）、[gpu_node_graph.hh](../../../source/blender/gpu/intern/gpu_node_graph.hh)（标记字段定义）、[node_shader_util.cc L510—L557](../../../source/blender/nodes/shader/node_shader_util.cc#L510)（`ntreeExecGPUNodes` 求值顺序的来源）。
 - 系列导航：[总入口](../README.md) · [本章 README](README.md)。
 
----
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 *本篇为「重复区域（Repeat Zone）全面学习」系列 05 章第 2 篇。源码行号以调研时快照为准，欢迎对照仓库最新代码校正。*
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
+<a href="./01-合成器RepeatZoneOperation.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ 合成器RepeatZoneOperation</a>
+<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
+</div>
