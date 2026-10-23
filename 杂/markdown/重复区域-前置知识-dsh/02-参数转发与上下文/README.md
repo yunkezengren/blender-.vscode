@@ -36,6 +36,9 @@ eval_storage.graph_executor->execute(eval_graph_params, eval_graph_context);
 
 ## 源码规模
 
+
+> **行数口径**：本表所有行数为**文件总行数**（含空行与注释），可用 `[System.IO.File]::ReadAllLines(path).Count` 复核。若用 `Get-Content | Measure-Object -Line` 会得到**非空行数**，两者不同，请勿混用。
+
 | 文件 | 行数 |
 | --- | --- |
 | `FN_lazy_function.hh` 中 Params/Context 段 | ≈ 115 |

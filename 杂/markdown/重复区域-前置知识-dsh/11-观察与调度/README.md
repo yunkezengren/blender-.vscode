@@ -1,6 +1,6 @@
 # 11-观察与调度
 
-[前置知识总入口](../README.md) · [正篇：04-02 ComputeContext与迭代身份](../../04-运行时机制/02-ComputeContext与迭代身份.md)
+[前置知识总入口](../README.md) · [正篇：04-02 ComputeContext与迭代身份](../../重复区域-dsh/04-运行时机制/02-ComputeContext与迭代身份.md)
 
 本章回答：日志与 Viewer 怎么定位到"第几轮"？depsgraph 如何驱动求值？线程池与 `parallel_for` 怎么用？`lazy_threading` 的提示机制是什么？
 
@@ -30,6 +30,9 @@
 **最关键的一条**：正篇反复强调"inspection_index 不是查询参数而是身份成分"。这句话的真正含义是：**日志系统按 (节点, 上下文哈希) 二元组落盘**，所以"看第几轮"必须体现为上下文哈希的一部分。本章第 01 篇把这个机制讲透。
 
 ## 实测行数总表
+
+
+> **行数口径**：本表所有行数为**文件总行数**（含空行与注释），可用 `[System.IO.File]::ReadAllLines(path).Count` 复核。若用 `Get-Content | Measure-Object -Line` 会得到**非空行数**，两者不同，请勿混用。
 
 | 文件 | 行数 |
 | --- | --- |

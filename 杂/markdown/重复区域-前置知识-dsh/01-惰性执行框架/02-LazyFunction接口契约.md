@@ -1,5 +1,21 @@
 # 01 章 · 惰性执行框架（二）：LazyFunction 接口契约
 
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 01-惰性执行框架</a>
+<a href="./01-惰性求值模型与状态机.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ 01-惰性求值模型与状态机</a>
+<a href="./03-Params调用约定.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">03-Params调用约定 ›</a>
+</div>
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
+
+系列定位：本篇是《重复区域前置知识》系列 01 章第 2 篇。它回答：写一个自定义惰性函数，最少要实现哪几个方法，各自的契约是什么。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
+
 上一篇把 `LazyFunction` 当成一台"会暂停的状态机"来看。这一篇换一个视角：**它是一份合同**。
 
 合同的两端，一边是**写函数的人**（Blender 里 40 多个子类的作者），一边是**调函数的人**（`GraphExecutor`、`execute_lazy_function_eagerly`、各个 zone 的 wrapper）。合同规定：写函数的人可以拥有私有状态，但必须把它放在指定的地方；调函数的人保证在什么时刻把 storage 递进来、在什么时刻收回去。任何一方违约，编译器不会报错，运行时会在某个随机帧崩掉。
@@ -2089,8 +2105,8 @@ class LazyFunctionForRepeatZone : public LazyFunction {
 
 | 位置 | 为什么值得读 |
 | --- | --- |
-| [04-运行时机制 / 01-RepeatEvalStorage与一次求值](../../04-运行时机制/01-RepeatEvalStorage与一次求值.md) | 把本文"契约二"在 Repeat 上的实例展开成完整一篇 |
-| [03-几何节点执行架构 / 01-ZoneBodyFunction与ZoneBuildInfo](../../03-几何节点执行架构/01-ZoneBodyFunction与ZoneBuildInfo.md) | `LazyFunctionForRepeatZone` 的构造入参从哪来 |
+| [04-运行时机制 / 01-RepeatEvalStorage与一次求值](../../重复区域-dsh/04-运行时机制/01-RepeatEvalStorage与一次求值.md) | 把本文"契约二"在 Repeat 上的实例展开成完整一篇 |
+| [03-几何节点执行架构 / 01-ZoneBodyFunction与ZoneBuildInfo](../../重复区域-dsh/03-几何节点执行架构/01-ZoneBodyFunction与ZoneBuildInfo.md) | `LazyFunctionForRepeatZone` 的构造入参从哪来 |
 | [00-前置知识 / 04-生命周期与分配](../04-生命周期与分配/README.md) | `LinearAllocator` 与 `destruct_ptr` 的完整语义，本文只用到"造与毁" |
 
 ### 源码清单（按本文引用密度排序）

@@ -8,9 +8,9 @@
 
 | # | 篇目 | 源码主线 | 实测行数 |
 | --- | --- | --- | --- |
-| 1 | [01-LinearAllocator线性分配](01-LinearAllocator线性分配.md) | `BLI_linear_allocator.hh` | 279 |
-| 2 | [02-ResourceScope资源作用域](02-ResourceScope资源作用域.md) | `BLI_resource_scope.hh` | 206 |
-| 3 | [03-destruct_ptr与所有权](03-destruct_ptr与所有权.md) | `BLI_memory_utils.hh` L108 起（**同文件**） | 315 |
+| 1 | [01-LinearAllocator线性分配](01-LinearAllocator线性分配.md) | `BLI_linear_allocator.hh` | 316 |
+| 2 | [02-ResourceScope资源作用域](02-ResourceScope资源作用域.md) | `BLI_resource_scope.hh` | 243 |
+| 3 | [03-destruct_ptr与所有权](03-destruct_ptr与所有权.md) | `BLI_memory_utils.hh` L108 起（**同文件**） | 372 |
 | 4 | [04-storage生命周期对照](04-storage生命周期对照.md) | 综合：三套机制的取舍 | — |
 
 > **重要事实**：`destruct_ptr` **没有**独立的 `BLI_destruct_ptr.hh`。 > 它定义在 `BLI_memory_utils.hh`（L108 附近的注释： > "A destruct_ptr is like unique_ptr, but it will only call the destructor > and will not free the memory"）。这是一个很容易踩的坑—— > 面试/查资料时常被误认为有独立头文件。
@@ -65,12 +65,15 @@ flowchart TB
 
 ## 实测行数总表
 
+
+> **行数口径**：本表所有行数为**文件总行数**（含空行与注释），可用 `[System.IO.File]::ReadAllLines(path).Count` 复核。若用 `Get-Content | Measure-Object -Line` 会得到**非空行数**，两者不同，请勿混用。
+
 | 文件 | 行数 |
 | --- | --- |
-| `BLI_memory_utils.hh` | 315 |
-| `BLI_linear_allocator.hh` | 279 |
-| `BLI_resource_scope.hh` | 206 |
-| **合计** | **800** |
+| `BLI_memory_utils.hh` | 372 |
+| `BLI_linear_allocator.hh` | 316 |
+| `BLI_resource_scope.hh` | 243 |
+| **合计** | **931** |
 
 篇幅不大但概念密度极高——理解错了就是 use-after-free 或内存泄漏。
 

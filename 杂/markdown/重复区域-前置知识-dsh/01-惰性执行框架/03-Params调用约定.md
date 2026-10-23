@@ -1,6 +1,20 @@
 # 03 · Params 调用约定
 
-[前置知识总入口](../README.md) · [本章导航](README.md) · [上一篇](02-LazyFunction接口契约.md) · [下一篇](04-ValueUsage三值与需求传播.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 01-惰性执行框架</a>
+<a href="./02-LazyFunction接口契约.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ 02-LazyFunction接口契约</a>
+<a href="./04-ValueUsage三值与需求传播.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">04-ValueUsage三值与需求传播 ›</a>
+</div>
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
+
+系列定位：本篇是《重复区域前置知识》系列 01 章第 3 篇。它回答：惰性函数在 execute 里怎么要一个输入、怎么给一个输出、请求与提交的协议是什么。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 > 基准：Blender `5.4.0-alpha`，本地工作树。 > 源码主线：[`FN_lazy_function.hh`](../../../source/blender/functions/FN_lazy_function.hh) 的 `Params` 类（L105-L197）、 > [`FN_lazy_function_execute.hh`](../../../source/blender/functions/FN_lazy_function_execute.hh)（158 行）、 > [`intern/lazy_function_execute.cc`](../../../source/blender/functions/intern/lazy_function_execute.cc)（144 行）。
 
@@ -949,8 +963,7 @@ sequenceDiagram
 - 前半段：C 请求 B，B 请求 A（**递归下探**）；
 - 后半段：A 算完，B 算完，C 算完（**逐层返回**）。
 
-这与递归求值的形状相同，但**实现不同**：这里是显式的请求队列
-+ 循环，而不是函数调用栈。好处是不会爆栈，且可以并行。
+这与递归求值的形状相同，但**实现不同**：这里是显式的请求队列 + 循环，而不是函数调用栈。好处是不会爆栈，且可以并行。
 
 ### 与 Repeat 的关系（关键）
 

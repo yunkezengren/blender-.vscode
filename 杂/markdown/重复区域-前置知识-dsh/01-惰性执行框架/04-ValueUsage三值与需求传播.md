@@ -1,6 +1,20 @@
 # 04 · ValueUsage 三值与需求传播
 
-[前置知识总入口](../README.md) · [本章导航](README.md) · [上一篇](03-Params调用约定.md) · [下一篇](05-lf-Graph图结构.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 01-惰性执行框架</a>
+<a href="./03-Params调用约定.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ 03-Params调用约定</a>
+<a href="./05-lf-Graph图结构.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">05-lf-Graph图结构 ›</a>
+</div>
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
+
+系列定位：本篇是《重复区域前置知识》系列 01 章第 4 篇。它回答：一个节点的输出没人用，它是怎么知道不用算的——静态推断与动态传播两层机制。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 > 基准：Blender `5.4.0-alpha`，本地工作树。 > 源码主线：[`FN_lazy_function.hh`](../../../source/blender/functions/FN_lazy_function.hh) L61-L76（三值定义）、 > [`intern/socket_usage_inference.cc`](../../../source/blender/nodes/intern/socket_usage_inference.cc)（1194 行，静态推断器）。
 
@@ -375,5 +389,5 @@ Repeat 里三处直接相关：
 
 - [05-lf-Graph图结构](05-lf-Graph图结构.md)
 - [06-GraphExecutor调度机制](06-GraphExecutor调度机制.md)
-- 正篇：[03-03 执行图按迭代展开](../../03-几何节点执行架构/03-执行图按迭代展开.md)
-- 正篇：[04-03 副作用迭代与按需执行](../../04-运行时机制/03-副作用迭代与按需执行.md)
+- 正篇：[03-03 执行图按迭代展开](../../重复区域-dsh/03-几何节点执行架构/03-执行图按迭代展开.md)
+- 正篇：[04-03 副作用迭代与按需执行](../../重复区域-dsh/04-运行时机制/03-副作用迭代与按需执行.md)

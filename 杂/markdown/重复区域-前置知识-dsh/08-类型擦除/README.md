@@ -1,6 +1,6 @@
 # 08-类型擦除
 
-[前置知识总入口](../README.md) · [正篇：03-01 ZoneBodyFunction](../../03-几何节点执行架构/01-ZoneBodyFunction与ZoneBuildInfo.md)
+[前置知识总入口](../README.md) · [正篇：03-01 ZoneBodyFunction](../../重复区域-dsh/03-几何节点执行架构/01-ZoneBodyFunction与ZoneBuildInfo.md)
 
 本章回答：`CPPType` 和 `SocketValueVariant` 如何让**同一种容器装下任意类型**，以及为什么几何节点选择这条路而不是模板特化或虚函数。
 
@@ -29,6 +29,9 @@
 **最关键的一条**：`index_values` 是 `Array<SocketValueVariant>` 而不是 `Array<int>`——因为图的接口类型必须是 `SocketValueVariant`，类型要匹配。理解这一点才能读懂 03-03 的"为什么是 `emplace<int>(i)`"。
 
 ## 实测行数总表
+
+
+> **行数口径**：本表所有行数为**文件总行数**（含空行与注释），可用 `[System.IO.File]::ReadAllLines(path).Count` 复核。若用 `Get-Content | Measure-Object -Line` 会得到**非空行数**，两者不同，请勿混用。
 
 | 文件 | 行数 |
 | --- | --- |
@@ -75,3 +78,35 @@ flowchart TB
 ## 与既有资料的关系
 
 `.markdown/学习节点/几何节点类/08_SocketValueVariant.md`（约 130 行）与 `10_CPPType.md` 已有速查级内容。本章是其**深度版**（10 倍篇幅）：补上了 `CPPType` 的运行时函数表设计、`SocketValueVariant` 的内联/堆双模式、移动语义对性能的实际影响，以及它在 Repeat 的 `index_values` 上的具体应用。
+
+## 源码规模（实测，总行数口径）
+
+| 文件 | 总行数 | 非空行 |
+| --- | --- | --- |
+| `BLI_cpp_type.hh` | 823 | 699 |
+| `BLI_cpp_type_make.hh` | 507 | — |
+| `BKE_node_socket_value.hh` | 434 | — |
+| `BLI_any.hh` | 408 | 366 |
+| `BLI_cpp_type_test.cc` | 432 | — |
+
+## 全仓库使用密度（实测）
+
+| 指标 | 数值 |
+| --- | --- |
+| `geometry_nodes_lazy_function.cc` 中 `CPPType::get<` | **60 处** |
+| 其中 `SocketValueVariant` | 27 处 |
+| 其中 `bool` | 24 处 |
+| 其中 `GeometryNodesReferenceSet` | 7 处 |
+| 全仓库 `BLI_CPP_TYPE_REGISTER` | **83 处**（blenlib 22 + blenkernel 60 + compositor 1） |
+
+`[讲解]` `SocketValueVariant` 在 60 处里占 27 处——接近一半。这说明 lf 图的绝大多数接口都是 variant 类型（main 通道 + border link 通道）。
+
+## 三个容易搞错的细节（由源码实测确认）
+
+| 你可能以为 | 实际 |
+| --- | --- |
+| 有 `CPPType::get_by_name(std::string_view)` | **不存在**。头注释明说 name 仅供调试，不可作 identifier |
+| `get<T>()` 是 Meyers singleton，首次调用自动注册 | **不是**。三段式：静态槽 → 注册期 placement new → `get` 只做 assert + ref |
+| `CPPType` 用了虚函数做分派 | **只用了一处** `virtual ~CPPType()`。其余 3 处 `virtual` 全在注释里讨论"为什么不用虚函数" |
+
+`[讲解]` 第二行最值得注意：`get<T>()` 对未注册类型会**断言失败**，不会自动注册。所以任何新类型必须显式写 `BLI_CPP_TYPE_REGISTER(T)`。

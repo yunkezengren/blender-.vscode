@@ -1,6 +1,20 @@
 # 05 · lf::Graph 图结构：节点、socket、连接与索引
 
-[前置知识总入口](../README.md) · [本章导航](README.md) · [上一篇](04-ValueUsage三值与需求传播.md) · [下一篇](06-GraphExecutor调度机制.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 01-惰性执行框架</a>
+<a href="./04-ValueUsage三值与需求传播.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ 04-ValueUsage三值与需求传播</a>
+<a href="./06-GraphExecutor调度机制.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">06-GraphExecutor调度机制 ›</a>
+</div>
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
+
+系列定位：本篇是《重复区域前置知识》系列 01 章第 5 篇。它讲 lf::Graph：节点、socket、连接规则、索引维护与图导出。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 > 基准：Blender `5.4.0-alpha`，本地工作树。本篇讲 `lf::Graph`（图结构）——它是 Repeat Zone > 展开图、几何节点整图、zone body 图三者共用的底层数据结构。 > 主要源码：[`FN_lazy_function_graph.hh`](../../../source/blender/functions/FN_lazy_function_graph.hh)（554 行） > 与 [`intern/lazy_function_graph.cc`](../../../source/blender/functions/intern/lazy_function_graph.cc)（259 行）。
 ## 先回答一个具体问题
@@ -2507,3 +2521,42 @@ graph.add_link(or_node->output(0), border_usage_out);
 
 `[讲解]` **border link 的输入不累积**：三个 body 的 border link 输入全部指向**同一个** `border_in`（扇出 3）。而 **usage 侧要汇聚**：三个 body 各产出一个 `bool`，必须用 `LogicalOr` 归约成一个。这就是 `LogicalOr` 节点存在的唯一理由——`num_border_links` 个这类节点，每个接 `iterations` 个输入。[`LazyFunctionForLogicalOr`](../../../source/blender/nodes/NOD_geometry_nodes_lazy_function.hh#L584) 的注释也说明了它支持短路（第一个为 true 就不再请求其余），所以这条归约链**不需要所有 body 都算完**。
 
+
+## 反例与边界
+
+前文多处预告的"反例节"在这里兑现。每条都对应"连接规则与约束"里**没有断言**的那三件事，或"索引与 update_node_indices"里的失效场景。
+
+**一、重复连接同一个输入（release 下静默覆盖 + 悬挂登记）。** `add_link` 断言 `to.origin_ == nullptr`，但 `NDEBUG` 构建里断言被编掉。第二次连接会**覆盖** `to.origin_`，而第一次那个 `from` 的 `targets_` 里**仍然留着这个 `to`**。后果：执行器按 `targets_` 推送值时，会把值推给一个已经改嫁的输入——上游多算、下游拿到旧值或错值，且**没有任何报错**。这是本篇开头说的"真正危险的情形"。对策：建图代码里对"可能已被连接"的输入用 `input_link_idx` 先查再连（`FN_lazy_function_graph.hh` 提供的查询接口），正篇 03-03 的 body 装配就全部走"先查索引再连线"。
+
+**二、跨图连线（类型合法，执行必炸）。** 第 755 行论证过：`add_link` 看不见图，所以把 A 图的输出连到 B 图的输入在**编译期与运行期断言都拦不住**。执行器按各自的 `node_indices` 调度，跨图的边会让 `origin` 指向另一张图的节点索引空间——轻则索引越界断言，重则读到别的节点的数据。对策：`lf::Graph` 没有跨图 API，正篇里所有 zone（Repeat/Foreach/Simulation）都是"每图独立装配 + `RemappedParams` 桥接"，从不直接连线。
+
+**三、自环（合法但会死锁执行）。** `add_link(n.output(0), n.input(1))` 完全合法——测试里用它验证连线机制本身。但 `GraphExecutor` 的依赖计数会把自环算成"永远等自己"，这个节点永远不会就绪。`update_node_indices` 也不做环检测（它是拓扑排序，遇到环会在断言里暴露——但那是 debug）。Repeat 的"串行链"之所以安全，是因为每轮的 body 是**不同的节点实例**，第 N 轮的输出连的是第 N+1 轮的输入，不存在自环。
+
+**四、拿 `Socket` 引用跨 `update_node_indices` 使用。** `Socket` 里存的是 `Node &`/`InputSocket &` 引用，节点在 `Vector<Node>` 里——再 `add_function` 触发 realloc 时引用不失效吗？`add_function` 用 `allocator_` 逐个构造（见"所有权与析构"节），地址是稳的；**但 `node_indices_` 会重排**。如果你缓存了 `graph.node_indices()` 返回的 `Span<int>`，中间又加了节点，旧 Span 读到的是过期布局。对策：要么先连完线再查索引（正篇就是这个顺序），要么每次连线后重新取。
+
+**五、误以为 `link_count()` 是 O(1)。** 它要遍历全部输出 socket 的 `targets_` 累加，是 O(V+E)。放在每帧热循环里会白付钱（第 77 行"节点类型全景"的复杂度表里标过）。
+
+**六、在 `NonCopyable, NonMoveable` 之后试图把 Graph 塞进容器。** `lf::Graph` 不可拷贝不可移动（它是 `LinearAllocator` 的所有者，搬一次全部节点地址作废）。想延迟构造用 `std::optional<Graph>` 也不行（同理，optional 的移动会搬走 Graph）。正篇 03-03 的处理：**建图期一次性就地构造**，之后 Graph 只被 `const Graph &` 引用，从不被拥有者搬运。
+
+## 对理解 Repeat 的帮助
+
+本篇的每个机制在 `initialize_execution_graph` 里都有对应的落点：
+
+| 本篇概念 | 正篇 03-03 的落点 |
+| --- | --- |
+| 四个建图动作 | `add_function` 复制 body 节点 ×N；`add_link` 接主链与 usage 链 |
+| 输入至多一来源（反例一） | 装配顺序"先连必需边、可选边先查索引"的动机 |
+| 跨图连线禁止（反例二） | Repeat 用 `RemappedParams` 桥接外层图与内层图，从不直连 |
+| 索引重排陷阱（反例四） | `initialize_execution_graph` 把 `update_node_indices` 放在**最后**（L410），之后只读 |
+| border link 扇出 | 第四幕：每个 body 各拉一条边，不是链式传递 |
+| `LogicalOr` 归约 | `num_border_links` 个 OR 节点，`iterations` 路输入 |
+| Graph 不可移动（反例六） | `RepeatEvalStorage::graph` 内嵌在 storage 里，一次性构造后就地终身不动 |
+
+**最关键的一条**：正篇 03-03 的代码顺序——"先把所有节点加完 → 再把所有边连完 → 最后 `update_node_indices()` → 之后只查询不修改"——不是风格洁癖，而是本篇反例二、四、六的共同解法。理解了 Graph 的失效模式，才能理解这个顺序为什么是**唯一正确的顺序**。
+
+## 继续阅读
+
+- [01-惰性求值模型与状态机](01-惰性求值模型与状态机.md) —— 图上的节点怎么执行
+- [06-GraphExecutor调度机制](06-GraphExecutor调度机制.md) —— `node_indices` 与依赖计数的消费端
+- [07-执行钩子与副作用接口](07-执行钩子与副作用接口.md) —— 图上挂钩子的机制
+- 正篇：[03-03 执行图按迭代展开](../../重复区域-dsh/03-几何节点执行架构/03-执行图按迭代展开.md) —— 本篇机制的集中应用

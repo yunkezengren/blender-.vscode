@@ -1,6 +1,6 @@
 # 01-惰性执行框架
 
-[前置知识总入口](../README.md) · [正篇：03-几何节点执行架构](../../03-几何节点执行架构/README.md)
+[前置知识总入口](../README.md) · [正篇：03-几何节点执行架构](../../重复区域-dsh/03-几何节点执行架构/README.md)
 
 本章回答：Blender 的 LazyFunction（惰性函数）到底是什么、图怎么组起来、执行器怎么调度、需求又是怎么传播的。这是全专题最重要的一章——主系列正文中对它的引用高达 **407 次**，是最大的单项知识缺口。
 
@@ -17,6 +17,9 @@
 | 7 | [07-执行钩子与副作用接口](07-执行钩子与副作用接口.md) | `GraphExecutorNodeExecuteWrapper` 与 `GraphExecutorSideEffectProvider` |
 
 ## 源码规模
+
+
+> **行数口径**：本表所有行数为**文件总行数**（含空行与注释），可用 `[System.IO.File]::ReadAllLines(path).Count` 复核。若用 `Get-Content | Measure-Object -Line` 会得到**非空行数**，两者不同，请勿混用。
 
 | 文件 | 行数 |
 | --- | --- |

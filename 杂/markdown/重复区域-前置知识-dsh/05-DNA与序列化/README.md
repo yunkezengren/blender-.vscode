@@ -1,6 +1,6 @@
 # 05-DNA与序列化
 
-[前置知识总入口](../README.md) · [正篇：02-02 DNA存储与NodeRepeatItem](../../02-Repeat区域数据模型/02-DNA存储与NodeRepeatItem.md)
+[前置知识总入口](../README.md) · [正篇：02-02 DNA存储与NodeRepeatItem](../../重复区域-dsh/02-Repeat区域数据模型/02-DNA存储与NodeRepeatItem.md)
 
 本章回答：**DNA 到底是什么**。这是读者第二个撞上的知识族（正篇 01-01 第 78 行就出现"DNA 存储层"），而主系列从未定义过它。
 
@@ -34,6 +34,9 @@ DNA 是 Blender 的**可序列化 C 结构定义层**：所有要存进 `.blend`
 最关键的一条：**`identifier` 是 DNA 字段，随 `.blend` 持久化**——这正是"改名、排序、增删 item 后连接不断"的根本保障。
 
 ## 源码规模
+
+
+> **行数口径**：本表所有行数为**文件总行数**（含空行与注释），可用 `[System.IO.File]::ReadAllLines(path).Count` 复核。若用 `Get-Content | Measure-Object -Line` 会得到**非空行数**，两者不同，请勿混用。
 
 | 文件 | 行数 |
 | --- | --- |

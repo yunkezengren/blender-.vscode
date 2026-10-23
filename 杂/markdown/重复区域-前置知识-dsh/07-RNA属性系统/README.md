@@ -1,6 +1,6 @@
 # 07-RNA属性系统
 
-[前置知识总入口](../README.md) · [正篇：01-02 Zone输入输出](../../01-Zone系统基础/02-Zone输入输出与bundle迁移语义.md)
+[前置知识总入口](../README.md) · [正篇：01-02 Zone输入输出](../../重复区域-dsh/01-Zone系统基础/02-Zone输入输出与bundle迁移语义.md)
 
 本章回答：**RNA 是什么**。读者在正篇 01-02 第 113 行第一次撞上 `StructRNA` 与 `PointerRNA`，而主系列只在 00-01 里用一行"RNA 基础：`StructRNA`、property 指针绑定"带过。
 
@@ -16,9 +16,9 @@ RNA 是 Blender 的**运行时反射系统**：把任意 C 结构体包装成带
 
 | # | 篇目 | 源码主线 | 实测行数 |
 | --- | --- | --- | --- |
-| 1 | [01-RNA三层结构与职责](01-RNA三层结构与职责.md) | `RNA_types.hh` | 1047 |
-| 2 | [02-StructRNA与PropertyRNA](02-StructRNA与PropertyRNA.md) | `RNA_define.hh` | 689 |
-| 3 | [03-PointerRNA与属性访问](03-PointerRNA与属性访问.md) | `RNA_access.hh` | 1025 |
+| 1 | [01-RNA三层结构与职责](01-RNA三层结构与职责.md) | `RNA_types.hh` + `intern/rna_internal_types.hh` | 1180 + 799 |
+| 2 | [02-StructRNA与PropertyRNA](02-StructRNA与PropertyRNA.md) | `RNA_define.hh` | 754 |
+| 3 | [03-PointerRNA与属性访问](03-PointerRNA与属性访问.md) | `RNA_access.hh` | 1159 |
 | 4 | [04-RNA_def_struct_sdna映射](04-RNA_def_struct_sdna映射.md) | C 结构 ↔ RNA 属性的桥 | `rna_nodetree.cc` 摘取 |
 | 5 | [05-属性变更与更新通知](05-属性变更与更新通知.md) | setter → update 标签 → 声明重建 | `rna_nodetree.cc` L3921-L3957 |
 
@@ -37,16 +37,23 @@ RNA 是 Blender 的**运行时反射系统**：把任意 C 结构体包装成带
 
 ## 实测行数总表
 
+
+> **行数口径**：本表所有行数为**文件总行数**（含空行与注释），可用 `[System.IO.File]::ReadAllLines(path).Count` 复核。若用 `Get-Content | Measure-Object -Line` 会得到**非空行数**，两者不同，请勿混用。
+
 | 文件 | 行数 |
 | --- | --- |
-| `makesrna/intern/rna_nodetree.cc` | 9908 |
-| `makesrna/RNA_types.hh` | 1047 |
-| `makesrna/RNA_access.hh` | 1025 |
-| `makesrna/RNA_define.hh` | 689 |
-| `makesrna/intern/rna_internal.hh` | 长（180 处相关匹配） |
-| **本章核心 4 文件合计** | **12,669** |
+| `makesrna/intern/rna_nodetree.cc` | 11563 |
+| `makesrna/RNA_types.hh` | 1180 |
+| `makesrna/RNA_access.hh` | 1159 |
+| `makesrna/RNA_define.hh` | 754 |
+| `makesrna/intern/rna_internal_types.hh`（**StructRNA/PropertyRNA 真实定义**） | 799 |
+| `makesrna/intern/rna_internal.hh` | 753 |
 
-`rna_nodetree.cc` 近万行——本章只取与 Repeat/节点 item 相关的段（L3921-L3957 的 setter/update 回调、L8087 与 L8321 的 `inspection_index` 属性定义）。
+> **关键事实**：`StructRNA` 与 `PropertyRNA` 的**真实定义**在 `intern/rna_internal_types.hh`（L671 / L398），而公开头文件 `RNA_types.hh` **只有前向声明**。找代码时若只看 `RNA_types.hh` 会一无所获——这是本领域最容易踩的坑。
+
+| **本章核心 5 文件合计** | **4,645**（不含 rna_nodetree.cc） |
+
+`rna_nodetree.cc` 有 11,563 行——本章只取与 Repeat/节点 item 相关的段（L3921-L3957 的 setter/update 回调、L8087 与 L8321 的 `inspection_index` 属性定义）。
 
 ## 三个核心类型的关系
 
@@ -99,3 +106,42 @@ flowchart LR
 ## 实测发现的一个细节
 
 `.markdown/学习节点/` 里的既有短篇**没有** RNA 专题——这是本系列相对既有资料真正补上的空白。读者若只看旧资料，RNA 这层永远是黑箱。
+
+## 三个必须澄清的事实（源码实测，与常见说法不符）
+
+| 常见说法 | 实测 |
+| --- | --- |
+| `StructRNA` 有 `dna_struct` 字段 | **不存在**。`StructRNA` 无任何 DNA 绑定字段 |
+| `PropertyRNA` 有 `dna_prop` 字段 | **不存在**。同上 |
+| `StructRNA` 有 `icon_id` | 实际字段名是 `icon` |
+| `StructRNA::properties` 是独立字段 | 实际是 `cont.properties`（`ContainerRNA` 里的） |
+
+`[讲解]` 那 DNA 绑定在哪？
+
+在 **`StructDefRNA`** 与 **`PropertyDefRNA`**（`intern/rna_internal.hh` L102 / L71）：
+
+```cpp
+struct PropertyDefRNA {
+  StringRefNull dnastructname;   /* 所属 DNA 结构名 */
+  StringRefNull dnaname;         /* DNA 字段名 */
+  StringRefNull dnatype;         /* DNA 字段类型 */
+  int dnaarraylength = 0;
+  int dnapointerlevel = 0;
+  ...
+};
+```
+
+`[讲解]` **关键**：这两个结构被 `#ifndef RNA_RUNTIME` 包住（L19 / L54 / L133）。
+
+**含义**：它们**只存在于 makesrna 进程的内存里**。makesrna 用它生成代码时，把 `offset` 算成 `offsetof(...)` 的**编译期字面量**写进生成的 `.cc`。运行期的 Blender 根本看不到这些结构。
+
+`[讲解]` 推论：**`offset` 不是数据，是编译产物**。所以：
+
+- 你改 DNA 字段顺序 → 必须重新跑 makesrna → 重新编译；
+- 运行时没有"查 DNA 字段位置"的能力（除了受限的 `rawoffset`，且仅 `PROP_INTERN_RAW_ACCESS` 时有效）。
+
+## 另一个澄清：`RNA_def_struct` 不是宏
+
+`RNA_define.hh` 里 4 处 `#define` 全是**常量**（L24 / L26 / L29 / L752），`RNA_def_struct` 与 `RNA_def_property` 都是**普通函数**（实现在 `intern/rna_define.cc`）。
+
+`[讲解]` 这与常见的"RNA 用宏定义属性"印象不符。宏只是用来定义常量的。

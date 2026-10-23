@@ -1,6 +1,18 @@
 # 03-02 Span 只读视图
 
-[前置知识总入口](../README.md) · [本章导航](README.md) · [下一篇：Span 与 MutableSpan](03-Span与MutableSpan.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 03-BLI容器与视图</a>
+</div>
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
+
+系列定位：本篇是《重复区域前置知识》系列 03 章第 2 篇。它讲 Span&lt;T&gt;：一个函数需要遍历"别人拥有的数组"时，参数应该怎么写。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 基准：Blender `5.4.0-alpha`，本地工作树。本篇讲解 [`source/blender/blenlib/BLI_span.hh`](../../../source/blender/blenlib/BLI_span.hh) （实测 681 行）中的 `Span<T>`。
 
@@ -339,5 +351,5 @@ s.size_in_bytes() // 5 * sizeof(T)
 - 下一篇：[03-Span与MutableSpan](03-Span与MutableSpan.md) —— 同文件 L447 起的可写版本
 - 本章：[容器全景与选型](01-容器全景与选型.md)
 - 相关：[04-Vector与Array](04-Vector与Array.md) —— Span 的来源容器
-- 正篇：[03-03 执行图按迭代展开](../../03-几何节点执行架构/03-执行图按迭代展开.md)
-- 正篇：[04-03 副作用迭代与按需执行](../../04-运行时机制/03-副作用迭代与按需执行.md)
+- 正篇：[03-03 执行图按迭代展开](../../重复区域-dsh/03-几何节点执行架构/03-执行图按迭代展开.md)
+- 正篇：[04-03 副作用迭代与按需执行](../../重复区域-dsh/04-运行时机制/03-副作用迭代与按需执行.md)

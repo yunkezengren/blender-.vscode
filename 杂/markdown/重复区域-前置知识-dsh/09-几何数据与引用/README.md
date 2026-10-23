@@ -1,6 +1,6 @@
 # 09-几何数据与引用
 
-[前置知识总入口](../README.md) · [正篇：03-02 Repeat循环体函数构建](../../03-几何节点执行架构/02-Repeat循环体函数构建详解.md)
+[前置知识总入口](../README.md) · [正篇：03-02 Repeat循环体函数构建](../../重复区域-dsh/03-几何节点执行架构/02-Repeat循环体函数构建详解.md)
 
 本章回答：`GeometrySet` 为什么"复制很便宜"？`ImplicitSharing` 怎么写时复制？ **匿名属性**和 **reference set** 到底是什么、为什么循环体需要一条专门的通道传它们？
 
@@ -8,8 +8,8 @@
 
 | # | 篇目 | 源码主线 | 实测行数 |
 | --- | --- | --- | --- |
-| 1 | [01-GeometrySet组件模型](01-GeometrySet组件模型.md) | `BKE_geometry_set.hh` | 731 |
-| 2 | [02-ImplicitSharing引用计数](02-ImplicitSharing引用计数.md) | `BLI_implicit_sharing.hh` + `_ptr.hh` | 297 + 216 |
+| 1 | [01-GeometrySet组件模型](01-GeometrySet组件模型.md) | `BKE_geometry_set.hh` | 852 |
+| 2 | [02-ImplicitSharing引用计数](02-ImplicitSharing引用计数.md) | `BLI_implicit_sharing.hh` + `_ptr.hh` | 337 + 262 |
 | 3 | [03-写时复制与组件分离](03-写时复制与组件分离.md) | `get_component_for_write` 等 | 同上 |
 | 4 | [04-匿名属性与ReferenceSet](04-匿名属性与ReferenceSet.md) | `BKE_geometry_nodes_reference_set.hh` | **24** |
 | 5 | [05-Field与属性域](05-Field与属性域.md) | `FN_field.hh` | 610 |
@@ -33,14 +33,17 @@
 
 ## 实测行数总表
 
+
+> **行数口径**：本表所有行数为**文件总行数**（含空行与注释），可用 `[System.IO.File]::ReadAllLines(path).Count` 复核。若用 `Get-Content | Measure-Object -Line` 会得到**非空行数**，两者不同，请勿混用。
+
 | 文件 | 行数 |
 | --- | --- |
-| `BKE_geometry_set.hh` | 731 |
+| `BKE_geometry_set.hh` | 852 |
 | `FN_field.hh` | 610 |
-| `BLI_implicit_sharing.hh` | 297 |
-| `BLI_implicit_sharing_ptr.hh` | 216 |
+| `BLI_implicit_sharing.hh` | 337 |
+| `BLI_implicit_sharing_ptr.hh` | 262 |
 | `BKE_geometry_nodes_reference_set.hh` | 24 |
-| **合计** | **1,878** |
+| **合计** | **2,217** |
 
 ## 引用计数与复制成本
 

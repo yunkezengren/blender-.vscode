@@ -1,6 +1,6 @@
 # 10-节点系统基础
 
-[前置知识总入口](../README.md) · [正篇：02-Repeat区域数据模型](../../02-Repeat区域数据模型/README.md)
+[前置知识总入口](../README.md) · [正篇：02-Repeat区域数据模型](../../重复区域-dsh/02-Repeat区域数据模型/README.md)
 
 本章回答：`bNode`/`bNodeTree`/`bNodeSocket`/`bNodeType` 各是什么？ **声明系统**（`SocketDeclaration`/`NodeDeclarationBuilder`）为什么存在？拓扑缓存与更新传播怎么工作？
 
@@ -33,6 +33,9 @@ Repeat 的**编辑期**全部建在本章之上：
 **最关键的一条**：Repeat 的动态 socket 机制 = "声明系统 + 每次重建"。 `node_declare` 不是一个静态函数表，而是**每次节点更新时重新执行**、按当前 items 数组生成 socket。理解声明系统的重建模型，才能理解 `Item_<n>` 标识符为什么能稳定——重建时按 identifier 复用旧 socket。
 
 ## 实测行数总表
+
+
+> **行数口径**：本表所有行数为**文件总行数**（含空行与注释），可用 `[System.IO.File]::ReadAllLines(path).Count` 复核。若用 `Get-Content | Measure-Object -Line` 会得到**非空行数**，两者不同，请勿混用。
 
 | 文件 | 行数 |
 | --- | --- |

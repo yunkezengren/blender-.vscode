@@ -1,6 +1,6 @@
 # 03-BLI容器与视图
 
-[前置知识总入口](../README.md) · [正篇：01-01 NodeTreeZone](../../01-Zone系统基础/01-NodeTreeZone区域表示与配对.md)
+[前置知识总入口](../README.md) · [正篇：01-01 NodeTreeZone](../../重复区域-dsh/01-Zone系统基础/01-NodeTreeZone区域表示与配对.md)
 
 本章回答：Blender 基础库（BLI）里那些容器与视图到底是什么、为什么需要这么多变体、它们的语义差异在哪里。这是读者**最早撞上**的知识族（正篇 01-01 第 416 行就用 `Span<bNodeZoneType*>`，02-03 整篇论证 `SocketItemsRef` 与 `MutableSpan` 的区别）。
 
@@ -35,30 +35,33 @@
 
 ## 实测行数总表
 
-| 文件 | 行数 |
-| --- | --- |
-| `BLI_map.hh` | 1383 |
-| `BLI_index_mask.hh`（选读） | 1191 |
-| `BLI_vector_set.hh` | 1168 |
-| `BLI_virtual_array.hh`（选读） | 1095 |
-| `BLI_vector.hh` | 1057 |
-| `BLI_set.hh` | 895 |
-| `BLI_cpp_type.hh`（第 08 章详讲） | 823 |
-| `BLI_generic_virtual_array.hh`（选读） | 806 |
-| `BLI_span.hh` | 681 |
-| `BLI_string_ref.hh` | 623 |
-| `BLI_array.hh` | 430 |
-| `BLI_bit_span.hh` | 400 |
-| `BLI_index_range.hh` | 373 |
-| `BLI_stack.hh` | 370 |
-| `BLI_any.hh` | 366 |
-| `BLI_hash.hh` | 267 |
-| `BLI_offset_indices.hh` | 241 |
-| `BLI_generic_span.hh` | 231 |
-| `BLI_multi_value_map.hh` | 167 |
-| `BLI_function_ref.hh` | 150 |
-| `BLI_disjoint_set.hh` | 92 |
-| **本章核心 11 文件合计** | **6,876** |
+
+> **行数口径**：本表所有行数为**文件总行数**（含空行与注释），可用 `[System.IO.File]::ReadAllLines(path).Count` 复核。若用 `Get-Content | Measure-Object -Line` 会得到**非空行数**，两者不同，请勿混用。
+
+| 文件 | 总行数 | 非空行 |
+| --- | --- | --- |
+| `BLI_map.hh` | 1383 | 1258 |
+| `BLI_index_mask.hh`（选读） | 1315 | 1191 |
+| `BLI_virtual_array.hh`（选读） | 1242 | 1095 |
+| `BLI_vector_set.hh` | 1168 | 1049 |
+| `BLI_vector.hh` | 1167 | 1057 |
+| `BLI_set.hh` | 996 | 895 |
+| `BLI_generic_virtual_array.hh`（选读） | 988 | 806 |
+| `BLI_cpp_type.hh`（第 08 章详讲） | 823 | 699 |
+| `BLI_span.hh` | 763 | 681 |
+| `BLI_string_ref.hh` | 727 | 623 |
+| `BLI_bit_span.hh` | 488 | 400 |
+| `BLI_array.hh` | 487 | 430 |
+| `BLI_stack.hh` | 417 | 370 |
+| `BLI_any.hh` | 408 | 366 |
+| `BLI_index_range.hh` | 373 | 325 |
+| `BLI_hash.hh` | 295 | 267 |
+| `BLI_offset_indices.hh` | 284 | 241 |
+| `BLI_generic_span.hh` | 281 | 231 |
+| `BLI_multi_value_map.hh` | 189 | 167 |
+| `BLI_function_ref.hh` | 165 | 150 |
+| `BLI_disjoint_set.hh` | 110 | 92 |
+| **本章核心 11 文件合计** | **7,702** | **6,876** |
 
 blenlib 下共有 **250 个** `BLI_*.hh` 头文件——本章只挑与 Repeat 直接相关的。
 

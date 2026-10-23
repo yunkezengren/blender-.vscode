@@ -1,6 +1,20 @@
 # 06 · GraphExecutor 调度机制
 
-[前置知识总入口](../README.md) · [本章导航](README.md) · [上一篇](05-lf-Graph图结构.md) · [下一篇](07-执行钩子与副作用接口.md)
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
+<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
+<a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
+<a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 01-惰性执行框架</a>
+<a href="./05-lf-Graph图结构.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ 05-lf-Graph图结构</a>
+<a href="./07-执行钩子与副作用接口.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">07-执行钩子与副作用接口 ›</a>
+</div>
+
+<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
+
+系列定位：本篇是《重复区域前置知识》系列 01 章第 6 篇。它讲 GraphExecutor：一张几百节点的图，执行器凭什么知道先跑谁、谁可跳过、谁能并行。
+
+</div>
+
+<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 > 基准：Blender `5.4.0-alpha`，本地工作树。本篇讲 `GraphExecutor`——把一张静态的 `lf::Graph` 变成一次实际执行。主要源码：[`FN_lazy_function_graph_executor.hh`](../../../source/blender/functions/FN_lazy_function_graph_executor.hh)（155 行）与 [`intern/lazy_function_graph_executor_generic.hh`](../../../source/blender/functions/intern/lazy_function_graph_executor_generic.hh)（1503 行）。
 
@@ -266,4 +280,4 @@ eval_storage.graph_executor->execute(eval_graph_params, eval_graph_context);
 
 - [07-执行钩子与副作用接口](07-执行钩子与副作用接口.md) —— 三个钩子的细节
 - [05-lf-Graph图结构](05-lf-Graph图结构.md) —— 图本身
-- 正篇：[04-01 RepeatEvalStorage 与一次求值](../../04-运行时机制/01-RepeatEvalStorage与一次求值.md)
+- 正篇：[04-01 RepeatEvalStorage 与一次求值](../../重复区域-dsh/04-运行时机制/01-RepeatEvalStorage与一次求值.md)
