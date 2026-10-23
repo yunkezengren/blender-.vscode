@@ -4,22 +4,18 @@
 <span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
 <a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
 <a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 03-几何节点执行架构</a>
-<a href="./02-Repeat循环体函数构建详解.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">Repeat循环体函数构建详解 ›</a>
+<a href="./02-Repeat循环体函数构建详解.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">02-Repeat循环体函数构建详解 ›</a>
 </div>
 
 <div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
 
-[系列总入口](../README.md) · [本章导航](README.md) · 上一篇：[02-Repeat循环体函数构建详解](02-Repeat循环体函数构建详解.md) · 下一篇：[04 章 / RepeatEvalStorage 与一次求值](../04-运行时机制/01-RepeatEvalStorage与一次求值.md)
-
-**基准版本**：Blender 5.4.0-alpha（源码行号以当前仓库 `D:\Repository\blender-git\blender` 为准，后文所有 `L行号` 均可在对应文件中直接核对）。
+系列定位：本篇是《重复区域（Repeat Zone）全面学习》系列 03 章第 1 篇。它讲 ZoneBuildInfo 与 ZoneBodyFunction 这两个结构，以及 zone 如何一步步被翻译成 LazyFunction 图再插回父图。
 
 </div>
 
 <hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 Repeat Zone（重复区域）在 Blender 几何节点的运行体系中，并不是一个"节点"，而是**两个互相咬合的 LazyFunction**：一个代表循环体（body），一个代表整个 zone（wrapper）。本文讲解承载这两个函数的三个核心数据结构——`ZoneFunctionIndices`、`ZoneBuildInfo`、`ZoneBodyFunction`——并把"zone 是如何一步步被翻译成 LazyFunction 图、再插回父图"的完整构建流程讲清楚。
-
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 1. 先回答一个具体问题：为什么循环体要先包成一个函数，再被另一个函数包装？
 
@@ -47,14 +43,9 @@ struct ZoneBodyFunction {
 
 3. **"两套接口要对得上号"**。body 图和 wrapper 图是两张不同的 lf 图，接口顺序并不天然一致（wrapper 的输入来自 zone 输入节点的 **input** sockets，body 的输入却来自 zone 输入节点的 **output** sockets，方向相反！）。`ZoneFunctionIndices` 就是两张图之间的"对账单"：记录每一组输入/输出分别在各自接口向量里的下标，wrapper 靠这些下标把数据接到 body 上。
 
-<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:16px 0 20px;padding:12px 16px;background:#F0FDF4;border-left:4px solid #16A34A;border-radius:10px">
-<div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#15803D;margin-bottom:6px">一句话记住</div>
-
 **body 函数 = zone 内部的可复用编译产物；wrapper 函数 = 对外暴露的黑洞；`ZoneBuildInfo`/`ZoneBodyFunction` 里的 `indices` = 把黑洞接到身体上的接线表。**
 
 </div>
-
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 2. 预备知识：LazyFunction 的接口与 `ValueUsage`
 
@@ -81,8 +72,7 @@ enum class ValueUsage : uint8_t {
 };
 ```
 
-<details>
-<summary>核对原始源码：FN_lazy_function.hh · L61—L76</summary>
+<details> <summary>核对原始源码：FN_lazy_function.hh · L61—L76</summary>
 
 ```cpp
 enum class ValueUsage : uint8_t {
@@ -137,8 +127,6 @@ struct Input {
 - `try_get_input_data_ptr_or_request(index)`：输入还没就绪就"挂起等待"，这是延迟求值的调度基础；
 - `get_output_usage(index)` / `output_was_set(index)`：函数可以探测"调用方到底还要不要我这个输出"。Repeat wrapper 用后者判断 Iterations 的 usage 输出是否已经设置过（[geometry_nodes_repeat_zone.cc · L164-L168](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc#L164)）。
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 ## 3. 两个核心结构
 
 先一次性给出头文件里的完整定义（[NOD_geometry_nodes_lazy_function.hh · L591-L621](../../../source/blender/nodes/NOD_geometry_nodes_lazy_function.hh#L591)）：
@@ -177,8 +165,7 @@ struct ZoneBodyFunction {
 };
 ```
 
-<details>
-<summary>核对原始源码：NOD_geometry_nodes_lazy_function.hh · L591—L621</summary>
+<details> <summary>核对原始源码：NOD_geometry_nodes_lazy_function.hh · L591—L621</summary>
 
 ```cpp
 struct ZoneFunctionIndices {
@@ -277,16 +264,16 @@ flowchart TB
         direction TB
         subgraph IN["inputs_（Vector&lt;lf::Input&gt;）"]
             direction TB
-            A["① inputs.main<br/>zone 输入节点的 input sockets<br/>SocketValueVariant · Maybe<br/>（Repeat 中 Iterations 被改为 Used）"]:::input
-            B["② inputs.border_links<br/>每条 border link 一个值<br/>SocketValueVariant · Maybe"]:::data
-            C["③ inputs.output_usages<br/>每个 zone 输出 socket 一个 Usage<br/>bool · Maybe"]:::compute
-            D["④ inputs.reference_sets<br/>每个引用集一个<br/>GeometryNodesReferenceSet · Maybe"]:::abstraction
+            A["① inputs.main zone 输入节点的 input sockets SocketValueVariant · Maybe （Repeat 中 Iterations 被改为 Used）"]:::input
+            B["② inputs.border_links 每条 border link 一个值 SocketValueVariant · Maybe"]:::data
+            C["③ inputs.output_usages 每个 zone 输出 socket 一个 Usage bool · Maybe"]:::compute
+            D["④ inputs.reference_sets 每个引用集一个 GeometryNodesReferenceSet · Maybe"]:::abstraction
         end
         subgraph OUT["outputs_（Vector&lt;lf::Output&gt;）"]
             direction TB
-            E["⑤ outputs.main<br/>zone 输出节点的 output sockets<br/>SocketValueVariant"]:::result
-            F["⑥ outputs.input_usages<br/>每个 zone 输入 socket 一个 Usage<br/>bool"]:::compute
-            G["⑦ outputs.border_link_usages<br/>每条 border link 一个 Usage<br/>bool"]:::compute
+            E["⑤ outputs.main zone 输出节点的 output sockets SocketValueVariant"]:::result
+            F["⑥ outputs.input_usages 每个 zone 输入 socket 一个 Usage bool"]:::compute
+            G["⑦ outputs.border_link_usages 每条 border link 一个 Usage bool"]:::compute
         end
         A --> E
         C -. "交叉：输出的 usage 是输入" .-> E
@@ -301,8 +288,6 @@ flowchart TB
 ```
 
 记住这个 ①→⑦ 的编号，第 5 节会原样展开成具体下标表。
-
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 4. 构建总流程
 
@@ -341,8 +326,7 @@ insert_child_zone_node（把 wrapper 作为函数节点插进父图，usage/bord
 - [L2101-L2103] 关键一步：按 `depth` **降序**排序。`depth` 的语义定义在 [BKE_node_tree_zones.hh · L28-L29](../../../source/blender/blenkernel/BKE_node_tree_zones.hh#L28)："Zero for top level zones, one for a nested zone, and so on"——所以降序就是**最深的（嵌套最里的）zone 排最前**；
 - 注释 `/* Build nested zones first. */` 点明动机：外层 zone 构建时，需要把内层 zone 已经编译好的 wrapper 当作子图节点插进来（见 4.6 节的 `insert_child_zone_node`，它直接解引用 `zone_build_infos_[child_zone_i].lazy_function`）。顺序反了就是空指针。
 
-<details>
-<summary>核对原始源码：geometry_nodes_lazy_function.cc · L2096—L2105</summary>
+<details> <summary>核对原始源码：geometry_nodes_lazy_function.cc · L2096—L2105</summary>
 
 ```cpp
   Array<int> compute_zone_build_order()
@@ -433,8 +417,7 @@ flowchart TB
 - [L2078-L2081] 本文主角：`GEO_NODE_REPEAT_OUTPUT` → `build_repeat_zone_function`；
 - [L2088-L2089] `default` 分支 `BLI_assert_unreachable()`：`bNodeTreeZones` 的分析阶段保证不会有别的 zone 输出类型漏进来。
 
-<details>
-<summary>核对原始源码：geometry_nodes_lazy_function.cc · L2065—L2094</summary>
+<details> <summary>核对原始源码：geometry_nodes_lazy_function.cc · L2065—L2094</summary>
 
 ```cpp
   void build_zone_functions()
@@ -495,8 +478,7 @@ flowchart TB
 - [L2250] **第二步**：调 [build_repeat_zone_lazy_function · L423-L430（geometry_nodes_repeat_zone.cc）](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc#L423)。这个函数只有一行——`return scope.construct<LazyFunctionForRepeatZone>(btree, zone, zone_info, body_fn);`——真正的活儿全在 `LazyFunctionForRepeatZone` 的构造函数里（见 4.5 节）。注意参数顺序：`zone_info` 以**可变引用**传入（构造函数要在里面记账），`body_fn` 以**只读引用**传入（body 已经定稿，不许改）；
 - [L2251] **第三步**：把 wrapper 的地址写回 `zone_info.lazy_function`。从此父图就能通过花名册找到这个 zone。
 
-<details>
-<summary>核对原始源码：geometry_nodes_lazy_function.cc · L2243—L2252 与 geometry_nodes_repeat_zone.cc · L423—L430</summary>
+<details> <summary>核对原始源码：geometry_nodes_lazy_function.cc · L2243—L2252 与 geometry_nodes_repeat_zone.cc · L423—L430</summary>
 
 ```cpp
   void build_repeat_zone_function(const bNodeTreeZone &zone)
@@ -560,8 +542,7 @@ LazyFunction &build_repeat_zone_lazy_function(ResourceScope &scope,
 - [L2301-L2303] `append_and_get_index` + `indices...append`：追加的同时把下标记进 `body_fn.indices`，这正是 2.2 节说的"append 即记账"；
 - [L2304] 建立 bsocket → lf 输出 socket 的映射，后面内部连线全靠它。
 
-<details>
-<summary>核对原始源码：geometry_nodes_lazy_function.cc · L2289—L2305</summary>
+<details> <summary>核对原始源码：geometry_nodes_lazy_function.cc · L2289—L2305</summary>
 
 ```cpp
     Vector<lf::GraphInputSocket *> lf_body_inputs;
@@ -635,8 +616,7 @@ border link 部分由两个小工具函数完成（[L2395-L2416](../../../source
 - [L2381-L2386] 最终把 body 图包成 `lf::GraphExecutor`——**body 从此就是一个普通的可调用 LazyFunction**，写入 `body_fn.function`；
 - [L2388] body 图的 dot 表示被存进 `debug_zone_body_graphs`，可在节点编辑器的 GraphViz 调试面板里查看。
 
-<details>
-<summary>核对原始源码：geometry_nodes_lazy_function.cc · L2363—L2392</summary>
+<details> <summary>核对原始源码：geometry_nodes_lazy_function.cc · L2363—L2392</summary>
 
 ```cpp
     this->add_default_inputs(graph_params);
@@ -700,8 +680,7 @@ wrapper 的构造函数在 [geometry_nodes_repeat_zone.cc · L122-L137](../../..
 - [L134] **接口完全交给通用的 `initialize_zone_wrapper` 构建**（[geometry_nodes_lazy_function.cc · L1704-L1756](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L1704)），第 5 个参数 `expose_all_reference_sets = true`：Repeat 要求所有引用集都上接口（closure zone 则传 `false`，这是两种 zone 在接口层面的可见差异）；
 - [L135-L136] 构建完再把第 0 个 main 输入（即 Iterations）的 usage 从 `Maybe` 改成 `Used`——循环次数无论如何都要算。
 
-<details>
-<summary>核对原始源码：geometry_nodes_repeat_zone.cc · L122—L137</summary>
+<details> <summary>核对原始源码：geometry_nodes_repeat_zone.cc · L122—L137</summary>
 
 ```cpp
   LazyFunctionForRepeatZone(const bNodeTree &btree,
@@ -791,8 +770,7 @@ void initialize_zone_wrapper(const bNodeTreeZone &zone,
 - [L1742-L1745] **⑦ border link usage 输出**：每条 border link 一个 `"Border Link Usage"`；
 - [L1747-L1755] **④ 引用集输入**：直接照抄 body 的 `reference_sets` 映射——**key（引用集编号）保持一致，value 换成 wrapper 自己的接口下标**，后续接线时两表对查。
 
-<details>
-<summary>核对原始源码：geometry_nodes_lazy_function.cc · L1704—L1756</summary>
+<details> <summary>核对原始源码：geometry_nodes_lazy_function.cc · L1704—L1756</summary>
 
 ```cpp
 void initialize_zone_wrapper(const bNodeTreeZone &zone,
@@ -890,8 +868,7 @@ wrapper 建好后，父图（可能是顶层图，也可能是某个 body 图—
 - [L2816] `zone_node_map` 把 zone 的输出节点 id 映射到 lf 函数节点，惰性日志因此能把执行记录挂回正确的 zone；
 - [L2820-L2831] **主输入接线**：遍历子 zone 输入节点的 input sockets，跳过不可用的（`valid_socket_i` 只数有效项，正是为了对齐 `indices` 里被过滤后的下标）；每个有效 socket 做两件事——把 wrapper 的 main 输入挂进 socket 映射（父图数据能流进来），把 wrapper 的 `input_usages` 输出挂进 `usage_by_bsocket`（**body 用没用这个输入**，将以布尔值回流给父图）。
 
-<details>
-<summary>核对原始源码：geometry_nodes_lazy_function.cc · L2810—L2832</summary>
+<details> <summary>核对原始源码：geometry_nodes_lazy_function.cc · L2810—L2832</summary>
 
 ```cpp
   void insert_child_zone_node(const bNodeTreeZone &child_zone, BuildGraphParams &graph_params)
@@ -935,7 +912,7 @@ flowchart TB
     subgraph PARENT["父图（顶层 lf 图）"]
         direction LR
         GI["Group Input 等上游节点"]:::input
-        WN["lf 函数节点<br/>“Repeat Zone”<br/>（child_zone_info.lazy_function）"]:::abstraction
+        WN["lf 函数节点 “Repeat Zone” （child_zone_info.lazy_function）"]:::abstraction
         GO["Group Output"]:::result
         GI -->|"main 输入"| WN
         WN -->|"main 输出"| GO
@@ -944,9 +921,9 @@ flowchart TB
     end
     subgraph WRAP["wrapper 内部（首次执行时展开）"]
         direction LR
-        B0["body 节点 #0<br/>“Repeat Body”"]:::compute
-        B1["body 节点 #1<br/>“Repeat Body”"]:::compute
-        B0 -->|"outputs.main<br/>串成迭代链"| B1
+        B0["body 节点 #0 “Repeat Body”"]:::compute
+        B1["body 节点 #1 “Repeat Body”"]:::compute
+        B0 -->|"outputs.main 串成迭代链"| B1
     end
     subgraph BODY["body 图（GraphExecutor，复用 N 次）"]
         direction TB
@@ -955,7 +932,7 @@ flowchart TB
         BO["图输出：Out socket 值 + 各类 Usage"]:::result
         BI --> INNER --> BO
     end
-    WN ==>|"初始化执行图时<br/>add_function(*body_fn_.function) × iterations"| WRAP
+    WN ==>|"初始化执行图时 add_function(*body_fn_.function) × iterations"| WRAP
     B0 -.-> BODY
     B1 -.-> BODY
     classDef input fill:#DBEAFE,stroke:#2563EB,color:#172554,stroke-width:2px
@@ -967,11 +944,8 @@ flowchart TB
 
 注意一个容易混淆的层次：**父图 → wrapper 是编译期静态插入**（`insert_child_zone_node` 发生在整体 lf 图构建时）；**wrapper → body × N 是运行期动态展开**（`LazyFunctionForRepeatZone::initialize_execution_graph` 在首次执行、拿到 `iterations` 值之后才把 body 复制 N 份，见 [geometry_nodes_repeat_zone.cc · L187-L252](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc#L187) 的注释："Since this graph depends on the number of iterations, it can't be reused in general"）。
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 ## 5. 用小数据走一遍：一个 2-item 的 Repeat Zone
 
-<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#0891B2;background:#ECFEFF;border:1px solid #A5F3FC;border-radius:999px">教学推演 · 手算中间值，逐轮核对</div>
 构造一个最小场景（无 border link、无引用集，让下标表最干净）：
 
 - Repeat Input 节点：`Iterations`（整数，item 0）+ `Value`（几何，item 1），另有输出侧 `Index` socket；
@@ -1068,33 +1042,21 @@ flowchart LR
 
 （图为示意：`Usage` 的实际流向以 L313-L341 的连线代码为准；body#0 的 usage 输出接的是 wrapper 的 `input_usages` 输出。）
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 ## 6. 反例与边界
 
-<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px">边界情形 · 每条断言都可回到源码验证</div>
-**反例 1：拿 bsocket 的原生序号当 lf 接口下标。**
-`ignore_zone_bsocket`（[L1692-L1702](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L1692)）会跳过不可用 socket 与 extend socket，所以 `indices` 里的下标是"过滤后重新计数"的。拿 `socket->index()` 直接去索引 wrapper 接口（比如 `child_zone_node.input(socket->index())`）在存在不可用 socket 的树里必然错位。正确做法是像 4.6 节那样维护 `valid_socket_i` 与 `indices` 对齐。
+**反例 1：拿 bsocket 的原生序号当 lf 接口下标。** `ignore_zone_bsocket`（[L1692-L1702](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L1692)）会跳过不可用 socket 与 extend socket，所以 `indices` 里的下标是"过滤后重新计数"的。拿 `socket->index()` 直接去索引 wrapper 接口（比如 `child_zone_node.input(socket->index())`）在存在不可用 socket 的树里必然错位。正确做法是像 4.6 节那样维护 `valid_socket_i` 与 `indices` 对齐。
 
-**反例 2：先建外层 zone，再建内层 zone。**
-`compute_zone_build_order` 按 `depth` 降序构建不是风格偏好，而是硬约束：`insert_child_zone_node` 第一时间解引用 `*child_zone_info.lazy_function`（[L2814-L2815](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L2814)）。若外层先建、内层还没填 `lazy_function`，这里就是对 `nullptr` 解引用。同理，手工调用构建器时若漏掉某个嵌套 zone，也会在父图插入阶段炸掉。
+**反例 2：先建外层 zone，再建内层 zone。** `compute_zone_build_order` 按 `depth` 降序构建不是风格偏好，而是硬约束：`insert_child_zone_node` 第一时间解引用 `*child_zone_info.lazy_function`（[L2814-L2815](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L2814)）。若外层先建、内层还没填 `lazy_function`，这里就是对 `nullptr` 解引用。同理，手工调用构建器时若漏掉某个嵌套 zone，也会在父图插入阶段炸掉。
 
-**反例 3：认为"输出没连就不需要 Usage 输入"。**
-wrapper 的 `output_usages` 输入即使 zone 输出完全没被使用也必须存在——`insert_child_zone_node` 里没连时会显式 `set_default_value(&static_false)`（[L2850-L2852](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L2850)）。如果某个自定义 zone 类型删掉了这对接口，父图构建阶段（以及 `fix_link_cycles` 的 usage 机制）都会失去锚点。usage 接口是**结构性的**，不是可选优化。
+**反例 3：认为"输出没连就不需要 Usage 输入"。** wrapper 的 `output_usages` 输入即使 zone 输出完全没被使用也必须存在——`insert_child_zone_node` 里没连时会显式 `set_default_value(&static_false)`（[L2850-L2852](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L2850)）。如果某个自定义 zone 类型删掉了这对接口，父图构建阶段（以及 `fix_link_cycles` 的 usage 机制）都会失去锚点。usage 接口是**结构性的**，不是可选优化。
 
-**反例 4：把 `iterations == 0` 当异常。**
-零迭代是合法路径，wrapper 内部直接把 main 输入直连 main 输出，并把 border link usage 输出置 `false`（[geometry_nodes_repeat_zone.cc · L344-L358](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc#L344)）。任何假设"body 至少跑一次"的下标推导（例如"末节 body 一定存在"）都必须以 `iterations > 0` 为前提分支处理——源码正是用 `if (iterations > 0)` / `else` 两条路分别接线的。
+**反例 4：把 `iterations == 0` 当异常。** 零迭代是合法路径，wrapper 内部直接把 main 输入直连 main 输出，并把 border link usage 输出置 `false`（[geometry_nodes_repeat_zone.cc · L344-L358](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc#L344)）。任何假设"body 至少跑一次"的下标推导（例如"末节 body 一定存在"）都必须以 `iterations > 0` 为前提分支处理——源码正是用 `if (iterations > 0)` / `else` 两条路分别接线的。
 
-**边界 5：`Usage` 同名歧义只能靠下标组区分。**
-`initialize_zone_wrapper` 给所有 usage 接口的 debug 名都是 `"Usage"` / `"Border Link Usage"`，同名大量存在。任何"按名字查接口"的调试代码都不可靠，必须走 `indices` 的组下标；人类可读名要经 `zone_wrapper_input_name/output_name` 二次解析。
+**边界 5：`Usage` 同名歧义只能靠下标组区分。** `initialize_zone_wrapper` 给所有 usage 接口的 debug 名都是 `"Usage"` / `"Border Link Usage"`，同名大量存在。任何"按名字查接口"的调试代码都不可靠，必须走 `indices` 的组下标；人类可读名要经 `zone_wrapper_input_name/output_name` 二次解析。
 
-**边界 6：`expose_all_reference_sets` 是 zone 类型间的真实分叉。**
-Repeat 传 `true`，closure 传 `false`（注释原文："Some zone types (e.g. the closure zone) do not expose all reference sets"，[L1747](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L1747)）。所以"wrapper 一定有引用集输入"对 closure 不成立；跨 zone 类型复用接线代码时要先查 `indices.inputs.reference_sets` 是否含对应 key。
+**边界 6：`expose_all_reference_sets` 是 zone 类型间的真实分叉。** Repeat 传 `true`，closure 传 `false`（注释原文："Some zone types (e.g. the closure zone) do not expose all reference sets"，[L1747](../../../source/blender/nodes/intern/geometry_nodes_lazy_function.cc#L1747)）。所以"wrapper 一定有引用集输入"对 closure 不成立；跨 zone 类型复用接线代码时要先查 `indices.inputs.reference_sets` 是否含对应 key。
 
-**边界 7：wrapper 图与迭代图是两张图。**
-`ZoneBuildInfo.indices` 描述的是 wrapper 的静态接口；`LazyFunctionForRepeatZone` 首次执行时另建一张**迭代图**（`RepeatEvalStorage.graph`），并通过 `input_index_map/output_index_map` 做参数重映射——其中 iterations 输入被"吃掉"不进迭代图（[geometry_nodes_repeat_zone.cc · L367-L385](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc#L367)）。想当然地认为"wrapper 下标 == 迭代图下标"会在 `main_inputs_offset` / `body_inputs_offset`（L230-L231）处踩坑。这部分在 [04 章 / RepeatEvalStorage 与一次求值](../04-运行时机制/01-RepeatEvalStorage与一次求值.md) 展开。
-
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
+**边界 7：wrapper 图与迭代图是两张图。** `ZoneBuildInfo.indices` 描述的是 wrapper 的静态接口；`LazyFunctionForRepeatZone` 首次执行时另建一张**迭代图**（`RepeatEvalStorage.graph`），并通过 `input_index_map/output_index_map` 做参数重映射——其中 iterations 输入被"吃掉"不进迭代图（[geometry_nodes_repeat_zone.cc · L367-L385](../../../source/blender/nodes/intern/geometry_nodes_repeat_zone.cc#L367)）。想当然地认为"wrapper 下标 == 迭代图下标"会在 `main_inputs_offset` / `body_inputs_offset`（L230-L231）处踩坑。这部分在 [04 章 / RepeatEvalStorage 与一次求值](../04-运行时机制/01-RepeatEvalStorage与一次求值.md) 展开。
 
 ## 7. 继续阅读
 
@@ -1112,12 +1074,5 @@ Repeat 传 `true`，closure 传 `false`（注释原文："Some zone types (e.g. 
   - [FN_lazy_function.hh · L61-L76](../../../source/blender/functions/FN_lazy_function.hh#L61)——`ValueUsage` 三态；
   - [BKE_node_tree_zones.hh · L23-L55](../../../source/blender/blenkernel/BKE_node_tree_zones.hh#L23)——`bNodeTreeZone`（`depth`、`border_links`、`child_zones` 的权威定义）。
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 *本文基于 Blender 5.4.0-alpha 源码撰写；若行号漂移，请以文中给出的符号名（`ZoneBuildInfo`、`initialize_zone_wrapper` 等）在仓库内搜索定位。*
 
-<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
-<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
-<a href="./02-Repeat循环体函数构建详解.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">Repeat循环体函数构建详解 ›</a>
-<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
-</div>

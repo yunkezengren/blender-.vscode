@@ -4,18 +4,12 @@
 <span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
 <a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
 <a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 02-Repeat区域数据模型</a>
-<a href="./02-DNA存储与NodeRepeatItem.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ DNA存储与NodeRepeatItem</a>
+<a href="./02-DNA存储与NodeRepeatItem.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ 02-DNA存储与NodeRepeatItem</a>
 </div>
 
 <div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
 
-**基准说明**：本文所有行号与代码摘录基于当前工作区中的 Blender 源码：
-
-- 主角：[`source/blender/nodes/NOD_socket_items.hh`](../../../source/blender/nodes/NOD_socket_items.hh)（全文 419 行，已完整通读）
-- 伴生：[`NOD_socket_items_blend.hh`](../../../source/blender/nodes/NOD_socket_items_blend.hh)（38 行）、[`NOD_socket_items_ops.hh`](../../../source/blender/nodes/NOD_socket_items_ops.hh)（456 行）、[`NOD_socket_items_ui.hh`](../../../source/blender/nodes/NOD_socket_items_ui.hh)（140 行）
-- Repeat 实例：[`source/blender/nodes/geometry/include/NOD_geo_repeat.hh`](../../../source/blender/nodes/geometry/include/NOD_geo_repeat.hh)（全文 89 行，已完整通读）
-
-源码链接相对路径前缀为 `../../../../`，从本文所在目录回溯到仓库根目录。
+系列定位：本篇是《重复区域（Repeat Zone）全面学习》系列 02 章第 3 篇。它剖析 NOD_socket_items.hh 的访问器协议：一套模板如何同时支撑 Repeat、Simulation、Foreach 等节点的动态条目。
 
 </div>
 
@@ -54,8 +48,6 @@
 2. `active_index` 在"添加/删除/移动条目"时如何跟随？
 3. 从 extend socket（虚拟 socket）拖一条线出来时，条目是如何被"顺手"创建的？
 4. Simulation、Index Switch、Bake、Closure……这些节点如何复用同一套逻辑？差异在哪里？
-
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 框架总览
 
@@ -139,8 +131,6 @@ flowchart TB
 
 图中实线是"调用"，虚线是"通过访问器间接查询/读写"。注意一个关键形状：**核心模板从不直接碰 `node.storage`**，所有对存储的访问都要先经过 `Accessor::get_items_from_node(node)` 拿到 `SocketItemsRef`。
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 ## 1. 设计动机：逻辑共享、存储各异
 
 文件头注释（[`NOD_socket_items.hh`](../../../source/blender/nodes/NOD_socket_items.hh) L11-L22）原文：
@@ -201,17 +191,13 @@ flowchart TB
 | `std::string custom_initial_name(bNode &, StringRef)` | 函数 | `has_custom_initial_name = true` 时 |
 | `blend_write_item / blend_read_data_item` | 函数 | blend 伴生头文件 |
 
-> [!NOTE]
-> `has_type` 和 `has_name` 虽然没有出现在 `SocketItemsAccessorDefaults` 里，但它们是协议的一部分——默认值没有给出，因此**每个访问器必须显式写**（你可以回去看 `RepeatItemsAccessor` L22-L23，这两个开关总是显式的）。
-
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
+> [!NOTE] > `has_type` 和 `has_name` 虽然没有出现在 `SocketItemsAccessorDefaults` 里，但它们是协议的一部分——默认值没有给出，因此**每个访问器必须显式写**（你可以回去看 `RepeatItemsAccessor` L22-L23，这两个开关总是显式的）。
 
 ## 2. SocketItemsAccessorDefaults：一页"默认配置表"
 
 原始定义（L39-L46）：
 
-<details open>
-<summary>核对原始源码：SocketItemsAccessorDefaults · L39—L46</summary>
+<details open> <summary>核对原始源码：SocketItemsAccessorDefaults · L39—L46</summary>
 
 ```cpp
 struct SocketItemsAccessorDefaults {
@@ -252,17 +238,13 @@ struct SocketItemsAccessorDefaults {
 
 `BLI_uniquename_cb` 生成去重名时的分隔符：`Vector.001`（默认，Repeat 用这个）或 `Vector_001`（bundle / format string / file output 用 `_`）。
 
-> [!TIP]
-> 读任何一个新节点的 Accessor，先扫这六个开关 + `has_type`/`has_name`，节点的"性格"就掌握了七成。剩下的都是存储布局细节。
-
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
+> [!TIP] > 读任何一个新节点的 Accessor，先扫这六个开关 + `has_type`/`has_name`，节点的"性格"就掌握了七成。剩下的都是存储布局细节。
 
 ## 3. SocketItemsRef&lt;T&gt;：能 resize 的"数组引用"
 
 原始定义（L48-L56，含注释）：
 
-<details open>
-<summary>核对原始源码：SocketItemsRef · L48—L56</summary>
+<details open> <summary>核对原始源码：SocketItemsRef · L48—L56</summary>
 
 ```cpp
 /**
@@ -299,8 +281,7 @@ MEM_SAFE_DELETE(old_items);                                        // 释放旧�
 
 这正是 DNA 存储的形状决定的：`NodeGeometryRepeatOutput` 里存的是 `NodeRepeatItem *items; int items_num; int active_index;`，C 数组、手动管理。`SocketItemsRef` 就是把这三个成员"按引用"暴露给泛型代码的最小封装。
 
-> [!NOTE]
-> 换句话说：`SocketItemsRef<T>` ≈ `T *&items_ref, int &num_ref, int *active_ref` 的打包。名字里 "Ref" 的含义是"引用变量"而非"引用数据"。
+> [!NOTE] > 换句话说：`SocketItemsRef<T>` ≈ `T *&items_ref, int &num_ref, int *active_ref` 的打包。名字里 "Ref" 的含义是"引用变量"而非"引用数据"。
 
 ### 3.2 `get_items_from_node`：访问器的"第一个必须实现的函数"
 
@@ -315,8 +296,6 @@ static socket_items::SocketItemsRef<NodeRepeatItem> get_items_from_node(bNode &n
 ```
 
 就是一次 `static_cast` + 花括号初始化三元组。注意它返回的是**指向 storage 成员的指针**，所以只要节点活着，这个 ref 就一直有效；但如果你之后对数组做了 resize，之前从 `*ref.items` 读出来的裸指针就失效了——框架代码里每一处都小心地在 resize 后重新解引用。
-
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 4. RepeatItemsAccessor 全文精读
 
@@ -381,8 +360,7 @@ struct RepeatItemsAccessor : public socket_items::SocketItemsAccessorDefaults {
 - `copy_item` = 赋值 + strdup；`dst = src` 会把 `src.name` 的**指针值**复制过来，若不 strdup，两个条目的 `name` 指向同一内存，随后任何一方 `destruct_item` 都会造成 double-free。
 - `destruct_item` 只 free name。框架的 `destruct_array` 在 free 完每个条目后自己 `MEM_SAFE_DELETE(*ref.items)` 释放数组本体。
 
-> [!WARNING]
-> 如果你给 `NodeRepeatItem`（或自己仿写的 ItemT）加了新的堆资源字段，就必须同步改 `copy_item`、`destruct_item` 和 `blend_write_item / blend_read_data_item` 四处——这是这套 C 风格框架最常见的坑。
+> [!WARNING] > 如果你给 `NodeRepeatItem`（或自己仿写的 ItemT）加了新的堆资源字段，就必须同步改 `copy_item`、`destruct_item` 和 `blend_write_item / blend_read_data_item` 四处——这是这套 C 风格框架最常见的坑。
 
 ### 4.4 类型查询与名字访问（L57-L65)
 
@@ -448,8 +426,6 @@ Repeat 的策略是"宽口径"：**只要当前节点树类型（几何节点树
 - `find_item_by_identifier` 的查找键（UI 或执行期拿一个 socket identifier 反查条目）；
 - `.blend` 里链接（`bNodeLink` 存的是两端 socket 的 identifier 字符串）赖以跨保存/加载存活的东西。
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 ## 5. 核心模板函数逐个精讲
 
 以下按 [`NOD_socket_items.hh`](../../../source/blender/nodes/NOD_socket_items.hh) 的出场顺序逐个讲。每节先给签名与参数，再讲实现，最后给"讲解版代码 + 折叠的原始源码"。
@@ -485,8 +461,7 @@ inline bNode *find_node_by_item(bNodeTree &ntree, const typename Accessor::ItemT
 }
 ```
 
-<details>
-<summary>核对原始源码：find_node_by_item · L58—L72</summary>
+<details> <summary>核对原始源码：find_node_by_item · L58—L72</summary>
 
 ```cpp
 /**
@@ -537,8 +512,7 @@ inline typename Accessor::ItemT *find_item_by_identifier(bNode &node, const Stri
 }
 ```
 
-<details>
-<summary>核对原始源码：find_item_by_identifier · L74—L87</summary>
+<details> <summary>核对原始源码：find_item_by_identifier · L74—L87</summary>
 
 ```cpp
 /** Find the item with the given identifier. */
@@ -579,8 +553,7 @@ template<typename Accessor> inline void destruct_array(bNode &node)
 }
 ```
 
-<details>
-<summary>核对原始源码：destruct_array · L89—L101</summary>
+<details> <summary>核对原始源码：destruct_array · L89—L101</summary>
 
 ```cpp
 /**
@@ -600,8 +573,7 @@ template<typename Accessor> inline void destruct_array(bNode &node)
 
 </details>
 
-> [!WARNING]
-> `destruct_array` **故意不把 `items_num` 归零**。它假设调用方马上要整体替换状态（比如 `clear()`、节点 free、复制节点前清目标）。如果你直接调用它之后又把 `*ref.items` 当有效数组用，就是 use-after-free。日常代码请用下一节的 `clear()`。
+> [!WARNING] > `destruct_array` **故意不把 `items_num` 归零**。它假设调用方马上要整体替换状态（比如 `clear()`、节点 free、复制节点前清目标）。如果你直接调用它之后又把 `*ref.items` 当有效数组用，就是 use-after-free。日常代码请用下一节的 `clear()`。
 
 ### 5.4 clear：清空条目（安全的 destruct_array）
 
@@ -620,8 +592,7 @@ template<typename Accessor> inline void clear(bNode &node)
 }
 ```
 
-<details>
-<summary>核对原始源码：clear · L103—L114</summary>
+<details> <summary>核对原始源码：clear · L103—L114</summary>
 
 ```cpp
 /**
@@ -659,8 +630,7 @@ template<typename Accessor> inline void copy_array(const bNode &src_node, bNode 
 }
 ```
 
-<details>
-<summary>核对原始源码：copy_array · L116—L129</summary>
+<details> <summary>核对原始源码：copy_array · L116—L129</summary>
 
 ```cpp
 /**
@@ -700,8 +670,7 @@ template<typename Accessor> inline std::string get_validated_name(const StringRe
 }
 ```
 
-<details>
-<summary>核对原始源码：get_validated_name · L131—L142</summary>
+<details> <summary>核对原始源码：get_validated_name · L131—L142</summary>
 
 ```cpp
 /**
@@ -788,8 +757,7 @@ inline void set_item_name_and_make_unique(bNode &node,
 }
 ```
 
-<details>
-<summary>核对原始源码：set_item_name_and_make_unique · L144—L190</summary>
+<details> <summary>核对原始源码：set_item_name_and_make_unique · L144—L190</summary>
 
 ```cpp
 /**
@@ -881,8 +849,7 @@ template<typename Accessor> inline typename Accessor::ItemT &add_item_to_array(b
 }  // namespace detail
 ```
 
-<details>
-<summary>核对原始源码：detail::add_item_to_array · L192—L217</summary>
+<details> <summary>核对原始源码：detail::add_item_to_array · L192—L217</summary>
 
 ```cpp
 namespace detail {
@@ -922,11 +889,11 @@ template<typename Accessor> inline typename Accessor::ItemT &add_item_to_array(b
 flowchart TB
   OLD["旧数组 old_items（n 个条目，name 指向堆字符串）"]:::data
   NEW["新数组 new_items（n+1 个条目）"]:::data
-  CP["std::copy_n 逐元素浅拷贝<br/>（char* name 指针值原样复制）"]:::compute
-  NI["new_item = new_items[n]<br/>零初始化的末尾槽位"]:::abstraction
-  SWAP["*array.items = new_items<br/>*array.items_num = n+1<br/>active_index = n"]:::compute
-  FREE["MEM_SAFE_DELETE(old_items)<br/>释放旧数组（字符串不受影响）"]:::error
-  RET["返回 new_item 引用<br/>交上层 init 填类型/名字"]:::result
+  CP["std::copy_n 逐元素浅拷贝 （char* name 指针值原样复制）"]:::compute
+  NI["new_item = new_items[n] 零初始化的末尾槽位"]:::abstraction
+  SWAP["*array.items = new_items *array.items_num = n+1 active_index = n"]:::compute
+  FREE["MEM_SAFE_DELETE(old_items) 释放旧数组（字符串不受影响）"]:::error
+  RET["返回 new_item 引用 交上层 init 填类型/名字"]:::result
 
   OLD --> CP
   CP --> NEW
@@ -988,8 +955,7 @@ inline typename Accessor::ItemT *add_item_with_socket_type_and_name(
 }
 ```
 
-<details>
-<summary>核对原始源码：add_item_with_socket_type_and_name · L219—L245</summary>
+<details> <summary>核对原始源码：add_item_with_socket_type_and_name · L219—L245</summary>
 
 ```cpp
 /**
@@ -1048,8 +1014,7 @@ template<typename Accessor> inline typename Accessor::ItemT *add_item(bNode &nod
 }
 ```
 
-<details>
-<summary>核对原始源码：add_item_with_name / add_item · L247—L268</summary>
+<details> <summary>核对原始源码：add_item_with_name / add_item · L247—L268</summary>
 
 ```cpp
 /**
@@ -1109,8 +1074,7 @@ inline std::string get_socket_identifier(const typename Accessor::ItemT &item,
 }
 ```
 
-<details>
-<summary>核对原始源码：get_socket_identifier · L270—L283</summary>
+<details> <summary>核对原始源码：get_socket_identifier · L270—L283</summary>
 
 ```cpp
 template<typename Accessor>
@@ -1166,8 +1130,7 @@ inline std::optional<eNodeSocketDatatype> get_socket_item_type_to_add(
 }
 ```
 
-<details>
-<summary>核对原始源码：get_socket_item_type_to_add · L285—L298</summary>
+<details> <summary>核对原始源码：get_socket_item_type_to_add · L285—L298</summary>
 
 ```cpp
 inline std::optional<eNodeSocketDatatype> get_socket_item_type_to_add(
@@ -1295,8 +1258,7 @@ template<typename Accessor>
 }
 ```
 
-<details>
-<summary>核对原始源码：try_add_item_via_extend_socket · L300—L382</summary>
+<details> <summary>核对原始源码：try_add_item_via_extend_socket · L300—L382</summary>
 
 ```cpp
 /**
@@ -1391,18 +1353,18 @@ template<typename Accessor>
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
-  DROP["用户把链接拖到<br/>extend socket 上松手"]:::input
+  DROP["用户把链接拖到 extend socket 上松手"]:::input
   CHK{"link 连着 extend_socket？"}:::compute
-  CUT["返回 false<br/>调用方删除该链接"]:::error
+  CUT["返回 false 调用方删除该链接"]:::error
   BR{"has_type &amp;&amp; has_name？"}:::compute
-  TYPED["get_socket_item_type_to_add<br/>（RGBA→Vector 回退）<br/>capture socket label 作名字"]:::compute
-  UNSUP["类型不支持<br/>返回 false → 删链"]:::error
-  NAMEONLY["add_item_with_name<br/>（抄对面 socket 名字）"]:::data
-  BARE["add_item<br/>（IndexSwitch 式）"]:::data
-  INIT["init：identifier = next_identifier++<br/>set_item_name_and_make_unique 去重"]:::abstraction
-  DECL["update_node_declaration_and_sockets<br/>长出 Item_N 真 socket"]:::abstraction
-  RELINK["按 extend_socket 方向改写 link.tosock / fromsock<br/>指向新 socket"]:::compute
-  TAG["BKE_ntree_update_tag_node_property<br/>返回 true：链接保住"]:::result
+  TYPED["get_socket_item_type_to_add （RGBA→Vector 回退） capture socket label 作名字"]:::compute
+  UNSUP["类型不支持 返回 false → 删链"]:::error
+  NAMEONLY["add_item_with_name （抄对面 socket 名字）"]:::data
+  BARE["add_item （IndexSwitch 式）"]:::data
+  INIT["init：identifier = next_identifier++ set_item_name_and_make_unique 去重"]:::abstraction
+  DECL["update_node_declaration_and_sockets 长出 Item_N 真 socket"]:::abstraction
+  RELINK["按 extend_socket 方向改写 link.tosock / fromsock 指向新 socket"]:::compute
+  TAG["BKE_ntree_update_tag_node_property 返回 true：链接保住"]:::result
 
   DROP --> CHK
   CHK -->|否| CUT
@@ -1473,8 +1435,7 @@ template<typename Accessor>
 }
 ```
 
-<details>
-<summary>核对原始源码：try_add_item_via_any_extend_socket · L384—L417</summary>
+<details> <summary>核对原始源码：try_add_item_via_any_extend_socket · L384—L417</summary>
 
 ```cpp
 /**
@@ -1517,8 +1478,6 @@ template<typename Accessor>
 
 注意返回值的语义有讲究：**"链接与本节点无关"和"链接碰到普通 socket"都返回 `true`**（链接照常保留），只有"确实想为它建条目但建不成"才返回 `false`（删链）。返回 `true` 不代表"添加了条目"，只代表"别删这条链接"。
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 ## 6. 三个伴生头文件：blend / ops / ui
 
 核心头文件只管"内存中的数组"。围绕它还有三个伴生头，各自覆盖一个生命周期切面。
@@ -1530,8 +1489,7 @@ template<typename Accessor>
 - **`blend_write<Accessor>(BlendWriter *writer, const bNode &node)`**：先 `write_struct_array_by_id` 把条目数组按 SDNA 结构 ID 写出，再对每个条目调用 `Accessor::blend_write_item(writer, item)` 写条目拥有的堆资源（Repeat 里就是那个 `name` 字符串）。
 - **`blend_read_data<Accessor>(BlendDataReader *reader, bNode &node)`**：`BLO_read_array_and_validate_size` 读回数组（顺带校验 `items_num` 合法性，防损坏文件），再逐条目调 `Accessor::blend_read_data_item` 读回堆资源。
 
-<details>
-<summary>核对原始源码：blend_write / blend_read_data · NOD_socket_items_blend.hh L17—L36</summary>
+<details> <summary>核对原始源码：blend_write / blend_read_data · NOD_socket_items_blend.hh L17—L36</summary>
 
 ```cpp
 template<typename Accessor> inline void blend_write(BlendWriter *writer, const bNode &node)
@@ -1577,8 +1535,7 @@ template<typename Accessor> inline void blend_read_data(BlendDataReader *reader,
 | `make_add_item_operator / make_remove_active_item_operator / make_remove_item_by_index_operator / make_move_item_operator` | 把上述模板注册成 wmOperatorType（idname 显式传入，注释说是为了可搜索性） |
 | `make_common_operators<Accessor>()` | 一键注册 add + remove + move 三个操作符 |
 
-<details>
-<summary>节选：ops::add_item 的 exec 核心 · NOD_socket_items_ops.hh L219—L288</summary>
+<details> <summary>节选：ops::add_item 的 exec 核心 · NOD_socket_items_ops.hh L219—L288</summary>
 
 ```cpp
   ot->exec = [](bContext *C, wmOperator *op) -> wmOperatorStatus {
@@ -1670,8 +1627,7 @@ template<typename Accessor> inline void blend_read_data(BlendDataReader *reader,
 | `draw_active_item_props<Accessor>(tree, node, draw_item)` | 拿到活动条目的 `PointerRNA`（用 `Accessor::item_srna` 包装），回调给调用方画"活动条目属性"；active_index 越界或为 -1 时什么都不画 |
 | `draw_extend_socket_fn<Accessor>()` | 返回一个回调，给 extend socket 画一个"+"按钮：点击触发 `add_item` 操作符并传 `node_identifier`、`show_dialog=true` |
 
-<details>
-<summary>节选：draw_items_list_with_operators 的按钮区 · NOD_socket_items_ui.hh L90—L103</summary>
+<details> <summary>节选：draw_items_list_with_operators 的按钮区 · NOD_socket_items_ui.hh L90—L103</summary>
 
 ```cpp
   blender::ui::Layout *ops_col = &row->column(false);
@@ -1692,8 +1648,6 @@ template<typename Accessor> inline void blend_read_data(BlendDataReader *reader,
 </details>
 
 至此闭环成形：**UI 的每个按钮 → ops 层的操作符 → 核心模板函数 → 访问器 → storage**。四层各自只依赖下一层，而"下一层"对核心模板而言就是访问器这张配置表。
-
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 7. 全家福：仓库里的所有 Accessor 对比
 
@@ -1730,11 +1684,8 @@ template<typename Accessor> inline void blend_read_data(BlendDataReader *reader,
 2. **开关组合是离散的**。`has_type/has_name` 的四种组合里出现了三种（全有 / 只有名 / 全无），唯一没出现的"只有类型没有名字"也恰好对应框架里 `add_item_with_socket_type_and_name` 需要名字兜底的路径。
 3. **越"名字有语义"的节点，开关越多**。Repeat 的名字是纯标签，零定制；bundle 字段名进 attribute 路径、format string 名字进占位符、file output 名字进文件路径——三个都要 `has_name_validation`，file output 还要允许空名和向量维度。
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 ## 8. 用小数据走一遍
 
-<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#0891B2;background:#ECFEFF;border:1px solid #A5F3FC;border-radius:999px">教学推演 · 手算中间值，逐轮核对</div>
 下面手工模拟对 Repeat Output 节点做三个操作：**add 两次 → 删除中间一个**，追踪数组与 identifier 的每一步变化。设初始 storage 为：
 
 ```text
@@ -1796,11 +1747,8 @@ items_num = 2, active_index = 1, next_identifier = 3（不回退）
 - `next_identifier` 不回退。下一个新条目拿 `identifier = 3` → socket `Item_3`，与历史 identifier 永不冲突——即使 `Item_1` 的位置空出来了也**不会**被复用。
 - 名字去重只看"当前数组里活着的条目"：删除 "Frame.001" 后，再添加一个叫 "Frame" 的条目会得到 "Frame.001"（与 "Frame" 冲突）而不是 "Frame.002"——历史名字不会被记账。这是可接受的：identifier 才是稳定身份，名字只是标签。
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 ## 9. 反例与边界
 
-<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px">边界情形 · 每条断言都可回到源码验证</div>
 **反例 1：手写 `items_num` 而不重建数组。** 有人想"加条目不就是 `items_num++` 吗"。看 `NodeGeometryRepeatOutput` 的 DNA：`items` 是手动分配的 C 数组，`MEM_new_array(items_num+1)` 才是它的存储契约。直接 `items_num++` 等于让 RNA/blend 层按更大的数量去读一块越界内存——崩溃或数据污染。同理，把 `items_num` 改小而释放数组会让 `MEM_SAFE_DELETE` 在 free 回调里拿到错误的容量信息。
 
 **反例 2：`copy_item` 忘记 strdup。** `dst = src` 之后直接用，两个节点的条目共享同一个 `name` 指针。删除任一节点的该条目时 `destruct_item` free 掉字符串，另一个节点的条目 `name` 变悬空指针；保存文件时 `blend_write_item` 读悬空指针直接崩溃。凡是 ItemT 新增堆字段（如 FileOutput 条目的 `format`），`copy_item`/`destruct_item`/`blend_*_item` 四处必须同步——这是本框架最重要的维护纪律。
@@ -1812,8 +1760,6 @@ items_num = 2, active_index = 1, next_identifier = 3（不回退）
 **反例 5（边界）：`has_vector_dimensions` 开了但访问器没实现五参数 init。** `add_item_with_socket_type_and_name` 的 `if constexpr` 会去调用带 `dimensions` 的 `init_with_socket_type_and_name` 重载；访问器只写了四参数版本时，编译在那一行报"没有匹配的函数"。反过来，`RepeatItemsAccessor` 即使写了五参数版本也永远不会被调用（开关为 false，死分支被丢弃）。开关与函数必须成对出现——`FileOutputItemsAccessor` 是正确示范（L29 开关 + 五参数 init）。
 
 **反例 6（边界）：`active_index` 未判空。** `SocketItemsRef` 允许 `active_index = nullptr`（IndexSwitch 就这么用）。任何"直接 `*ref.active_index = ...`"的新代码都要先想清楚这个访问器是不是给了空指针。框架内所有触碰 `active_index` 的地方（`clear`、`add_item_to_array`、ops 的 remove/move）都判了空；模仿框架写新泛型代码时必须保持这个习惯。
-
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 10. 继续阅读
 
@@ -1827,12 +1773,5 @@ items_num = 2, active_index = 1, next_identifier = 3（不回退）
   - 下一篇（本章内）：Repeat 节点的 RNA 注册如何用 `rna_names` 把 `repeat_items` 暴露给 UI（见本章 README 的阅读顺序）。
 - 下一篇章：[03-几何节点执行架构](../03-几何节点执行架构/README.md)——Repeat Zone 在求值期如何被展开。
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 *本文基于工作区源码 `NOD_socket_items.hh`(419 行)/`NOD_geo_repeat.hh`(89 行) 逐行核对写成；行号引用以当前检出为准。*
 
-<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
-<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
-<a href="./02-DNA存储与NodeRepeatItem.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ DNA存储与NodeRepeatItem</a>
-<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
-</div>

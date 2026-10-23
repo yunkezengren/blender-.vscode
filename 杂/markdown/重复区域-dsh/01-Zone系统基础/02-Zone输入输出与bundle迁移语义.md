@@ -4,14 +4,12 @@
 <span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
 <a href="../README.md" style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</a>
 <a href="./README.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">本章 01-Zone系统基础</a>
-<a href="./01-NodeTreeZone区域表示与配对.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ NodeTreeZone区域表示与配对</a>
+<a href="./01-NodeTreeZone区域表示与配对.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ 01-NodeTreeZone区域表示与配对</a>
 </div>
 
 <div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
 
-基准说明：本文基于 Blender `5.4.0-alpha`（`BKE_blender_version.h` 中 `BLENDER_VERSION 504`、`BLENDER_VERSION_CYCLE alpha`），工作树 `D:\Repository\blender-git\blender`。
-所有源码链接均为本地相对链接（本文位于 `.markdown/重复区域-dsh/01-Zone系统基础/`，三层 `../` 回到仓库根，如 [../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc)）。
-行号以当前工作树为准；引用片段均来自实际读到的源码，不做臆测。
+系列定位：本篇是《重复区域（Repeat Zone）全面学习》系列 01 章第 2 篇。它回答：Repeat 区域的输入输出 socket 是怎么动态生成的，为什么改名不会断链接。
 
 </div>
 
@@ -32,8 +30,6 @@
 这里有个反直觉的关键点：**socket 属于 Repeat Input 和 Repeat Output 两个节点，但 item 数组只存在 Repeat Output 节点的 storage 里**。Repeat Input 的 `node_declare` 要先通过自己 storage 里的 `output_node_id` 找到配对的输出节点，再去读它的 items（见 [node_geo_repeat.cc L80-L104](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L80)）。这就是上一章讲的"配对"在 socket 层面的直接后果：**改 items 只改 Output 节点，Input 节点的 socket 是被动镜像**。
 
 至于"bundle 迁移语义"，指编辑器在追踪一个值（比如 Viewer、节点警告、bundle 签名校验）时，如何把"某个 compute context 里的某个 socket"一路追溯到它的来源或去向——值穿过 Repeat 区域边界时，必须在 `RepeatZoneComputeContext`（携带 iteration 编号）之间正确换挡。这是本文后半部分 `trace_values.cc` 的主题。
-
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## 相关接口与数据
 
@@ -255,8 +251,6 @@ b.add_input<decl::Int>("Iterations"_ustr).min(0).default_value(1);
 
 正因为它们是"固定 socket"，`trace_values.cc` 里的 index 判断才会用 `index >= 1` / `index - 1` / `index + 1` 这类偏移来跳过它们，下一节会看到具体代码。
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 ## node_declare：动态 socket 生成的两份实现
 
 ### repeat_input_node::node_declare（教学注释版）
@@ -338,8 +332,7 @@ static void node_declare(NodeDeclarationBuilder &b)
 }
 ```
 
-<details>
-<summary>原始源码（repeat_input_node::node_declare，L72-L111）</summary>
+<details> <summary>原始源码（repeat_input_node::node_declare，L72-L111）</summary>
 
 ```cpp
 static void node_declare(NodeDeclarationBuilder &b)
@@ -432,8 +425,7 @@ static void node_declare(NodeDeclarationBuilder &b)
 }
 ```
 
-<details>
-<summary>原始源码（repeat_output_node::node_declare，L176-L207）</summary>
+<details> <summary>原始源码（repeat_output_node::node_declare，L176-L207）</summary>
 
 ```cpp
 static void node_declare(NodeDeclarationBuilder &b)
@@ -528,8 +520,7 @@ static void refresh_node_socket(bNodeTree &ntree,
 }
 ```
 
-<details>
-<summary>原始源码（refresh_node_socket，node_socket.cc L219-L283）</summary>
+<details> <summary>原始源码（refresh_node_socket，node_socket.cc L219-L283）</summary>
 
 ```cpp
 static void refresh_node_socket(bNodeTree &ntree,
@@ -614,15 +605,15 @@ static void refresh_node_socket(bNodeTree &ntree,
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
 flowchart TB
-    A["编辑 item<br/>添加 / 改名 / 移动 / 改类型"]:::input
-    B["RNA 层<br/>rna_Node_ItemArray_item_name_set<br/>set_item_name_and_make_unique"]:::data
-    C["更新标签<br/>rna_Node_ItemArray_item_update<br/>BKE_ntree_update_tag_node_property"]:::data
-    D["重建节点声明<br/>node_declare 重新遍历 items<br/>(Repeat Input 镜像 Output 的 items)"]:::compute
-    E["逐 item 生成声明对<br/>name = item.name<br/>identifier = Item_&lt;n&gt;"]:::compute
-    F["refresh_node_socket<br/>按 identifier 匹配旧 socket"]:::compute
-    G{"identifier<br/>命中?"}:::abstraction
-    H["复用旧 socket<br/>仅更新显示名<br/>连线原封不动"]:::result
-    I["创建新 socket<br/>(新 item 场景)"]:::result
+    A["编辑 item 添加 / 改名 / 移动 / 改类型"]:::input
+    B["RNA 层 rna_Node_ItemArray_item_name_set set_item_name_and_make_unique"]:::data
+    C["更新标签 rna_Node_ItemArray_item_update BKE_ntree_update_tag_node_property"]:::data
+    D["重建节点声明 node_declare 重新遍历 items (Repeat Input 镜像 Output 的 items)"]:::compute
+    E["逐 item 生成声明对 name = item.name identifier = Item_&lt;n&gt;"]:::compute
+    F["refresh_node_socket 按 identifier 匹配旧 socket"]:::compute
+    G{"identifier 命中?"}:::abstraction
+    H["复用旧 socket 仅更新显示名 连线原封不动"]:::result
+    I["创建新 socket (新 item 场景)"]:::result
     A --> B
     B --> C
     C --> D
@@ -638,8 +629,6 @@ flowchart TB
     classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
     classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
-
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
 
 ## trace_values：bundle 值如何穿过 Repeat 区域边界
 
@@ -745,8 +734,7 @@ if (node->is_type("GeometryNodeRepeatInput"_ustr)) {
 }
 ```
 
-<details>
-<summary>原始源码（trace_values.cc 中 Repeat 相关的四个分支，前向 L255-L275 / 后向 L571-L591）</summary>
+<details> <summary>原始源码（trace_values.cc 中 Repeat 相关的四个分支，前向 L255-L275 / 后向 L571-L591）</summary>
 
 ```cpp
 // ---- find_target_sockets_through_contexts（前向），L255-L275 ----
@@ -811,18 +799,18 @@ if (node->is_type("GeometryNodeRepeatOutput"_ustr)) {
 flowchart TB
     subgraph PARENT["parent 上下文（区域外）"]
         SRC["Grid 数据源节点"]:::input
-        RI_IN["Repeat Input<br/>input_socket(i)  (i &gt;= 1)<br/>border link 入口"]:::input
-        RO_OUT["Repeat Output<br/>output_socket(i-1)<br/>zone 出口（对外）"]:::result
-        DST["区域外消费者<br/>(Viewer / 输出节点)"]:::result
+        RI_IN["Repeat Input input_socket(i)  (i &gt;= 1) border link 入口"]:::input
+        RO_OUT["Repeat Output output_socket(i-1) zone 出口（对外）"]:::result
+        DST["区域外消费者 (Viewer / 输出节点)"]:::result
     end
     subgraph ITER0["RepeatZoneComputeContext iteration = 0"]
-        RI_OUT["Repeat Input<br/>output_socket(i)<br/>iteration 0 的 item 输入"]:::data
-        BODY0["循环体节点<br/>for_repeat_zone(ctx, node, 0)"]:::compute
-        RO_IN0["Repeat Output<br/>input_socket(i)<br/>iteration 0 的 item 输出"]:::data
+        RI_OUT["Repeat Input output_socket(i) iteration 0 的 item 输入"]:::data
+        BODY0["循环体节点 for_repeat_zone(ctx, node, 0)"]:::compute
+        RO_IN0["Repeat Output input_socket(i) iteration 0 的 item 输出"]:::data
     end
     subgraph ITERK["RepeatZoneComputeContext iteration = k (最后一轮)"]
         BODYK["循环体节点 k"]:::compute
-        RO_INK["Repeat Output<br/>input_socket(i)"]:::data
+        RO_INK["Repeat Output input_socket(i)"]:::data
     end
     SRC -->|"link"| RI_IN
     RI_IN -->|"路径A: for_repeat_zone(ctx,node,0)"| RI_OUT
@@ -846,8 +834,6 @@ flowchart TB
 - **虚线是 trace 的并集近似**：前向追踪从 Repeat Input 的输入 socket 出发会同时记录"进入 iteration 0"与"直达 zone 出口"两条候选路径（后者对应值未被改写的情形）；去重靠 `Set<SocketInContext>`，所以同一条 (socket, context) 组合不会被重复访问。
 - **每一步换挡都有明确的 context 变化**：进入 zone 时 `for_repeat_zone(parent, node, 0)`；离开 zone 时 `socket.context->parent()`。socket 本身的 index 偏移（`-1`、`+1`）完全来自 Iteration/Iterations 占据的 index 0。
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 ## `Item_` 标识符：为什么改名/移动不断链接
 
 ### 设计要点
@@ -870,21 +856,21 @@ flowchart TB
         A0["item(identifier=0, name='Geometry')"]:::data
         A1["item(identifier=1, name='Count')"]:::data
         A2["item(identifier=2, name='Offset')"]:::data
-        S0L["socket identifiers:<br/>Item_0, Item_1, Item_2<br/>links 连接正常"]:::abstraction
+        S0L["socket identifiers: Item_0, Item_1, Item_2 links 连接正常"]:::abstraction
     end
     subgraph S1["操作1: 把 'Count' 改名为 'Instances'"]
         B1["item(identifier=1, name='Instances')"]:::data
-        S1L["socket identifiers 不变:<br/>Item_0, Item_1, Item_2<br/>refresh 按 Item_1 命中旧 socket<br/>仅更新 name -> links 保持"]:::result
+        S1L["socket identifiers 不变: Item_0, Item_1, Item_2 refresh 按 Item_1 命中旧 socket 仅更新 name -> links 保持"]:::result
     end
     subgraph S2["操作2: 把 'Offset' 拖到最前"]
         C2["item(identifier=2, name='Offset')  (数组下标 0)"]:::data
         C0["item(identifier=0, name='Geometry') (数组下标 1)"]:::data
         C1["item(identifier=1, name='Instances')(数组下标 2)"]:::data
-        S2L["identifier 跟着 item 走:<br/>UI 顺序变化, identifier 集合不变<br/>links 仍按 identifier 匹配 -> 保持"]:::result
+        S2L["identifier 跟着 item 走: UI 顺序变化, identifier 集合不变 links 仍按 identifier 匹配 -> 保持"]:::result
     end
     subgraph S3["操作3: 新增 item 'Scale'"]
         D3["item(identifier=3, name='Scale')  next_identifier=4"]:::data
-        S3L["只新增 Item_3 socket<br/>旧 Item_0/1/2 匹配如常<br/>旧 links 不受影响"]:::result
+        S3L["只新增 Item_3 socket 旧 Item_0/1/2 匹配如常 旧 links 不受影响"]:::result
     end
     A0 --> C0
     A1 -->|"改名"| B1 --> C1
@@ -901,11 +887,8 @@ flowchart TB
     classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 ## 用小数据走一遍
 
-<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#0891B2;background:#ECFEFF;border:1px solid #A5F3FC;border-radius:999px">教学推演 · 手算中间值，逐轮核对</div>
 手工模拟一次"添加 Float item → 改名 → 拖动顺序"的完整过程。我们不跑 Blender，只在纸面上扮演各层代码。
 
 ### 初始状态
@@ -999,11 +982,8 @@ Repeat Output inputs: [Item_1(Factor), Item_0(Geometry), __extend__]  # 顺序�
 
 结论：三种编辑（增、改名、移动）后，链接、结构类型推断、传播关系、值追踪全部保持一致。这不是巧合，而是 `identifier` 契约 + `refresh` 按 identifier 匹配 + `trace` 按 (socket, context) 寻址三者的合力。
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 ## 反例与边界
 
-<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:inline-block;margin:6px 0 14px;padding:3px 12px;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px">边界情形 · 每条断言都可回到源码验证</div>
 ### 反例 1："identifier 是按数组下标分配/排列的"
 
 错。`identifier` 是**创建顺序**上分配的整数（`next_identifier++`），与当前数组下标无关；移动 item 后，`Item_2` 完全可能排在 `Item_0` 前面。任何"按下标推 identifier"或"按 identifier 推下标"的假设都会在编辑过的节点树上翻车。真正的对应关系每时每刻都要通过遍历 `items` 数组现算（`trace_values.cc` 用的就是 socket index，而 socket index 是按当前声明顺序的——它等价于"当前数组下标 + 固定 socket 偏移"，而不是 identifier）。
@@ -1032,8 +1012,6 @@ Repeat Output inputs: [Item_1(Factor), Item_0(Geometry), __extend__]  # 顺序�
 
 它是给合成器执行器的提示（枚举注释："maps to the #compositor::InputRealizationMode"），几何节点后端不消费它。在纯几何节点工作流里它无害但也不起作用；它的存在是因为 repeat zone 也被合成器节点树使用（GPU 侧对应 `GPU_stack_link_zone("REPEAT_BEGIN"/"REPEAT_END")`，见 [node_geo_repeat.cc L139-L147](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L139) 与 [L309-L317](../../../source/blender/nodes/geometry/nodes/node_geo_repeat.cc#L309)）。
 
-<hr style="border:none;height:1px;background:linear-gradient(90deg,#BFDBFE,#E2E8F0 55%,transparent);margin:34px 0">
-
 ## 继续阅读
 
 - 上一篇：[01-NodeTreeZone区域表示与配对](01-NodeTreeZone区域表示与配对.md)——zone 如何被发现、`bNodeTreeZone` 的嵌套与配对规则（本文的 `output_node_id`、`get_corresponding_input` 都建立在它之上）。
@@ -1055,8 +1033,3 @@ Repeat Output inputs: [Item_1(Factor), Item_0(Geometry), __extend__]  # 顺序�
   - [rna_nodetree.cc](../../../source/blender/makesrna/intern/rna_nodetree.cc)（item 名字的 RNA setter 与 update 回调）
   - [drawnode.cc](../../../source/blender/editors/space_node/drawnode.cc)（socket_name_rna 的消费端：可编辑 socket 标签）
 
-<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
-<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
-<a href="./01-NodeTreeZone区域表示与配对.md" style="font-size:13px;color:#2563EB;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">‹ NodeTreeZone区域表示与配对</a>
-<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
-</div>

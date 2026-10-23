@@ -1,25 +1,8 @@
 # 重复区域（Repeat Zone）全面学习
 
-<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 20px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px">
-<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">导航</span>
-<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">总入口</span>
-<a href="00-课程指南/README.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">课程指南 ›</a>
-</div>
-
-<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:18px 0 22px;padding:14px 18px;background:#F5F3FF;border-left:4px solid #7C3AED;border-radius:10px">
-
-参照《全面学习-codex》的组织方式编写：课程指南 → 分阶段正文 → 实现依赖与验收。
-基准源码：Blender `5.4.0-alpha`，工作树 `D:\Repository\blender-git\blender`。
-所有源码引用均为本地文件相对链接，行号以当前工作树为准。
-
-</div>
-
 ## 这套文档讲什么
 
-重复区域是 Blender 几何节点（以及着色器/合成器节点树）中的通用循环结构：由
-`GeometryNodeRepeatInput`（Repeat Input）与 `GeometryNodeRepeatOutput`（Repeat Output）
-两个节点圈出一个区域，区域内的节点体按 `Iterations` 输入指定的次数反复执行，前一轮的
-输出自动成为下一轮的输入，同时支持跨区域边界的 border link（穿越连线）与按需执行。
+重复区域是 Blender 几何节点（以及着色器/合成器节点树）中的通用循环结构：由 `GeometryNodeRepeatInput`（Repeat Input）与 `GeometryNodeRepeatOutput`（Repeat Output）两个节点圈出一个区域，区域内的节点体按 `Iterations` 输入指定的次数反复执行，前一轮的输出自动成为下一轮的输入，同时支持跨区域边界的 border link（穿越连线）与按需执行。
 
 它处在 Blender 节点系统最核心的几条机制交汇处：
 
@@ -121,8 +104,3 @@ flowchart TB
   classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
 
-<div style="font-family:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;margin:38px 0 4px;padding:13px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
-<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#64748B;margin-right:2px">继续阅读</span>
-<a href="00-课程指南/README.md" style="font-size:13px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">课程指南 ›</a>
-<span style="font-size:13px;color:#334155;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:999px;padding:3px 12px;text-decoration:none;white-space:nowrap">回到顶部</span>
-</div>
