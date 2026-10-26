@@ -419,7 +419,9 @@ flowchart LR
   classDef abstraction fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
   classDef compute fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px;
   classDef result fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+    classDef error fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
 ```
+
 
 ## 反例与边界
 

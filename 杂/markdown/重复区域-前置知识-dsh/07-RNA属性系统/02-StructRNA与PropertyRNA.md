@@ -2,7 +2,7 @@
 
 [前置知识总入口](../README.md) · [本章导航](README.md) · [上一篇](01-RNA三层结构与职责.md) · [下一篇](03-PointerRNA与属性访问.md)
 
-> 基准：Blender `5.4.0-alpha`，本地工作树。本篇深入 RNA 的头两个类型：`StructRNA`（类型描述）与 `PropertyRNA`（属性描述）。主要源码：[`RNA_types.hh`](../../../source/blender/makesrna/RNA_types.hh)（实测 1047 行）、[`RNA_define.hh`](../../../source/blender/makesrna/RNA_define.hh)（实测 689 行）、[`intern/rna_internal.hh`](../../../source/blender/makesrna/intern/rna_internal.hh)。
+> 基准：Blender `5.4.0-alpha`，本地工作树。本篇深入 RNA 的头两个类型：`StructRNA`（类型描述）与 `PropertyRNA`（属性描述）。主要源码：[`RNA_types.hh`](../../../source/blender/makesrna/RNA_types.hh)（总行数 1180，但其只有前向声明；真定义在 [`intern/rna_internal_types.hh`](../../../source/blender/makesrna/intern/rna_internal_types.hh) L671/L398）、[`RNA_define.hh`](../../../source/blender/makesrna/RNA_define.hh)（总行数 754）、[`intern/rna_internal.hh`](../../../source/blender/makesrna/intern/rna_internal.hh)（总行数 753）。
 
 ## 先回答一个具体问题
 

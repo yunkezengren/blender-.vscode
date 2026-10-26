@@ -25,7 +25,7 @@ for p in sorted(root.rglob('*.md')):
     fanli_n = 0
     if fanli_sec:
         body = fanli_sec.group(1)
-        fanli_n = len(re.findall(r'^### |^\*\*\d+\.|^- \*\*(\d+\. )?|反例\s*\d', body, re.M))
+        fanli_n = len(re.findall(r'^### |^\*\*\d+\.|^\*\*[一二三四五六七八九十]+、|^\d+\. \*\*|^- \*\*(\d+\. )?|反例\s*\d', body, re.M))
     has_repeat = '对理解 Repeat 的帮助' in text
     has_read = '继续阅读' in text
     details_n = len(re.findall(r'<details>', text))

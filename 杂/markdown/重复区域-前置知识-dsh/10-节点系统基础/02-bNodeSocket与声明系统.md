@@ -2,7 +2,7 @@
 
 [前置知识总入口](../README.md) · [本章导航](README.md) · [上一篇](01-bNode与bNodeTree.md) · [下一篇](03-NodeDeclarationBuilder.md)
 
-> 基准：Blender `5.4.0-alpha`，本地工作树。本篇讲 `bNodeSocket`（socket 实例）与 `SocketDeclaration`（socket 声明）的分离——这是 Repeat 动态 socket 能"重建而不断链接"的根本原因。主要源码：[`DNA_node_types.h`](../../../source/blender/makesdna/DNA_node_types.h) 的 `bNodeSocket` 定义、[`NOD_node_declaration.hh`](../../../source/blender/nodes/NOD_node_declaration.hh)（实测 665 行）、[`intern/node_socket.cc`](../../../source/blender/nodes/intern/node_socket.cc)（`refresh_node_socket` 在 L219）。
+> 基准：Blender `5.4.0-alpha`，本地工作树。本篇讲 `bNodeSocket`（socket 实例）与 `SocketDeclaration`（socket 声明）的分离——这是 Repeat 动态 socket 能"重建而不断链接"的根本原因。主要源码：[`DNA_node_types.h`](../../../source/blender/makesdna/DNA_node_types.h) 的 `bNodeSocket` 定义、[``NOD_node_declaration.hh`](../../../source/blender/nodes/NOD_node_declaration.hh)（总行数 826）、[`intern/node_socket.cc`](../../../source/blender/nodes/intern/node_socket.cc)（`refresh_node_socket` 在 L219）。
 
 ## 先回答一个具体问题
 
@@ -127,7 +127,7 @@ static std::string socket_identifier_for_item(const NodeRepeatItem &item)
 
 ## SocketDeclaration 的角色
 
-`[讲解]` 声明在 `NOD_node_declaration.hh`（665 行）。核心类型：
+`[讲解]` 声明在 `NOD_node_declaration.hh`（总行数 826）。核心类型：
 
 ```cpp
 class SocketDeclaration {

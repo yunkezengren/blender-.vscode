@@ -2,7 +2,7 @@
 
 [前置知识总入口](../README.md) · [本章导航](README.md) · [上一篇](02-bNodeSocket与声明系统.md) · [下一篇](04-bNodeType注册.md)
 
-> 基准：Blender `5.4.0-alpha`，本地工作树。本篇讲 `NodeDeclarationBuilder`——节点声明 socket 的构建器接口。Repeat 的 `node_declare` 就靠它动态生成 socket。主要源码：[`NOD_node_declaration.hh`](../../../source/blender/nodes/NOD_node_declaration.hh)（实测 665 行）。
+> 基准：Blender `5.4.0-alpha`，本地工作树。本篇讲 `NodeDeclarationBuilder`——节点声明 socket 的构建器接口。Repeat 的 `node_declare` 就靠它动态生成 socket。主要源码：[`NOD_node_declaration.hh`](../../../source/blender/nodes/NOD_node_declaration.hh)（总行数 826 行）。
 
 ## 先回答一个具体问题
 

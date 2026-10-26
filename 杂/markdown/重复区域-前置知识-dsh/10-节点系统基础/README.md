@@ -10,9 +10,9 @@
 | --- | --- | --- | --- |
 | 1 | [01-bNode与bNodeTree](01-bNode与bNodeTree.md) | `DNA_node_types.h` 节点段 | 4047（整体） |
 | 2 | [02-bNodeSocket与声明系统](02-bNodeSocket与声明系统.md) | socket 与 declaration 分离 | `node_socket.cc` |
-| 3 | [03-NodeDeclarationBuilder](03-NodeDeclarationBuilder.md) | `NOD_node_declaration.hh` | 665 |
-| 4 | [04-bNodeType注册](04-bNodeType注册.md) | `BKE_node.hh` + `node_register.cc` | 1141 |
-| 5 | [05-拓扑缓存与更新传播](05-拓扑缓存与更新传播.md) | `ensure_topology_cache` 等 | `BKE_node_runtime.hh` 990 |
+| 3 | [03-NodeDeclarationBuilder](03-NodeDeclarationBuilder.md) | `NOD_node_declaration.hh` | 826 |
+| 4 | [04-bNodeType注册](04-bNodeType注册.md) | `BKE_node.hh` + `node_register.cc` | 1363 + 186 |
+| 5 | [05-拓扑缓存与更新传播](05-拓扑缓存与更新传播.md) | `ensure_topology_cache` 等 | `BKE_node_runtime.hh` 1191 |
 | 6 | [06-操作符与UI绘制](06-操作符与UI绘制.md) | `node_layout_ex` 的上下文 | `node_geo_repeat.cc` |
 
 ## 本章与 Repeat 的关系
@@ -40,9 +40,9 @@ Repeat 的**编辑期**全部建在本章之上：
 | 文件 | 行数 |
 | --- | --- |
 | `makesdna/DNA_node_types.h` | 4047 |
-| `blenkernel/BKE_node.hh` | 1141 |
-| `blenkernel/BKE_node_runtime.hh` | 990 |
-| `nodes/NOD_node_declaration.hh` | 665 |
+| `blenkernel/BKE_node.hh` | 1363 |
+| `blenkernel/BKE_node_runtime.hh` | 1191 |
+| `nodes/NOD_node_declaration.hh` | 826 |
 | **本章核心 4 文件合计** | **6,843** |
 
 另涉及（未计入）： `nodes/intern/node_socket.cc`（`refresh_node_socket` 在 L219）、 `nodes/intern/node_declaration.cc`、`nodes/intern/node_register.cc`、 `editors/space_node/drawnode.cc`。

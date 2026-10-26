@@ -2,7 +2,7 @@
 
 [前置知识总入口](../README.md) · [本章导航](README.md) · [下一篇](02-bNodeSocket与声明系统.md)
 
-> 基准：Blender `5.4.0-alpha`，本地工作树。本篇讲节点系统的两个最基础结构：`bNode`（一个节点）与 `bNodeTree`（一棵树）。主要源码：[`DNA_node_types.h`](../../../source/blender/makesdna/DNA_node_types.h)（实测 4047 行，`bNode` 定义在其中）、[`BKE_node.hh`](../../../source/blender/blenkernel/BKE_node.hh)（实测 1141 行）、[`BKE_node_runtime.hh`](../../../source/blender/blenkernel/BKE_node_runtime.hh)（实测 990 行）。
+> 基准：Blender `5.4.0-alpha`，本地工作树。本篇讲节点系统的两个最基础结构：`bNode`（一个节点）与 `bNodeTree`（一棵树）。主要源码：[`DNA_node_types.h`](../../../source/blender/makesdna/DNA_node_types.h)（实测 4047 行，`bNode` 定义在其中）、[``BKE_node.hh`](../../../source/blender/blenkernel/BKE_node.hh)（总行数 1363）、[``BKE_node_runtime.hh`](../../../source/blender/blenkernel/BKE_node_runtime.hh)（总行数 1191）。
 
 ## 先回答一个具体问题
 
@@ -151,7 +151,7 @@ bke::bNodeType *typeinfo = nullptr;
 
 `[讲解]` 最后一个 `runtime` 是关键设计：**运行时数据与持久化数据分离**。
 
-看 `BKE_node_runtime.hh` 的 `bNodeTreeRuntime`（990 行的头文件）：
+看 `BKE_node_runtime.hh` 的 `bNodeTreeRuntime`（总行数 1191 的头文件）：
 
 ```cpp
 struct bNodeTreeRuntime {

@@ -2,7 +2,7 @@
 
 [前置知识总入口](../README.md) · [本章导航](README.md) · [下一篇](02-StructRNA与PropertyRNA.md)
 
-> 基准：Blender `5.4.0-alpha`，本地工作树。本篇回答一个主系列从未定义的问题：**RNA 到底是什么**。答案是三个类型的三层结构——`StructRNA`（类型）、`PropertyRNA`（属性）、`PointerRNA`（实例指针）。主要源码：[`RNA_types.hh`](../../../source/blender/makesrna/RNA_types.hh)（实测 1047 行）、[`RNA_define.hh`](../../../source/blender/makesrna/RNA_define.hh)（实测 689 行）、[`RNA_access.hh`](../../../source/blender/makesrna/RNA_access.hh)（实测 1025 行）。
+> 基准：Blender `5.4.0-alpha`，本地工作树。本篇回答一个主系列从未定义的问题：**RNA 到底是什么**。答案是三个类型的三层结构——`StructRNA`（类型）、`PropertyRNA`（属性）、`PointerRNA`（实例指针）。主要源码：[`RNA_types.hh`](../../../source/blender/makesrna/RNA_types.hh)（总行数 1180）、[`RNA_define.hh`](../../../source/blender/makesrna/RNA_define.hh)（总行数 754）、[`RNA_access.hh`](../../../source/blender/makesrna/RNA_access.hh)（总行数 1159）。
 
 ## 先回答一个具体问题
 
