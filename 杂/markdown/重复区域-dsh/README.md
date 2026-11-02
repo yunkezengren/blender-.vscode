@@ -67,6 +67,23 @@
 | [01-使用模式与迭代设计](06-实战与性能/01-使用模式与迭代设计.md) | 累积/收敛/分形/批次处理等模式，与 Simulation/Foreach/Closure 的选型对比 |
 | [02-性能模型与开销分析](06-实战与性能/02-性能模型与开销分析.md) | 图构建成本、隐式共享与写时复制、迭代数缩放、诊断工具（logged_zone_graphs、计时器） |
 
+### 07-调用栈与调试（代码如何被跑起来）
+
+| 文档 | 内容 |
+| --- | --- |
+| [01-主线程栈与depsgraph求值链路](07-调用栈与调试/01-主线程栈与depsgraph求值链路.md) | `WM_main` → `TaskPool::work_and_wait` 五层职责、构建期与执行期的分界、分阶段求值 |
+| [02-Task与任务隔离](07-调用栈与调试/02-Task与任务隔离.md) | POD 概念详解、`Task` 为何不是 POD、`wait()` 会干活的现场证据、`CacheMutex`/`isolate`/`FunctionRef` |
+
+### 08-窗口系统与核心类型（界面如何跑起来）
+
+| 文档 | 内容 |
+| --- | --- |
+| [01-WM主循环与核心数据类](08-窗口系统与核心类型/01-WM主循环与核心数据类.md) | `WM_main` 四步、`bContext`/`wmWindowManager`/`wmWindow`/`bScreen`/`ScrArea`/`ARegion` 的定义与创建时序、七个设计决策 |
+| [02-main函数全文解析](08-窗口系统与核心类型/02-main函数全文解析.md) | `creator.cc` L325-687 逐段：启动的 12 个阶段、五趟参数解析、依赖顺序表、15 个设计决策 |
+| [03-启动术语与构建形态详解](08-窗口系统与核心类型/03-启动术语与构建形态详解.md) | CRT/`__scrt`/SEH 详解（含本机 MSVC 源码）、`main_python_enter` 触发链、`WITH_HEADLESS` vs `-b`、GHOST 由来、PyCapsule 退出检测 |
+| [04-.inl与调用约定与命名约束](08-窗口系统与核心类型/04-inl与调用约定与命名约束.md) | `.inl` 的组织方式、`__cdecl` 调用约定、`tp_dealloc` 契约、哪些名字可以改 |
+| [05-内存模型与Global与类型注册](08-窗口系统与核心类型/05-内存模型与Global与类型注册.md) | `malloc`/`new`/`MEM_new` 三层体系、`Global`/`G_MAIN`、`CPPType` 注册体系、同名类型辨析 |
+
 ### 附录
 
 | 文档 | 内容 |
@@ -79,6 +96,8 @@
 - 想快速理解"循环是怎么跑起来的"：读 03-01、03-03、04-01 三篇即可。
 - 想改 Repeat Zone 的代码：先读 02 章数据模型，再读 03-01 的索引表，最后读 04 章。
 - 想对比三种后端：读 03 章（几何节点）、05-01（合成器）、05-02（GPU）。
+- 想在调试器里断点定位：读 07-01，先搞清构建期/执行期与线程分工，再打条件断点。
+- 想看懂 Blender 编辑器/窗口相关代码：读 08-01，先搞清 `bContext` 与各类的拥有关系。
 
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"fontFamily":"\"Segoe UI\",\"Microsoft YaHei\",sans-serif","fontSize":"15px","lineColor":"#94A3B8","edgeLabelBackground":"#FFFFFF","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":52,"rankSpacing":64,"padding":14,"diagramPadding":16,"useMaxWidth":true},"sequence":{"useMaxWidth":true,"wrap":true,"mirrorActors":false,"messageMargin":36}}}%%
