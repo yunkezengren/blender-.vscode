@@ -75,6 +75,10 @@ flowchart TB
 | 文档 | 内容 | 重要程度 |
 |-----|------|---------|
 | [06_Map_Set.md](06_Map_Set.md) | 哈希表和集合 | ⭐⭐⭐ |
+| [06a_VectorSet_深度解析.md](06a_VectorSet_深度解析.md) | 顺序数组+哈希索引双容器（含字节级内存布局图解与交互架构图） | ⭐⭐⭐⭐ |
+| [06b_MapSet_内存布局.md](06b_MapSet_内存布局.md) | Map/Set 单容器槽表路线、三种状态编码、与 VectorSet 对照 | ⭐⭐⭐ |
+| [06b_Map_内存布局_图解.html](06b_Map_内存布局_图解.html) / [06b_Set_内存布局_图解.html](06b_Set_内存布局_图解.html) | Map/Set 字节级布局图解（内嵌各自架构图） | ⭐⭐⭐ |
+| [06b1_Map_架构图.html](diagrams/06b1_Map_架构图.html) / [06b2_Set_架构图.html](diagrams/06b2_Set_架构图.html) | Map/Set 详细交互架构图（共享引擎外链） | ⭐⭐⭐ |
 | [07_StringRef.md](07_StringRef.md) | 字符串视图 | ⭐⭐⭐ |
 | [08_VArray_GVArray.md](08_VArray_GVArray.md) | 虚拟数组，类型擦除数组 | ⭐⭐⭐⭐ |
 | [09_CPPType.md](09_CPPType.md) | 类型擦除系统 | ⭐⭐⭐⭐ |

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "66af3150-922a-4ed6-bdcc-36a1f56e4757",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "D:\\Repository\\blender-git\\blender\\.markdown\\基础库\\diagrams\\06b_candidate.json",
+  "output": "D:\\Repository\\blender-git\\blender\\.vscode\\杂\\markdown\\基础库\\diagrams\\06b_MapSet_架构图.html",
+  "specification": {
+    "sha256": "26fae7dd97c5faf04c68dab4f4075f9098ece495e23060b0a451d79c17f46d08",
+    "bytes": 7823
+  },
+  "artifact": {
+    "sha256": "41fd625b644e0d422dbb237c12c71e6ecc4bdc7be4cecccbdfb60142058b0a1d",
+    "bytes": 765962
+  }
+}

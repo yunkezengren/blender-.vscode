@@ -449,3 +449,10 @@ static Map<std::string, int> count_materials(const Mesh &mesh)
 
 - [01_Vector.md](01_Vector.md) - 动态数组
 - [02_Span.md](02_Span.md) - 非拥有视图
+
+---
+
+## 🔗 深入篇（2026 新增）
+
+- [06a_VectorSet_深度解析.md](06a_VectorSet_深度解析.md) —— 双容器路线（本篇 Map/Set 的对照面）
+- [06b_MapSet_内存布局.md](06b_MapSet_内存布局.md) —— 单容器槽表字节级布局 + 三种状态编码 + 架构图

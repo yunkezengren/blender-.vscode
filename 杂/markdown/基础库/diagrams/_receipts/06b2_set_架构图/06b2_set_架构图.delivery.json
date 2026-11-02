@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "6b102d8a-772a-47c9-983f-205daa00ac8b",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "D:\\Repository\\blender-git\\blender\\.markdown\\基础库\\diagrams\\06b2_candidate.json",
+  "output": "D:\\Repository\\blender-git\\blender\\.vscode\\杂\\markdown\\基础库\\diagrams\\06b2_Set_架构图.html",
+  "specification": {
+    "sha256": "0cfe8dccb7062ef25cbdd7566b6c1b0789d973f32f4d6131827a13801dc8ad14",
+    "bytes": 8331
+  },
+  "artifact": {
+    "sha256": "0b8bd6bd4e44b040e83c8dce8623928704bcd986da973d282989493396f62365",
+    "bytes": 768083
+  }
+}

@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "D:\\Repository\\blender-git\\blender\\.markdown\\基础库\\diagrams\\06b2_candidate.json",
+    "sha256": "0cfe8dccb7062ef25cbdd7566b6c1b0789d973f32f4d6131827a13801dc8ad14",
+    "bytes": 8331
+  },
+  "artifact": {
+    "path": "D:\\Repository\\blender-git\\blender\\.markdown\\基础库\\diagrams\\06b2_Set_架构图.html",
+    "sha256": "0b8bd6bd4e44b040e83c8dce8623928704bcd986da973d282989493396f62365",
+    "bytes": 768083
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "D:\\Repository\\blender-git\\blender\\.vscode\\杂\\markdown\\基础库\\diagrams\\06b2_set_架构图.finalize.json",
+    "summaryReceipt": "D:\\Repository\\blender-git\\blender\\.vscode\\杂\\markdown\\基础库\\diagrams\\06b2_set_架构图.finalize-summary.json",
+    "browserCheckReceipt": "D:\\Repository\\blender-git\\blender\\.markdown\\基础库\\diagrams\\06b2_set_架构图.browser-check.json"
+  },
+  "update": {
+    "status": "update_available",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.2.0",
+    "releaseNotes": "https://github.com/tt-a1i/archify/releases/tag/v3.2.0",
+    "severity": "normal",
+    "checkedAt": "2026-10-27T10:36:09.207Z",
+    "source": "cache",
+    "noticeRequired": true,
+    "noticeText": "Archify update: 3.0.1 → 3.2.0. A previous check at 2026-10-27T10:36:09.207Z found a newer release. Release notes: https://github.com/tt-a1i/archify/releases/tag/v3.2.0. The installed Skill has not changed; ask to snooze or ignore this reminder.",
+    "eventKey": "archify@sha256:70e210265c59f24dcbdf2a502ff671104b5454e7ee7d3554aecd86bad32384f5"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3566,
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "resolvedCrossovers": 5,
+      "routesOverSuggestedBends": 4
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [
+        {
+          "left": {
+            "id": "api-to-probe",
+            "from": "api",
+            "to": "probe",
+            "label": "探测定位",
+            "collectionIndex": 2,
+            "artifactIndex": 3
+          },
+          "right": {
+            "id": "defaultslot-to-simple",
+            "from": "defaultslot",
+            "to": "simple",
+            "label": "默认",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "point": [
+            567,
+            353
+          ]
+        },
+        {
+          "left": {
+            "id": "defaultslot-to-simple",
+            "from": "defaultslot",
+            "to": "simple",
+            "label": "默认",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "right": {
+            "id": "probe-to-simple",
+            "from": "probe",
+            "to": "simple",
+            "label": "occupy / contains",
+            "collectionIndex": 6,
+            "artifactIndex": 7
+          },
+          "point": [
+            791,
+            158
+          ],
+          "sharedNode": "simple"
+        },
+        {
+          "left": {
+            "id": "defaultslot-to-hashed",
+            "from": "defaultslot",
+            "to": "hashed",
+            "label": "string / StringRef",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "right": {
+            "id": "defaultslot-to-intrusive",
+            "from": "defaultslot",
+            "to": "intrusive",
+            "label": "K*",
+            "collectionIndex": 5,
+            "artifactIndex": 6
+          },
+          "point": [
+            541.5,
+            531
+          ],
+          "sharedNode": "defaultslot"
+        },
+        {
+          "left": {
+            "id": "defaultslot-to-hashed",
+            "from": "defaultslot",
+            "to": "hashed",
+            "label": "string / StringRef",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "right": {
+            "id": "why-to-hashed",
+            "from": "why",
+            "to": "hashed",
+            "label": "存 hash_ 的动机",
+            "collectionIndex": 7,
+            "artifactIndex": 8
+          },
+          "point": [
+            670,
+            531
+          ],
+          "sharedNode": "hashed"
+        },
+        {
+          "left": {
+            "id": "defaultslot-to-intrusive",
+            "from": "defaultslot",
+            "to": "intrusive",
+            "label": "K*",
+            "collectionIndex": 5,
+            "artifactIndex": 6
+          },
+          "right": {
+            "id": "why-to-hashed",
+            "from": "why",
+            "to": "hashed",
+            "label": "存 hash_ 的动机",
+            "collectionIndex": 7,
+            "artifactIndex": 8
+          },
+          "point": [
+            670,
+            471
+          ]
+        }
+      ],
+      "detours": [
+        {
+          "relationship": {
+            "id": "defaultslot-to-simple",
+            "from": "defaultslot",
+            "to": "simple",
+            "label": "默认",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "bends": 3,
+          "stretch": 1
+        },
+        {
+          "relationship": {
+            "id": "defaultslot-to-hashed",
+            "from": "defaultslot",
+            "to": "hashed",
+            "label": "string / StringRef",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "bends": 4,
+          "stretch": 1
+        },
+        {
+          "relationship": {
+            "id": "defaultslot-to-intrusive",
+            "from": "defaultslot",
+            "to": "intrusive",
+            "label": "K*",
+            "collectionIndex": 5,
+            "artifactIndex": 6
+          },
+          "bends": 3,
+          "stretch": 1.099
+        },
+        {
+          "relationship": {
+            "id": "probe-to-simple",
+            "from": "probe",
+            "to": "simple",
+            "label": "occupy / contains",
+            "collectionIndex": 6,
+            "artifactIndex": 7
+          },
+          "bends": 3,
+          "stretch": 1
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "api → probe crosses defaultslot → simple: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "defaultslot → simple and probe → simple cross next to simple: move node defaultslot or probe so the two reach simple from different sides (for example one level with it, one directly above or below it).",
+      "defaultslot → hashed and defaultslot → intrusive cross next to defaultslot: move node hashed or intrusive so the two reach defaultslot from different sides (for example one level with it, one directly above or below it).",
+      "defaultslot → hashed and why → hashed cross next to hashed: move node defaultslot or why so the two reach hashed from different sides (for example one level with it, one directly above or below it).",
+      "defaultslot → intrusive crosses why → hashed: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "defaultslot → simple needs 3 bends: move node defaultslot or simple so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "defaultslot → hashed needs 4 bends: move node defaultslot or hashed so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "defaultslot → intrusive needs 3 bends: move node defaultslot or intrusive so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

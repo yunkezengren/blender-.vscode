@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BLI VectorSet 内部实现",
+    "subtitle": "顺序数组 + 哈希索引的双容器结构 —— blender::VectorSet<Key> 源码机制图",
+    "locale": "zh-CN",
+    "output": ".markdown/基础库/diagrams/VectorSet_架构图.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://projects.blender.org/blender/blender.git",
+      "link_mode": "local-only",
+      "revision": "e2e58a974edb3a5e949aa273d7ff940b5c5797c8"
+    }
+  },
+  "components": [
+    {
+      "id": "caller",
+      "type": "external",
+      "label": "调用方",
+      "sublabel": "node_type_find / add_new",
+      "pos": [40, 300],
+      "size": [150, 66],
+      "icon": "person",
+      "sources": [
+        { "path": "source/blender/blenkernel/intern/node.cc", "line": 2797, "end_line": 2802, "label": "按 idname 查表" }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "frontend",
+      "label": "VectorSet 公开接口",
+      "sublabel": "add_new / index_of_try / remove / operator[]",
+      "pos": [270, 300],
+      "size": [185, 66],
+      "sources": [
+        { "path": "source/blender/blenlib/BLI_vector_set.hh", "line": 336, "end_line": 360, "label": "插入与查询入口" }
+      ]
+    },
+    {
+      "id": "hash",
+      "type": "backend",
+      "label": "哈希层",
+      "sublabel": "hash_(key) → uint64_t",
+      "pos": [545, 80],
+      "size": [170, 62],
+      "sources": [
+        { "path": "source/blender/blenlib/BLI_vector_set.hh", "line": 338, "end_line": 338, "label": "add_new 先算哈希" }
+      ]
+    },
+    {
+      "id": "probe",
+      "type": "backend",
+      "label": "探测层（开放寻址）",
+      "sublabel": "线性探测：墓碑跳过、空槽终止",
+      "pos": [545, 190],
+      "size": [170, 62],
+      "sources": [
+        { "path": "source/blender/blenlib/BLI_vector_set.hh", "line": 879, "end_line": 900, "label": "add_new__impl 探测循环" }
+      ]
+    },
+    {
+      "id": "slots",
+      "type": "database",
+      "label": "slots_ 槽位数组",
+      "sublabel": "存 {keys 下标, 哈希}；长度为 2 的幂",
+      "pos": [800, 80],
+      "size": [190, 62],
+      "sources": [
+        { "path": "source/blender/blenlib/BLI_vector_set.hh", "line": 134, "end_line": 141, "label": "SlotArray 与 slots_" }
+      ]
+    },
+    {
+      "id": "keys",
+      "type": "database",
+      "label": "keys_ 键数组",
+      "sublabel": "紧凑连续、下标 = 插入序",
+      "pos": [800, 300],
+      "size": [190, 62],
+      "sources": [
+        { "path": "source/blender/blenlib/BLI_vector_set.hh", "line": 149, "end_line": 151, "label": "keys_ 指针与内联缓冲" }
+      ]
+    },
+    {
+      "id": "remove",
+      "type": "backend",
+      "label": "删除 = 墓碑 + 末尾补位",
+      "sublabel": "末元素补位 → 后续下标改变",
+      "pos": [545, 470],
+      "size": [170, 62],
+      "sources": [
+        { "path": "source/blender/blenlib/BLI_vector_set.hh", "line": 1006, "end_line": 1022, "label": "remove_key_internal" }
+      ]
+    },
+    {
+      "id": "rehash",
+      "type": "backend",
+      "label": "扩容 realloc_and_reinsert",
+      "sublabel": "负载 0.5、至少翻倍、不重排 keys_",
+      "pos": [830, 470],
+      "size": [185, 62],
+      "sources": [
+        { "path": "source/blender/blenlib/BLI_vector_set.hh", "line": 1004, "end_line": 1012, "label": "min_usable_slots = max(请求, size×2)" }
+      ]
+    },
+    {
+      "id": "customid",
+      "type": "cloud",
+      "label": "CustomIDVectorSet 适配",
+      "sublabel": "哈希作用于元素字段；裸键直查",
+      "pos": [270, 470],
+      "size": [185, 62],
+      "sources": [
+        { "path": "source/blender/blenlib/BLI_vector_set.hh", "line": 1124, "end_line": 1125, "label": "CustomIDType 推导" }
+      ]
+    }
+  ],
+  "connections": [
+    { "id": "caller-to-api", "from": "caller", "to": "api", "label": "add / 查找", "variant": "emphasis" },
+    { "id": "api-to-hash", "from": "api", "to": "hash", "label": "先算哈希", "fromSide": "top", "toSide": "left" },
+    { "id": "api-to-probe", "from": "api", "to": "probe", "label": "探测定位" },
+    { "id": "hash-to-probe", "from": "hash", "to": "probe", "label": "起始槽", "fromSide": "bottom", "toSide": "top" },
+    { "id": "probe-to-slots", "from": "probe", "to": "slots", "label": "occupy / contains", "fromSide": "right", "toSide": "left" },
+    { "id": "api-to-keys", "from": "api", "to": "keys", "label": "追加 / 按下标读取" },
+    { "id": "slots-to-keys", "from": "slots", "to": "keys", "label": "槽存下标", "fromSide": "bottom", "toSide": "top" },
+    { "id": "api-to-remove", "from": "api", "to": "remove", "label": "remove", "fromSide": "bottom", "toSide": "left" },
+    { "id": "remove-to-rehash", "from": "remove", "to": "rehash", "label": "墓碑堆积 → 重建", "fromSide": "right", "toSide": "left" },
+    { "id": "rehash-to-slots", "from": "rehash", "to": "slots", "label": "重建索引层", "variant": "dashed", "fromSide": "top", "toSide": "bottom" },
+    { "id": "customid-to-api", "from": "customid", "to": "api", "label": "替换 Hash/Equal", "variant": "dashed", "fromSide": "top", "toSide": "bottom" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "双容器分工",
+      "items": [
+        "keys_：紧凑数组，保插入序，operator[] 零成本",
+        "slots_：稀疏散列，存「键在 keys_ 的下标 + 哈希副本」",
+        "删除只留墓碑，不打断探测链"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "性能与代价",
+      "items": [
+        "查找 / 插入 / 删除均 O(1)；负载因子 0.5",
+        "扩容只重建索引层，keys_ 数据本体不搬",
+        "末尾补位删除 → 只有「只增不删」时下标才稳定（Repeat 依赖此点）"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "CustomID 扩展",
+      "items": [
+        "CustomIDVectorSet 只换 Hash/Equal 两个模板参数",
+        "CustomIDType 由 decltype(GetIDFn{}(declval<T>())) 编译期推导",
+        "node.cc 三张注册表复用同一机制，各供一个 Getter"
+      ]
+    }
+  ]
+}

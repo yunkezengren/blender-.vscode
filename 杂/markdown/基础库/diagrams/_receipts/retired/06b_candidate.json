@@ -1,0 +1,327 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BLI Map / Set 内部实现",
+    "subtitle": "开放寻址槽表 —— 键值直接存槽内，与 VectorSet 双容器路线对照 ｜ blender::Map<Key,Value> / Set<T>",
+    "locale": "zh-CN",
+    "output": ".markdown/基础库/diagrams/06b_MapSet_架构图.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://projects.blender.org/blender/blender.git",
+      "link_mode": "local-only",
+      "revision": "e2e58a974edb3a5e949aa273d7ff940b5c5797c8"
+    }
+  },
+  "components": [
+    {
+      "id": "caller",
+      "type": "external",
+      "label": "调用方",
+      "sublabel": "group_node_map / nodes_by_context",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        160,
+        66
+      ],
+      "icon": "person",
+      "sources": [
+        {
+          "path": "source/blender/nodes/NOD_geometry_nodes_lazy_function.hh",
+          "line": 365,
+          "end_line": 365,
+          "label": "Map<int, lf::FunctionNode *>"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "frontend",
+      "label": "Map / Set 公开接口",
+      "sublabel": "add_new / lookup_ptr / lookup_or_add / remove",
+      "pos": [
+        280,
+        300
+      ],
+      "size": [
+        190,
+        66
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_map.hh",
+          "line": 265,
+          "end_line": 295,
+          "label": "add_new / add"
+        }
+      ]
+    },
+    {
+      "id": "hash",
+      "type": "backend",
+      "label": "哈希层",
+      "sublabel": "hash_(key)；比较可换异型键（_as 后缀）",
+      "pos": [
+        560,
+        90
+      ],
+      "size": [
+        185,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_map.hh",
+          "line": 508,
+          "end_line": 528,
+          "label": "lookup_ptr_as 异型键"
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "type": "backend",
+      "label": "探测层（开放寻址）",
+      "sublabel": "线性探测：墓碑跳过、空槽终止",
+      "pos": [
+        560,
+        300
+      ],
+      "size": [
+        185,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_hash_tables.hh",
+          "line": 54,
+          "end_line": 60,
+          "label": "槽总数 2 的幂公式"
+        }
+      ]
+    },
+    {
+      "id": "slots",
+      "type": "database",
+      "label": "slots_ 槽表（唯一容器）",
+      "sublabel": "键+值+状态都在槽内；无第二数组",
+      "pos": [
+        830,
+        90
+      ],
+      "size": [
+        195,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_map.hh",
+          "line": 172,
+          "end_line": 172,
+          "label": "SlotArray slots_"
+        }
+      ]
+    },
+    {
+      "id": "simple",
+      "type": "database",
+      "label": "SimpleMapSlot（默认槽）",
+      "sublabel": "state_(1B)+key+value；遍历序=槽位序",
+      "pos": [
+        830,
+        300
+      ],
+      "size": [
+        195,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_map_slots.hh",
+          "line": 48,
+          "end_line": 57,
+          "label": "state_ + 双 TypedBuffer"
+        }
+      ]
+    },
+    {
+      "id": "intrusive",
+      "type": "database",
+      "label": "IntrusiveMapSlot（指针键特化）",
+      "sublabel": "状态编进指针：空=UINTPTR_MAX 墓碑=MAX-1",
+      "pos": [
+        500,
+        480
+      ],
+      "size": [
+        205,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_hash_tables.hh",
+          "line": 185,
+          "end_line": 199,
+          "label": "PointerKeyInfo 编码"
+        }
+      ]
+    },
+    {
+      "id": "remove",
+      "type": "backend",
+      "label": "删除 = 槽留墓碑",
+      "sublabel": "无补位动作（没有下标要维护）",
+      "pos": [
+        860,
+        480
+      ],
+      "size": [
+        185,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_map.hh",
+          "line": 387,
+          "end_line": 394,
+          "label": "remove_contained_as"
+        }
+      ]
+    },
+    {
+      "id": "vs",
+      "type": "cloud",
+      "label": "对照：VectorSet 双容器",
+      "sublabel": "keys_ 数组+下标槽表；才有「第 i 个」概念",
+      "pos": [
+        230,
+        480
+      ],
+      "size": [
+        195,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_vector_set.hh",
+          "line": 149,
+          "end_line": 151,
+          "label": "keys_ 与 slots_ 分离"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "caller-to-api",
+      "from": "caller",
+      "to": "api",
+      "label": "add / lookup",
+      "variant": "emphasis"
+    },
+    {
+      "id": "api-to-hash",
+      "from": "api",
+      "to": "hash",
+      "label": "先算哈希",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "api-to-probe",
+      "from": "api",
+      "to": "probe",
+      "label": "探测定位"
+    },
+    {
+      "id": "hash-to-probe",
+      "from": "hash",
+      "to": "probe",
+      "label": "起始槽",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "probe-to-slots",
+      "from": "probe",
+      "to": "slots",
+      "label": "occupy / lookup",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "slots-to-simple",
+      "from": "slots",
+      "to": "simple",
+      "label": "默认槽型",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "api-to-remove",
+      "from": "api",
+      "to": "remove",
+      "label": "remove",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "remove-to-intrusive",
+      "from": "remove",
+      "to": "intrusive",
+      "label": "指针键走特殊编码",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "vs-to-api",
+      "from": "vs",
+      "to": "api",
+      "label": "路线对照",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "intrusive-to-slots",
+      "from": "intrusive",
+      "to": "slots",
+      "label": "同表混用",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "单容器 vs 双容器",
+      "items": [
+        "Map/Set：键值直接存槽内，一张槽表就是全部",
+        "VectorSet：keys_ 数组存数据，槽表只存下标",
+        "代价互换：Map 无「第 i 个」；VectorSet 多一层间接"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "三种状态编码",
+      "items": [
+        "SimpleSetSlot/MapSlot：state_ 枚举（0 空 1 占 2 删）",
+        "SimpleVectorSetSlot：一个 int64，-1/-2/≥0 三态复用",
+        "指针键 Intrusive：空=UINTPTR_MAX、墓碑=MAX-1，零额外字节"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Repeat 中的落点",
+      "items": [
+        "group_node_map: Map<int, lf::FunctionNode *>（装配期反查）",
+        "nodes_by_context: MultiValueMap（一键多值 = Map<K,Vector<V>> 语义）",
+        "遍历顺序无意义 → 用 Map 而非 VectorSet 的判定依据"
+      ]
+    }
+  ]
+}

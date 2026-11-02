@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>06a · VectorSet 内存布局 · 字节级图解</title>
+<link rel="stylesheet" href="../_shared/base.css">
+<style>
+/* 页内补充：映射箭头列 */
+.mem td.link { border: none !important; background: transparent !important; color: var(--accent2); font-size: 15px; padding: 2px; }
+.mem tr.gap td { border: none !important; background: transparent !important; height: 10px; }
+.mem .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px,1fr)); gap: 12px; margin: 12px 0; }
+.mem .fbox { border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 13px; background: var(--bg); font-size: 13px; }
+.mem .fbox b { display: block; margin-bottom: 4px; font-size: 13.5px; }
+.mem .fbox .s { color: var(--fg2); font-size: 12px; font-family: Consolas,monospace; }
+.mem .fbox.f-in  { border-color: var(--input-b); background: var(--input); color: var(--input-fg); }
+.mem .fbox.f-cmp { border-color: var(--compute-b); background: var(--compute); color: var(--compute-fg); }
+.mem .fbox.f-res { border-color: var(--result-b); background: var(--result); color: var(--result-fg); }
+.mem .fbox.f-err { border-color: var(--error-b); background: var(--error); color: var(--error-fg); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>06a · VectorSet 内存布局 · 字节级图解</h1>
+<div class="subtitle">blender::VectorSet&lt;Key&gt;，以 <code>Key=int</code>、装载 3 个元素 + 1 个墓碑为实例 ｜ 配套文档：<a href="06a_VectorSet_深度解析.md" style="color:var(--accent2)">06a_VectorSet_深度解析.md</a></div>
+
+<div class="toc">
+  <b>导航：</b>
+  <a href="#summary">0 一图总览</a>
+  <a href="#header">1 对象头（逐字段）</a>
+  <a href="#slots">2 槽表逐字节</a>
+  <a href="#keys">3 keys_ 数组</a>
+  <a href="#mapping">4 两容器映射关系</a>
+  <a href="#ops">5 增 / 删 / 扩容动线</a>
+  <a href="#growth">6 增长时间线与内存账</a>
+  <a href="#arch">7 交互式架构图</a>
+</div>
+
+<!-- ============ 0 一图总览 ============ -->
+<h2 id="summary"><span class="no">0</span>一图总览</h2>
+<div class="mem">
+  <p class="hint">VectorSet 的全部内存 = 一个对象头 + 两块缓冲。<b>键本体只在 keys_ 一处</b>；槽表只记"下标"，8 字节一个。</p>
+  <table class="byte">
+    <tr>
+      <td class="s-compute" style="min-width:170px">VectorSet 对象头<br><span class="b">5 标量 + 内联缓冲，约 88B</span></td>
+      <td class="link">─→</td>
+      <td class="s-input" style="min-width:210px">slots_ 槽表<br><span class="b">n×8B，n=2 的幂，负载≤1/2</span></td>
+      <td class="link">──记录下标──→</td>
+      <td class="s-result" style="min-width:190px">keys_ 键数组<br><span class="b">size×sizeof(Key)，紧凑</span></td>
+    </tr>
+  </table>
+  <p class="arrow-note"><b>读取路径：</b>按值查 → 哈希定位槽 → 槽里取下标 → <code>keys_[下标]</code>；按下标查 → 直接 <code>keys_[i]</code>（零哈希）。</p>
+</div>
+
+<!-- ============ 1 对象头 ============ -->
+<h2 id="header"><span class="no">1</span>对象头（逐字段）</h2>
+<p class="hint">字段与行号：BLI_vector_set.hh L110-L151。实例状态：装了 3 键、删了 1 个（1 个墓碑）、槽表 8 槽。</p>
+<div class="mem">
+<table class="byte">
+  <tr><th></th><th>0-7</th><th>8-15</th><th>16-23</th><th>24-31</th><th>32-39</th><th>40-47</th><th>48-79</th></tr>
+  <tr>
+    <td class="rowhead">offset</td>
+    <td class="s-input">slots_<br><span class="b">Array&lt;Slot&gt;</span></td>
+    <td class="s-result">keys_<br><span class="b">Key*</span></td>
+    <td class="s-compute">removed_<br><span class="b">=1</span></td>
+    <td class="s-compute">occ_and_rem<br><span class="b">=4</span></td>
+    <td class="s-compute">usable_<br><span class="b">=8</span></td>
+    <td class="s-abst">max_load_<br><span class="b">1/2</span></td>
+    <td class="s-dim">inline_buffer_<br><span class="b">4×sizeof(Key)</span></td>
+  </tr>
+</table>
+<table>
+  <tr><th>字段</th><th>类型</th><th>本例值</th><th>作用</th></tr>
+  <tr><td><code>slots_</code></td><td><code>Array&lt;Slot, 8, Allocator&gt;</code></td><td>8 槽</td><td>哈希索引；内联容量 8 = <code>compute_total_slots(4,1,2)</code>，4 键以内零堆</td></tr>
+  <tr><td><code>keys_</code></td><td><code>Key*</code></td><td>→ inline_buffer_</td><td>键数组；初始指内联，溢出后指向堆</td></tr>
+  <tr><td><code>removed_slots_</code></td><td>int64</td><td>1</td><td>墓碑计数</td></tr>
+  <tr><td><code>occupied_and_removed_slots_</code></td><td>int64</td><td>4</td><td>被占过（含墓碑）；<b>真实元素数 = 4−1 = 3</b></td></tr>
+  <tr><td><code>usable_slots_</code></td><td>int64</td><td>8</td><td>当前槽表的可用上限；8×(1/2)=4 ≥ 3，无需扩</td></tr>
+  <tr><td><code>max_load_factor_</code></td><td>LoadFactor</td><td>1/2</td><td>编译期常量（L132 <code>#define LOAD_FACTOR 1, 2</code>）</td></tr>
+  <tr><td><code>inline_buffer_</code></td><td>TypedBuffer</td><td>—</td><td>栈上键缓冲；<code>BLI_NO_UNIQUE_ADDRESS</code> 借 padding</td></tr>
+</table>
+</div>
+
+<!-- ============ 2 槽表 ============ -->
+<h2 id="slots"><span class="no">2</span>槽表逐字节：一数三态</h2>
+<p class="hint">槽类型 <code>SimpleVectorSetSlot&lt;Key&gt;</code>（BLI_vector_set_slots.hh）<b>只有一个成员</b>：<code>int64_t state_</code>。符号即状态：</p>
+<div class="mem">
+<table class="byte">
+  <tr><th>state_ 取值</th><th>含义</th><th>探测遇到它时</th><th>由谁产生</th></tr>
+  <tr><td class="s-empty">-1</td><td>空槽</td><td><b>停止</b>（键确定不存在 / 插入落点）</td><td>默认构造 / 全清</td></tr>
+  <tr><td class="s-error">-2</td><td>墓碑</td><td><b>跳过继续</b>（链可能还在后面）</td><td><code>remove_key_internal</code></td></tr>
+  <tr><td class="s-input">≥0</td><td>占用，值即 keys_ 下标</td><td>比较键：相等→命中；不等→下一个</td><td><code>occupy(index, hash)</code></td></tr>
+</table>
+<div class="callout">槽表实例（8 槽，hash("A")→0、hash("B")→2、hash("C")→5，"X" 曾占 1 号槽后被删）：</div>
+<table class="byte">
+  <tr><th></th><th>#0</th><th>#1</th><th>#2</th><th>#3</th><th>#4</th><th>#5</th><th>#6</th><th>#7</th></tr>
+  <tr>
+    <td class="rowhead">state_</td>
+    <td class="s-input">0<br><span class="b">→"A"</span></td>
+    <td class="s-error">-2<br><span class="b">墓碑(原"X")</span></td>
+    <td class="s-input">1<br><span class="b">→"B"</span></td>
+    <td class="s-empty">-1</td>
+    <td class="s-empty">-1</td>
+    <td class="s-input">2<br><span class="b">→"C"</span></td>
+    <td class="s-empty">-1</td>
+    <td class="s-empty">-1</td>
+  </tr>
+</table>
+<p class="hint">注意槽里<b>没有哈希副本</b>：<code>occupy(index, /*hash*/)</code> 第二参数被忽略——比较时现算。8B/槽是空间极简路线；<code>BLI_map_slots.hh</code> 的 Map 存哈希副本（<code>stored_hash_</code>），属"时间换空间"反向取舍。</p>
+</div>
+
+<!-- ============ 3 keys_ ============ -->
+<h2 id="keys"><span class="no">3</span>keys_ 数组：数据唯一真身</h2>
+<div class="mem">
+<table class="byte">
+  <tr><th></th><th>元素 0</th><th>元素 1</th><th>元素 2</th><th>元素 3（空余）</th></tr>
+  <tr>
+    <td class="rowhead">keys_（内联期）</td>
+    <td class="s-result">"A"<br><span class="b">插入序 0</span></td>
+    <td class="s-result">"B"<br><span class="b">插入序 1</span></td>
+    <td class="s-result">"C"<br><span class="b">插入序 2</span></td>
+    <td class="s-dim">未初始化<br><span class="b">容量 4</span></td>
+  </tr>
+</table>
+<p class="hint">紧凑连续、无空洞。<b>下标 = 插入序</b>——不是排序得来的，是 <code>index = size()</code> 追加时分配的（L889）。转堆时机：<code>usable_slots &gt; InlineBufferCapacity</code>（L1004 起的特判分支）。</p>
+</div>
+
+<!-- ============ 4 映射 ============ -->
+<h2 id="mapping"><span class="no">4</span>两容器的映射关系</h2>
+<div class="mem">
+<table class="byte">
+  <tr><th></th><th>槽 #0</th><th>槽 #1</th><th>槽 #2</th><th>槽 #3</th><th>槽 #4</th><th>槽 #5</th></tr>
+  <tr><td class="rowhead">slots_</td><td class="s-input">0</td><td class="s-error">-2</td><td class="s-input">1</td><td class="s-empty">-1</td><td class="s-empty">-1</td><td class="s-input">2</td></tr>
+  <tr class="gap"><td></td><td class="link">↘</td><td class="link">✕ 墓碑无映射</td><td class="link">↘</td><td></td><td></td><td class="link">↘</td></tr>
+  <tr><td class="rowhead">keys_</td><td class="s-result">"A"(0)</td><td class="s-result">"B"(1)</td><td class="s-result">"C"(2)</td><td class="s-dim">—</td><td class="s-dim">—</td><td class="s-dim">—</td></tr>
+</table>
+<div class="callout ok">
+<b>两条访问路径，一张表说清：</b>
+<table>
+<tr><th>你要什么</th><th>路径</th><th>成本</th></tr>
+<tr><td>按值找（在吗？第几个？）</td><td>hash → 探测槽 → state_ 即下标</td><td>O(1)，探测约 1.5 次（0.5 负载）</td></tr>
+<tr><td>按下标取第 i 个</td><td><code>keys_[i]</code></td><td>O(1) 裸数组，零哈希</td></tr>
+<tr><td>遍历全部</td><td>扫 keys_（不必扫槽表）</td><td>连续内存，预取全速</td></tr>
+</table>
+</div>
+</div>
+
+<!-- ============ 5 动线 ============ -->
+<h2 id="ops"><span class="no">5</span>增 / 删 / 扩容动线</h2>
+<h3>add_new("D")——五步（源码 L879-900）</h3>
+<div class="mem">
+<div class="flow">
+  <div class="fbox f-in"><b>① 容量检查</b>ensure_can_add()<span class="s"><br>3+1=4 ≤ 8×½=4 ✔ 不扩</span></div>
+  <div class="fbox f-in"><b>② 算哈希</b>hash_("D")<span class="s"><br>指针键=地址；字符串=内容</span></div>
+  <div class="fbox f-cmp"><b>③ 探测</b>从 #6 起<span class="s"><br>遇空槽 -1 停 → 落 #6</span></div>
+  <div class="fbox f-res"><b>④ keys_ 追加</b>index=size()=3<span class="s"><br>下标此刻分配，此后不变</span></div>
+  <div class="fbox f-res"><b>⑤ 占槽</b>slot#6.state_=3<span class="s"><br>+自检断言（重哈希/比较）</span></div>
+</div>
+</div>
+<h3>remove_contained("B")——三连锁（L1006-1022）</h3>
+<div class="mem">
+<div class="flow">
+  <div class="fbox f-err"><b>① 末尾补位</b>keys_[1]="C"<span class="s"><br>"C" 从下标 2 → 1</span></div>
+  <div class="fbox f-err"><b>② 改它的槽</b>沿哈希链找到 #5<span class="s"><br>state_: 2 → 1（删除主要成本）</span></div>
+  <div class="fbox f-err"><b>③ 留墓碑</b>#2.state_=-2<span class="s"><br>若写 -1 会截断探测链！</span></div>
+</div>
+<p class="hint">结果：keys_ 变 [A, C]，"C" 的下标从 2 变 1 ——<b>这就是"删除打乱下标"</b>。Repeat 只增不删，契约成立。</p>
+</div>
+<h3>扩容 realloc_and_reinsert（L1004 起）</h3>
+<div class="mem">
+<p class="hint">触发：真实元素数+1 将超 usable×½。公式（BLI_hash_tables.hh L54）：<code>total = power_of_2_max(ceil(min_usable ÷ ½))</code>。重建 = 遍历 keys_ 重新探测进新槽表，<b>键本体不搬</b>。</p>
+<table class="byte">
+  <tr><th>元素数达到</th><th>需求 usable</th><th>total = 2 的幂</th><th>槽表去向</th><th>keys_ 去向</th></tr>
+  <tr><td>≤4</td><td>4</td><td>8</td><td class="s-result">Array 内联（零堆）</td><td class="s-result">inline_buffer_（零堆）</td></tr>
+  <tr><td>5</td><td>10→usable 8…<span class="b">实际 min=5×? 翻倍逻辑</span></td><td>16</td><td class="s-compute">堆 128B</td><td class="s-compute">堆（usable&gt;4）</td></tr>
+  <tr><td>9</td><td>18</td><td>32</td><td class="s-compute">堆 256B</td><td class="s-compute">堆增长</td></tr>
+</table>
+</div>
+
+<!-- ============ 6 增长时间线 ============ -->
+<h2 id="growth"><span class="no">6</span>增长时间线与内存账（Key=int）</h2>
+<div class="mem">
+<table class="byte">
+  <tr><th>第 n 次插入</th><th>动作</th><th>堆分配</th><th>累计堆内存</th></tr>
+  <tr><td class="s-result">1 - 4</td><td>直接进内联</td><td class="s-result">0</td><td class="s-result">0 B</td></tr>
+  <tr><td class="s-compute">5</td><td>扩容：16 槽(128B) + keys 转堆(32B) + 搬 4 键</td><td class="s-compute">1 次</td><td class="s-compute">≈160 B</td></tr>
+  <tr><td class="s-result">6 - 8</td><td>直接进堆数组</td><td class="s-result">0</td><td class="s-compute">≈160 B</td></tr>
+  <tr><td class="s-compute">9</td><td>扩容：32 槽(256B) + keys 增长 + 搬 8 键</td><td class="s-compute">1 次</td><td class="s-compute">≈416 B</td></tr>
+</table>
+<p class="hint">对比 <code>Vector&lt;int&gt;</code> 同数据：5 个 int 仅 20B。<b>VectorSet 用约 8 倍内存换 O(1) 反查</b>——这正是选型判决的量化依据（前置知识 03-01 篇结论的源码级兑现）。</p>
+</div>
+
+
+<!-- ============ 7 交互式架构图（内嵌） ============ -->
+<h2 id="arch"><span class="no">7</span>交互式机制架构图</h2>
+<p class="hint">下方为可交互画布（缩放 · 点节点弹源码证据 · 导出 PNG）。源文件：<a href="diagrams/06a_VectorSet_架构图.html" style="color:var(--accent2)">diagrams/06a_VectorSet_架构图.html</a>，独立打开体验更佳。</p>
+<div class="mem" style="padding:0; overflow:hidden">
+  <iframe src="diagrams/06a_VectorSet_架构图.html"
+          style="width:100%; height:820px; border:0; display:block"
+          loading="lazy"
+          title="VectorSet 架构图"></iframe>
+</div>
+<div class="foot">
+源码证据：BLI_vector_set.hh（L110-151 字段 / L132 负载常量 / L336-360 接口 / L492-500 查找 / L879-900 插入 / L1004-1012 扩容 / L1006-1022 删除 / L1124-1152 CustomID）· BLI_vector_set_slots.hh（SimpleVectorSetSlot 三态）· BLI_hash_tables.hh（L54 槽总数公式 / L72 LoadFactor）· node.cc（L2775/2781/2793 三张注册表）<br>
+基准：Blender 5.4.0-alpha 本地工作树 · 样式与组件：<a href="../_shared/base.css" style="color:var(--accent2)">_shared/base.css</a>（可复用于其他 <code>*_图解.html</code>）
+</div>
+
+</div>
+</body>
+</html>

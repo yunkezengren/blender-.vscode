@@ -1,0 +1,348 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BLI Set 内部实现（详细版）",
+    "subtitle": "Map 去掉 Value 的特化 —— HashedSetSlot 哈希副本 · 字符串键特化 · 槽选择谱系 ｜ blender::Set<Key>",
+    "locale": "zh-CN",
+    "output": ".markdown/基础库/diagrams/06b2_Set_架构图.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://projects.blender.org/blender/blender.git",
+      "link_mode": "local-only",
+      "revision": "e2e58a974edb3a5e949aa273d7ff940b5c5797c8"
+    }
+  },
+  "components": [
+    {
+      "id": "caller",
+      "type": "external",
+      "label": "调用方",
+      "sublabel": "ReferenceSet（匿名属性存活表）等",
+      "pos": [
+        40,
+        320
+      ],
+      "size": [
+        170,
+        66
+      ],
+      "icon": "person",
+      "sources": [
+        {
+          "path": "source/blender/blenkernel/BKE_geometry_nodes_reference_set.hh",
+          "line": 1,
+          "end_line": 31,
+          "label": "Set<string> 包装"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "frontend",
+      "label": "Set 公开接口",
+      "sublabel": "add_new / add / contains / remove_contained",
+      "pos": [
+        290,
+        320
+      ],
+      "size": [
+        185,
+        66
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_set.hh",
+          "line": 233,
+          "end_line": 252,
+          "label": "add 家族"
+        }
+      ]
+    },
+    {
+      "id": "defaultslot",
+      "type": "backend",
+      "label": "DefaultSetSlot 槽选择谱系",
+      "sublabel": "按 Key 类型编译期分派四种槽",
+      "pos": [
+        330,
+        500
+      ],
+      "size": [
+        185,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_set_slots.hh",
+          "line": 347,
+          "end_line": 374,
+          "label": "四个特化"
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "type": "backend",
+      "label": "PythonProbingStrategy",
+      "sublabel": "与 Map/VectorSet 共用同一探测引擎",
+      "pos": [
+        570,
+        320
+      ],
+      "size": [
+        190,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_probing_strategies.hh",
+          "line": 198,
+          "end_line": 198,
+          "label": "DefaultProbingStrategy"
+        }
+      ]
+    },
+    {
+      "id": "simple",
+      "type": "database",
+      "label": "SimpleSetSlot（默认）",
+      "sublabel": "state_ + key；Map 槽去掉 value_buffer_",
+      "pos": [
+        815,
+        120
+      ],
+      "size": [
+        185,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_set_slots.hh",
+          "line": 33,
+          "end_line": 45,
+          "label": "0 空 1 占 2 删"
+        }
+      ]
+    },
+    {
+      "id": "hashed",
+      "type": "database",
+      "label": "HashedSetSlot（字符串键）",
+      "sublabel": "槽内存 uint64 hash_ 副本——免重复哈希",
+      "pos": [
+        815,
+        280
+      ],
+      "size": [
+        185,
+        66
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_set_slots.hh",
+          "line": 169,
+          "end_line": 176,
+          "label": "hash_ + state_ + key"
+        }
+      ]
+    },
+    {
+      "id": "intrusive",
+      "type": "database",
+      "label": "IntrusiveSetSlot（K* 键）",
+      "sublabel": "空=UINTPTR_MAX / 墓碑=MAX-1 编进指针",
+      "pos": [
+        815,
+        440
+      ],
+      "size": [
+        185,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_set_slots.hh",
+          "line": 274,
+          "end_line": 274,
+          "label": "PointerKeyInfo 版"
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "type": "backend",
+      "label": "为什么字符串要存哈希",
+      "sublabel": "探测先比 64 位哈希，拦下绝大多数不等",
+      "pos": [
+        570,
+        560
+      ],
+      "size": [
+        200,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_set_slots.hh",
+          "line": 165,
+          "end_line": 168,
+          "label": "computing hash or equality is expensive"
+        }
+      ]
+    },
+    {
+      "id": "mapcmp",
+      "type": "cloud",
+      "label": "对照：Map 无字符串特化",
+      "sublabel": "Map 靠 _as 异型查找规避——两条不同路线",
+      "pos": [
+        330,
+        640
+      ],
+      "size": [
+        185,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_map.hh",
+          "line": 508,
+          "end_line": 528,
+          "label": "lookup_ptr_as"
+        }
+      ]
+    },
+    {
+      "id": "vscmp",
+      "type": "cloud",
+      "label": "对照：VectorSet / Map",
+      "sublabel": "Set 是 Map 去 value；VectorSet 是下标化",
+      "pos": [
+        570,
+        700
+      ],
+      "size": [
+        185,
+        62
+      ],
+      "sources": [
+        {
+          "path": "source/blender/blenlib/BLI_vector_set.hh",
+          "line": 149,
+          "end_line": 151,
+          "label": "keys_ 分离"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "caller-to-api",
+      "from": "caller",
+      "to": "api",
+      "label": "contains / add",
+      "variant": "emphasis"
+    },
+    {
+      "id": "api-to-defaultslot",
+      "from": "api",
+      "to": "defaultslot",
+      "label": "按 Key 类型选槽",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "api-to-probe",
+      "from": "api",
+      "to": "probe",
+      "label": "探测定位",
+      "labelDy": -16
+    },
+    {
+      "id": "defaultslot-to-simple",
+      "from": "defaultslot",
+      "to": "simple",
+      "label": "默认",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "defaultslot-to-hashed",
+      "from": "defaultslot",
+      "to": "hashed",
+      "label": "string / StringRef",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "defaultslot-to-intrusive",
+      "from": "defaultslot",
+      "to": "intrusive",
+      "label": "K*",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
+    {
+      "id": "probe-to-simple",
+      "from": "probe",
+      "to": "simple",
+      "label": "occupy / contains",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "why-to-hashed",
+      "from": "why",
+      "to": "hashed",
+      "label": "存 hash_ 的动机",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "mapcmp-to-why",
+      "from": "mapcmp",
+      "to": "why",
+      "label": "路线分叉",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "vscmp-to-mapcmp",
+      "from": "vscmp",
+      "to": "mapcmp",
+      "label": "三容器谱系",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Set = Map − value_buffer_",
+      "items": [
+        "槽里少一个 TypedBuffer&lt;Value&gt;（int 键省 4~8B/槽）",
+        "接口全是单侧：contains / add / remove",
+        "删除同样两行：槽留墓碑，无补位"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "槽选择谱系（编译期）",
+      "items": [
+        "默认 → SimpleSetSlot（最小通用）",
+        "std::string / StringRef / StringRefNull → HashedSetSlot（存哈希副本）",
+        "K* → IntrusiveSetSlot（状态编进指针）"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "哈希副本：Set 有，Map 无",
+      "items": [
+        "HashedSetSlot 探测时先比 64 位哈希，拦下绝大多数不等",
+        "Map 无字符串特化——用 _as 异型查找规避重复计算",
+        "同一个问题，两个库各给了一条路线"
+      ]
+    }
+  ]
+}

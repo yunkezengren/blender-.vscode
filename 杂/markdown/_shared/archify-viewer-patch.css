@@ -1,0 +1,51 @@
+/* ============================================================
+   archify-viewer-patch.css —— Archify 生成图的查看器补丁（可复用）
+   用法：在 archify 生成的 HTML 的 </head> 前加：
+     <link rel="stylesheet" href="_shared/archify-viewer-patch.css">
+   （相对路径按 HTML 所在目录调整；也可整段 <style> 内联）
+   作用：
+   1) 加大语义护照（点击节点弹出的面板）宽度与内容区高度
+   2) 放大正文字号（archify 默认 0.6875rem≈11px，偏小）
+   3) 保持导出/PNG 不受影响（仅屏幕媒体生效）
+   ============================================================ */
+@media screen {
+  /* 面板本体：22rem → 30rem（480px），大屏可用 34rem */
+  .focus-chip {
+    width: min(30rem, calc(100% - 13rem)) !important;
+    max-width: calc(100% - 13rem) !important;
+    font-size: 0.8rem !important;           /* 11px → 12.8px */
+  }
+  /* 面板内部滚动区：18rem → 30rem，小屏退回 60vh */
+  .focus-chip .relationship-lens-list,
+  .focus-chip .semantic-passport-detail {
+    max-height: min(30rem, 60vh) !important;
+    overflow-y: auto !important;
+  }
+  /* 证据块与源码引用字号同步放大 */
+  .focus-chip .semantic-passport-evidence,
+  .focus-chip .semantic-passport-evidence-status,
+  .focus-chip .passport-evidence-link {
+    font-size: 0.75rem !important;
+  }
+  .focus-chip .semantic-passport-repository {
+    font-size: 0.65rem !important;
+    white-space: normal !important;          /* 仓库 URL 允许换行，不再截断 */
+    word-break: break-all;
+  }
+  /* 标题行更醒目 */
+  .focus-chip .relationship-lens-head b,
+  .focus-chip .semantic-passport-title {
+    font-size: 0.95rem !important;
+  }
+  /* 窄屏：面板改为近全宽 */
+  @media (max-width: 900px) {
+    .focus-chip {
+      width: calc(100% - 1rem) !important;
+      max-width: none !important;
+    }
+  }
+  /* 打印/导出不受补丁影响 */
+  @media print {
+    .focus-chip { width: auto !important; }
+  }
+}

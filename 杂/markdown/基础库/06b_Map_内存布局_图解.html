@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>06b · Map 内存布局 · 字节级图解</title>
+<link rel="stylesheet" href="../_shared/base.css">
+<style>
+.mem td.link { border: none !important; background: transparent !important; color: var(--accent2); font-size: 15px; padding: 2px; }
+.mem tr.gap td { border: none !important; background: transparent !important; height: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>06b · Map 内存布局 · 字节级图解</h1>
+<div class="subtitle">blender::Map&lt;Key,Value&gt;，以 <code>Key=int</code>、<code>Value=float</code>、装载 3 元素 + 1 墓碑为实例 ｜ 姊妹页：<a href="06b_Set_内存布局_图解.html" style="color:var(--accent2)">Set 版</a> ｜ 文字版：<a href="06b_MapSet_内存布局.md" style="color:var(--accent2)">06b_MapSet_内存布局.md</a></div>
+
+<div class="toc">
+  <b>导航：</b>
+  <a href="#summary">0 一图总览</a>
+  <a href="#header">1 对象头（逐字段）</a>
+  <a href="#slot">2 槽逐字节（SimpleMapSlot）</a>
+  <a href="#slot2">3 槽逐字节（Intrusive 指针键版）</a>
+  <a href="#ops">4 增 / 删动线</a>
+  <a href="#growth">5 增长时间线与内存账</a>
+  <a href="#arch">6 交互式架构图</a>
+</div>
+
+<!-- ============ 0 ============ -->
+<h2 id="summary"><span class="no">0</span>一图总览</h2>
+<div class="mem">
+  <p class="hint"><b>与 VectorSet 的根本差异只有一条：</b>键和值都住在槽里——没有 <code>keys_</code> 数组、没有"第 i 个"、没有末尾补位。一张槽表就是容器的全部。</p>
+  <table class="byte">
+    <tr>
+      <td class="s-compute" style="min-width:170px">Map 对象头<br><span class="b">4 标量 + 内联槽缓冲</span></td>
+      <td class="link">─→</td>
+      <td class="s-input" style="min-width:260px">slots_ 槽表（唯一容器）<br><span class="b">每槽 = 状态 + Key + Value</span></td>
+    </tr>
+  </table>
+  <p class="arrow-note"><b>查找路径：</b>hash(key) → 探测 → 命中槽 → 槽内直接取 value（无需二次跳转）。<b>遍历序 = 槽位序</b>（哈希决定，不确定）。</p>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="header"><span class="no">1</span>对象头（逐字段）</h2>
+<p class="hint">字段与行号：BLI_map.hh L140-L172。实例状态：3 元素 + 1 墓碑、槽表 8 槽。</p>
+<div class="mem">
+<table class="byte">
+  <tr><th></th><th>0-7</th><th>8-15</th><th>16-23</th><th>24-31</th><th>32-…</th></tr>
+  <tr>
+    <td class="rowhead">offset</td>
+    <td class="s-input">slots_<br><span class="b">Array&lt;Slot&gt;</span></td>
+    <td class="s-compute">removed_<br><span class="b">=1</span></td>
+    <td class="s-compute">occ_and_rem<br><span class="b">=4</span></td>
+    <td class="s-compute">usable_<br><span class="b">=8</span></td>
+    <td class="s-dim">inline_buffer_<br><span class="b">4 槽 × sizeof(Slot)</span></td>
+  </tr>
+</table>
+<table>
+  <tr><th>字段</th><th>本例值</th><th>与 VectorSet 的差异</th></tr>
+  <tr><td><code>slots_</code></td><td>8 槽</td><td>同构（同 LoadFactor 1/2、同 2 的幂公式）</td></tr>
+  <tr><td><code>removed_slots_</code> 等三计数器</td><td>1 / 4 / 8</td><td><b>完全相同</b>——探测/扩容逻辑共享底座</td></tr>
+  <tr><td><code>inline_buffer_</code></td><td>4 槽</td><td>容量公式按 <code>sizeof(K)+sizeof(V)</code> 算：≥100B 直接放弃内联（<code>BLI_memory_utils.hh</code> L274）</td></tr>
+  <tr><td><code>keys_</code> 指针</td><td class="s-error">❌ 不存在</td><td>单容器的标志</td></tr>
+</table>
+</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="slot"><span class="no">2</span>槽逐字节：SimpleMapSlot（默认槽型）</h2>
+<p class="hint">BLI_map_slots.hh L48-L57。8 槽实例：hash(A)→0、hash(B)→2、hash(C)→5，"X" 曾占 #1 后被删。</p>
+<div class="mem">
+<table class="byte">
+  <tr><th></th><th>槽 #0</th><th>槽 #1</th><th>槽 #2</th><th>槽 #3</th><th>槽 #4</th><th>槽 #5</th><th>槽 #6</th><th>槽 #7</th></tr>
+  <tr>
+    <td class="rowhead">state_<br><span class="b">(uint8)</span></td>
+    <td class="s-input">1 占</td>
+    <td class="s-error">2 删</td>
+    <td class="s-input">1 占</td>
+    <td class="s-empty">0 空</td>
+    <td class="s-empty">0 空</td>
+    <td class="s-input">1 占</td>
+    <td class="s-empty">0 空</td>
+    <td class="s-empty">0 空</td>
+  </tr>
+  <tr>
+    <td class="rowhead">key_buffer_</td>
+    <td class="s-result">"A"</td>
+    <td class="s-dim">—</td>
+    <td class="s-result">"B"</td>
+    <td class="s-dim">—</td>
+    <td class="s-dim">—</td>
+    <td class="s-result">"C"</td>
+    <td class="s-dim">—</td>
+    <td class="s-dim">—</td>
+  </tr>
+  <tr>
+    <td class="rowhead">value_buffer_</td>
+    <td class="s-result">97.0</td>
+    <td class="s-dim">—</td>
+    <td class="s-result">66.0</td>
+    <td class="s-dim">—</td>
+    <td class="s-dim">—</td>
+    <td class="s-result">67.0</td>
+    <td class="s-dim">—</td>
+    <td class="s-dim">—</td>
+  </tr>
+</table>
+<div class="callout">
+<b>三行读法：</b>① <code>state_</code> 是独立 uint8 枚举（0 空 / 1 占 / 2 删）——不像 VectorSet 复用 int64 符号；② 键值<b>并排躺在同一槽内</b>，命中即取，无二次寻址；③ 墓碑槽（#1）的键值缓冲是<b>已析构的未定义内存</b>——槽类型约定"非占用态视为 trivially destructible"，不保证清零。
+</div>
+<div class="callout warn">
+<b>澄清一个常见误传（含我自己此前讲错的）：</b>槽里<b>不存哈希副本</b>（无 <code>stored_hash_</code> 字段，occupy 的 hash 参数仅用于探测定位）。存哈希副本的路线在本仓库的并发容器（<code>BLI_concurrent_map</code>）里，不在 Map 主线。
+</div>
+</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="slot2"><span class="no">3</span>槽逐字节：IntrusiveMapSlot（指针键特化）</h2>
+<p class="hint">BLI_map_slots.hh L235 起 + BLI_hash_tables.hh L185-L199。指针键（<code>Map&lt;K*, V&gt;</code>）换用此槽：状态编进指针值，<b>零额外字节</b>。</p>
+<div class="mem">
+<table class="byte">
+  <tr><th>指针值（uintptr_t）</th><th>含义</th><th>探测遇到时</th></tr>
+  <tr><td class="s-result">任意合法地址</td><td>占用，指针即键</td><td>比较键</td></tr>
+  <tr><td class="s-error">UINTPTR_MAX − 1</td><td>墓碑</td><td>跳过继续</td></tr>
+  <tr><td class="s-empty">UINTPTR_MAX</td><td>空槽</td><td>停止</td></tr>
+</table>
+<table class="byte">
+  <tr><th></th><th>槽 #0</th><th>槽 #1</th><th>槽 #2</th></tr>
+  <tr><td class="rowhead">key_（指针即状态）</td><td class="s-result">0x7f2a…c0</td><td class="s-error">UINTPTR_MAX−1</td><td class="s-empty">UINTPTR_MAX</td></tr>
+  <tr><td class="rowhead">value_buffer_</td><td class="s-result">V{…}</td><td class="s-dim">—</td><td class="s-dim">—</td></tr>
+</table>
+<p class="hint">合法用户指针永远到不了地址空间顶端，两个哨兵值绝对安全。<code>Map&lt;lf::Socket*, …&gt;</code>、<code>Map&lt;bNode*, …&gt;</code> 这类节点系统高频用法全部吃此红利——比 SimpleMapSlot 每槽再省一个 state 字节 + 无对齐洞。</p>
+</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="ops"><span class="no">4</span>增 / 删动线</h2>
+<h3>add_new(key, value)——五步（与 VectorSet 前四步同构）</h3>
+<div class="mem">
+<div class="flow">
+  <div class="fbox f-in"><b>① 容量检查</b>ensure_can_add<span class="s"><br>负载 1/2 同款</span></div>
+  <div class="fbox f-in"><b>② 算哈希</b>hash_(key)<span class="s"><br>可换异型键（_as 后缀）</span></div>
+  <div class="fbox f-cmp"><b>③ 探测</b>墓碑跳过/空槽停<span class="s"><br>共享 BLI_hash_tables 底座</span></div>
+  <div class="fbox f-res"><b>④ 槽内构造</b>placement new key+value<span class="s"><br>没有 keys_ 追加这一步</span></div>
+  <div class="fbox f-res"><b>⑤ state_=Occupied</b><span class="s"><br>无下标可记（VectorSet 记 index）</span></div>
+</div>
+</div>
+<h3>remove_contained(key)——两行完事（BLI_map.hh L387-394）</h3>
+<div class="mem">
+<div class="flow">
+  <div class="fbox f-err"><b>① slot.remove()</b>state_→Removed<span class="s"><br>值析构、键留哨兵/枚举</span></div>
+  <div class="fbox f-err"><b>② removed_slots_++</b><span class="s"><br>仅此而已——无补位、无改槽</span></div>
+</div>
+<p class="hint">对比 VectorSet 的三步（补位 + 沿链改下标 + 留墓碑）：单容器路线<b>没有下标要维护</b>，这是它意外的简洁红利。代价就是遍历序哈希化。</p>
+</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="growth"><span class="no">5</span>增长时间线与内存账（Key=int, Value=float）</h2>
+<div class="mem">
+<table class="byte">
+  <tr><th>元素数</th><th>槽 total</th><th>槽表占用</th><th>内联？</th><th>堆分配</th></tr>
+  <tr><td class="s-result">1-4</td><td>8</td><td>8 × ~12B ≈ 96B</td><td class="s-result">✅ 零堆</td><td class="s-result">0</td></tr>
+  <tr><td class="s-compute">5</td><td>16</td><td>16 × ~12B ≈ 192B</td><td class="s-compute">❌ 槽表转堆</td><td class="s-compute">1 次</td></tr>
+  <tr><td class="s-compute">9</td><td>32</td><td>≈384B</td><td class="s-compute">❌</td><td class="s-compute">再 1 次</td></tr>
+</table>
+<p class="hint">对照 VectorSet 同规模：槽 8B/个但另有 keys_ 数组。<b>小键小值时 Map 更省</b>（无二次寻址、槽内直达）；<b>键值变大（≥100B）时 Map 更早放弃内联</b>——内联门槛公式按 K+V 之和计算。</p>
+</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="arch"><span class="no">6</span>交互式机制架构图</h2>
+<p class="hint">可交互画布（缩放 · 点节点弹源码证据 · 导出 PNG）。独立打开：<a href="diagrams/06b1_Map_架构图.html" style="color:var(--accent2)">diagrams/06b1_Map_架构图.html</a></p>
+<div class="mem" style="padding:0; overflow:hidden">
+  <iframe src="diagrams/06b1_Map_架构图.html"
+          style="width:100%; height:800px; border:0; display:block"
+          loading="lazy"
+          title="Map/Set 架构图"></iframe>
+</div>
+
+<div class="foot">
+源码证据：BLI_map.hh（L140-172 字段 / L265-295 add / L387-394 remove / L508-528 异型键 lookup）· BLI_map_slots.hh（L48-57 SimpleMapSlot / L235 IntrusiveMapSlot）· BLI_hash_tables.hh（L54 槽总数公式 / L185-199 PointerKeyInfo）· BLI_memory_utils.hh L274 内联门槛<br>
+基准：Blender 5.4.0-alpha 本地工作树 <span class="rev">e2e58a974edb3a5e949aa273d7ff940b5c5797c8</span> ｜ 样式：<a href="../_shared/base.css">_shared/base.css</a> ｜ 姊妹页：<a href="06b_Set_内存布局_图解.html">Set 版</a>
+</div>
+
+</div>
+</body>
+</html>

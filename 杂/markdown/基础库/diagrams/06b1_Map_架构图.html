@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark" data-preset="classic">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="archify 3.0.1">
+  <meta name="archify-reader-contract" content="declared-wide-v1">
+  <title>BLI Map 内部实现（详细版）</title>
+  <script>
+    // Resolve the theme before first paint so light-preference users don't
+    // see a dark flash. The toolbar script below re-applies with UI state.
+    (function () {
+      try {
+        var theme = null;
+        try {
+          var param = new URLSearchParams(window.location.search).get('theme');
+          if (param === 'light' || param === 'dark') theme = param;
+          if (new URLSearchParams(window.location.search).get('embed') === '1') {
+            document.documentElement.setAttribute('data-embed', 'true');
+          }
+          if (new URLSearchParams(window.location.search).get('present') === '1') {
+            document.documentElement.setAttribute('data-present', 'true');
+          }
+        } catch (_) {}
+        if (!theme) {
+          try { theme = localStorage.getItem('archify-theme'); } catch (_) {}
+        }
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (_) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="../../_shared/archify-fonts.css">
+<link rel="stylesheet" href="../../_shared/archify-viewer.css">
+<link rel="stylesheet" href="../../_shared/archify-viewer-patch.css">
+  
+</head>
+<body>
+  <!-- Toolbar: theme, live visual style, trace motion, presentation stage, and export.
+       Motion appears only for trace-enabled artifacts and has no shortcut;
+       Keyboard: T toggles theme, S cycles style, F toggles the stage, E opens export. -->
+  <div class="toolbar" role="toolbar" aria-label="图表操作">
+    <div class="toolbar-group">
+    <button id="btn-theme" type="button"
+            title="切换主题（T）"
+            aria-label="切换颜色主题"
+            aria-pressed="false">
+      <span id="theme-icon" class="toolbar-icon" aria-hidden="true"></span>
+      <span id="theme-label">深色</span>
+    </button>
+    <div class="preset-wrap">
+      <button id="btn-preset" type="button"
+              title="选择视觉风格（S 循环切换）"
+              aria-label="选择视觉风格"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="preset-menu"
+              aria-keyshortcuts="S">
+        <span class="preset-control-mark" aria-hidden="true"></span>
+        <span id="preset-label">风格</span>
+        <span class="toolbar-icon toolbar-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="preset-menu" id="preset-menu" role="menu" aria-label="视觉风格">
+        <div class="preset-menu-heading" role="presentation"><span>视觉表达</span><span class="preset-menu-shortcut"><kbd>S</kbd>循环切换</span></div>
+        <button class="preset-option" data-preset-value="classic" type="button" role="menuitemradio" aria-checked="false" tabindex="-1">
+          <span class="preset-option-swatch classic" aria-hidden="true"></span>
+          <span class="preset-option-copy"><strong>经典</strong><small>稳定的技术默认风格</small></span>
+          <span class="preset-option-check" aria-hidden="true"></span>
+        </button>
+        <button class="preset-option" data-preset-value="signal-flow" type="button" role="menuitemradio" aria-checked="false" tabindex="-1">
+          <span class="preset-option-swatch signal-flow" aria-hidden="true"></span>
+          <span class="preset-option-copy"><strong>信号流</strong><small>突出动态流向</small></span>
+          <span class="preset-option-check" aria-hidden="true"></span>
+        </button>
+        <button class="preset-option" data-preset-value="blueprint" type="button" role="menuitemradio" aria-checked="false" tabindex="-1">
+          <span class="preset-option-swatch blueprint" aria-hidden="true"></span>
+          <span class="preset-option-copy"><strong>蓝图</strong><small>工程评审</small></span>
+          <span class="preset-option-check" aria-hidden="true"></span>
+        </button>
+        <button class="preset-option" data-preset-value="editorial" type="button" role="menuitemradio" aria-checked="false" tabindex="-1">
+          <span class="preset-option-swatch editorial" aria-hidden="true"></span>
+          <span class="preset-option-copy"><strong>编辑风格</strong><small>适合发布与上线说明</small></span>
+          <span class="preset-option-check" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+    <button id="btn-motion" type="button" hidden
+            title="暂停动效"
+            aria-label="暂停动效"
+            aria-pressed="true">
+      <span class="motion-control-dot" aria-hidden="true"></span>
+      <span id="motion-label">动态</span>
+    </button>
+    <button id="btn-present" type="button"
+            title="演示模式（F）"
+            aria-label="进入演示模式"
+            aria-pressed="false">
+      <span id="present-icon" class="toolbar-icon" aria-hidden="true"></span>
+      <span id="present-label">演示</span>
+    </button>
+    </div>
+    <div class="export-wrap">
+      <button id="btn-export" type="button"
+              title="导出图表（E）"
+              aria-label="导出图表"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="export-menu">
+        导出 <span class="toolbar-icon toolbar-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="export-menu" id="export-menu" role="menu" aria-label="导出">
+        <div class="export-menu-header" role="presentation">
+          <div><strong>导出图表</strong><span>便携、整洁的输出</span></div>
+          <kbd>E</kbd>
+        </div>
+        <div class="export-menu-section" role="group" aria-label="分享">
+          <span class="export-menu-heading" aria-hidden="true">分享</span>
+          <button data-action="route-share-card" type="button" role="menuitem" tabindex="-1" hidden disabled><span class="export-item-copy"><strong>路径分享卡片</strong><small class="hint">1200&times;630 PNG</small></span></button>
+          <button data-action="reach-share-card" type="button" role="menuitem" tabindex="-1" hidden disabled><span class="export-item-copy"><strong>可达范围分享卡片</strong><small class="hint">1200&times;630 PNG</small></span></button>
+          <button data-action="copy" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>复制图表</strong><small class="hint">复制 PNG 到剪贴板</small></span></button>
+        </div>
+        <div class="export-menu-section" role="group" aria-label="位图">
+          <span class="export-menu-heading" aria-hidden="true">图像</span>
+          <button data-format="png" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>PNG</strong><small class="hint">无损图像</small></span></button>
+          <button data-format="jpeg" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>JPEG</strong><small class="hint">紧凑图像</small></span></button>
+          <button data-format="webp" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>WebP</strong><small class="hint">现代图像格式</small></span></button>
+        </div>
+        <div class="export-menu-section" role="group" aria-label="矢量与动效">
+          <span class="export-menu-heading" aria-hidden="true">矢量与动效</span>
+          <button data-format="svg" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>SVG · 自动</strong><small class="hint">匹配宿主主题</small></span></button>
+          <button data-format="svg-light" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>SVG · 浅色</strong><small class="hint">始终浅色</small></span></button>
+          <button data-format="svg-dark" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>SVG · 深色</strong><small class="hint">始终深色</small></span></button>
+          <button data-format="webm" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>WebM</strong><small class="hint">6 秒动效</small></span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-row"
+           data-preset-badge-signal-flow="信号流"
+           data-preset-badge-blueprint="蓝图 / 修订 01"
+           data-preset-badge-editorial="编辑风格 / 现场笔记">
+        <div class="pulse-dot"></div>
+        <h1>BLI Map 内部实现（详细版）</h1>
+      </div>
+      <p class="subtitle">开放寻址单容器 —— CPython 探测 · 异型键查找 · 三种槽型 ｜ blender::Map&lt;Key,Value&gt;</p>
+    </div>
+
+    <script id="archify-source-evidence-data" type="application/json">{"schemaVersion":1,"verified":true,"repository":{"url":"https://projects.blender.org/blender/blender.git","revision":"e2e58a974edb3a5e949aa273d7ff940b5c5797c8","shortRevision":"e2e58a9","label":"projects.blender.org/blender/blender.git","linkMode":"local-only"},"referenceCount":12,"nodes":{"caller":[{"path":"source/blender/nodes/NOD_geometry_nodes_lazy_function.hh","line":365,"endLine":365,"label":"Map\u003cint, lf::FunctionNode *\u003e"}],"api":[{"path":"source/blender/blenlib/BLI_map.hh","line":265,"endLine":335,"label":"add 家族"},{"path":"source/blender/blenlib/BLI_map.hh","line":481,"endLine":488,"label":"add_or_modify"}],"aslookup":[{"path":"source/blender/blenlib/BLI_map.hh","line":508,"endLine":528,"label":"lookup_ptr_as"}],"hash":[{"path":"source/blender/blenlib/BLI_map_slots.hh","line":48,"endLine":57,"label":"槽内无 stored_hash"}],"probe":[{"path":"source/blender/blenlib/BLI_probing_strategies.hh","line":198,"endLine":216,"label":"DefaultProbingStrategy"}],"slots":[{"path":"source/blender/blenlib/BLI_map.hh","line":163,"endLine":172,"label":"LOAD_FACTOR 与 slots_"}],"simple":[{"path":"source/blender/blenlib/BLI_map_slots.hh","line":48,"endLine":57,"label":"0 空 1 占 2 删"}],"intrusive":[{"path":"source/blender/blenlib/BLI_hash_tables.hh","line":185,"endLine":199,"label":"PointerKeyInfo"}],"remove":[{"path":"source/blender/blenlib/BLI_map.hh","line":387,"endLine":394,"label":"remove_contained_as"}],"grow":[{"path":"source/blender/blenlib/BLI_hash_tables.hh","line":54,"endLine":60,"label":"槽总数公式"}],"vs":[{"path":"source/blender/blenlib/BLI_vector_set.hh","line":149,"endLine":151,"label":"keys_ 分离"}]}}</script>
+    <script id="archify-i18n-data" type="application/json">{"locale":"zh-CN","messages":{"viewer.kind.frontend":"前端","viewer.kind.backend":"后端","viewer.kind.database":"数据库","viewer.kind.cloud":"云服务","viewer.kind.security":"安全","viewer.kind.messagebus":"消息总线","viewer.kind.external":"外部系统","viewer.kind.neutral":"中性","viewer.kind.node":"节点","viewer.kind.start":"开始","viewer.kind.active":"活动","viewer.kind.waiting":"等待","viewer.kind.decision":"决策","viewer.kind.success":"成功","viewer.kind.failure":"失败","viewer.toolbar.actions":"图表操作","viewer.theme.toggle.title":"切换主题（T）","viewer.theme.toggle":"切换颜色主题","viewer.theme.dark":"深色","viewer.theme.light":"浅色","viewer.preset.choose.title":"选择视觉风格（S 循环切换）","viewer.preset.choose":"选择视觉风格","viewer.preset.style":"风格","viewer.preset.menu":"视觉风格","viewer.preset.identity":"视觉表达","viewer.preset.cycles":"循环切换","viewer.preset.classic":"经典","viewer.preset.classic.short":"经典","viewer.preset.classic.hint":"稳定的技术默认风格","viewer.preset.flow":"信号流","viewer.preset.flow.short":"流动","viewer.preset.flow.hint":"突出动态流向","viewer.preset.blueprint":"蓝图","viewer.preset.blueprint.hint":"工程评审","viewer.preset.editorial":"编辑风格","viewer.preset.editorial.hint":"适合发布与上线说明","viewer.preset.badge.signalFlow":"信号流","viewer.preset.badge.blueprint":"蓝图 / 修订 01","viewer.preset.badge.editorial":"编辑风格 / 现场笔记","viewer.preset.badge.editorialPlate":"ARCHIFY / 图版 04","viewer.preset.current":"当前视觉风格：{style}。选择视觉风格","viewer.motion.live":"动态","viewer.motion.still":"静态","viewer.motion.pause":"暂停动效","viewer.motion.resume":"恢复动效","viewer.motion.reduced":"已根据减少动态效果偏好暂停动效","viewer.motion.hidden":"页面不可见时已暂停动效","viewer.motion.yielding":"暂停动效；当前让位于{owner}","viewer.motion.yielding.title":"动态预览已启用 · 正在让位于{owner}","viewer.owner.route":"路径探测","viewer.owner.lens":"语义透镜","viewer.owner.relationship":"关系预览","viewer.owner.intent":"意图追踪","viewer.owner.focus":"语义聚焦","viewer.owner.legend":"图例预览","viewer.owner.reader":"读者交互","viewer.present.enter":"进入演示模式","viewer.present.enter.title":"演示模式（F）","viewer.present.exit":"退出演示模式","viewer.present.exit.title":"退出演示模式（F 或 Escape）","viewer.present.present":"演示","viewer.present.exit.label":"退出","viewer.export.button":"导出","viewer.export.button.title":"导出图表（E）","viewer.export.diagram":"导出图表","viewer.export.menu":"导出","viewer.export.subtitle":"便携、整洁的输出","viewer.export.share":"分享","viewer.export.shareCard":"分享卡片","viewer.export.routeShareCard":"路径分享卡片","viewer.export.reachShareCard":"可达范围分享卡片","viewer.export.copyDiagram":"复制图表","viewer.export.clipboardPng":"复制 PNG 到剪贴板","viewer.export.raster":"位图","viewer.export.image":"图像","viewer.export.lossless":"无损图像","viewer.export.compact":"紧凑图像","viewer.export.modern":"现代图像格式","viewer.export.vectorMotion":"矢量与动效","viewer.export.vectorMotion.heading":"矢量与动效","viewer.export.editable":"可编辑矢量图","viewer.export.svg.auto":"SVG · 自动","viewer.export.svg.auto.hint":"匹配宿主主题","viewer.export.svg.light":"SVG · 浅色","viewer.export.svg.light.hint":"始终浅色","viewer.export.svg.dark":"SVG · 深色","viewer.export.svg.dark.hint":"始终深色","viewer.export.motion6s":"6 秒动效","viewer.export.unsupported":"当前浏览器不支持","viewer.export.clipboardUnsupported":"当前浏览器不支持写入图片剪贴板","viewer.export.clipboardUnsupported.short":"此浏览器不支持写入图片剪贴板。","viewer.export.motionUnavailable":"当前浏览器无法录制动效","viewer.export.webmUnavailable":"当前浏览器不支持 WebM","viewer.export.failed":"导出失败：{message}","viewer.export.unknownVariant":"未知的分享卡片类型：{variant}","viewer.export.routeRequired":"请先追踪路径，再导出路径分享卡片","viewer.export.reachRequired":"请先追踪编写可达范围，再导出可达范围分享卡片","viewer.export.unknown":"未知错误","viewer.export.routeFailed":"路径分享卡片导出失败：{message}","viewer.export.reachFailed":"可达范围分享卡片导出失败：{message}","viewer.export.copyFailed":"复制失败：{message}","viewer.export.copiedPng":"已将 PNG 复制到剪贴板","viewer.export.downloadedRoute":"已下载路径分享卡片","viewer.export.downloadedReach":"已下载可达范围分享卡片","viewer.export.downloadedWebm":"已下载 WebM","viewer.export.recording":"正在录制 6 秒动效…","viewer.export.card.routeSummary.one":"路径：{source} → {target} · {count} 步","viewer.export.card.routeSummary.other":"路径：{source} → {target} · {count} 步","viewer.export.card.reachSummary":"从{origin}开始的编写{direction} · {nodes} · {links} · 最深 {hops}","viewer.export.card.node.one":"{count} 个节点","viewer.export.card.node.other":"{count} 个节点","viewer.export.card.link.one":"{count} 条连接","viewer.export.card.link.other":"{count} 条连接","viewer.export.card.hop.one":"{count} 跳","viewer.export.card.hop.other":"{count} 跳","viewer.export.card.routeBadge":"ARCHIFY · 路径 · {hops}","viewer.export.card.reachBadge":"ARCHIFY · {direction}可达范围","viewer.export.direction.upstream":"上游","viewer.export.direction.downstream":"下游","viewer.export.error.canvasUnavailable":"无法为{label}使用画布","viewer.export.error.contextUnavailable":"无法为{label}创建二维画布上下文","viewer.export.error.toBlobUnavailable":"{label}无法使用 canvas.toBlob","viewer.export.error.toBlobNull":"{label}的 canvas.toBlob 未返回数据","viewer.export.error.variantsCombined":"无法同时组合多种分享卡片类型","viewer.export.error.viewerState":"分享卡片导出无法移除临时 Viewer 状态","viewer.export.error.routeState":"路径卡片导出无法安全保留已解析路径","viewer.export.error.reachState":"可达范围卡片导出无法安全保留编写的可达范围","viewer.export.error.webmRequirements":"WebM 动效导出需要追踪动画及浏览器 MediaRecorder 支持","viewer.export.error.mediaRecorder":"MediaRecorder 录制失败","viewer.export.error.emptyWebm":"MediaRecorder 生成了空的 WebM","viewer.export.error.webmBackground":"无法为 WebM 导出加载 SVG 背景","viewer.guide.title":"探索此系统","viewer.focus.selectedNodes":"已选择 {count} 个节点","viewer.guide.eyebrow":"图表指南","viewer.guide.close":"关闭图表指南","viewer.guide.inspecting":"正在检查已编译语义","viewer.guide.actions":"图表探索操作","viewer.guide.find":"查找任意节点","viewer.guide.find.hint":"搜索标签、职责、类型和稳定 ID。","viewer.guide.route":"追踪路径","viewer.guide.route.aria":"追踪有向路径","viewer.guide.route.hint":"查看两个语义节点如何按编写方向连接。","viewer.guide.map":"查看完整系统","viewer.guide.map.hint":"打开带实时视口和稳定节点的语义雷达。","viewer.guide.lens":"比较语义类型","viewer.guide.lens.hint":"统计角色、显示流量并比较直接编写的连接。","viewer.guide.present":"进入演示模式","viewer.guide.present.hint":"让实时图表占满视口，同时不改变导出。","viewer.guide.shortcuts":"其他键盘快捷键","viewer.guide.shortcut.export":"导出","viewer.guide.shortcut.theme":"主题","viewer.guide.shortcut.style":"风格","viewer.guide.shortcut.reset":"重置","viewer.guide.shortcut.zoomIn":"放大","viewer.guide.shortcut.zoomOut":"缩小","viewer.guide.shortcut.close":"关闭","viewer.guide.facts":"{nodes} · {relationships}","viewer.guide.fact.node.one":"{count} 个语义节点","viewer.guide.fact.node.other":"{count} 个语义节点","viewer.guide.fact.relationship.one":"{count} 条关系","viewer.guide.fact.relationship.other":"{count} 条关系","viewer.guide.open":"打开图表指南","viewer.finder.title":"查找节点","viewer.finder.close":"关闭节点查找器","viewer.finder.placeholder":"搜索标签或 ID","viewer.finder.search":"搜索图表节点","viewer.finder.results":"图表节点","viewer.finder.empty":"没有匹配的节点","viewer.finder.result.focus":"聚焦{label}","viewer.finder.result.routeStart":"选择{label}作为路径起点","viewer.finder.result.routeTarget":"选择{label}作为路径终点，{links}","viewer.finder.status.empty":"没有匹配的节点","viewer.finder.status.count.one":"{count} 个匹配节点","viewer.finder.status.count.other":"{count} 个匹配节点","viewer.finder.noun.nodes":"个节点","viewer.finder.link.one":"{count} 条连接","viewer.finder.link.other":"{count} 条连接","viewer.finder.result.focus.one":"聚焦{label}，{count} 条相关连接","viewer.finder.result.focus.other":"聚焦{label}，{count} 条相关连接","viewer.finder.status.filtered":"{visible}/{available} {noun}","viewer.finder.status.all":"{available} {noun}","viewer.passport.eyebrow":"语义护照","viewer.passport.metadata":"节点元数据","viewer.passport.evidence":"已验证的源代码证据","viewer.passport.verified":"已验证来源","viewer.passport.verificationScope":"已按固定修订版本验证本地 Git 证据，未检查远程访问权限。","viewer.passport.reach":"编写可达范围","viewer.passport.reach.trace":"追踪编写的可达性","viewer.passport.upstream":"上游","viewer.passport.downstream":"下游","viewer.passport.upstream.trace":"追踪上游编写可达性","viewer.passport.downstream.trace":"追踪下游编写可达性","viewer.passport.close":"关闭语义护照","viewer.passport.move":"移动语义护照。可拖动、使用方向键移动，或按 Home 恢复自动位置。","viewer.passport.copy":"复制链接","viewer.passport.copy.focus":"复制聚焦节点的链接","viewer.passport.relations":"关系","viewer.passport.relations.show":"显示关联关系","viewer.passport.relations.hide":"隐藏关联关系","viewer.passport.relations.list":"关联关系","viewer.passport.copyRelation":"复制关系","viewer.passport.copyNode":"复制节点","viewer.passport.copyPinned":"复制固定关系的链接","viewer.passport.copySource":"复制来源节点的链接","viewer.passport.copy.focused.success":"已复制聚焦节点链接","viewer.passport.copy.pinned.success":"已复制固定关系链接","viewer.passport.copy.focused.failed":"无法复制聚焦节点链接","viewer.passport.copy.pinned.failed":"无法复制固定关系链接","viewer.passport.relationship.none":"没有关联关系","viewer.passport.relationship.count.one":"{count} 条关系","viewer.passport.relationship.count.other":"{count} 条关系","viewer.passport.relationship.show.one":"显示 {count} 条关联关系","viewer.passport.relationship.show.other":"显示 {count} 条关联关系","viewer.passport.relationship.summary":"{out} 条出向 · {in} 条入向{loops}","viewer.passport.relationship.loops":" · {count} 条自环","viewer.passport.relationship.explorer":"直接关系浏览器","viewer.passport.relationship.help":"使用方向键浏览关系。按 Enter 或空格键固定详情；按 Escape 清除。","viewer.passport.relationship.loopsBack":"回环","viewer.passport.relationship.connectsTo":"连接到","viewer.passport.relationship.connectsFrom":"连接自","viewer.passport.relationship.pinned":"已固定关系 · {from} → {to} · {label}","viewer.passport.relationship.inspect":"检查第 {index}/{total} 条关系：{from} 到 {to}，{label}。按 Enter 查看详情。","viewer.passport.relationship.group.out":"出向","viewer.passport.relationship.group.in":"入向","viewer.passport.relationship.group.loop":"自环","viewer.passport.relationship.row":"{group}：{relationship}，{neighbor}","viewer.passport.relationship.direction.out":"出 →","viewer.passport.relationship.direction.in":"← 入","viewer.passport.relationship.direction.loop":"自环","viewer.passport.sourceCount.one":"{count} 个已验证来源引用","viewer.passport.sourceCount.other":"{count} 个已验证来源引用","viewer.passport.sourceMarker":"来源","viewer.passport.beacon.one":"{count} 个已验证来源；聚焦此节点以检查","viewer.passport.beacon.other":"{count} 个已验证来源；聚焦此节点以检查","viewer.passport.repository.open":"打开已验证的仓库修订版本 {revision}","viewer.passport.source.open":"打开修订版本 {revision} 中已验证的来源 {path}","viewer.passport.source.openLink":"打开 ↗","viewer.passport.reach.upstream.one":"追踪 {count} 个上游编写节点","viewer.passport.reach.upstream.other":"追踪 {count} 个上游编写节点","viewer.passport.reach.downstream.one":"追踪 {count} 个下游编写节点","viewer.passport.reach.downstream.other":"追踪 {count} 个下游编写节点","viewer.passport.reach.noUpstream":"没有上游编写节点","viewer.passport.reach.noDownstream":"没有下游编写节点","viewer.passport.reach.status":"{direction} · {nodes} 个节点 · {links} 条连接 · 最深 {hops} 跳","viewer.route.eyebrow":"路径","viewer.route.start":"点击路径的起点","viewer.route.start.find":"查找起点","viewer.route.start.find.aria":"查找路径起点","viewer.route.copy":"复制链接","viewer.route.copy.aria":"复制已追踪路径的链接","viewer.route.clear":"清除","viewer.route.clear.aria":"清除路径探测","viewer.route.traced":"路径","viewer.route.pickTwo":"在图上点两个节点","viewer.route.pickOne":"在图上点一个节点","viewer.route.controls":"路径旅程控制","viewer.route.previous":"上一个路径位置","viewer.route.play":"播放路径旅程","viewer.route.pause":"暂停路径旅程","viewer.route.replay":"重播路径旅程","viewer.route.next":"下一个路径位置","viewer.route.journey":"旅程","viewer.route.pause.label":"暂停","viewer.route.replay.label":"重播","viewer.route.overview":"总览","viewer.route.overview.aria":"显示完整路径总览","viewer.route.instructions":"先点起点，再点终点，沿箭头方向找路。","viewer.route.destination":"从{label}出发，走到哪里？","viewer.route.destination.find":"查找目标","viewer.route.destination.find.aria":"查找可达的路径目标","viewer.route.differentDestination":"选择其他目标","viewer.route.distinct":"请选两个不同的节点。","viewer.route.unreachable":"走不到{label}","viewer.route.unreachable.detail":"沿箭头方向，从{source}走不到{target}。请选一个高亮节点。","viewer.route.start.instructions":"接着选终点，能走到的节点会亮起。","viewer.route.copy.success":"已复制路径链接","viewer.route.copy.failed":"无法复制路径链接","viewer.route.position":"路径位置 {index}/{total}：{label}","viewer.route.step":"第 {index}/{total} 步 · {phase} · {label}","viewer.route.motionRequired":"自动旅程需要动态模式","viewer.route.trigger.clear":"清除已追踪路径","viewer.route.overview.status":"{nodes} · {hops} · 最短路径","viewer.route.overview.node.one":"{count} 个节点","viewer.route.overview.node.other":"{count} 个节点","viewer.route.overview.hop.one":"{count} 步","viewer.route.overview.hop.other":"{count} 步","viewer.route.phase.playing":"播放中","viewer.route.phase.complete":"已完成","viewer.route.phase.inspecting":"检查中","viewer.route.destination.count.one":"有 {count} 个能走到的节点已高亮，点一下。","viewer.route.destination.count.other":"有 {count} 个能走到的节点已高亮，点一个。","viewer.route.noOutgoing":"这个节点没有向外的箭头。清除后换一个起点。","viewer.route.result.title":"{source} 到 {target}","viewer.route.finder.source.title":"选择路径起点","viewer.route.finder.source.placeholder":"搜索路径来源","viewer.route.finder.source.empty":"没有匹配的路径来源","viewer.route.finder.source.results":"可作为路径起点的节点","viewer.route.finder.source.noun":"个路径来源","viewer.route.finder.source.badge":"起点","viewer.route.finder.target.title":"从{label}出发的目标","viewer.route.finder.target.placeholder":"搜索可达目标","viewer.route.finder.target.empty":"没有匹配的可达目标","viewer.route.finder.target.results":"可达路径目标","viewer.route.finder.target.noun":"个可达目标","viewer.route.hop.one":"{count} 跳","viewer.route.hop.other":"{count} 跳","viewer.lens.eyebrow":"语义透镜","viewer.lens.title":"比较系统角色","viewer.lens.close":"关闭语义透镜","viewer.lens.instruction":"最多选择两种语义类型。选择一种可显示其真实流量；选择两种只比较直接编写的关系。","viewer.lens.kinds":"语义类型","viewer.lens.choose":"选择一种类型以检查其节点和相连关系。","viewer.lens.copy":"复制语义透镜链接","viewer.lens.clear":"清除语义透镜","viewer.lens.open":"打开语义透镜","viewer.lens.openActive":"打开当前语义透镜","viewer.lens.legend":"语义图例","viewer.lens.legend.inspect.one":"检查{label}，{count} 个节点","viewer.lens.legend.inspect.other":"检查{label}，{count} 个节点","viewer.lens.kind.count.one":"{label}，{count} 个节点","viewer.lens.kind.count.other":"{label}，{count} 个节点","viewer.lens.compare.one":"{first} → {second}：{forward} · {second} → {first}：{reverse} · 共 {count} 条直接关系","viewer.lens.compare.other":"{first} → {second}：{forward} · {second} → {first}：{reverse} · 共 {count} 条直接关系","viewer.lens.single":"{nodes} · {relationships} · 已连接节点保持可见","viewer.lens.node.one":"{count} 个{label}节点","viewer.lens.node.other":"{count} 个{label}节点","viewer.lens.relationship.one":"{count} 条相连关系","viewer.lens.relationship.other":"{count} 条相连关系","viewer.radar.title":"语义雷达","viewer.radar.building":"正在构建总览","viewer.radar.openFull":"打开完整语义雷达","viewer.radar.open":"打开雷达","viewer.radar.close":"关闭语义雷达","viewer.radar.surface":"图表总览。点击节点进行聚焦，或使用方向键平移。","viewer.radar.click":"点击节点","viewer.radar.drag":"拖动平移","viewer.radar.space":"语义雷达需要更多地图可见空间。","viewer.radar.nodes":"语义图表雷达节点","viewer.radar.focus":"从语义雷达聚焦{label}","viewer.radar.status":"{count} 个节点 · {viewport}","viewer.radar.fullMap":"{count} 个节点 · 完整地图","viewer.radar.compacted":"已收紧雷达，避免遮挡语义护照或地图控件。","viewer.radar.cancelWaiting":"取消等待更多地图空间的语义雷达","viewer.radar.needsSpace":"语义雷达需要更多可见地图空间","viewer.radar.viewport.full":"完整地图","viewer.radar.viewport.width":"宽度 {percent}%","viewer.radar.viewport.scale":"视口 {percent}%","viewer.nav.controls":"图表视图控制","viewer.nav.route":"追踪有向路径","viewer.nav.route.title":"追踪路径（R）","viewer.nav.route.short":"路径","viewer.nav.radar":"打开语义雷达","viewer.nav.radar.title":"语义雷达（M）","viewer.nav.radar.short":"地图","viewer.nav.lens":"打开语义透镜","viewer.nav.lens.title":"语义透镜（L）","viewer.nav.lens.short":"透镜","viewer.nav.find":"查找节点","viewer.nav.find.title":"查找节点（/）","viewer.outline.title":"节点索引","viewer.rail.show":"要点与索引","viewer.rail.controls":"侧栏","viewer.rail.collapse":"收起侧栏","viewer.rail.bottom":"移到图下方","viewer.rail.right":"移到图右侧","viewer.nav.guide":"打开图表指南","viewer.nav.guide.title":"图表指南（?）","viewer.nav.zoomOut":"缩小","viewer.nav.zoomOut.title":"缩小（-）","viewer.nav.reset":"重置图表视图","viewer.nav.reset.title":"重置视图（0）","viewer.nav.read":"阅读","viewer.nav.zoomIn":"放大","viewer.nav.zoomIn.title":"放大（+）","viewer.nav.camera":"{hint}。重置图表视图","viewer.nav.camera.title":"{semantic}{hint} · 重置视图（0）","viewer.nav.camera.semantic":"语义相机已启用 · ","viewer.nav.level.map":"概览","viewer.nav.level.read":"阅读","viewer.nav.level.full":"完整","viewer.nav.level.auto":"自动","viewer.nav.detail.map":"放大以显示关系标签和节点上下文","viewer.nav.detail.read":"再次放大以显示标签和注释","viewer.nav.detail.full":"完整图表详情","viewer.intent.summary":"{label}。{out} 条出向，{in} 条入向{loops}。共 {total} 条连接。按 Enter 查看详情。","viewer.intent.loops":"，{count} 条自环","viewer.common.copied":"已复制","viewer.common.copyFailed":"复制失败","viewer.common.copyLink":"复制链接","viewer.common.clear":"清除","viewer.common.close":"关闭"}}</script>
+    <!-- Main Diagram -->
+    <div class="diagram-container" data-detail-level="read"
+         data-preset-badge-editorial-plate="ARCHIFY / 图版 04">
+      <svg viewBox="0 0 1085 750" role="img" lang="zh-CN" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
+        <title id="archify-diagram-title">BLI Map 内部实现（详细版）</title>
+        <desc id="archify-diagram-description">开放寻址单容器 —— CPython 探测 · 异型键查找 · 三种槽型 ｜ blender::Map&lt;Key,Value&gt;</desc>
+        <!-- Definitions -->
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" class="m-default" />
+          </marker>
+          <marker id="arrowhead-emphasis" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" class="m-emphasis" />
+          </marker>
+          <marker id="arrowhead-security" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" class="m-security" />
+          </marker>
+          <marker id="arrowhead-dashed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" class="m-dashed" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" class="c-grid" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <!-- Background Grid -->
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- Boundaries (behind everything) -->
+
+
+        <!-- Connection paths (before components for correct z-order) -->
+        <g data-graph-role="automatic-crossover" style="--step:0">
+          <path data-graph-role="automatic-crossover-underlay" d="M 205 353 L 285 353" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="caller" data-edge-to="api" data-edge-label="add / lookup" data-edge-key="0" data-edge-id="caller-to-api" data-composition-points="205,353;285,353" data-composition-crossover="halo" data-composition-independent="true" d="M 205 353 L 285 353" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:1">
+          <path data-graph-role="automatic-crossover-underlay" d="M 378 386 L 378 490" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="api" data-edge-to="aslookup" data-edge-label="字符串键场景" data-edge-key="1" data-edge-id="api-to-aslookup" data-composition-points="378,386;378,490" data-composition-crossover="halo" data-composition-independent="true" d="M 378 386 L 378 490" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:2">
+          <path data-graph-role="automatic-crossover-underlay" d="M 385 320 L 385 304 Q 385 296 393 296 L 538 296 Q 546 296 546 288 L 546 139 Q 546 131 554 131 L 570 131" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="api" data-edge-to="hash" data-edge-label="先算哈希" data-edge-key="2" data-edge-id="api-to-hash" data-composition-points="385,320;385,296;546,296;546,131;570,131" data-composition-crossover="halo" data-composition-independent="true" d="M 385 320 L 385 304 Q 385 296 393 296 L 538 296 Q 546 296 546 288 L 546 139 Q 546 131 554 131 L 570 131" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:3">
+          <path data-graph-role="automatic-crossover-underlay" d="M 485 346 L 501 346 Q 509 346 509 354 L 509 354 Q 509 362 517 362 L 538 362 Q 546 362 546 354 L 546 352 Q 546 344 554 344 L 570 344" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="api" data-edge-to="probe" data-edge-label="探测定位" data-edge-key="3" data-edge-id="api-to-probe" data-composition-points="485,346;509,346;509,362;546,362;546,344;570,344" data-composition-crossover="halo" data-composition-independent="true" d="M 485 346 L 501 346 Q 509 346 509 354 L 509 354 Q 509 362 517 362 L 538 362 Q 546 362 546 354 L 546 352 Q 546 344 554 344 L 570 344" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:4">
+          <path data-graph-role="automatic-crossover-underlay" d="M 670.5 162 L 670.5 320" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="hash" data-edge-to="probe" data-edge-label="起始槽" data-edge-key="4" data-edge-id="hash-to-probe" data-composition-points="670.5,162;670.5,320" data-composition-crossover="halo" data-composition-independent="true" d="M 670.5 162 L 670.5 320" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:5">
+          <path data-graph-role="automatic-crossover-underlay" d="M 684.5 320 L 684.5 304 Q 684.5 296 692.5 296 L 818 296 Q 826 296 826 288 L 826 139 Q 826 131 834 131 L 850 131" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="probe" data-edge-to="slots" data-edge-label="occupy / lookup" data-edge-key="5" data-edge-id="probe-to-slots" data-composition-points="684.5,320;684.5,296;826,296;826,131;850,131" data-composition-crossover="halo" data-composition-independent="true" d="M 684.5 320 L 684.5 304 Q 684.5 296 692.5 296 L 818 296 Q 826 296 826 288 L 826 139 Q 826 131 834 131 L 850 131" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:6">
+          <path data-graph-role="automatic-crossover-underlay" d="M 954.5 162 L 954.5 320" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="slots" data-edge-to="simple" data-edge-label="默认槽型" data-edge-key="6" data-edge-id="slots-to-simple" data-composition-points="954.5,162;954.5,320" data-composition-crossover="halo" data-composition-independent="true" d="M 954.5 162 L 954.5 320" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:7">
+          <path data-graph-role="automatic-crossover-underlay" d="M 947.5 382 L 947.5 428 Q 947.5 436 939.5 436 L 675.5 436 Q 667.5 436 667.5 444 L 667.5 490" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="simple" data-edge-to="intrusive" data-edge-label="K* 时换槽型" data-edge-key="7" data-edge-id="simple-to-intrusive" data-composition-points="947.5,382;947.5,436;667.5,436;667.5,490" data-composition-crossover="halo" data-composition-independent="true" d="M 947.5 382 L 947.5 428 Q 947.5 436 939.5 436 L 675.5 436 Q 667.5 436 667.5 444 L 667.5 490" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:8">
+          <path data-graph-role="automatic-crossover-underlay" d="M 485 360 L 530 360 Q 538 360 538 368 L 538 479 Q 538 487 546 487 L 818 487 Q 826 487 826 495 L 826 513 Q 826 521 834 521 L 850 521" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="api" data-edge-to="remove" data-edge-label="remove" data-edge-key="8" data-edge-id="api-to-remove" data-composition-points="485,360;538,360;538,487;826,487;826,521;850,521" data-composition-crossover="halo" data-composition-independent="true" d="M 485 360 L 530 360 Q 538 360 538 368 L 538 479 Q 538 487 546 487 L 818 487 Q 826 487 826 495 L 826 513 Q 826 521 834 521 L 850 521" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:9">
+          <path data-graph-role="automatic-crossover-underlay" d="M 935.5 552 L 935.5 620" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="remove" data-edge-to="grow" data-edge-label="墓碑堆积触发" data-edge-key="9" data-edge-id="remove-to-grow" data-composition-points="935.5,552;935.5,620" data-composition-crossover="halo" data-composition-independent="true" d="M 935.5 552 L 935.5 620" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:10">
+          <path data-graph-role="automatic-crossover-underlay" d="M 949.5 620 L 949.5 582 Q 949.5 574 941.5 574 L 776 574 Q 768 574 768 566 L 768 393 Q 768 385 776 385 L 810 385 Q 818 385 818 377 L 818 194 Q 818 186 826 186 L 932.5 186 Q 940.5 186 940.5 178 L 940.5 162" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="grow" data-edge-to="slots" data-edge-label="重建槽表" data-edge-key="10" data-edge-id="grow-to-slots" data-composition-points="949.5,620;949.5,574;768,574;768,385;818,385;818,186;940.5,186;940.5,162" data-composition-crossover="halo" data-composition-independent="true" d="M 949.5 620 L 949.5 582 Q 949.5 574 941.5 574 L 776 574 Q 768 574 768 566 L 768 393 Q 768 385 776 385 L 810 385 Q 818 385 818 377 L 818 194 Q 818 186 826 186 L 932.5 186 Q 940.5 186 940.5 178 L 940.5 162" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:11">
+          <path data-graph-role="automatic-crossover-underlay" d="M 385 620 L 385 563 Q 385 555 377 555 L 290 555 Q 282 555 282 547 L 282 418 Q 282 410 290 410 L 384 410 Q 392 410 392 402 L 392 386" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="vs" data-edge-to="api" data-edge-label="路线对照" data-edge-key="11" data-edge-id="vs-to-api" data-composition-points="385,620;385,555;282,555;282,410;392,410;392,386" data-composition-crossover="halo" data-composition-independent="true" d="M 385 620 L 385 563 Q 385 555 377 555 L 290 555 Q 282 555 282 547 L 282 418 Q 282 410 290 410 L 384 410 Q 392 410 392 402 L 392 386" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:12">
+          <path data-graph-role="automatic-crossover-underlay" d="M 485 521 L 538 521 Q 546 521 546 513 L 546 366 Q 546 358 554 358 L 570 358" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="aslookup" data-edge-to="probe" data-edge-label="同一条探测路径" data-edge-key="12" data-edge-id="aslookup-to-probe" data-composition-points="485,521;546,521;546,358;570,358" data-composition-crossover="halo" data-composition-independent="true" d="M 485 521 L 538 521 Q 546 521 546 513 L 546 366 Q 546 358 554 358 L 570 358" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        </g>
+
+        <!-- Components -->
+        <g id="node-caller" data-node-id="caller" data-node-label="调用方（Repeat 侧）" tabindex="0" role="button" aria-label="聚焦调用方（Repeat 侧），group_node_map / nodes_by_context, 架构组件" aria-pressed="false" data-node-kind="external" data-node-sublabel="group_node_map / nodes_by_context" data-node-context="架构组件">
+          <title>调用方（Repeat 侧） · group_node_map / nodes_by_context · 架构组件</title>
+          <rect x="40" y="320" width="165" height="66" rx="6" class="c-mask"/>
+          <rect x="40" y="320" width="165" height="66" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="person" class="semantic-sigil s-external" transform="translate(46 326) scale(0.6875)">
+            <circle cx="8" cy="4.5" r="2.5"/><path d="M3 14v-2a5 5 0 0 1 10 0v2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="122.5" y="351" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">调用方（Repeat 侧）</text>
+        <text data-detail="context" x="122.5" y="367" class="t-muted" font-size="7.9" text-anchor="middle">group_node_map / nodes_by_context</text>
+        </g>
+
+        <g id="node-api" data-node-id="api" data-node-label="Map 公开接口（全族）" tabindex="0" role="button" aria-label="聚焦Map 公开接口（全族），add_new / overwrite / or_add / pop, 架构组件" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="add_new / overwrite / or_add / pop" data-node-context="架构组件">
+          <title>Map 公开接口（全族） · add_new / overwrite / or_add / pop · 架构组件</title>
+          <rect x="285" y="320" width="200" height="66" rx="6" class="c-mask"/>
+          <rect x="285" y="320" width="200" height="66" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(291 326) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"/>
+            <path d="M2 6.5h12"/>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="385" y="351" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Map 公开接口（全族）</text>
+        <text data-detail="context" x="385" y="367" class="t-muted" font-size="9" text-anchor="middle">add_new / overwrite / or_add / pop</text>
+        </g>
+
+        <g id="node-aslookup" data-node-id="aslookup" data-node-label="异型键查找 _as 后缀族" tabindex="0" role="button" aria-label="聚焦异型键查找 _as 后缀族，用 StringRef 查 Map&lt;string,V&gt;，免构造/免拷贝, 架构组件" aria-pressed="false" data-node-kind="backend" data-node-sublabel="用 StringRef 查 Map&lt;string,V&gt;，免构造/免拷贝" data-node-context="架构组件">
+          <title>异型键查找 _as 后缀族 · 用 StringRef 查 Map&lt;string,V&gt;，免构造/免拷贝 · 架构组件</title>
+          <rect x="285" y="490" width="200" height="62" rx="6" class="c-mask"/>
+          <rect x="285" y="490" width="200" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(291 496) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="385" y="519" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">异型键查找 _as 后缀族</text>
+        <text data-detail="context" x="385" y="535" class="t-muted" font-size="7.2" text-anchor="middle">用 StringRef 查 Map&lt;string,V&gt;，免构造/免拷贝</text>
+        </g>
+
+        <g id="node-hash" data-node-id="hash" data-node-label="哈希层 get_default_hash" tabindex="0" role="button" aria-label="聚焦哈希层 get_default_hash，指针=地址；字符串=逐字节；不缓存哈希副本, 架构组件" aria-pressed="false" data-node-kind="backend" data-node-sublabel="指针=地址；字符串=逐字节；不缓存哈希副本" data-node-context="架构组件">
+          <title>哈希层 get_default_hash · 指针=地址；字符串=逐字节；不缓存哈希副本 · 架构组件</title>
+          <rect x="570" y="100" width="195" height="62" rx="6" class="c-mask"/>
+          <rect x="570" y="100" width="195" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(576 106) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="667.5" y="129" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">哈希层 get_default_hash</text>
+        <text data-detail="context" x="667.5" y="145" class="t-muted" font-size="7.7" text-anchor="middle">指针=地址；字符串=逐字节；不缓存哈希副本</text>
+        </g>
+
+        <g id="node-probe" data-node-id="probe" data-node-label="CPython 探测策略" tabindex="0" role="button" aria-label="聚焦CPython 探测策略，perturb&gt;&gt;=5; hash=5h+1+p, 架构组件" aria-pressed="false" data-node-kind="backend" data-node-sublabel="perturb&gt;&gt;=5; hash=5h+1+p" data-node-context="架构组件">
+          <title>CPython 探测策略 · perturb&gt;&gt;=5; hash=5h+1+p · 架构组件</title>
+          <rect x="570" y="320" width="215" height="62" rx="6" class="c-mask"/>
+          <rect x="570" y="320" width="215" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(576 326) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="677.5" y="349" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">CPython 探测策略</text>
+        <text data-detail="context" x="677.5" y="365" class="t-muted" font-size="9" text-anchor="middle">perturb&gt;&gt;=5; hash=5h+1+p</text>
+        </g>
+
+        <g id="node-slots" data-node-id="slots" data-node-label="slots_ 槽表（唯一容器）" tabindex="0" role="button" aria-label="聚焦slots_ 槽表（唯一容器），total=2 的幂；负载≤1/2；键值都在槽内, 架构组件" aria-pressed="false" data-node-kind="database" data-node-sublabel="total=2 的幂；负载≤1/2；键值都在槽内" data-node-context="架构组件">
+          <title>slots_ 槽表（唯一容器） · total=2 的幂；负载≤1/2；键值都在槽内 · 架构组件</title>
+          <rect x="850" y="100" width="195" height="62" rx="6" class="c-mask"/>
+          <rect x="850" y="100" width="195" height="62" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(856 106) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="947.5" y="129" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">slots_ 槽表（唯一容器）</text>
+        <text data-detail="context" x="947.5" y="145" class="t-muted" font-size="8.6" text-anchor="middle">total=2 的幂；负载≤1/2；键值都在槽内</text>
+        </g>
+
+        <g id="node-simple" data-node-id="simple" data-node-label="SimpleMapSlot（默认）" tabindex="0" role="button" aria-label="聚焦SimpleMapSlot（默认），state_ 枚举 + key/value 双 TypedBuffer, 架构组件" aria-pressed="false" data-node-kind="database" data-node-sublabel="state_ 枚举 + key/value 双 TypedBuffer" data-node-context="架构组件">
+          <title>SimpleMapSlot（默认） · state_ 枚举 + key/value 双 TypedBuffer · 架构组件</title>
+          <rect x="850" y="320" width="195" height="62" rx="6" class="c-mask"/>
+          <rect x="850" y="320" width="195" height="62" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(856 326) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="947.5" y="349" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">SimpleMapSlot（默认）</text>
+        <text data-detail="context" x="947.5" y="365" class="t-muted" font-size="8.2" text-anchor="middle">state_ 枚举 + key/value 双 TypedBuffer</text>
+        </g>
+
+        <g id="node-intrusive" data-node-id="intrusive" data-node-label="IntrusiveMapSlot（K* 特化）" tabindex="0" role="button" aria-label="聚焦IntrusiveMapSlot（K* 特化），状态编进指针：空=MAX 墓碑=MAX-1, 架构组件" aria-pressed="false" data-node-kind="database" data-node-sublabel="状态编进指针：空=MAX 墓碑=MAX-1" data-node-context="架构组件">
+          <title>IntrusiveMapSlot（K* 特化） · 状态编进指针：空=MAX 墓碑=MAX-1 · 架构组件</title>
+          <rect x="570" y="490" width="195" height="62" rx="6" class="c-mask"/>
+          <rect x="570" y="490" width="195" height="62" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(576 496) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="667.5" y="519" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">IntrusiveMapSlot（K* 特化）</text>
+        <text data-detail="context" x="667.5" y="535" class="t-muted" font-size="9" text-anchor="middle">状态编进指针：空=MAX 墓碑=MAX-1</text>
+        </g>
+
+        <g id="node-remove" data-node-id="remove" data-node-label="remove_contained 两行" tabindex="0" role="button" aria-label="聚焦remove_contained 两行，槽留墓碑即完——无补位无下标维护, 架构组件" aria-pressed="false" data-node-kind="backend" data-node-sublabel="槽留墓碑即完——无补位无下标维护" data-node-context="架构组件">
+          <title>remove_contained 两行 · 槽留墓碑即完——无补位无下标维护 · 架构组件</title>
+          <rect x="850" y="490" width="185" height="62" rx="6" class="c-mask"/>
+          <rect x="850" y="490" width="185" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(856 496) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="942.5" y="519" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">remove_contained 两行</text>
+        <text data-detail="context" x="942.5" y="535" class="t-muted" font-size="9" text-anchor="middle">槽留墓碑即完——无补位无下标维护</text>
+        </g>
+
+        <g id="node-grow" data-node-id="grow" data-node-label="扩容 realloc_and_reinsert" tabindex="0" role="button" aria-label="聚焦扩容 realloc_and_reinsert，total=power_of_2_max(ceil(n÷½))；槽逐个搬, 架构组件" aria-pressed="false" data-node-kind="backend" data-node-sublabel="total=power_of_2_max(ceil(n÷½))；槽逐个搬" data-node-context="架构组件">
+          <title>扩容 realloc_and_reinsert · total=power_of_2_max(ceil(n÷½))；槽逐个搬 · 架构组件</title>
+          <rect x="850" y="620" width="185" height="62" rx="6" class="c-mask"/>
+          <rect x="850" y="620" width="185" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(856 626) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="942.5" y="649" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">扩容 realloc_and_reinsert</text>
+        <text data-detail="context" x="942.5" y="665" class="t-muted" font-size="7.1" text-anchor="middle">total=power_of_2_max(ceil(n÷½))；槽逐个搬</text>
+        </g>
+
+        <g id="node-vs" data-node-id="vs" data-node-label="对照：VectorSet / Set" tabindex="0" role="button" aria-label="聚焦对照：VectorSet / Set，双容器有下标 / Set 无 value 通道, 架构组件" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="双容器有下标 / Set 无 value 通道" data-node-context="架构组件">
+          <title>对照：VectorSet / Set · 双容器有下标 / Set 无 value 通道 · 架构组件</title>
+          <rect x="285" y="620" width="200" height="62" rx="6" class="c-mask"/>
+          <rect x="285" y="620" width="200" height="62" rx="6" class="c-cloud" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(291 626) scale(0.6875)">
+            <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="385" y="649" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">对照：VectorSet / Set</text>
+        <text data-detail="context" x="385" y="665" class="t-muted" font-size="9" text-anchor="middle">双容器有下标 / Set 无 value 通道</text>
+        </g>
+
+        <!-- Connection labels -->
+        <g data-detail="context" data-edge-from="caller" data-edge-to="api" data-edge-label="add / lookup" data-edge-key="0" data-edge-id="caller-to-api">
+          <rect x="211.2" y="333" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="245" y="343" class="t-edge-emphasis" font-size="8" text-anchor="middle">add / lookup</text>
+        </g>
+        <g data-detail="context" data-edge-from="api" data-edge-to="aslookup" data-edge-label="字符串键场景" data-edge-key="1" data-edge-id="api-to-aslookup">
+          <rect x="304.4" y="431" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="338.2" y="441" class="t-edge-default" font-size="8" text-anchor="middle">字符串键场景</text>
+        </g>
+        <g data-detail="context" data-edge-from="api" data-edge-to="hash" data-edge-label="先算哈希" data-edge-key="2" data-edge-id="api-to-hash">
+          <rect x="441.3" y="276" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="465.5" y="286" class="t-edge-default" font-size="8" text-anchor="middle">先算哈希</text>
+        </g>
+        <g data-detail="context" data-edge-from="api" data-edge-to="probe" data-edge-label="探测定位" data-edge-key="3" data-edge-id="api-to-probe">
+          <rect x="484.8" y="334" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="509" y="344" class="t-edge-default" font-size="8" text-anchor="middle">探测定位</text>
+        </g>
+        <g data-detail="context" data-edge-from="hash" data-edge-to="probe" data-edge-label="起始槽" data-edge-key="4" data-edge-id="hash-to-probe">
+          <rect x="625.7" y="234" width="38.8" height="14" rx="3" class="c-mask"/>
+          <text x="645.1" y="244" class="t-edge-default" font-size="8" text-anchor="middle">起始槽</text>
+        </g>
+        <g data-detail="context" data-edge-from="probe" data-edge-to="slots" data-edge-label="occupy / lookup" data-edge-key="5" data-edge-id="probe-to-slots">
+          <rect x="714.25" y="276" width="82" height="14" rx="3" class="c-mask"/>
+          <text x="755.25" y="286" class="t-edge-default" font-size="8" text-anchor="middle">occupy / lookup</text>
+        </g>
+        <g data-detail="context" data-edge-from="slots" data-edge-to="simple" data-edge-label="默认槽型" data-edge-key="6" data-edge-id="slots-to-simple">
+          <rect x="900.0999999999999" y="234" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="924.3" y="244" class="t-edge-default" font-size="8" text-anchor="middle">默认槽型</text>
+        </g>
+        <g data-detail="context" data-edge-from="simple" data-edge-to="intrusive" data-edge-label="K* 时换槽型" data-edge-key="7" data-edge-id="simple-to-intrusive">
+          <rect x="776.1" y="416" width="62.8" height="14" rx="3" class="c-mask"/>
+          <text x="807.5" y="426" class="t-edge-default" font-size="8" text-anchor="middle">K* 时换槽型</text>
+        </g>
+        <g data-detail="context" data-edge-from="api" data-edge-to="remove" data-edge-label="remove" data-edge-key="8" data-edge-id="api-to-remove">
+          <rect x="493.20000000000005" y="384.75" width="38.8" height="14" rx="3" class="c-mask"/>
+          <text x="512.6" y="394.75" class="t-edge-default" font-size="8" text-anchor="middle">remove</text>
+        </g>
+        <g data-detail="context" data-edge-from="remove" data-edge-to="grow" data-edge-label="墓碑堆积触发" data-edge-key="9" data-edge-id="remove-to-grow">
+          <rect x="861.9000000000001" y="579" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="895.7" y="589" class="t-edge-default" font-size="8" text-anchor="middle">墓碑堆积触发</text>
+        </g>
+        <g data-detail="context" data-edge-from="grow" data-edge-to="slots" data-edge-label="重建槽表" data-edge-key="10" data-edge-id="grow-to-slots">
+          <rect x="834.55" y="554" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="858.75" y="564" class="t-edge-dashed" font-size="8" text-anchor="middle">重建槽表</text>
+        </g>
+        <g data-detail="context" data-edge-from="vs" data-edge-to="api" data-edge-label="路线对照" data-edge-key="11" data-edge-id="vs-to-api">
+          <rect x="330.6" y="580.5" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="354.8" y="590.5" class="t-edge-dashed" font-size="8" text-anchor="middle">路线对照</text>
+        </g>
+        <g data-detail="context" data-edge-from="aslookup" data-edge-to="probe" data-edge-label="同一条探测路径" data-edge-key="12" data-edge-id="aslookup-to-probe">
+          <rect x="552" y="432.5" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="590.6" y="442.5" class="t-edge-dashed" font-size="8" text-anchor="middle">同一条探测路径</text>
+        </g>
+
+        <!-- Boundary labels (foreground masks keep routes out of titles) -->
+
+
+        <!-- Legend -->
+        <g data-legend="" data-legend-bridge="">
+          <text x="40" y="714" class="t-primary" font-size="12" font-weight="650">图例</text>
+          <g data-legend-semantic-kind="frontend" data-legend-kind="frontend" data-legend-label="前端" data-legend-x="40" data-legend-baseline="734" data-legend-width="63">
+            <rect x="40" y="725" width="16" height="10" rx="2.5" class="c-frontend" stroke-width="1"/>
+            <text x="62" y="734" class="t-muted" font-size="10" font-weight="500">前端</text>
+          </g>
+          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="后端" data-legend-x="125" data-legend-baseline="734" data-legend-width="63">
+            <rect x="125" y="725" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
+            <text x="147" y="734" class="t-muted" font-size="10" font-weight="500">后端</text>
+          </g>
+          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="数据库" data-legend-x="210" data-legend-baseline="734" data-legend-width="73">
+            <rect x="210" y="725" width="16" height="10" rx="2.5" class="c-database" stroke-width="1"/>
+            <text x="232" y="734" class="t-muted" font-size="10" font-weight="500">数据库</text>
+          </g>
+          <g data-legend-semantic-kind="cloud" data-legend-kind="cloud" data-legend-label="云服务" data-legend-x="305" data-legend-baseline="734" data-legend-width="73">
+            <rect x="305" y="725" width="16" height="10" rx="2.5" class="c-cloud" stroke-width="1"/>
+            <text x="327" y="734" class="t-muted" font-size="10" font-weight="500">云服务</text>
+          </g>
+          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="外部系统" data-legend-x="400" data-legend-baseline="734" data-legend-width="83">
+            <rect x="400" y="725" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
+            <text x="422" y="734" class="t-muted" font-size="10" font-weight="500">外部系统</text>
+          </g>
+        </g>
+      </svg>
+      <p class="intent-trace-status no-print" id="intent-trace-status" role="status" aria-live="polite" aria-atomic="true"></p>
+      <div class="diagram-guide no-print" id="diagram-guide" hidden role="dialog" aria-modal="false" aria-labelledby="diagram-guide-title">
+        <div class="diagram-guide-head">
+          <span>
+            <span class="diagram-guide-eyebrow">图表指南</span>
+            <strong class="diagram-guide-title" id="diagram-guide-title">探索此系统</strong>
+          </span>
+          <button class="diagram-guide-close" id="diagram-guide-close" type="button" aria-label="关闭图表指南">&#215;</button>
+        </div>
+        <p class="diagram-guide-stats" id="diagram-guide-stats">正在检查已编译语义</p>
+        <div class="diagram-guide-actions" id="diagram-guide-actions" role="group" aria-label="图表探索操作">
+          <button class="diagram-guide-action" type="button" data-guide-action="find" aria-label="查找任意节点">
+            <span class="diagram-guide-index" aria-hidden="true">01</span>
+            <span class="diagram-guide-action-copy"><strong>查找任意节点</strong><small>搜索标签、职责、类型和稳定 ID。</small></span>
+            <kbd aria-hidden="true">/</kbd>
+          </button>
+          <button class="diagram-guide-action" type="button" data-guide-action="route" aria-label="追踪有向路径">
+            <span class="diagram-guide-index" aria-hidden="true">02</span>
+            <span class="diagram-guide-action-copy"><strong>追踪路径</strong><small>查看两个语义节点如何按编写方向连接。</small></span>
+            <kbd aria-hidden="true">R</kbd>
+          </button>
+          <button class="diagram-guide-action" type="button" data-guide-action="map" aria-label="查看完整系统">
+            <span class="diagram-guide-index" aria-hidden="true">03</span>
+            <span class="diagram-guide-action-copy"><strong>查看完整系统</strong><small>打开带实时视口和稳定节点的语义雷达。</small></span>
+            <kbd aria-hidden="true">M</kbd>
+          </button>
+          <button class="diagram-guide-action" type="button" data-guide-action="lens" aria-label="比较语义类型">
+            <span class="diagram-guide-index" aria-hidden="true">04</span>
+            <span class="diagram-guide-action-copy"><strong>比较语义类型</strong><small>统计角色、显示流量并比较直接编写的连接。</small></span>
+            <kbd aria-hidden="true">L</kbd>
+          </button>
+          <button class="diagram-guide-action" type="button" data-guide-action="present" aria-label="进入演示模式">
+            <span class="diagram-guide-index" aria-hidden="true">05</span>
+            <span class="diagram-guide-action-copy"><strong>进入演示模式</strong><small>让实时图表占满视口，同时不改变导出。</small></span>
+            <kbd aria-hidden="true">F</kbd>
+          </button>
+        </div>
+        <div class="diagram-guide-shortcuts" aria-label="其他键盘快捷键">
+          <span><kbd>E</kbd> 导出</span><span><kbd>T</kbd> 主题</span><span><kbd>S</kbd> 风格</span><span><kbd>0</kbd> 重置</span><span><kbd>+</kbd> 放大</span><span><kbd>-</kbd> 缩小</span><span><kbd>Esc</kbd> 关闭</span>
+        </div>
+        <p class="diagram-guide-feedback" id="diagram-guide-feedback" aria-live="polite"></p>
+      </div>
+      <div class="node-finder no-print" id="node-finder" hidden role="dialog" aria-modal="false" aria-labelledby="node-finder-title">
+        <div class="node-finder-head">
+          <strong id="node-finder-title">查找节点</strong>
+          <button class="node-finder-close" id="node-finder-close" type="button" aria-label="关闭节点查找器">&#215;</button>
+        </div>
+        <div class="node-finder-search">
+          <span aria-hidden="true">&#8981;</span>
+          <input class="node-finder-input" id="node-finder-input" type="search" autocomplete="off" spellcheck="false" placeholder="搜索标签或 ID" aria-label="搜索图表节点" aria-describedby="node-finder-status">
+          <kbd aria-hidden="true">/</kbd>
+        </div>
+        <div class="node-finder-results" id="node-finder-results" role="group" aria-label="图表节点"></div>
+        <p class="node-finder-empty" id="node-finder-empty" hidden>没有匹配的节点</p>
+        <p class="node-finder-status" id="node-finder-status" aria-live="polite"></p>
+      </div>
+      <div class="focus-chip relationship-lens no-print" id="focus-chip" hidden role="region" aria-labelledby="relationship-lens-title">
+        <div class="relationship-lens-head">
+          <button class="relationship-lens-drag-handle" id="btn-focus-move" type="button" data-focus-drag-handle aria-label="移动语义护照。可拖动、使用方向键移动，或按 Home 恢复自动位置。" title="移动语义护照。可拖动、使用方向键移动，或按 Home 恢复自动位置。"></button>
+          <div class="relationship-lens-copy">
+            <span class="relationship-lens-eyebrow">语义护照</span>
+            <strong class="relationship-lens-title" id="relationship-lens-title"><span id="focus-label"></span></strong>
+            <span class="semantic-passport-detail" id="focus-detail" hidden></span>
+            <div class="semantic-passport-meta" id="focus-passport-meta" aria-label="节点元数据">
+              <span id="focus-kind" data-passport="kind"></span>
+              <span id="focus-context" data-passport="context" hidden></span>
+              <span id="focus-tag" data-passport="tag" hidden></span>
+              <span id="focus-brand" data-passport="brand" hidden></span>
+              <code id="focus-id" data-passport="id"></code>
+            </div>
+            <div class="semantic-passport-evidence" id="focus-evidence" hidden aria-label="已验证的源代码证据">
+              <div class="semantic-passport-evidence-head">
+                <span class="semantic-passport-evidence-status">已验证来源</span>
+                <a class="semantic-passport-repository" id="focus-repository" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"></a>
+              </div>
+              <div class="semantic-passport-evidence-links" id="focus-evidence-links"></div>
+            </div>
+            <span class="relationship-lens-summary" id="focus-summary" aria-live="polite"></span>
+            <div class="semantic-passport-reach" id="focus-reach" hidden>
+              <span class="semantic-passport-reach-label">编写可达范围</span>
+              <div class="semantic-passport-reach-actions" role="group" aria-label="追踪编写的可达性">
+                <button id="btn-reach-upstream" type="button" aria-label="追踪上游编写可达性" aria-pressed="false">
+                  <span>上游</span><strong id="focus-reach-upstream-count">0</strong>
+                </button>
+                <button id="btn-reach-downstream" type="button" aria-label="追踪下游编写可达性" aria-pressed="false">
+                  <span>下游</span><strong id="focus-reach-downstream-count">0</strong>
+                </button>
+              </div>
+              <small class="semantic-passport-reach-status" id="focus-reach-status" hidden aria-live="polite"></small>
+            </div>
+          </div>
+          <div class="relationship-lens-actions">
+            <button id="btn-focus-clear" type="button" aria-label="关闭语义护照" title="关闭">&#215;</button>
+            <button id="btn-focus-copy" type="button" aria-label="复制聚焦节点的链接">复制链接</button>
+            <button id="btn-focus-relations" type="button" aria-label="显示关联关系" aria-expanded="false" aria-controls="relationship-lens-list">关系</button>
+          </div>
+        </div>
+        <div class="relationship-lens-list" id="relationship-lens-list" aria-label="关联关系"></div>
+      </div>
+      <div class="route-probe no-print" id="route-probe" hidden role="region" aria-labelledby="route-probe-title" data-state="idle">
+        <div class="route-probe-head">
+          <span class="route-probe-copy">
+            <span class="route-probe-eyebrow">路径</span>
+            <strong class="route-probe-title" id="route-probe-title">点击路径的起点</strong>
+          </span>
+          <span class="route-probe-actions">
+            <button class="route-probe-find" id="route-probe-find" type="button" aria-label="查找路径起点" data-node-finder-trigger>查找起点</button>
+            <button class="route-probe-copy-link" id="route-probe-copy" type="button" aria-label="复制已追踪路径的链接" hidden>复制链接</button>
+            <button id="route-probe-clear" type="button" aria-label="清除路径探测">清除</button>
+          </span>
+        </div>
+        <div class="route-probe-path" id="route-probe-path" aria-label="路径">
+          <span class="route-probe-placeholder">在图上点两个节点</span>
+        </div>
+        <div class="route-journey-controls" id="route-journey-controls" hidden role="group" aria-label="路径旅程控制" data-playing="false">
+          <button id="route-journey-prev" type="button" aria-label="上一个路径位置" title="上一个路径位置">&#8592;</button>
+          <button class="route-journey-play" id="route-journey-play" type="button" aria-label="播放路径旅程" aria-pressed="false" title="播放路径旅程">
+            <span id="route-journey-play-icon" aria-hidden="true">&#9654;</span>
+            <span id="route-journey-play-label">旅程</span>
+          </button>
+          <button id="route-journey-next" type="button" aria-label="下一个路径位置" title="下一个路径位置">&#8594;</button>
+          <button class="route-journey-overview" id="route-journey-overview" type="button" aria-label="显示完整路径总览" title="显示完整路径总览">总览</button>
+        </div>
+        <small class="route-probe-status" id="route-probe-status" aria-live="polite">先点起点，再点终点，沿箭头方向找路。</small>
+      </div>
+      <div class="semantic-lens no-print" id="semantic-lens" hidden role="dialog" aria-modal="false" aria-labelledby="semantic-lens-title">
+        <div class="semantic-lens-head">
+          <span>
+            <span class="semantic-lens-eyebrow">语义透镜</span>
+            <strong class="semantic-lens-title" id="semantic-lens-title">比较系统角色</strong>
+          </span>
+          <button class="semantic-lens-close" id="semantic-lens-close" type="button" aria-label="关闭语义透镜">&#215;</button>
+        </div>
+        <p class="semantic-lens-instruction">最多选择两种语义类型。选择一种可显示其真实流量；选择两种只比较直接编写的关系。</p>
+        <div class="semantic-lens-kinds" id="semantic-lens-kinds" role="group" aria-label="语义类型"></div>
+        <p class="semantic-lens-status" id="semantic-lens-status" aria-live="polite">选择一种类型以检查其节点和相连关系。</p>
+        <div class="semantic-lens-actions">
+          <button id="semantic-lens-copy" type="button" aria-label="复制语义透镜链接" hidden>复制链接</button>
+          <button id="semantic-lens-clear" type="button" aria-label="清除语义透镜">清除</button>
+        </div>
+      </div>
+      <div class="overview-map no-print" id="overview-map" hidden role="region" aria-labelledby="overview-map-title">
+        <div class="overview-map-head">
+          <span class="overview-map-live" aria-hidden="true"></span>
+          <span class="overview-map-copy">
+            <strong id="overview-map-title">语义雷达</strong>
+            <small id="overview-map-status" aria-live="polite">正在构建总览</small>
+          </span>
+          <button class="overview-map-expand" id="overview-map-expand" type="button" aria-label="打开完整语义雷达">打开雷达</button>
+          <button class="overview-map-close" id="overview-map-close" type="button" aria-label="关闭语义雷达">&#215;</button>
+        </div>
+        <div class="overview-map-surface" id="overview-map-surface" tabindex="0" role="group" aria-label="图表总览。点击节点进行聚焦，或使用方向键平移。"></div>
+        <div class="overview-map-hint" aria-hidden="true"><span>点击节点</span><span>拖动平移</span></div>
+      </div>
+      <p class="overview-map-feedback no-print" id="overview-map-feedback" role="status" aria-live="polite" hidden>语义雷达需要更多地图可见空间。</p>
+      <button class="rail-reveal no-print" id="rail-reveal" type="button" hidden aria-controls="reader-rail" aria-expanded="false"><span class="rail-reveal-icon" aria-hidden="true"></span><span>要点与索引</span></button>
+      <div class="diagram-nav no-print" role="toolbar" aria-label="图表视图控制">
+        <button id="btn-route-probe" type="button" aria-label="追踪有向路径" aria-pressed="false" aria-controls="route-probe" title="追踪路径（R）">路径</button>
+        <button id="btn-overview-map" type="button" aria-label="打开语义雷达" aria-expanded="false" aria-controls="overview-map" title="语义雷达（M）">地图</button>
+        <button id="btn-semantic-lens" type="button" aria-label="打开语义透镜" aria-haspopup="dialog" aria-expanded="false" aria-pressed="false" aria-controls="semantic-lens" title="语义透镜（L）">透镜</button>
+        <button id="btn-node-finder" type="button" aria-label="查找节点" aria-haspopup="dialog" aria-expanded="false" aria-controls="node-finder" title="查找节点（/）" data-node-finder-trigger><span class="diagram-nav-icon find" aria-hidden="true"></span></button>
+        <button id="btn-diagram-guide" type="button" hidden aria-label="打开图表指南" aria-haspopup="dialog" aria-expanded="false" aria-controls="diagram-guide" title="图表指南（?）"><span class="diagram-nav-icon guide" aria-hidden="true"></span></button>
+        <button data-view="out" type="button" aria-label="缩小" title="缩小（-）"><span class="diagram-nav-icon minus" aria-hidden="true"></span></button>
+        <button data-view="reset" type="button" aria-label="重置图表视图" title="重置视图（0）"><span class="diagram-nav-detail" data-view-detail hidden>阅读</span><span class="diagram-nav-percent" data-view-percent>100%</span></button>
+        <button data-view="in" type="button" aria-label="放大" title="放大（+）"><span class="diagram-nav-icon plus" aria-hidden="true"></span></button>
+      </div>
+    </div>
+
+    <aside class="reader-rail" id="reader-rail">
+    <div class="rail-controls no-print" role="toolbar" aria-label="侧栏">
+      <button class="rail-control" id="rail-placement" type="button" hidden aria-label="移到图下方" title="移到图下方" data-placement="right"><span class="rail-control-icon placement" aria-hidden="true"></span></button>
+      <button class="rail-control" id="rail-collapse" type="button" hidden aria-controls="reader-rail" aria-expanded="true" aria-label="收起侧栏" title="收起侧栏"><span class="rail-control-icon collapse" aria-hidden="true"></span></button>
+    </div>
+    <!-- Info Cards -->
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>单容器本质</h3>
+        </div>
+        <ul>
+          <li>键+值直接存槽内：命中即取，无二次寻址</li>
+          <li>没有 keys_ 数组 → 没有「第 i 个」、没有补位</li>
+          <li>遍历序 = 槽位序（哈希决定，不确定）</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>add 家族语义表</h3>
+        </div>
+        <ul>
+          <li>add_new：断言不存在（意图最明确，优先用）</li>
+          <li>add / add_overwrite：已存在时保留 / 覆盖旧值</li>
+          <li>lookup_or_add / add_or_modify：惰性构造与原地修改</li>
+          <li>pop：取值同时删键</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>哈希副本之谜（实测澄清）</h3>
+        </div>
+        <ul>
+          <li>Map 全部槽型都不存哈希副本（比较时现算）</li>
+          <li>字符串重复计算的开销走 _as 异型查找规避</li>
+          <li>Set 侧的 HashedSetSlot 才是存哈希的（见 06b2 图）</li>
+        </ul>
+      </div>
+    </div>
+    <nav class="node-outline no-print" id="node-outline" hidden aria-labelledby="node-outline-title">
+      <div class="node-outline-head">
+        <strong id="node-outline-title">节点索引</strong>
+        <span class="node-outline-count" id="node-outline-count"></span>
+      </div>
+      <ol class="node-outline-list" id="node-outline-list"></ol>
+    </nav>
+    </aside>
+
+  </div>
+
+  <script src="../../_shared/archify-viewer.runtime.js"></script>
+</body>
+</html>

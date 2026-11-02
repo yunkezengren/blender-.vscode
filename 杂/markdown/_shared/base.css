@@ -1,0 +1,89 @@
+/* ============================================================
+   BLI 基础库图解页共享样式 v1
+   使用方：<link rel="stylesheet" href="../_shared/base.css">
+   约定：所有颜色走 CSS 变量，深浅色自动切换；
+        语义色块 6 色（input/data/abstraction/compute/result/error）与文档系列 mermaid 配色一致。
+   ============================================================ */
+:root {
+  --bg: #f8fafc; --bg2: #ffffff; --fg: #0f172a; --fg2: #475569;
+  --line: #e2e8f0; --accent: #7c3aed; --accent2: #0891b2;
+  --input: #dbeafe;  --input-b: #2563eb;  --input-fg: #172554;
+  --data: #cffafe;   --data-b: #0891b2;   --data-fg: #164e63;
+  --abst: #ede9fe;   --abst-b: #7c3aed;   --abst-fg: #3b0764;
+  --compute: #fef3c7;--compute-b:#d97706; --compute-fg:#78350f;
+  --result: #dcfce7; --result-b:#16a34a;  --result-fg:#14532d;
+  --error: #fee2e2;  --error-b: #dc2626;  --error-fg: #7f1d1d;
+  --code-bg: #1e293b; --code-fg: #e2e8f0;
+  --cell-h: 34px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f172a; --bg2: #1e293b; --fg: #f1f5f9; --fg2: #94a3b8; --line: #334155;
+    --input: #172554;  --input-b: #60a5fa;  --input-fg: #dbeafe;
+    --data: #164e63;   --data-b: #22d3ee;   --data-fg: #cffafe;
+    --abst: #3b0764;   --abst-b: #a78bfa;   --abst-fg: #ede9fe;
+    --compute: #78350f;--compute-b:#fbbf24; --compute-fg:#fef3c7;
+    --result: #14532d; --result-b:#4ade80;  --result-fg:#dcfce7;
+    --error: #7f1d1d;  --error-b: #f87171;  --error-fg: #fee2e2;
+    --code-bg: #0b1220; --code-fg: #cbd5e1;
+  }
+}
+html { scroll-behavior: smooth; }
+body { font-family: "Segoe UI","Microsoft YaHei",system-ui,sans-serif; background: var(--bg); color: var(--fg); line-height: 1.75; padding: 30px 18px 80px; }
+.wrap { max-width: 1100px; margin: 0 auto; }
+h1 { font-size: 28px; }
+.subtitle { color: var(--fg2); margin: 6px 0 24px; font-size: 14.5px; }
+h2 { font-size: 21px; margin: 44px 0 12px; padding-bottom: 7px; border-bottom: 2px solid var(--line); }
+h2 .no { color: var(--accent); margin-right: 8px; }
+h3 { font-size: 16.5px; margin: 22px 0 8px; }
+p { margin: 9px 0; }
+code { background: var(--code-bg); color: var(--code-fg); border-radius: 5px; padding: 1px 7px; font-size: .88em; font-family: Consolas,"Cascadia Code",monospace; }
+pre { background: var(--code-bg); color: var(--code-fg); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 12px 0; font-family: Consolas,monospace; }
+pre .cm{color:#64748b} pre .kw{color:#93c5fd} pre .st{color:#86efac} pre .fn{color:#fcd34d}
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; }
+th { background: var(--bg2); text-align: left; }
+th, td { border: 1px solid var(--line); padding: 7px 11px; }
+.toc { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 20px; margin: 18px 0; }
+.toc a { color: var(--accent2); text-decoration: none; margin-right: 16px; white-space: nowrap; }
+.toc a:hover { text-decoration: underline; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 13px; margin: 16px 0; }
+.card { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 17px; border-top: 3px solid var(--accent); }
+.card.c2 { border-top-color: var(--accent2); } .card.c3 { border-top-color: var(--result-b); }
+.card h4 { font-size: 15px; margin-bottom: 6px; }
+.card li { margin: 4px 0 4px 18px; font-size: 13.5px; color: var(--fg2); }
+.callout { border-left: 4px solid var(--accent); background: var(--bg2); border-radius: 0 10px 10px 0; padding: 11px 17px; margin: 13px 0; font-size: 14.5px; }
+.callout.warn { border-left-color: var(--error-b); }
+.callout.ok { border-left-color: var(--result-b); }
+.steps { counter-reset: st; margin: 14px 0; }
+.step { position: relative; padding: 11px 15px 11px 54px; margin: 9px 0; background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; }
+.step::before { counter-increment: st; content: counter(st); position: absolute; left: 13px; top: 13px; width: 27px; height: 27px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; display: grid; place-items: center; font-size: 13.5px; }
+.step b.t { display: block; margin-bottom: 2px; }
+.step .d { font-size: 13.5px; color: var(--fg2); }
+.step .src { font-size: 12px; color: var(--fg2); opacity: .75; font-family: Consolas,monospace; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 860px) { .two { grid-template-columns: 1fr; } }
+.foot { margin-top: 54px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--fg2); font-size: 12.5px; }
+.rev { font-family: Consolas,monospace; font-size: .92em; }
+
+/* ===== 字节级内存布局（表格实现，无 SVG 依赖） ===== */
+.mem { background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin: 16px 0; overflow-x: auto; }
+.mem h4 { margin: 18px 0 8px; font-size: 15.5px; }
+.mem h4:first-child { margin-top: 0; }
+.mem .hint { color: var(--fg2); font-size: 12.5px; margin: 4px 0 10px; }
+.mem table.byte { font-family: Consolas,monospace; font-size: 12.5px; border-collapse: separate; border-spacing: 4px; width: auto; min-width: 640px; }
+.mem table.byte th { background: transparent; border: none; text-align: center; font-size: 11.5px; color: var(--fg2); font-weight: 600; padding: 2px 4px; }
+.mem table.byte td { border: 1.5px solid var(--line); border-radius: 6px; text-align: center; padding: 7px 6px; min-width: 74px; line-height: 1.35; }
+.mem table.byte td .b { display: block; font-size: 11px; opacity: .62; }
+.mem table.byte td.rowhead { border: none; text-align: right; font-weight: 700; white-space: nowrap; font-family: "Segoe UI","Microsoft YaHei",sans-serif; font-size: 13px; padding-right: 10px; }
+.mem .s-input   { background: var(--input);   border-color: var(--input-b) !important;   color: var(--input-fg); }
+.mem .s-data    { background: var(--data);    border-color: var(--data-b) !important;    color: var(--data-fg); }
+.mem .s-abst    { background: var(--abst);    border-color: var(--abst-b) !important;    color: var(--abst-fg); }
+.mem .s-compute { background: var(--compute); border-color: var(--compute-b) !important; color: var(--compute-fg); }
+.mem .s-result  { background: var(--result);  border-color: var(--result-b) !important;  color: var(--result-fg); }
+.mem .s-error   { background: var(--error);   border-color: var(--error-b) !important;   color: var(--error-fg); }
+.mem .s-empty   { background: transparent;    border-style: dashed !important;           color: var(--fg2); }
+.mem .s-dim     { background: transparent;    border-style: dotted !important;           color: var(--fg2); opacity: .7; }
+.mem .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 12px; font-size: 12.5px; color: var(--fg2); }
+.mem .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1.5px; border: 1.5px solid var(--line); }
+.mem .arrow-note { color: var(--fg2); font-size: 12.5px; margin: 6px 0 0; }
+.mem .arrow-note b { color: var(--accent2); }
